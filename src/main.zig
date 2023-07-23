@@ -4,6 +4,7 @@ const Allocator = std.mem.Allocator;
 pub const Device = @import("Device.zig");
 pub const Buffer = @import("Buffer.zig");
 pub const Texture = @import("Texture.zig");
+pub const TexView = @import("TexView.zig");
 
 pub const Error = error{
     DeviceLost,
@@ -43,4 +44,15 @@ test "ngl" {
         },
     });
     defer texture.deinit();
+
+    var tex_view = try TexView.init(&texture, .{
+        .dimension = .@"2d",
+        .format = texture.format,
+        .plane = 0,
+        .first_level = 0,
+        .levels = 1,
+        .first_layer = 0,
+        .layers = 1,
+    });
+    defer tex_view.deinit();
 }

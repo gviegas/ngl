@@ -117,11 +117,38 @@ pub const Texture = struct {
 
     pub const VTable = struct {
         deinit: *const fn (*anyopaque, *Device) void,
+        initView: *const fn (*anyopaque, *Device, Allocator, TexView.Config) Error!TexView,
     };
 
     const Self = @This();
 
     pub fn deinit(self: *Self, device: *Device) void {
         self.vtable.deinit(self.ptr, device);
+    }
+
+    pub fn initView(
+        self: *Self,
+        device: *Device,
+        allocator: Allocator,
+        config: TexView.Config,
+    ) Error!TexView {
+        return self.vtable.initView(self.ptr, device, allocator, config);
+    }
+};
+
+pub const TexView = struct {
+    ptr: *anyopaque,
+    vtable: *const VTable,
+
+    pub const Config = @import("TexView.zig").Config;
+
+    pub const VTable = struct {
+        deinit: *const fn (*anyopaque, *Device, *Texture) void,
+    };
+
+    const Self = @This();
+
+    pub fn deinit(self: *Self, device: *Device, texture: *Texture) void {
+        self.vtable.deinit(self.ptr, device, texture);
     }
 };

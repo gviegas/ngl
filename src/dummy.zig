@@ -7,6 +7,7 @@ const Impl = impl.Impl;
 const Device = impl.Device;
 const Buffer = impl.Buffer;
 const Texture = impl.Texture;
+const TexView = impl.TexView;
 const Error = @import("main.zig").Error;
 
 pub const DummyImpl = struct {
@@ -75,9 +76,27 @@ pub const DummyTexture = struct {
     }
     const vtable = Texture.VTable{
         .deinit = deinit,
+        .initView = DummyTexView.init,
     };
 
     pub fn deinit(_: *anyopaque, _: *Device) void {
         log.debug("Dummy Texture deinitialized", .{});
+    }
+};
+
+pub const DummyTexView = struct {
+    pub fn init(_: *anyopaque, _: *Device, _: Allocator, _: TexView.Config) Error!TexView {
+        log.debug("Dummy TexView initialized", .{});
+        return .{
+            .ptr = undefined,
+            .vtable = &vtable,
+        };
+    }
+    const vtable = TexView.VTable{
+        .deinit = deinit,
+    };
+
+    pub fn deinit(_: *anyopaque, _: *Device, _: *Texture) void {
+        log.debug("Dummy TexView deinitialized", .{});
     }
 };
