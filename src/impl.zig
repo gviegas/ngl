@@ -1,0 +1,127 @@
+const std = @import("std");
+const Allocator = std.mem.Allocator;
+const Mutex = std.Thread.Mutex;
+
+const Dummy = @import("dummy.zig").DummyImpl;
+const Error = @import("main.zig").Error;
+
+// TODO
+
+pub const Impl = struct {
+    const Self = @This();
+
+    var lock = Mutex{};
+    var dummy = struct {
+        impl: ?Self = null,
+        count: u64 = 0,
+    }{};
+
+    name: Name,
+    ptr: *anyopaque,
+    vtable: *const VTable,
+
+    pub const Name = enum {
+        dummy,
+        // TODO
+    };
+
+    pub const VTable = struct {
+        deinit: *const fn (*anyopaque) void,
+        initDevice: *const fn (*anyopaque, Allocator, Device.Config) Error!Device,
+    };
+
+    pub fn get(name: ?Name) Error!*Self {
+        lock.lock();
+        defer lock.unlock();
+        // TODO
+        const nm = name orelse .dummy;
+        switch (nm) {
+            .dummy => {
+                dummy.impl = Dummy.init();
+                dummy.count += 1;
+                return &dummy.impl.?;
+            },
+        }
+    }
+
+    pub fn unget(self: *Self) void {
+        lock.lock();
+        defer lock.unlock();
+        switch (self.name) {
+            .dummy => {
+                if (dummy.count == 1) {
+                    self.vtable.deinit(self.ptr);
+                    dummy.impl = null;
+                    dummy.count = 0;
+                } else dummy.count -|= 1;
+            },
+        }
+    }
+
+    pub fn initDevice(self: *Self, allocator: Allocator, config: Device.Config) Error!Device {
+        return self.vtable.initDevice(self.ptr, allocator, config);
+    }
+};
+
+pub const Device = struct {
+    kind: Kind,
+    ptr: *anyopaque,
+    vtable: *const VTable,
+
+    pub const Config = @import("Device.zig").Config;
+    pub const Kind = @import("Device.zig").Kind;
+
+    pub const VTable = struct {
+        deinit: *const fn (*anyopaque) void,
+        initBuffer: *const fn (*anyopaque, Allocator, Buffer.Config) Error!Buffer,
+        initTexture: *const fn (*anyopaque, Allocator, Texture.Config) Error!Texture,
+    };
+
+    const Self = @This();
+
+    pub fn deinit(self: *Self) void {
+        self.vtable.deinit(self.ptr);
+    }
+
+    pub fn initBuffer(self: *Self, allocator: Allocator, config: Buffer.Config) Error!Buffer {
+        return self.vtable.initBuffer(self.ptr, allocator, config);
+    }
+
+    pub fn initTexture(self: *Self, allocator: Allocator, config: Texture.Config) Error!Texture {
+        return self.vtable.initTexture(self.ptr, allocator, config);
+    }
+};
+
+pub const Buffer = struct {
+    ptr: *anyopaque,
+    vtable: *const VTable,
+
+    pub const Config = @import("Buffer.zig").Config;
+
+    pub const VTable = struct {
+        deinit: *const fn (*anyopaque, *Device) void,
+    };
+
+    const Self = @This();
+
+    pub fn deinit(self: *Self, device: *Device) void {
+        self.vtable.deinit(self.ptr, device);
+    }
+};
+
+pub const Texture = struct {
+    ptr: *anyopaque,
+    vtable: *const VTable,
+
+    pub const Config = @import("Texture.zig").Config;
+
+    pub const VTable = struct {
+        deinit: *const fn (*anyopaque, *Device) void,
+    };
+
+    const Self = @This();
+
+    pub fn deinit(self: *Self, device: *Device) void {
+        self.vtable.deinit(self.ptr, device);
+    }
+};
