@@ -39,8 +39,8 @@ pub fn init(texture: *Texture, config: Config) Error!Self {
     return .{
         .texture = texture,
         .inner = try texture.inner.initView(
-            &texture.device.inner,
             texture.device.allocator,
+            &texture.device.inner,
             config,
         ),
         .dimension = config.dimension,
@@ -54,5 +54,9 @@ pub fn init(texture: *Texture, config: Config) Error!Self {
 }
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(&self.texture.device.inner, &self.texture.inner);
+    self.inner.deinit(
+        self.texture.device.allocator,
+        &self.texture.device.inner,
+        &self.texture.inner,
+    );
 }

@@ -44,7 +44,7 @@ pub const DummyDevice = struct {
         .initTexture = DummyTexture.init,
     };
 
-    pub fn deinit(_: *anyopaque) void {
+    pub fn deinit(_: *anyopaque, _: Allocator) void {
         log.debug("Dummy Device deinitialized", .{});
     }
 };
@@ -61,7 +61,7 @@ pub const DummyBuffer = struct {
         .deinit = deinit,
     };
 
-    pub fn deinit(_: *anyopaque, _: *Device) void {
+    pub fn deinit(_: *anyopaque, _: Allocator, _: *Device) void {
         log.debug("Dummy Buffer deinitialized", .{});
     }
 };
@@ -79,13 +79,13 @@ pub const DummyTexture = struct {
         .initView = DummyTexView.init,
     };
 
-    pub fn deinit(_: *anyopaque, _: *Device) void {
+    pub fn deinit(_: *anyopaque, _: Allocator, _: *Device) void {
         log.debug("Dummy Texture deinitialized", .{});
     }
 };
 
 pub const DummyTexView = struct {
-    pub fn init(_: *anyopaque, _: *Device, _: Allocator, _: TexView.Config) Error!TexView {
+    pub fn init(_: *anyopaque, _: Allocator, _: *Device, _: TexView.Config) Error!TexView {
         log.debug("Dummy TexView initialized", .{});
         return .{
             .ptr = undefined,
@@ -96,7 +96,7 @@ pub const DummyTexView = struct {
         .deinit = deinit,
     };
 
-    pub fn deinit(_: *anyopaque, _: *Device, _: *Texture) void {
+    pub fn deinit(_: *anyopaque, _: Allocator, _: *Device, _: *Texture) void {
         log.debug("Dummy TexView deinitialized", .{});
     }
 };

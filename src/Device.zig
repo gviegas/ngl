@@ -41,6 +41,6 @@ pub fn kind(self: Self) Kind {
 }
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit();
+    self.inner.deinit(self.allocator);
     self.impl.unget();
 }
