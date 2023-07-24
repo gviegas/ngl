@@ -40,7 +40,7 @@ pub fn init(texture: *Texture, config: Config) Error!Self {
         .texture = texture,
         .inner = try texture.inner.initView(
             texture.device.allocator,
-            &texture.device.inner,
+            texture.device.inner,
             config,
         ),
         .dimension = config.dimension,
@@ -54,9 +54,6 @@ pub fn init(texture: *Texture, config: Config) Error!Self {
 }
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(
-        self.texture.device.allocator,
-        &self.texture.device.inner,
-        &self.texture.inner,
-    );
+    const device = self.texture.device;
+    self.inner.deinit(device.allocator, device.inner, self.texture.inner);
 }

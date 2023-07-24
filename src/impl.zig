@@ -58,7 +58,7 @@ pub const Impl = struct {
         }
     }
 
-    pub fn initDevice(self: *Self, allocator: Allocator, config: Device.Config) Error!Device {
+    pub fn initDevice(self: Self, allocator: Allocator, config: Device.Config) Error!Device {
         return self.vtable.initDevice(self.ptr, allocator, config);
     }
 };
@@ -83,11 +83,11 @@ pub const Device = struct {
         self.vtable.deinit(self.ptr, allocator);
     }
 
-    pub fn initBuffer(self: *Self, allocator: Allocator, config: Buffer.Config) Error!Buffer {
+    pub fn initBuffer(self: Self, allocator: Allocator, config: Buffer.Config) Error!Buffer {
         return self.vtable.initBuffer(self.ptr, allocator, config);
     }
 
-    pub fn initTexture(self: *Self, allocator: Allocator, config: Texture.Config) Error!Texture {
+    pub fn initTexture(self: Self, allocator: Allocator, config: Texture.Config) Error!Texture {
         return self.vtable.initTexture(self.ptr, allocator, config);
     }
 };
@@ -99,12 +99,12 @@ pub const Buffer = struct {
     pub const Config = @import("Buffer.zig").Config;
 
     pub const VTable = struct {
-        deinit: *const fn (*anyopaque, Allocator, *Device) void,
+        deinit: *const fn (*anyopaque, Allocator, Device) void,
     };
 
     const Self = @This();
 
-    pub fn deinit(self: *Self, allocator: Allocator, device: *Device) void {
+    pub fn deinit(self: *Self, allocator: Allocator, device: Device) void {
         self.vtable.deinit(self.ptr, allocator, device);
     }
 };
@@ -116,20 +116,20 @@ pub const Texture = struct {
     pub const Config = @import("Texture.zig").Config;
 
     pub const VTable = struct {
-        deinit: *const fn (*anyopaque, Allocator, *Device) void,
-        initView: *const fn (*anyopaque, Allocator, *Device, TexView.Config) Error!TexView,
+        deinit: *const fn (*anyopaque, Allocator, Device) void,
+        initView: *const fn (*anyopaque, Allocator, Device, TexView.Config) Error!TexView,
     };
 
     const Self = @This();
 
-    pub fn deinit(self: *Self, allocator: Allocator, device: *Device) void {
+    pub fn deinit(self: *Self, allocator: Allocator, device: Device) void {
         self.vtable.deinit(self.ptr, allocator, device);
     }
 
     pub fn initView(
-        self: *Self,
+        self: Self,
         allocator: Allocator,
-        device: *Device,
+        device: Device,
         config: TexView.Config,
     ) Error!TexView {
         return self.vtable.initView(self.ptr, allocator, device, config);
@@ -143,12 +143,12 @@ pub const TexView = struct {
     pub const Config = @import("TexView.zig").Config;
 
     pub const VTable = struct {
-        deinit: *const fn (*anyopaque, Allocator, *Device, *Texture) void,
+        deinit: *const fn (*anyopaque, Allocator, Device, Texture) void,
     };
 
     const Self = @This();
 
-    pub fn deinit(self: *Self, allocator: Allocator, device: *Device, texture: *Texture) void {
+    pub fn deinit(self: *Self, allocator: Allocator, device: Device, texture: Texture) void {
         self.vtable.deinit(self.ptr, allocator, device, texture);
     }
 };
