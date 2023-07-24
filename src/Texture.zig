@@ -64,4 +64,5 @@ pub fn init(device: *Device, config: Config) Error!Self {
 
 pub fn deinit(self: *Self) void {
     self.inner.deinit(self.device.allocator, self.device.inner);
+    self.* = undefined;
 }

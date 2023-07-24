@@ -56,4 +56,5 @@ pub fn init(texture: *Texture, config: Config) Error!Self {
 pub fn deinit(self: *Self) void {
     const device = self.texture.device;
     self.inner.deinit(device.allocator, device.inner, self.texture.inner);
+    self.* = undefined;
 }

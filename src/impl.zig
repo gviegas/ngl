@@ -56,6 +56,7 @@ pub const Impl = struct {
                 } else dummy.count -|= 1;
             },
         }
+        self.* = undefined;
     }
 
     pub fn initDevice(self: Self, allocator: Allocator, config: Device.Config) Error!Device {
@@ -81,6 +82,7 @@ pub const Device = struct {
 
     pub fn deinit(self: *Self, allocator: Allocator) void {
         self.vtable.deinit(self.ptr, allocator);
+        self.* = undefined;
     }
 
     pub fn initBuffer(self: Self, allocator: Allocator, config: Buffer.Config) Error!Buffer {
@@ -106,6 +108,7 @@ pub const Buffer = struct {
 
     pub fn deinit(self: *Self, allocator: Allocator, device: Device) void {
         self.vtable.deinit(self.ptr, allocator, device);
+        self.* = undefined;
     }
 };
 
@@ -124,6 +127,7 @@ pub const Texture = struct {
 
     pub fn deinit(self: *Self, allocator: Allocator, device: Device) void {
         self.vtable.deinit(self.ptr, allocator, device);
+        self.* = undefined;
     }
 
     pub fn initView(
@@ -150,5 +154,6 @@ pub const TexView = struct {
 
     pub fn deinit(self: *Self, allocator: Allocator, device: Device, texture: Texture) void {
         self.vtable.deinit(self.ptr, allocator, device, texture);
+        self.* = undefined;
     }
 };
