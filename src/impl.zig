@@ -76,6 +76,7 @@ pub const Device = struct {
         deinit: *const fn (*anyopaque, Allocator) void,
         initBuffer: *const fn (*anyopaque, Allocator, Buffer.Config) Error!Buffer,
         initTexture: *const fn (*anyopaque, Allocator, Texture.Config) Error!Texture,
+        initSampler: *const fn (*anyopaque, Allocator, Sampler.Config) Error!Sampler,
     };
 
     const Self = @This();
@@ -91,6 +92,10 @@ pub const Device = struct {
 
     pub fn initTexture(self: Self, allocator: Allocator, config: Texture.Config) Error!Texture {
         return self.vtable.initTexture(self.ptr, allocator, config);
+    }
+
+    pub fn initSampler(self: Self, allocator: Allocator, config: Sampler.Config) Error!Sampler {
+        return self.vtable.initSampler(self.ptr, allocator, config);
     }
 };
 
@@ -154,6 +159,24 @@ pub const TexView = struct {
 
     pub fn deinit(self: *Self, allocator: Allocator, device: Device, texture: Texture) void {
         self.vtable.deinit(self.ptr, allocator, device, texture);
+        self.* = undefined;
+    }
+};
+
+pub const Sampler = struct {
+    ptr: *anyopaque,
+    vtable: *const VTable,
+
+    pub const Config = @import("Sampler.zig").Config;
+
+    pub const VTable = struct {
+        deinit: *const fn (*anyopaque, Allocator, Device) void,
+    };
+
+    const Self = @This();
+
+    pub fn deinit(self: *Self, allocator: Allocator, device: Device) void {
+        self.vtable.deinit(self.ptr, allocator, device);
         self.* = undefined;
     }
 };

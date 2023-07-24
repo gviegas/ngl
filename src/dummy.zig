@@ -8,6 +8,7 @@ const Device = impl.Device;
 const Buffer = impl.Buffer;
 const Texture = impl.Texture;
 const TexView = impl.TexView;
+const Sampler = impl.Sampler;
 const Error = @import("main.zig").Error;
 
 pub const DummyImpl = struct {
@@ -24,13 +25,13 @@ pub const DummyImpl = struct {
         .initDevice = DummyDevice.init,
     };
 
-    pub fn deinit(_: *anyopaque) void {
+    fn deinit(_: *anyopaque) void {
         log.debug("Dummy Impl deinitialized", .{});
     }
 };
 
-pub const DummyDevice = struct {
-    pub fn init(_: *anyopaque, _: Allocator, _: Device.Config) Error!Device {
+const DummyDevice = struct {
+    fn init(_: *anyopaque, _: Allocator, _: Device.Config) Error!Device {
         log.debug("Dummy Device initialized", .{});
         return .{
             .kind = .debug,
@@ -42,15 +43,16 @@ pub const DummyDevice = struct {
         .deinit = deinit,
         .initBuffer = DummyBuffer.init,
         .initTexture = DummyTexture.init,
+        .initSampler = DummySampler.init,
     };
 
-    pub fn deinit(_: *anyopaque, _: Allocator) void {
+    fn deinit(_: *anyopaque, _: Allocator) void {
         log.debug("Dummy Device deinitialized", .{});
     }
 };
 
-pub const DummyBuffer = struct {
-    pub fn init(_: *anyopaque, _: Allocator, _: Buffer.Config) Error!Buffer {
+const DummyBuffer = struct {
+    fn init(_: *anyopaque, _: Allocator, _: Buffer.Config) Error!Buffer {
         log.debug("Dummy Buffer initialized", .{});
         return .{
             .ptr = undefined,
@@ -61,13 +63,13 @@ pub const DummyBuffer = struct {
         .deinit = deinit,
     };
 
-    pub fn deinit(_: *anyopaque, _: Allocator, _: Device) void {
+    fn deinit(_: *anyopaque, _: Allocator, _: Device) void {
         log.debug("Dummy Buffer deinitialized", .{});
     }
 };
 
-pub const DummyTexture = struct {
-    pub fn init(_: *anyopaque, _: Allocator, _: Texture.Config) Error!Texture {
+const DummyTexture = struct {
+    fn init(_: *anyopaque, _: Allocator, _: Texture.Config) Error!Texture {
         log.debug("Dummy Texture initialized", .{});
         return .{
             .ptr = undefined,
@@ -79,13 +81,13 @@ pub const DummyTexture = struct {
         .initView = DummyTexView.init,
     };
 
-    pub fn deinit(_: *anyopaque, _: Allocator, _: Device) void {
+    fn deinit(_: *anyopaque, _: Allocator, _: Device) void {
         log.debug("Dummy Texture deinitialized", .{});
     }
 };
 
-pub const DummyTexView = struct {
-    pub fn init(_: *anyopaque, _: Allocator, _: Device, _: TexView.Config) Error!TexView {
+const DummyTexView = struct {
+    fn init(_: *anyopaque, _: Allocator, _: Device, _: TexView.Config) Error!TexView {
         log.debug("Dummy TexView initialized", .{});
         return .{
             .ptr = undefined,
@@ -96,7 +98,24 @@ pub const DummyTexView = struct {
         .deinit = deinit,
     };
 
-    pub fn deinit(_: *anyopaque, _: Allocator, _: Device, _: Texture) void {
+    fn deinit(_: *anyopaque, _: Allocator, _: Device, _: Texture) void {
         log.debug("Dummy TexView deinitialized", .{});
+    }
+};
+
+const DummySampler = struct {
+    fn init(_: *anyopaque, _: Allocator, _: Sampler.Config) Error!Sampler {
+        log.debug("Dummy Sampler initialized", .{});
+        return .{
+            .ptr = undefined,
+            .vtable = &vtable,
+        };
+    }
+    const vtable = Sampler.VTable{
+        .deinit = deinit,
+    };
+
+    fn deinit(_: *anyopaque, _: Allocator, _: Device) void {
+        log.debug("Dummy Sampler deinitialized", .{});
     }
 };

@@ -5,6 +5,7 @@ pub const Device = @import("Device.zig");
 pub const Buffer = @import("Buffer.zig");
 pub const Texture = @import("Texture.zig");
 pub const TexView = @import("TexView.zig");
+pub const Sampler = @import("Sampler.zig");
 
 pub const Error = error{
     DeviceLost,
@@ -55,4 +56,14 @@ test "ngl" {
         .layers = 1,
     });
     defer tex_view.deinit();
+
+    var sampler = try Sampler.init(&device, .{
+        .u_addressing = .{ .clamp_to_border = .transparent_black },
+        .v_addressing = .repeat,
+        .min_filter = .linear,
+        .mip_filter = .nearest,
+        .max_anisotropy = 16,
+        .compare = null,
+    });
+    defer sampler.deinit();
 }
