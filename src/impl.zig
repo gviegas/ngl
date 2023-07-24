@@ -74,6 +74,7 @@ pub const Device = struct {
 
     pub const VTable = struct {
         deinit: *const fn (*anyopaque, Allocator) void,
+        initHeap: *const fn (*anyopaque, Allocator, Heap.Config) Error!Heap,
         initBuffer: *const fn (*anyopaque, Allocator, Buffer.Config) Error!Buffer,
         initTexture: *const fn (*anyopaque, Allocator, Texture.Config) Error!Texture,
         initSampler: *const fn (*anyopaque, Allocator, Sampler.Config) Error!Sampler,
@@ -86,6 +87,10 @@ pub const Device = struct {
         self.* = undefined;
     }
 
+    pub fn initHeap(self: Self, allocator: Allocator, config: Heap.Config) Error!Heap {
+        return self.vtable.initHeap(self.ptr, allocator, config);
+    }
+
     pub fn initBuffer(self: Self, allocator: Allocator, config: Buffer.Config) Error!Buffer {
         return self.vtable.initBuffer(self.ptr, allocator, config);
     }
@@ -96,6 +101,24 @@ pub const Device = struct {
 
     pub fn initSampler(self: Self, allocator: Allocator, config: Sampler.Config) Error!Sampler {
         return self.vtable.initSampler(self.ptr, allocator, config);
+    }
+};
+
+pub const Heap = struct {
+    ptr: *anyopaque,
+    vtable: *const VTable,
+
+    pub const Config = @import("Heap.zig").Config;
+
+    pub const VTable = struct {
+        deinit: *const fn (*anyopaque, Allocator, Device) void,
+    };
+
+    const Self = @This();
+
+    pub fn deinit(self: *Self, allocator: Allocator, device: Device) void {
+        self.vtable.deinit(self.ptr, allocator, device);
+        self.* = undefined;
     }
 };
 

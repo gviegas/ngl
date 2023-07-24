@@ -5,6 +5,7 @@ const Allocator = std.mem.Allocator;
 const impl = @import("impl.zig");
 const Impl = impl.Impl;
 const Device = impl.Device;
+const Heap = impl.Heap;
 const Buffer = impl.Buffer;
 const Texture = impl.Texture;
 const TexView = impl.TexView;
@@ -41,6 +42,7 @@ const DummyDevice = struct {
     }
     const vtable = Device.VTable{
         .deinit = deinit,
+        .initHeap = DummyHeap.init,
         .initBuffer = DummyBuffer.init,
         .initTexture = DummyTexture.init,
         .initSampler = DummySampler.init,
@@ -48,6 +50,23 @@ const DummyDevice = struct {
 
     fn deinit(_: *anyopaque, _: Allocator) void {
         log.debug("Dummy Device deinitialized", .{});
+    }
+};
+
+const DummyHeap = struct {
+    fn init(_: *anyopaque, _: Allocator, _: Heap.Config) Error!Heap {
+        log.debug("Dummy Heap initialized", .{});
+        return .{
+            .ptr = undefined,
+            .vtable = &vtable,
+        };
+    }
+    const vtable = Heap.VTable{
+        .deinit = deinit,
+    };
+
+    fn deinit(_: *anyopaque, _: Allocator, _: Device) void {
+        log.debug("Dummy Heap deinitialized", .{});
     }
 };
 

@@ -2,6 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 
 pub const Device = @import("Device.zig");
+pub const Heap = @import("Heap.zig");
 pub const Buffer = @import("Buffer.zig");
 pub const Texture = @import("Texture.zig");
 pub const TexView = @import("TexView.zig");
@@ -20,6 +21,12 @@ test "ngl" {
 
     var device = try Device.init(allocator, .{});
     defer device.deinit();
+
+    var heap = try Heap.init(&device, .{
+        .size = 2 << 20,
+        .cpu_access = .none,
+    });
+    defer heap.deinit();
 
     var buffer = try Buffer.init(&device, .{
         .size = 2048,
