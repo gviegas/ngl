@@ -1,5 +1,5 @@
 const Texture = @import("Texture.zig");
-const Inner = @import("impl.zig").TexView;
+const Inner = @import("Impl.zig").TexView;
 const Error = @import("main.zig").Error;
 
 texture: *Texture,
@@ -38,11 +38,7 @@ pub fn init(texture: *Texture, config: Config) Error!Self {
     // TODO: Validation.
     return .{
         .texture = texture,
-        .inner = try texture.inner.initView(
-            texture.device.allocator,
-            texture.device.inner,
-            config,
-        ),
+        .inner = try Inner.init(texture.*, texture.device.allocator, config),
         .dimension = config.dimension,
         .format = config.format,
         .plane = config.plane,
@@ -54,7 +50,6 @@ pub fn init(texture: *Texture, config: Config) Error!Self {
 }
 
 pub fn deinit(self: *Self) void {
-    const device = self.texture.device;
-    self.inner.deinit(device.allocator, device.inner, self.texture.inner);
+    self.inner.deinit(self.*, self.texture.device.allocator);
     self.* = undefined;
 }

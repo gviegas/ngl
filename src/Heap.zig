@@ -1,5 +1,5 @@
 const Device = @import("Device.zig");
-const Inner = @import("impl.zig").Heap;
+const Inner = @import("Impl.zig").Heap;
 const Error = @import("main.zig").Error;
 
 device: *Device,
@@ -24,13 +24,13 @@ pub fn init(device: *Device, config: Config) Error!Self {
     // TODO: Validation.
     return .{
         .device = device,
-        .inner = try device.inner.initHeap(device.allocator, config),
+        .inner = try Inner.init(device.*, device.allocator, config),
         .size = config.size,
         .cpu_access = config.cpu_access,
     };
 }
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(self.device.allocator, self.device.inner);
+    self.inner.deinit(self.*, self.device.allocator);
     self.* = undefined;
 }

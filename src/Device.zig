@@ -1,9 +1,9 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
+const Impl = @import("Impl.zig");
+const Inner = Impl.Device;
 const Error = @import("main.zig").Error;
-const Impl = @import("impl.zig").Impl;
-const Inner = @import("impl.zig").Device;
 
 impl: *Impl,
 inner: Inner,
@@ -24,7 +24,7 @@ const Self = @This();
 
 pub fn init(allocator: Allocator, config: Config) Error!Self {
     const impl = try Impl.get(null);
-    const inner = try impl.initDevice(allocator, config);
+    const inner = try Inner.init(impl.*, allocator, config);
     return .{
         .impl = impl,
         .inner = inner,
@@ -41,7 +41,7 @@ pub fn kind(self: Self) Kind {
 }
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(self.allocator);
+    self.inner.deinit(self.*, self.allocator);
     self.impl.unget();
     self.* = undefined;
 }

@@ -1,5 +1,5 @@
 const Device = @import("Device.zig");
-const Inner = @import("impl.zig").Sampler;
+const Inner = @import("Impl.zig").Sampler;
 const Error = @import("main.zig").Error;
 
 device: *Device,
@@ -68,7 +68,7 @@ pub fn init(device: *Device, config: Config) Error!Self {
     // TODO: Validation.
     return .{
         .device = device,
-        .inner = try device.inner.initSampler(device.allocator, config),
+        .inner = try Inner.init(device.*, device.allocator, config),
         .u_addressing = config.u_addressing,
         .v_addressing = config.v_addressing,
         .w_addressing = config.w_addressing,
@@ -83,6 +83,6 @@ pub fn init(device: *Device, config: Config) Error!Self {
 }
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(self.device.allocator, self.device.inner);
+    self.inner.deinit(self.*, self.device.allocator);
     self.* = undefined;
 }

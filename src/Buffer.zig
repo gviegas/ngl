@@ -1,5 +1,5 @@
 const Device = @import("Device.zig");
-const Inner = @import("impl.zig").Buffer;
+const Inner = @import("Impl.zig").Buffer;
 const Error = @import("main.zig").Error;
 
 device: *Device,
@@ -30,7 +30,7 @@ pub fn init(device: *Device, config: Config) Error!Self {
     // TODO: Validation.
     return .{
         .device = device,
-        .inner = try device.inner.initBuffer(device.allocator, config),
+        .inner = try Inner.init(device.*, device.allocator, config),
         .size = config.size,
         .visible = config.visible,
         .usage = config.usage,
@@ -38,6 +38,6 @@ pub fn init(device: *Device, config: Config) Error!Self {
 }
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(self.device.allocator, self.device.inner);
+    self.inner.deinit(self.*, self.device.allocator);
     self.* = undefined;
 }
