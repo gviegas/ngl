@@ -28,9 +28,9 @@ test "ngl" {
     });
     defer heap.deinit();
 
-    var buffer = try Buffer.init(&device, .{
+    var buffer = try Buffer.init(&heap, .{
+        .offset = 0,
         .size = 2048,
-        .visible = false,
         .usage = .{
             .copy_src = true,
             .storage = true,
@@ -38,7 +38,8 @@ test "ngl" {
     });
     defer buffer.deinit();
 
-    var texture = try Texture.init(&device, .{
+    var texture = try Texture.init(&heap, .{
+        .offset = 0,
         .dimension = .@"2d",
         .format = .rgba8_unorm,
         .width = 256,

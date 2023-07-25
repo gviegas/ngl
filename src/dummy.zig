@@ -58,7 +58,7 @@ const DummyHeap = struct {
 };
 
 const DummyBuffer = struct {
-    fn init(_: Device.Outer, _: Allocator, _: Buffer.Config) Error!Buffer {
+    fn init(_: Heap.Outer, _: Allocator, _: Buffer.Config) Error!Buffer {
         log.debug("Dummy Buffer initialized", .{});
         return .{ .ptr = undefined };
     }
@@ -69,7 +69,7 @@ const DummyBuffer = struct {
 };
 
 const DummyTexture = struct {
-    fn init(_: Device.Outer, _: Allocator, _: Texture.Config) Error!Texture {
+    fn init(_: Heap.Outer, _: Allocator, _: Texture.Config) Error!Texture {
         log.debug("Dummy Texture initialized", .{});
         return .{ .ptr = undefined };
     }

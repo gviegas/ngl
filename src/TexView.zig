@@ -38,7 +38,7 @@ pub fn init(texture: *Texture, config: Config) Error!Self {
     // TODO: Validation.
     return .{
         .texture = texture,
-        .inner = try Inner.init(texture.*, texture.device.allocator, config),
+        .inner = try Inner.init(texture.*, texture.heap.device.allocator, config),
         .dimension = config.dimension,
         .format = config.format,
         .plane = config.plane,
@@ -50,6 +50,6 @@ pub fn init(texture: *Texture, config: Config) Error!Self {
 }
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(self.*, self.texture.device.allocator);
+    self.inner.deinit(self.*, self.texture.heap.device.allocator);
     self.* = undefined;
 }

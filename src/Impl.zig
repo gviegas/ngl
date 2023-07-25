@@ -91,12 +91,12 @@ pub const Buffer = struct {
 
     ptr: *anyopaque,
 
-    pub fn init(device: Device.Outer, allocator: Allocator, config: Config) Error!Buffer {
-        return device.impl.vtable.buffer.init(device, allocator, config);
+    pub fn init(heap: Heap.Outer, allocator: Allocator, config: Config) Error!Buffer {
+        return heap.device.impl.vtable.buffer.init(heap, allocator, config);
     }
 
     pub fn deinit(self: *Buffer, buffer: Outer, allocator: Allocator) void {
-        buffer.device.impl.vtable.buffer.deinit(buffer, allocator);
+        buffer.heap.device.impl.vtable.buffer.deinit(buffer, allocator);
         self.* = undefined;
     }
 };
@@ -107,12 +107,12 @@ pub const Texture = struct {
 
     ptr: *anyopaque,
 
-    pub fn init(device: Device.Outer, allocator: Allocator, config: Config) Error!Texture {
-        return device.impl.vtable.texture.init(device, allocator, config);
+    pub fn init(heap: Heap.Outer, allocator: Allocator, config: Config) Error!Texture {
+        return heap.device.impl.vtable.texture.init(heap, allocator, config);
     }
 
     pub fn deinit(self: *Texture, texture: Outer, allocator: Allocator) void {
-        texture.device.impl.vtable.texture.deinit(texture, allocator);
+        texture.heap.device.impl.vtable.texture.deinit(texture, allocator);
         self.* = undefined;
     }
 };
@@ -124,11 +124,11 @@ pub const TexView = struct {
     ptr: *anyopaque,
 
     pub fn init(texture: Texture.Outer, allocator: Allocator, config: Config) Error!TexView {
-        return texture.device.impl.vtable.tex_view.init(texture, allocator, config);
+        return texture.heap.device.impl.vtable.tex_view.init(texture, allocator, config);
     }
 
     pub fn deinit(self: *TexView, tex_view: Outer, allocator: Allocator) void {
-        tex_view.texture.device.impl.vtable.tex_view.deinit(tex_view, allocator);
+        tex_view.texture.heap.device.impl.vtable.tex_view.deinit(tex_view, allocator);
         self.* = undefined;
     }
 };
@@ -165,12 +165,12 @@ pub const VTable = struct {
     },
 
     buffer: struct {
-        init: *const fn (Device.Outer, Allocator, Buffer.Config) Error!Buffer,
+        init: *const fn (Heap.Outer, Allocator, Buffer.Config) Error!Buffer,
         deinit: *const fn (Buffer.Outer, Allocator) void,
     },
 
     texture: struct {
-        init: *const fn (Device.Outer, Allocator, Texture.Config) Error!Texture,
+        init: *const fn (Heap.Outer, Allocator, Texture.Config) Error!Texture,
         deinit: *const fn (Texture.Outer, Allocator) void,
     },
 
