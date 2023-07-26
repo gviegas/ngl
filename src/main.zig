@@ -22,6 +22,10 @@ test "ngl" {
     var device = try Device.init(allocator, .{});
     defer device.deinit();
 
+    _ = device.isHighPerformance();
+    _ = device.isLowPower();
+    _ = device.isFallbackDevice();
+
     _ = try device.heapBufferPlacement(.{
         .offset = 0,
         .size = 16 << 20,
@@ -36,7 +40,10 @@ test "ngl" {
         .width = 2048,
         .height = 2048,
         .depth_or_layers = 16,
-        .usage = .{},
+        .usage = .{
+            .copy_dst = true,
+            .sampled = true,
+        },
     });
 
     var heap = try device.initHeap(.{
