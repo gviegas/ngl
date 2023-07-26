@@ -1,5 +1,6 @@
 const Heap = @import("Heap.zig");
 const Inner = @import("Impl.zig").Texture;
+const TexView = @import("TexView.zig");
 const Error = @import("main.zig").Error;
 
 heap: *Heap,
@@ -48,24 +49,22 @@ pub const Config = struct {
 
 const Self = @This();
 
-pub fn init(heap: *Heap, config: Config) Error!Self {
-    // TODO: Validation.
-    return .{
-        .heap = heap,
-        .inner = try Inner.init(heap.*, heap.device.allocator, config),
-        .offset = config.offset,
-        .dimension = config.dimension,
-        .format = config.format,
-        .width = config.width,
-        .height = config.height,
-        .depth_or_layers = config.depth_or_layers,
-        .levels = config.levels,
-        .samples = config.samples,
-        .usage = config.usage,
-    };
-}
-
 pub fn deinit(self: *Self) void {
     self.inner.deinit(self.*, self.heap.device.allocator);
     self.* = undefined;
+}
+
+pub fn initView(self: *Self, config: TexView.Config) Error!TexView {
+    // TODO: Validation.
+    return .{
+        .texture = self,
+        .inner = try Inner.initView(self.*, self.heap.device.allocator, config),
+        .dimension = config.dimension,
+        .format = config.format,
+        .plane = config.plane,
+        .first_level = config.first_level,
+        .levels = config.levels,
+        .first_layer = config.first_layer,
+        .layers = config.layers,
+    };
 }

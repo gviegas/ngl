@@ -22,13 +22,13 @@ test "ngl" {
     var device = try Device.init(allocator, .{});
     defer device.deinit();
 
-    var heap = try Heap.init(&device, .{
+    var heap = try device.initHeap(.{
         .size = 2 << 20,
         .cpu_access = .none,
     });
     defer heap.deinit();
 
-    var buffer = try Buffer.init(&heap, .{
+    var buffer = try heap.initBuffer(.{
         .offset = 0,
         .size = 2048,
         .usage = .{
@@ -38,7 +38,7 @@ test "ngl" {
     });
     defer buffer.deinit();
 
-    var texture = try Texture.init(&heap, .{
+    var texture = try heap.initTexture(.{
         .offset = 0,
         .dimension = .@"2d",
         .format = .rgba8_unorm,
@@ -54,7 +54,7 @@ test "ngl" {
     });
     defer texture.deinit();
 
-    var tex_view = try TexView.init(&texture, .{
+    var tex_view = try texture.initView(.{
         .dimension = .@"2d",
         .format = texture.format,
         .plane = 0,
@@ -65,7 +65,7 @@ test "ngl" {
     });
     defer tex_view.deinit();
 
-    var sampler = try Sampler.init(&device, .{
+    var sampler = try device.initSampler(.{
         .u_addressing = .{ .clamp_to_border = .transparent_black },
         .v_addressing = .repeat,
         .min_filter = .linear,

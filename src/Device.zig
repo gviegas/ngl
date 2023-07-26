@@ -3,6 +3,8 @@ const Allocator = std.mem.Allocator;
 
 const Impl = @import("Impl.zig");
 const Inner = Impl.Device;
+const Heap = @import("Heap.zig");
+const Sampler = @import("Sampler.zig");
 const Error = @import("main.zig").Error;
 
 impl: *Impl,
@@ -24,7 +26,7 @@ const Self = @This();
 
 pub fn init(allocator: Allocator, config: Config) Error!Self {
     const impl = try Impl.get(null);
-    const inner = try Inner.init(impl.*, allocator, config);
+    const inner = try impl.initDevice(allocator, config);
     return .{
         .impl = impl,
         .inner = inner,
@@ -44,4 +46,32 @@ pub fn deinit(self: *Self) void {
     self.inner.deinit(self.*, self.allocator);
     self.impl.unget();
     self.* = undefined;
+}
+
+pub fn initHeap(self: *Self, config: Heap.Config) Error!Heap {
+    // TODO: Validation.
+    return .{
+        .device = self,
+        .inner = try Inner.initHeap(self.*, self.allocator, config),
+        .size = config.size,
+        .cpu_access = config.cpu_access,
+    };
+}
+
+pub fn initSampler(self: *Self, config: Sampler.Config) Error!Sampler {
+    // TODO: Validation.
+    return .{
+        .device = self,
+        .inner = try Inner.initSampler(self.*, self.allocator, config),
+        .u_addressing = config.u_addressing,
+        .v_addressing = config.v_addressing,
+        .w_addressing = config.w_addressing,
+        .mag_filter = config.mag_filter,
+        .min_filter = config.min_filter,
+        .mip_filter = config.mip_filter,
+        .lod_min_clamp = config.lod_min_clamp,
+        .lod_max_clamp = config.lod_max_clamp,
+        .max_anisotropy = config.max_anisotropy,
+        .compare = config.compare,
+    };
 }

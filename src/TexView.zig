@@ -34,21 +34,6 @@ pub const Config = struct {
 
 const Self = @This();
 
-pub fn init(texture: *Texture, config: Config) Error!Self {
-    // TODO: Validation.
-    return .{
-        .texture = texture,
-        .inner = try Inner.init(texture.*, texture.heap.device.allocator, config),
-        .dimension = config.dimension,
-        .format = config.format,
-        .plane = config.plane,
-        .first_level = config.first_level,
-        .levels = config.levels,
-        .first_layer = config.first_layer,
-        .layers = config.layers,
-    };
-}
-
 pub fn deinit(self: *Self) void {
     self.inner.deinit(self.*, self.texture.heap.device.allocator);
     self.* = undefined;

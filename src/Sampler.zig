@@ -64,24 +64,6 @@ pub const Config = struct {
 
 const Self = @This();
 
-pub fn init(device: *Device, config: Config) Error!Self {
-    // TODO: Validation.
-    return .{
-        .device = device,
-        .inner = try Inner.init(device.*, device.allocator, config),
-        .u_addressing = config.u_addressing,
-        .v_addressing = config.v_addressing,
-        .w_addressing = config.w_addressing,
-        .mag_filter = config.mag_filter,
-        .min_filter = config.min_filter,
-        .mip_filter = config.mip_filter,
-        .lod_min_clamp = config.lod_min_clamp,
-        .lod_max_clamp = config.lod_max_clamp,
-        .max_anisotropy = config.max_anisotropy,
-        .compare = config.compare,
-    };
-}
-
 pub fn deinit(self: *Self) void {
     self.inner.deinit(self.*, self.device.allocator);
     self.* = undefined;

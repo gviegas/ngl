@@ -26,17 +26,6 @@ pub const Config = struct {
 
 const Self = @This();
 
-pub fn init(heap: *Heap, config: Config) Error!Self {
-    // TODO: Validation.
-    return .{
-        .heap = heap,
-        .inner = try Inner.init(heap.*, heap.device.allocator, config),
-        .offset = config.offset,
-        .size = config.size,
-        .usage = config.usage,
-    };
-}
-
 pub fn deinit(self: *Self) void {
     self.inner.deinit(self.*, self.heap.device.allocator);
     self.* = undefined;

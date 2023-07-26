@@ -51,6 +51,10 @@ pub fn unget(self: *Impl) void {
     self.* = undefined;
 }
 
+pub fn initDevice(self: Impl, allocator: Allocator, config: Device.Config) Error!Device {
+    return self.vtable.impl.initDevice(self, allocator, config);
+}
+
 pub const Device = struct {
     pub const Outer = @import("Device.zig");
     pub const Kind = Outer.Kind;
@@ -59,13 +63,17 @@ pub const Device = struct {
     kind: Kind,
     ptr: *anyopaque,
 
-    pub fn init(impl: Impl, allocator: Allocator, config: Config) Error!Device {
-        return impl.vtable.device.init(impl, allocator, config);
-    }
-
     pub fn deinit(self: *Device, device: Outer, allocator: Allocator) void {
         device.impl.vtable.device.deinit(device, allocator);
         self.* = undefined;
+    }
+
+    pub fn initHeap(device: Outer, allocator: Allocator, config: Heap.Config) Error!Heap {
+        return device.impl.vtable.device.initHeap(device, allocator, config);
+    }
+
+    pub fn initSampler(device: Outer, allocator: Allocator, config: Sampler.Config) Error!Sampler {
+        return device.impl.vtable.device.initSampler(device, allocator, config);
     }
 };
 
@@ -75,13 +83,17 @@ pub const Heap = struct {
 
     ptr: *anyopaque,
 
-    pub fn init(device: Device.Outer, allocator: Allocator, config: Config) Error!Heap {
-        return device.impl.vtable.heap.init(device, allocator, config);
-    }
-
     pub fn deinit(self: *Heap, heap: Outer, allocator: Allocator) void {
         heap.device.impl.vtable.heap.deinit(heap, allocator);
         self.* = undefined;
+    }
+
+    pub fn initBuffer(heap: Outer, allocator: Allocator, config: Buffer.Config) Error!Buffer {
+        return heap.device.impl.vtable.heap.initBuffer(heap, allocator, config);
+    }
+
+    pub fn initTexture(heap: Outer, allocator: Allocator, config: Texture.Config) Error!Texture {
+        return heap.device.impl.vtable.heap.initTexture(heap, allocator, config);
     }
 };
 
@@ -90,10 +102,6 @@ pub const Buffer = struct {
     pub const Config = Outer.Config;
 
     ptr: *anyopaque,
-
-    pub fn init(heap: Heap.Outer, allocator: Allocator, config: Config) Error!Buffer {
-        return heap.device.impl.vtable.buffer.init(heap, allocator, config);
-    }
 
     pub fn deinit(self: *Buffer, buffer: Outer, allocator: Allocator) void {
         buffer.heap.device.impl.vtable.buffer.deinit(buffer, allocator);
@@ -107,13 +115,13 @@ pub const Texture = struct {
 
     ptr: *anyopaque,
 
-    pub fn init(heap: Heap.Outer, allocator: Allocator, config: Config) Error!Texture {
-        return heap.device.impl.vtable.texture.init(heap, allocator, config);
-    }
-
     pub fn deinit(self: *Texture, texture: Outer, allocator: Allocator) void {
         texture.heap.device.impl.vtable.texture.deinit(texture, allocator);
         self.* = undefined;
+    }
+
+    pub fn initView(texture: Outer, allocator: Allocator, config: TexView.Config) Error!TexView {
+        return texture.heap.device.impl.vtable.texture.initView(texture, allocator, config);
     }
 };
 
@@ -122,10 +130,6 @@ pub const TexView = struct {
     pub const Config = Outer.Config;
 
     ptr: *anyopaque,
-
-    pub fn init(texture: Texture.Outer, allocator: Allocator, config: Config) Error!TexView {
-        return texture.heap.device.impl.vtable.tex_view.init(texture, allocator, config);
-    }
 
     pub fn deinit(self: *TexView, tex_view: Outer, allocator: Allocator) void {
         tex_view.texture.heap.device.impl.vtable.tex_view.deinit(tex_view, allocator);
@@ -139,10 +143,6 @@ pub const Sampler = struct {
 
     ptr: *anyopaque,
 
-    pub fn init(device: Device.Outer, allocator: Allocator, config: Config) Error!Sampler {
-        return device.impl.vtable.sampler.init(device, allocator, config);
-    }
-
     pub fn deinit(self: *Sampler, sampler: Outer, allocator: Allocator) void {
         sampler.device.impl.vtable.sampler.deinit(sampler, allocator);
         self.* = undefined;
@@ -152,35 +152,35 @@ pub const Sampler = struct {
 pub const VTable = struct {
     impl: struct {
         deinit: *const fn (*anyopaque) void,
+        initDevice: *const fn (Impl, Allocator, Device.Config) Error!Device,
     },
 
     device: struct {
-        init: *const fn (Impl, Allocator, Device.Config) Error!Device,
         deinit: *const fn (Device.Outer, Allocator) void,
+        initHeap: *const fn (Device.Outer, Allocator, Heap.Config) Error!Heap,
+        initSampler: *const fn (Device.Outer, Allocator, Sampler.Config) Error!Sampler,
     },
 
     heap: struct {
-        init: *const fn (Device.Outer, Allocator, Heap.Config) Error!Heap,
         deinit: *const fn (Heap.Outer, Allocator) void,
+        initBuffer: *const fn (Heap.Outer, Allocator, Buffer.Config) Error!Buffer,
+        initTexture: *const fn (Heap.Outer, Allocator, Texture.Config) Error!Texture,
     },
 
     buffer: struct {
-        init: *const fn (Heap.Outer, Allocator, Buffer.Config) Error!Buffer,
         deinit: *const fn (Buffer.Outer, Allocator) void,
     },
 
     texture: struct {
-        init: *const fn (Heap.Outer, Allocator, Texture.Config) Error!Texture,
         deinit: *const fn (Texture.Outer, Allocator) void,
+        initView: *const fn (Texture.Outer, Allocator, TexView.Config) Error!TexView,
     },
 
     tex_view: struct {
-        init: *const fn (Texture.Outer, Allocator, TexView.Config) Error!TexView,
         deinit: *const fn (TexView.Outer, Allocator) void,
     },
 
     sampler: struct {
-        init: *const fn (Device.Outer, Allocator, Sampler.Config) Error!Sampler,
         deinit: *const fn (Sampler.Outer, Allocator) void,
     },
 };
