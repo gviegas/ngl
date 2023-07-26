@@ -57,10 +57,11 @@ pub fn initDevice(self: Impl, allocator: Allocator, config: Device.Config) Error
 
 pub const Device = struct {
     pub const Outer = @import("Device.zig");
-    pub const Kind = Outer.Kind;
     pub const Config = Outer.Config;
 
-    kind: Kind,
+    high_performance: bool,
+    low_power: bool,
+    fallback: bool,
     ptr: *anyopaque,
 
     pub fn deinit(self: *Device, device: Outer, allocator: Allocator) void {

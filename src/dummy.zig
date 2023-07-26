@@ -21,10 +21,7 @@ pub const DummyImpl = struct {
         };
     }
     const vtable = Impl.VTable{
-        .impl = .{
-            .deinit = deinit,
-            .initDevice = initDevice,
-        },
+        .impl = .{ .deinit = deinit, .initDevice = initDevice },
         .device = .{
             .deinit = DummyDevice.deinit,
             .initHeap = DummyDevice.initHeap,
@@ -35,19 +32,10 @@ pub const DummyImpl = struct {
             .initBuffer = DummyHeap.initBuffer,
             .initTexture = DummyHeap.initTexture,
         },
-        .buffer = .{
-            .deinit = DummyBuffer.deinit,
-        },
-        .texture = .{
-            .deinit = DummyTexture.deinit,
-            .initView = DummyTexture.initView,
-        },
-        .tex_view = .{
-            .deinit = DummyTexView.deinit,
-        },
-        .sampler = .{
-            .deinit = DummySampler.deinit,
-        },
+        .buffer = .{ .deinit = DummyBuffer.deinit },
+        .texture = .{ .deinit = DummyTexture.deinit, .initView = DummyTexture.initView },
+        .tex_view = .{ .deinit = DummyTexView.deinit },
+        .sampler = .{ .deinit = DummySampler.deinit },
     };
 
     fn deinit(_: *anyopaque) void {
@@ -56,7 +44,12 @@ pub const DummyImpl = struct {
 
     fn initDevice(_: Impl, _: Allocator, _: Device.Config) Error!Device {
         log.debug("Dummy Device initialized", .{});
-        return .{ .kind = .debug, .ptr = undefined };
+        return .{
+            .high_performance = false,
+            .low_power = false,
+            .fallback = false,
+            .ptr = undefined,
+        };
     }
 };
 

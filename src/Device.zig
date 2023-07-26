@@ -12,14 +12,13 @@ inner: Inner,
 allocator: Allocator,
 
 pub const Config = struct {
-    preferred_kind: Kind = .discrete,
+    power_preference: PowerPreference = .high_performance,
+    force_fallback_device: bool = false,
 };
 
-pub const Kind = enum {
-    discrete,
-    unified,
-    software,
-    debug,
+pub const PowerPreference = enum {
+    high_performance,
+    low_power,
 };
 
 const Self = @This();
@@ -38,8 +37,16 @@ pub fn initAll(_: Allocator) Error![]Self {
     @compileError("TODO");
 }
 
-pub fn kind(self: Self) Kind {
-    return self.inner.kind;
+pub fn isHighPerformance(self: Self) bool {
+    return self.inner.high_performance;
+}
+
+pub fn isLowPower(self: Self) bool {
+    return self.inner.low_power;
+}
+
+pub fn isFallbackDevice(self: Self) bool {
+    return self.inner.fallback;
 }
 
 pub fn deinit(self: *Self) void {
