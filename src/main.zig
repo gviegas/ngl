@@ -22,6 +22,23 @@ test "ngl" {
     var device = try Device.init(allocator, .{});
     defer device.deinit();
 
+    _ = try device.heapBufferPlacement(.{
+        .offset = 0,
+        .size = 16 << 20,
+        .usage = .{
+            .copy_src = true,
+        },
+    });
+    _ = try device.heapTexturePlacement(.{
+        .offset = 0,
+        .dimension = .@"2d",
+        .format = .rgba8_unorm,
+        .width = 2048,
+        .height = 2048,
+        .depth_or_layers = 16,
+        .usage = .{},
+    });
+
     var heap = try device.initHeap(.{
         .size = 2 << 20,
         .cpu_access = .none,

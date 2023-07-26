@@ -24,6 +24,8 @@ pub const DummyImpl = struct {
         .impl = .{ .deinit = deinit, .initDevice = initDevice },
         .device = .{
             .deinit = DummyDevice.deinit,
+            .heapBufferPlacement = DummyDevice.heapBufferPlacement,
+            .heapTexturePlacement = DummyDevice.heapTexturePlacement,
             .initHeap = DummyDevice.initHeap,
             .initSampler = DummyDevice.initSampler,
         },
@@ -56,6 +58,26 @@ pub const DummyImpl = struct {
 const DummyDevice = struct {
     fn deinit(_: Device.Outer, _: Allocator) void {
         log.debug("Dummy Device deinitialized", .{});
+    }
+
+    fn heapBufferPlacement(_: Device.Outer, _: Buffer.Config) Error!Device.PlacementInfo {
+        log.debug("Dummy Device's heapBufferPlacement called", .{});
+        return .{
+            .size = ~@as(u64, (4 << 20) - 1),
+            .alignment = 4 << 20,
+            .write_only_heap = false,
+            .read_only_heap = false,
+        };
+    }
+
+    fn heapTexturePlacement(_: Device.Outer, _: Texture.Config) Error!Device.PlacementInfo {
+        log.debug("Dummy Device's heapTexturePlacement called", .{});
+        return .{
+            .size = ~@as(u64, (4 << 20) - 1),
+            .alignment = 4 << 20,
+            .write_only_heap = false,
+            .read_only_heap = false,
+        };
     }
 
     fn initHeap(_: Device.Outer, _: Allocator, _: Heap.Config) Error!Heap {

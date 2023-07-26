@@ -5,6 +5,8 @@ const Impl = @import("Impl.zig");
 const Inner = Impl.Device;
 const Heap = @import("Heap.zig");
 const Sampler = @import("Sampler.zig");
+const Buffer = @import("Buffer.zig");
+const Texture = @import("Texture.zig");
 const Error = @import("main.zig").Error;
 
 impl: *Impl,
@@ -54,6 +56,21 @@ pub fn deinit(self: *Self) void {
     self.inner.deinit(self.*, self.allocator);
     self.impl.unget();
     self.* = undefined;
+}
+
+pub const PlacementInfo = struct {
+    size: u64,
+    alignment: u64,
+    write_only_heap: bool,
+    read_only_heap: bool,
+};
+
+pub fn heapBufferPlacement(self: Self, config: Buffer.Config) Error!PlacementInfo {
+    return Inner.heapBufferPlacement(self, config);
+}
+
+pub fn heapTexturePlacement(self: Self, config: Texture.Config) Error!PlacementInfo {
+    return Inner.heapTexturePlacement(self, config);
 }
 
 pub fn initHeap(self: *Self, config: Heap.Config) Error!Heap {

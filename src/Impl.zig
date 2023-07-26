@@ -58,6 +58,7 @@ pub fn initDevice(self: Impl, allocator: Allocator, config: Device.Config) Error
 pub const Device = struct {
     pub const Outer = @import("Device.zig");
     pub const Config = Outer.Config;
+    pub const PlacementInfo = Outer.PlacementInfo;
 
     high_performance: bool,
     low_power: bool,
@@ -67,6 +68,14 @@ pub const Device = struct {
     pub fn deinit(self: *Device, device: Outer, allocator: Allocator) void {
         device.impl.vtable.device.deinit(device, allocator);
         self.* = undefined;
+    }
+
+    pub fn heapBufferPlacement(device: Outer, config: Buffer.Config) Error!PlacementInfo {
+        return device.impl.vtable.device.heapBufferPlacement(device, config);
+    }
+
+    pub fn heapTexturePlacement(device: Outer, config: Texture.Config) Error!PlacementInfo {
+        return device.impl.vtable.device.heapTexturePlacement(device, config);
     }
 
     pub fn initHeap(device: Outer, allocator: Allocator, config: Heap.Config) Error!Heap {
@@ -158,6 +167,8 @@ pub const VTable = struct {
 
     device: struct {
         deinit: *const fn (Device.Outer, Allocator) void,
+        heapBufferPlacement: *const fn (Device.Outer, Buffer.Config) Error!Device.PlacementInfo,
+        heapTexturePlacement: *const fn (Device.Outer, Texture.Config) Error!Device.PlacementInfo,
         initHeap: *const fn (Device.Outer, Allocator, Heap.Config) Error!Heap,
         initSampler: *const fn (Device.Outer, Allocator, Sampler.Config) Error!Sampler,
     },
