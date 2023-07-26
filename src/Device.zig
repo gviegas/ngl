@@ -25,6 +25,7 @@ const Self = @This();
 
 pub fn init(allocator: Allocator, config: Config) Error!Self {
     const impl = try Impl.get(null);
+    errdefer impl.unget();
     const inner = try impl.initDevice(allocator, config);
     return .{
         .impl = impl,
