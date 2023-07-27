@@ -11,6 +11,7 @@ const TexView = Impl.TexView;
 const Sampler = Impl.Sampler;
 const DescLayout = Impl.DescLayout;
 const DescPool = Impl.DescPool;
+const DescSet = Impl.DescSet;
 const Error = @import("main.zig").Error;
 
 pub const DummyImpl = struct {
@@ -44,7 +45,8 @@ pub const DummyImpl = struct {
         .tex_view = .{ .deinit = DummyTexView.deinit },
         .sampler = .{ .deinit = DummySampler.deinit },
         .desc_layout = .{ .deinit = DummyDescLayout.deinit },
-        .desc_pool = .{ .deinit = DummyDescPool.deinit },
+        .desc_pool = .{ .deinit = DummyDescPool.deinit, .allocSets = DummyDescPool.allocSets },
+        .desc_set = .{ .free = DummyDescSet.free },
     };
 
     fn deinit(_: *anyopaque) void {
@@ -162,5 +164,18 @@ const DummyDescLayout = struct {
 const DummyDescPool = struct {
     fn deinit(_: DescPool.Outer) void {
         log.debug("Dummy DescPool deinitialized", .{});
+    }
+
+    fn allocSets(_: DescPool.Outer, dest: []DescSet.Outer, _: []const DescSet.Config) Error!void {
+        log.debug("Dummy DescSet(s) allocated", .{});
+        for (dest) |*d| {
+            d.inner = .{ .ptr = undefined };
+        }
+    }
+};
+
+const DummyDescSet = struct {
+    fn free(_: DescSet.Outer) void {
+        log.debug("Dummy DescSet freed", .{});
     }
 };

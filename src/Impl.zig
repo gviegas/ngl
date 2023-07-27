@@ -190,6 +190,26 @@ pub const DescPool = struct {
         desc_pool.impl().vtable.desc_pool.deinit(desc_pool);
         self.* = undefined;
     }
+
+    pub fn allocSets(
+        desc_pool: Outer,
+        dest: []DescSet.Outer,
+        configs: []const DescSet.Config,
+    ) Error!void {
+        return desc_pool.impl().vtable.desc_pool.allocSets(desc_pool, dest, configs);
+    }
+};
+
+pub const DescSet = struct {
+    pub const Outer = @import("DescSet.zig");
+    pub const Config = Outer.Config;
+
+    ptr: *anyopaque,
+
+    pub fn free(self: *DescSet, desc_set: Outer) void {
+        desc_set.impl().vtable.desc_set.free(desc_set);
+        self.* = undefined;
+    }
 };
 
 pub const VTable = struct {
@@ -237,5 +257,10 @@ pub const VTable = struct {
 
     desc_pool: struct {
         deinit: *const fn (DescPool.Outer) void,
+        allocSets: *const fn (DescPool.Outer, []DescSet.Outer, []const DescSet.Config) Error!void,
+    },
+
+    desc_set: struct {
+        free: *const fn (DescSet.Outer) void,
     },
 };

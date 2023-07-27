@@ -1,6 +1,10 @@
+const Allocator = @import("std").mem.Allocator;
+
 const Device = @import("Device.zig");
 const Impl = @import("Impl.zig");
 const Inner = Impl.DescPool;
+const DescSet = @import("DescSet.zig");
+const Error = @import("main.zig").Error;
 
 device: *Device,
 inner: Inner,
@@ -27,6 +31,28 @@ const Self = @This();
 pub fn deinit(self: *Self) void {
     self.inner.deinit(self.*);
     self.* = undefined;
+}
+
+pub fn allocSets(
+    self: *Self,
+    allocator: Allocator,
+    configs: []const DescSet.Config,
+) Error![]DescSet {
+    // TODO: Validation.
+    const n = blk: {
+        var n: u32 = 0;
+        for (configs) |config| {
+            n += config.count;
+        }
+        break :blk n;
+    };
+    var sets = try allocator.alloc(DescSet, n);
+    errdefer allocator.free(sets);
+    for (sets) |*set| {
+        set.pool = self;
+    }
+    try Inner.allocSets(self.*, sets, configs);
+    return sets;
 }
 
 pub fn impl(self: Self) *const Impl {

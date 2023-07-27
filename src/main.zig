@@ -9,6 +9,7 @@ pub const TexView = @import("TexView.zig");
 pub const Sampler = @import("Sampler.zig");
 pub const DescLayout = @import("DescLayout.zig");
 pub const DescPool = @import("DescPool.zig");
+pub const DescSet = @import("DescSet.zig");
 
 pub const Error = error{
     DeviceLost,
@@ -141,4 +142,18 @@ test "ngl" {
         },
     });
     defer desc_pool.deinit();
+
+    var desc_sets = try desc_pool.allocSets(allocator, &[2]DescSet.Config{ .{
+        .layout = &desc_layout,
+        .count = 15,
+    }, .{
+        .layout = &desc_layout,
+        .count = 1,
+    } });
+    defer {
+        for (desc_sets) |*set| {
+            set.free();
+        }
+        allocator.free(desc_sets);
+    }
 }
