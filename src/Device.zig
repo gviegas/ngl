@@ -5,6 +5,7 @@ const Impl = @import("Impl.zig");
 const Inner = Impl.Device;
 const Heap = @import("Heap.zig");
 const Sampler = @import("Sampler.zig");
+const DescLayout = @import("DescLayout.zig");
 const Buffer = @import("Buffer.zig");
 const Texture = @import("Texture.zig");
 const Error = @import("main.zig").Error;
@@ -96,5 +97,16 @@ pub fn initSampler(self: *Self, config: Sampler.Config) Error!Sampler {
         .lod_max_clamp = config.lod_max_clamp,
         .max_anisotropy = config.max_anisotropy,
         .compare = config.compare,
+    };
+}
+
+pub fn initDescLayout(self: *Self, config: DescLayout.Config) Error!DescLayout {
+    // TODO: Validation.
+    const entries = try self.impl.allocator.dupe(DescLayout.Entry, config.entries);
+    errdefer self.impl.allocator.free(entries);
+    return .{
+        .device = self,
+        .inner = try Inner.initDescLayout(self.*, config),
+        .entries = entries,
     };
 }

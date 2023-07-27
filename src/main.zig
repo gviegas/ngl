@@ -7,6 +7,7 @@ pub const Buffer = @import("Buffer.zig");
 pub const Texture = @import("Texture.zig");
 pub const TexView = @import("TexView.zig");
 pub const Sampler = @import("Sampler.zig");
+pub const DescLayout = @import("DescLayout.zig");
 
 pub const Error = error{
     DeviceLost,
@@ -98,4 +99,34 @@ test "ngl" {
         .compare = null,
     });
     defer sampler.deinit();
+
+    var desc_layout = try device.initDescLayout(.{
+        .entries = &[4]DescLayout.Entry{
+            .{
+                .binding = 2,
+                .descriptor = .dynamic_uniform_buffer,
+                .count = 1,
+                .visibility = .{ .vertex = true, .fragment = true },
+            },
+            .{
+                .binding = 0,
+                .descriptor = .sampled_texture,
+                .count = 3,
+                .visibility = .{ .fragment = true },
+            },
+            .{
+                .binding = 1,
+                .descriptor = .sampler,
+                .count = 2,
+                .visibility = .{ .fragment = true },
+            },
+            .{
+                .binding = 3,
+                .descriptor = .storage_texture,
+                .count = 1,
+                .visibility = .{ .compute = true },
+            },
+        },
+    });
+    defer desc_layout.deinit();
 }

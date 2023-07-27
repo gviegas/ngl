@@ -9,6 +9,7 @@ const Buffer = Impl.Buffer;
 const Texture = Impl.Texture;
 const TexView = Impl.TexView;
 const Sampler = Impl.Sampler;
+const DescLayout = Impl.DescLayout;
 const Error = @import("main.zig").Error;
 
 pub const DummyImpl = struct {
@@ -29,6 +30,7 @@ pub const DummyImpl = struct {
             .heapTexturePlacement = DummyDevice.heapTexturePlacement,
             .initHeap = DummyDevice.initHeap,
             .initSampler = DummyDevice.initSampler,
+            .initDescLayout = DummyDevice.initDescLayout,
         },
         .heap = .{
             .deinit = DummyHeap.deinit,
@@ -39,6 +41,7 @@ pub const DummyImpl = struct {
         .texture = .{ .deinit = DummyTexture.deinit, .initView = DummyTexture.initView },
         .tex_view = .{ .deinit = DummyTexView.deinit },
         .sampler = .{ .deinit = DummySampler.deinit },
+        .desc_layout = .{ .deinit = DummyDescLayout.deinit },
     };
 
     fn deinit(_: *anyopaque) void {
@@ -90,6 +93,11 @@ const DummyDevice = struct {
         log.debug("Dummy Sampler initialized", .{});
         return .{ .ptr = undefined };
     }
+
+    fn initDescLayout(_: Device.Outer, _: DescLayout.Config) Error!DescLayout {
+        log.debug("Dummy DescLayout initialized", .{});
+        return .{ .ptr = undefined };
+    }
 };
 
 const DummyHeap = struct {
@@ -134,5 +142,11 @@ const DummyTexView = struct {
 const DummySampler = struct {
     fn deinit(_: Sampler.Outer) void {
         log.debug("Dummy Sampler deinitialized", .{});
+    }
+};
+
+const DummyDescLayout = struct {
+    fn deinit(_: DescLayout.Outer) void {
+        log.debug("Dummy DescLayout deinitialized", .{});
     }
 };

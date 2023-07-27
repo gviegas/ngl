@@ -86,6 +86,10 @@ pub const Device = struct {
     pub fn initSampler(device: Outer, config: Sampler.Config) Error!Sampler {
         return device.impl.vtable.device.initSampler(device, config);
     }
+
+    pub fn initDescLayout(device: Outer, config: DescLayout.Config) Error!DescLayout {
+        return device.impl.vtable.device.initDescLayout(device, config);
+    }
 };
 
 pub const Heap = struct {
@@ -160,6 +164,18 @@ pub const Sampler = struct {
     }
 };
 
+pub const DescLayout = struct {
+    pub const Outer = @import("DescLayout.zig");
+    pub const Config = Outer.Config;
+
+    ptr: *anyopaque,
+
+    pub fn deinit(self: *DescLayout, desc_layout: Outer) void {
+        desc_layout.impl().vtable.desc_layout.deinit(desc_layout);
+        self.* = undefined;
+    }
+};
+
 pub const VTable = struct {
     impl: struct {
         deinit: *const fn (*anyopaque) void,
@@ -172,6 +188,7 @@ pub const VTable = struct {
         heapTexturePlacement: *const fn (Device.Outer, Texture.Config) Error!Device.PlacementInfo,
         initHeap: *const fn (Device.Outer, Heap.Config) Error!Heap,
         initSampler: *const fn (Device.Outer, Sampler.Config) Error!Sampler,
+        initDescLayout: *const fn (Device.Outer, DescLayout.Config) Error!DescLayout,
     },
 
     heap: struct {
@@ -195,5 +212,9 @@ pub const VTable = struct {
 
     sampler: struct {
         deinit: *const fn (Sampler.Outer) void,
+    },
+
+    desc_layout: struct {
+        deinit: *const fn (DescLayout.Outer) void,
     },
 };
