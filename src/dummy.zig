@@ -12,12 +12,13 @@ const Sampler = Impl.Sampler;
 const Error = @import("main.zig").Error;
 
 pub const DummyImpl = struct {
-    pub fn init() Impl {
+    pub fn init(allocator: Allocator) Impl {
         log.debug("Dummy Impl initialized", .{});
         return .{
             .name = .dummy,
             .ptr = undefined,
             .vtable = &vtable,
+            .allocator = allocator,
         };
     }
     const vtable = Impl.VTable{
@@ -44,7 +45,7 @@ pub const DummyImpl = struct {
         log.debug("Dummy Impl deinitialized", .{});
     }
 
-    fn initDevice(_: Impl, _: Allocator, _: Device.Config) Error!Device {
+    fn initDevice(_: Impl, _: Device.Config) Error!Device {
         log.debug("Dummy Device initialized", .{});
         return .{
             .high_performance = false,
@@ -56,7 +57,7 @@ pub const DummyImpl = struct {
 };
 
 const DummyDevice = struct {
-    fn deinit(_: Device.Outer, _: Allocator) void {
+    fn deinit(_: Device.Outer) void {
         log.debug("Dummy Device deinitialized", .{});
     }
 
@@ -80,58 +81,58 @@ const DummyDevice = struct {
         };
     }
 
-    fn initHeap(_: Device.Outer, _: Allocator, _: Heap.Config) Error!Heap {
+    fn initHeap(_: Device.Outer, _: Heap.Config) Error!Heap {
         log.debug("Dummy Heap initialized", .{});
         return .{ .ptr = undefined };
     }
 
-    fn initSampler(_: Device.Outer, _: Allocator, _: Sampler.Config) Error!Sampler {
+    fn initSampler(_: Device.Outer, _: Sampler.Config) Error!Sampler {
         log.debug("Dummy Sampler initialized", .{});
         return .{ .ptr = undefined };
     }
 };
 
 const DummyHeap = struct {
-    fn deinit(_: Heap.Outer, _: Allocator) void {
+    fn deinit(_: Heap.Outer) void {
         log.debug("Dummy Heap deinitialized", .{});
     }
 
-    fn initBuffer(_: Heap.Outer, _: Allocator, _: Buffer.Config) Error!Buffer {
+    fn initBuffer(_: Heap.Outer, _: Buffer.Config) Error!Buffer {
         log.debug("Dummy Buffer initialized", .{});
         return .{ .ptr = undefined };
     }
 
-    fn initTexture(_: Heap.Outer, _: Allocator, _: Texture.Config) Error!Texture {
+    fn initTexture(_: Heap.Outer, _: Texture.Config) Error!Texture {
         log.debug("Dummy Texture initialized", .{});
         return .{ .ptr = undefined };
     }
 };
 
 const DummyBuffer = struct {
-    fn deinit(_: Buffer.Outer, _: Allocator) void {
+    fn deinit(_: Buffer.Outer) void {
         log.debug("Dummy Buffer deinitialized", .{});
     }
 };
 
 const DummyTexture = struct {
-    fn deinit(_: Texture.Outer, _: Allocator) void {
+    fn deinit(_: Texture.Outer) void {
         log.debug("Dummy Texture deinitialized", .{});
     }
 
-    fn initView(_: Texture.Outer, _: Allocator, _: TexView.Config) Error!TexView {
+    fn initView(_: Texture.Outer, _: TexView.Config) Error!TexView {
         log.debug("Dummy TexView initialized", .{});
         return .{ .ptr = undefined };
     }
 };
 
 const DummyTexView = struct {
-    fn deinit(_: TexView.Outer, _: Allocator) void {
+    fn deinit(_: TexView.Outer) void {
         log.debug("Dummy TexView deinitialized", .{});
     }
 };
 
 const DummySampler = struct {
-    fn deinit(_: Sampler.Outer, _: Allocator) void {
+    fn deinit(_: Sampler.Outer) void {
         log.debug("Dummy Sampler deinitialized", .{});
     }
 };

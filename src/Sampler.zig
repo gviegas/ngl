@@ -1,5 +1,6 @@
 const Device = @import("Device.zig");
-const Inner = @import("Impl.zig").Sampler;
+const Impl = @import("Impl.zig");
+const Inner = Impl.Sampler;
 const Error = @import("main.zig").Error;
 
 device: *Device,
@@ -65,6 +66,10 @@ pub const Config = struct {
 const Self = @This();
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(self.*, self.device.allocator);
+    self.inner.deinit(self.*);
     self.* = undefined;
+}
+
+pub fn impl(self: Self) *const Impl {
+    return self.device.impl;
 }

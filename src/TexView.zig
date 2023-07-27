@@ -1,5 +1,6 @@
 const Texture = @import("Texture.zig");
-const Inner = @import("Impl.zig").TexView;
+const Impl = @import("Impl.zig");
+const Inner = Impl.TexView;
 const Error = @import("main.zig").Error;
 
 texture: *Texture,
@@ -35,6 +36,10 @@ pub const Config = struct {
 const Self = @This();
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(self.*, self.texture.heap.device.allocator);
+    self.inner.deinit(self.*);
     self.* = undefined;
+}
+
+pub fn impl(self: Self) *const Impl {
+    return self.texture.heap.device.impl;
 }

@@ -11,7 +11,6 @@ const Error = @import("main.zig").Error;
 
 impl: *Impl,
 inner: Inner,
-allocator: Allocator,
 
 pub const Config = struct {
     power_preference: PowerPreference = .high_performance,
@@ -26,13 +25,12 @@ pub const PowerPreference = enum {
 const Self = @This();
 
 pub fn init(allocator: Allocator, config: Config) Error!Self {
-    const impl = try Impl.get(null);
+    const impl = try Impl.get(allocator, null);
     errdefer impl.unget();
-    const inner = try impl.initDevice(allocator, config);
+    const inner = try impl.initDevice(config);
     return .{
         .impl = impl,
         .inner = inner,
-        .allocator = allocator,
     };
 }
 
@@ -53,7 +51,7 @@ pub fn isFallbackDevice(self: Self) bool {
 }
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(self.*, self.allocator);
+    self.inner.deinit(self.*);
     self.impl.unget();
     self.* = undefined;
 }
@@ -77,7 +75,7 @@ pub fn initHeap(self: *Self, config: Heap.Config) Error!Heap {
     // TODO: Validation.
     return .{
         .device = self,
-        .inner = try Inner.initHeap(self.*, self.allocator, config),
+        .inner = try Inner.initHeap(self.*, config),
         .size = config.size,
         .cpu_access = config.cpu_access,
     };
@@ -87,7 +85,7 @@ pub fn initSampler(self: *Self, config: Sampler.Config) Error!Sampler {
     // TODO: Validation.
     return .{
         .device = self,
-        .inner = try Inner.initSampler(self.*, self.allocator, config),
+        .inner = try Inner.initSampler(self.*, config),
         .u_addressing = config.u_addressing,
         .v_addressing = config.v_addressing,
         .w_addressing = config.w_addressing,

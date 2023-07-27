@@ -1,5 +1,6 @@
 const Heap = @import("Heap.zig");
-const Inner = @import("Impl.zig").Buffer;
+const Impl = @import("Impl.zig");
+const Inner = Impl.Buffer;
 const Error = @import("main.zig").Error;
 
 heap: *Heap,
@@ -27,6 +28,10 @@ pub const Config = struct {
 const Self = @This();
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(self.*, self.heap.device.allocator);
+    self.inner.deinit(self.*);
     self.* = undefined;
+}
+
+pub fn impl(self: Self) *const Impl {
+    return self.heap.device.impl;
 }

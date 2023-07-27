@@ -1,5 +1,6 @@
 const Heap = @import("Heap.zig");
-const Inner = @import("Impl.zig").Texture;
+const Impl = @import("Impl.zig");
+const Inner = Impl.Texture;
 const TexView = @import("TexView.zig");
 const Error = @import("main.zig").Error;
 
@@ -50,7 +51,7 @@ pub const Config = struct {
 const Self = @This();
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(self.*, self.heap.device.allocator);
+    self.inner.deinit(self.*);
     self.* = undefined;
 }
 
@@ -58,7 +59,7 @@ pub fn initView(self: *Self, config: TexView.Config) Error!TexView {
     // TODO: Validation.
     return .{
         .texture = self,
-        .inner = try Inner.initView(self.*, self.heap.device.allocator, config),
+        .inner = try Inner.initView(self.*, config),
         .dimension = config.dimension,
         .format = config.format,
         .plane = config.plane,
@@ -67,4 +68,8 @@ pub fn initView(self: *Self, config: TexView.Config) Error!TexView {
         .first_layer = config.first_layer,
         .layers = config.layers,
     };
+}
+
+pub fn impl(self: Self) *const Impl {
+    return self.heap.device.impl;
 }

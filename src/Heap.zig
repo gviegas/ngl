@@ -1,5 +1,6 @@
 const Device = @import("Device.zig");
-const Inner = @import("Impl.zig").Heap;
+const Impl = @import("Impl.zig");
+const Inner = Impl.Heap;
 const Buffer = @import("Buffer.zig");
 const Texture = @import("Texture.zig");
 const Error = @import("main.zig").Error;
@@ -23,7 +24,7 @@ pub const Config = struct {
 const Self = @This();
 
 pub fn deinit(self: *Self) void {
-    self.inner.deinit(self.*, self.device.allocator);
+    self.inner.deinit(self.*);
     self.* = undefined;
 }
 
@@ -31,7 +32,7 @@ pub fn initBuffer(self: *Self, config: Buffer.Config) Error!Buffer {
     // TODO: Validation.
     return .{
         .heap = self,
-        .inner = try Inner.initBuffer(self.*, self.device.allocator, config),
+        .inner = try Inner.initBuffer(self.*, config),
         .offset = config.offset,
         .size = config.size,
         .usage = config.usage,
@@ -42,7 +43,7 @@ pub fn initTexture(self: *Self, config: Texture.Config) Error!Texture {
     // TODO: Validation.
     return .{
         .heap = self,
-        .inner = try Inner.initTexture(self.*, self.device.allocator, config),
+        .inner = try Inner.initTexture(self.*, config),
         .offset = config.offset,
         .dimension = config.dimension,
         .format = config.format,
@@ -53,4 +54,8 @@ pub fn initTexture(self: *Self, config: Texture.Config) Error!Texture {
         .samples = config.samples,
         .usage = config.usage,
     };
+}
+
+pub fn impl(self: Self) *const Impl {
+    return self.device.impl;
 }
