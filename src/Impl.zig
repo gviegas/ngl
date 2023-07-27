@@ -90,6 +90,10 @@ pub const Device = struct {
     pub fn initDescLayout(device: Outer, config: DescLayout.Config) Error!DescLayout {
         return device.impl.vtable.device.initDescLayout(device, config);
     }
+
+    pub fn initDescPool(device: Outer, config: DescPool.Config) Error!DescPool {
+        return device.impl.vtable.device.initDescPool(device, config);
+    }
 };
 
 pub const Heap = struct {
@@ -176,6 +180,18 @@ pub const DescLayout = struct {
     }
 };
 
+pub const DescPool = struct {
+    pub const Outer = @import("DescPool.zig");
+    pub const Config = Outer.Config;
+
+    ptr: *anyopaque,
+
+    pub fn deinit(self: *DescPool, desc_pool: Outer) void {
+        desc_pool.impl().vtable.desc_pool.deinit(desc_pool);
+        self.* = undefined;
+    }
+};
+
 pub const VTable = struct {
     impl: struct {
         deinit: *const fn (*anyopaque) void,
@@ -189,6 +205,7 @@ pub const VTable = struct {
         initHeap: *const fn (Device.Outer, Heap.Config) Error!Heap,
         initSampler: *const fn (Device.Outer, Sampler.Config) Error!Sampler,
         initDescLayout: *const fn (Device.Outer, DescLayout.Config) Error!DescLayout,
+        initDescPool: *const fn (Device.Outer, DescPool.Config) Error!DescPool,
     },
 
     heap: struct {
@@ -216,5 +233,9 @@ pub const VTable = struct {
 
     desc_layout: struct {
         deinit: *const fn (DescLayout.Outer) void,
+    },
+
+    desc_pool: struct {
+        deinit: *const fn (DescPool.Outer) void,
     },
 };

@@ -8,6 +8,7 @@ pub const Texture = @import("Texture.zig");
 pub const TexView = @import("TexView.zig");
 pub const Sampler = @import("Sampler.zig");
 pub const DescLayout = @import("DescLayout.zig");
+pub const DescPool = @import("DescPool.zig");
 
 pub const Error = error{
     DeviceLost,
@@ -129,4 +130,15 @@ test "ngl" {
         },
     });
     defer desc_layout.deinit();
+
+    var desc_pool = try device.initDescPool(.{
+        .max_sets = 75,
+        .size = .{
+            .sampled_texture = 225,
+            .sampler = 150,
+            .dynamic_uniform_buffer = 300,
+            .storage_texture = 12,
+        },
+    });
+    defer desc_pool.deinit();
 }

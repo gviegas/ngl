@@ -6,6 +6,7 @@ const Inner = Impl.Device;
 const Heap = @import("Heap.zig");
 const Sampler = @import("Sampler.zig");
 const DescLayout = @import("DescLayout.zig");
+const DescPool = @import("DescPool.zig");
 const Buffer = @import("Buffer.zig");
 const Texture = @import("Texture.zig");
 const Error = @import("main.zig").Error;
@@ -108,5 +109,15 @@ pub fn initDescLayout(self: *Self, config: DescLayout.Config) Error!DescLayout {
         .device = self,
         .inner = try Inner.initDescLayout(self.*, config),
         .entries = entries,
+    };
+}
+
+pub fn initDescPool(self: *Self, config: DescPool.Config) Error!DescPool {
+    // TODO: Validation.
+    return .{
+        .device = self,
+        .inner = try Inner.initDescPool(self.*, config),
+        .max_sets = config.max_sets,
+        .size = config.size,
     };
 }
