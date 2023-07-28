@@ -1,7 +1,6 @@
 const Device = @import("Device.zig");
 const Impl = @import("Impl.zig");
 const Inner = Impl.DescLayout;
-const Error = @import("main.zig").Error;
 
 device: *Device,
 inner: Inner,

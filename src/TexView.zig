@@ -1,7 +1,6 @@
 const Texture = @import("Texture.zig");
 const Impl = @import("Impl.zig");
 const Inner = Impl.TexView;
-const Error = @import("main.zig").Error;
 
 texture: *Texture,
 inner: Inner,

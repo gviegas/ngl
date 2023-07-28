@@ -1,5 +1,4 @@
-const std = @import("std");
-const Allocator = std.mem.Allocator;
+const Allocator = @import("std").mem.Allocator;
 
 const Impl = @import("Impl.zig");
 const Inner = Impl.Device;

@@ -1,6 +1,3 @@
-const std = @import("std");
-const Allocator = std.mem.Allocator;
-
 pub const Device = @import("Device.zig");
 pub const Heap = @import("Heap.zig");
 pub const Buffer = @import("Buffer.zig");
@@ -20,7 +17,7 @@ pub const Error = error{
 };
 
 test "ngl" {
-    const allocator = std.testing.allocator;
+    const allocator = @import("std").testing.allocator;
 
     var device = try Device.init(allocator, .{});
     defer device.deinit();
