@@ -13,6 +13,7 @@ const DescLayout = Impl.DescLayout;
 const DescPool = Impl.DescPool;
 const DescSet = Impl.DescSet;
 const ShaderCode = Impl.ShaderCode;
+const PsLayout = Impl.PsLayout;
 const Error = @import("main.zig").Error;
 
 pub const DummyImpl = struct {
@@ -36,6 +37,7 @@ pub const DummyImpl = struct {
             .initDescLayout = DummyDevice.initDescLayout,
             .initDescPool = DummyDevice.initDescPool,
             .initShaderCode = DummyDevice.initShaderCode,
+            .initPsLayout = DummyDevice.initPsLayout,
         },
         .heap = .{
             .deinit = DummyHeap.deinit,
@@ -50,6 +52,7 @@ pub const DummyImpl = struct {
         .desc_pool = .{ .deinit = DummyDescPool.deinit, .allocSets = DummyDescPool.allocSets },
         .desc_set = .{ .free = DummyDescSet.free },
         .shader_code = .{ .deinit = DummyShaderCode.deinit },
+        .ps_layout = .{ .deinit = DummyPsLayout.deinit },
     };
 
     fn deinit(_: *anyopaque) void {
@@ -114,6 +117,11 @@ const DummyDevice = struct {
 
     fn initShaderCode(_: Device.Outer, _: ShaderCode.Config) Error!ShaderCode {
         log.debug("Dummy ShaderCode initialized", .{});
+        return .{ .ptr = undefined };
+    }
+
+    fn initPsLayout(_: Device.Outer, _: PsLayout.Config) Error!PsLayout {
+        log.debug("Dummy PsLayout initialized", .{});
         return .{ .ptr = undefined };
     }
 };
@@ -191,5 +199,11 @@ const DummyDescSet = struct {
 const DummyShaderCode = struct {
     fn deinit(_: ShaderCode.Outer) void {
         log.debug("Dummy ShaderCode deinitialized", .{});
+    }
+};
+
+const DummyPsLayout = struct {
+    fn deinit(_: PsLayout.Outer) void {
+        log.debug("Dummy PsLayout deinitialized", .{});
     }
 };

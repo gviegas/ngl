@@ -98,6 +98,10 @@ pub const Device = struct {
     pub fn initShaderCode(device: Outer, config: ShaderCode.Config) Error!ShaderCode {
         return device.impl.vtable.device.initShaderCode(device, config);
     }
+
+    pub fn initPsLayout(device: Outer, config: PsLayout.Config) Error!PsLayout {
+        return device.impl.vtable.device.initPsLayout(device, config);
+    }
 };
 
 pub const Heap = struct {
@@ -228,6 +232,18 @@ pub const ShaderCode = struct {
     }
 };
 
+pub const PsLayout = struct {
+    pub const Outer = @import("PsLayout.zig");
+    pub const Config = Outer.Config;
+
+    ptr: *anyopaque,
+
+    pub fn deinit(self: *PsLayout, ps_layout: Outer) void {
+        ps_layout.impl().vtable.ps_layout.deinit(ps_layout);
+        self.* = undefined;
+    }
+};
+
 pub const VTable = struct {
     impl: struct {
         deinit: *const fn (*anyopaque) void,
@@ -243,6 +259,7 @@ pub const VTable = struct {
         initDescLayout: *const fn (Device.Outer, DescLayout.Config) Error!DescLayout,
         initDescPool: *const fn (Device.Outer, DescPool.Config) Error!DescPool,
         initShaderCode: *const fn (Device.Outer, ShaderCode.Config) Error!ShaderCode,
+        initPsLayout: *const fn (Device.Outer, PsLayout.Config) Error!PsLayout,
     },
 
     heap: struct {
@@ -283,5 +300,9 @@ pub const VTable = struct {
 
     shader_code: struct {
         deinit: *const fn (ShaderCode.Outer) void,
+    },
+
+    ps_layout: struct {
+        deinit: *const fn (PsLayout.Outer) void,
     },
 };

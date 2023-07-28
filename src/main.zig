@@ -8,6 +8,7 @@ pub const DescLayout = @import("DescLayout.zig");
 pub const DescPool = @import("DescPool.zig");
 pub const DescSet = @import("DescSet.zig");
 pub const ShaderCode = @import("ShaderCode.zig");
+pub const PsLayout = @import("PsLayout.zig");
 
 pub const Error = error{
     DeviceLost,
@@ -157,4 +158,14 @@ test "ngl" {
 
     var shader_code = try device.initShaderCode(.{ .code = "" });
     defer shader_code.deinit();
+
+    var ps_layout = try device.initPsLayout(.{
+        .desc_layouts = &[1]*DescLayout{&desc_layout},
+        .constants = &[1]PsLayout.Constant{.{
+            .offset = 0,
+            .size = 4,
+            .visibility = .{ .vertex = true },
+        }},
+    });
+    defer ps_layout.deinit();
 }

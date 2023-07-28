@@ -7,6 +7,7 @@ const Sampler = @import("Sampler.zig");
 const DescLayout = @import("DescLayout.zig");
 const DescPool = @import("DescPool.zig");
 const ShaderCode = @import("ShaderCode.zig");
+const PsLayout = @import("PsLayout.zig");
 const Buffer = @import("Buffer.zig");
 const Texture = @import("Texture.zig");
 const Error = @import("main.zig").Error;
@@ -127,5 +128,13 @@ pub fn initShaderCode(self: *Self, config: ShaderCode.Config) Error!ShaderCode {
     return .{
         .device = self,
         .inner = try Inner.initShaderCode(self.*, config),
+    };
+}
+
+pub fn initPsLayout(self: *Self, config: PsLayout.Config) Error!PsLayout {
+    // TODO: Validation.
+    return .{
+        .device = self,
+        .inner = try Inner.initPsLayout(self.*, config),
     };
 }
