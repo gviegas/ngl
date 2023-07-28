@@ -16,7 +16,7 @@ const ShaderCode = Impl.ShaderCode;
 const PsLayout = Impl.PsLayout;
 const Error = @import("main.zig").Error;
 
-pub const DummyImpl = struct {
+pub const impl = struct {
     pub fn init(allocator: Allocator) Impl {
         log.debug("Dummy Impl initialized", .{});
         return .{
@@ -29,30 +29,30 @@ pub const DummyImpl = struct {
     const vtable = Impl.VTable{
         .impl = .{ .deinit = deinit, .initDevice = initDevice },
         .device = .{
-            .deinit = DummyDevice.deinit,
-            .heapBufferPlacement = DummyDevice.heapBufferPlacement,
-            .heapTexturePlacement = DummyDevice.heapTexturePlacement,
-            .initHeap = DummyDevice.initHeap,
-            .initSampler = DummyDevice.initSampler,
-            .initDescLayout = DummyDevice.initDescLayout,
-            .initDescPool = DummyDevice.initDescPool,
-            .initShaderCode = DummyDevice.initShaderCode,
-            .initPsLayout = DummyDevice.initPsLayout,
+            .deinit = device.deinit,
+            .heapBufferPlacement = device.heapBufferPlacement,
+            .heapTexturePlacement = device.heapTexturePlacement,
+            .initHeap = device.initHeap,
+            .initSampler = device.initSampler,
+            .initDescLayout = device.initDescLayout,
+            .initDescPool = device.initDescPool,
+            .initShaderCode = device.initShaderCode,
+            .initPsLayout = device.initPsLayout,
         },
         .heap = .{
-            .deinit = DummyHeap.deinit,
-            .initBuffer = DummyHeap.initBuffer,
-            .initTexture = DummyHeap.initTexture,
+            .deinit = heap.deinit,
+            .initBuffer = heap.initBuffer,
+            .initTexture = heap.initTexture,
         },
-        .buffer = .{ .deinit = DummyBuffer.deinit },
-        .texture = .{ .deinit = DummyTexture.deinit, .initView = DummyTexture.initView },
-        .tex_view = .{ .deinit = DummyTexView.deinit },
-        .sampler = .{ .deinit = DummySampler.deinit },
-        .desc_layout = .{ .deinit = DummyDescLayout.deinit },
-        .desc_pool = .{ .deinit = DummyDescPool.deinit, .allocSets = DummyDescPool.allocSets },
-        .desc_set = .{ .free = DummyDescSet.free },
-        .shader_code = .{ .deinit = DummyShaderCode.deinit },
-        .ps_layout = .{ .deinit = DummyPsLayout.deinit },
+        .buffer = .{ .deinit = buffer.deinit },
+        .texture = .{ .deinit = texture.deinit, .initView = texture.initView },
+        .tex_view = .{ .deinit = tex_view.deinit },
+        .sampler = .{ .deinit = sampler.deinit },
+        .desc_layout = .{ .deinit = desc_layout.deinit },
+        .desc_pool = .{ .deinit = desc_pool.deinit, .allocSets = desc_pool.allocSets },
+        .desc_set = .{ .free = desc_set.free },
+        .shader_code = .{ .deinit = shader_code.deinit },
+        .ps_layout = .{ .deinit = ps_layout.deinit },
     };
 
     fn deinit(_: *anyopaque) void {
@@ -70,7 +70,7 @@ pub const DummyImpl = struct {
     }
 };
 
-const DummyDevice = struct {
+const device = struct {
     fn deinit(_: Device.Outer) void {
         log.debug("Dummy Device deinitialized", .{});
     }
@@ -126,7 +126,7 @@ const DummyDevice = struct {
     }
 };
 
-const DummyHeap = struct {
+const heap = struct {
     fn deinit(_: Heap.Outer) void {
         log.debug("Dummy Heap deinitialized", .{});
     }
@@ -142,13 +142,13 @@ const DummyHeap = struct {
     }
 };
 
-const DummyBuffer = struct {
+const buffer = struct {
     fn deinit(_: Buffer.Outer) void {
         log.debug("Dummy Buffer deinitialized", .{});
     }
 };
 
-const DummyTexture = struct {
+const texture = struct {
     fn deinit(_: Texture.Outer) void {
         log.debug("Dummy Texture deinitialized", .{});
     }
@@ -159,25 +159,25 @@ const DummyTexture = struct {
     }
 };
 
-const DummyTexView = struct {
+const tex_view = struct {
     fn deinit(_: TexView.Outer) void {
         log.debug("Dummy TexView deinitialized", .{});
     }
 };
 
-const DummySampler = struct {
+const sampler = struct {
     fn deinit(_: Sampler.Outer) void {
         log.debug("Dummy Sampler deinitialized", .{});
     }
 };
 
-const DummyDescLayout = struct {
+const desc_layout = struct {
     fn deinit(_: DescLayout.Outer) void {
         log.debug("Dummy DescLayout deinitialized", .{});
     }
 };
 
-const DummyDescPool = struct {
+const desc_pool = struct {
     fn deinit(_: DescPool.Outer) void {
         log.debug("Dummy DescPool deinitialized", .{});
     }
@@ -190,19 +190,19 @@ const DummyDescPool = struct {
     }
 };
 
-const DummyDescSet = struct {
+const desc_set = struct {
     fn free(_: DescSet.Outer) void {
         log.debug("Dummy DescSet freed", .{});
     }
 };
 
-const DummyShaderCode = struct {
+const shader_code = struct {
     fn deinit(_: ShaderCode.Outer) void {
         log.debug("Dummy ShaderCode deinitialized", .{});
     }
 };
 
-const DummyPsLayout = struct {
+const ps_layout = struct {
     fn deinit(_: PsLayout.Outer) void {
         log.debug("Dummy PsLayout deinitialized", .{});
     }

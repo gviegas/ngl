@@ -2,7 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Mutex = std.Thread.Mutex;
 
-const Dummy = @import("dummy.zig").DummyImpl;
+const dummy_impl = @import("dummy.zig").impl;
 const Error = @import("main.zig").Error;
 
 const Impl = @This();
@@ -30,7 +30,7 @@ pub fn get(allocator: Allocator, name: ?Name) Error!*Impl {
     const nm = name orelse .dummy;
     switch (nm) {
         .dummy => {
-            dummy.impl = Dummy.init(allocator);
+            dummy.impl = dummy_impl.init(allocator);
             dummy.count += 1;
             return &dummy.impl.?;
         },
