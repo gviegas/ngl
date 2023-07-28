@@ -12,6 +12,7 @@ const Sampler = Impl.Sampler;
 const DescLayout = Impl.DescLayout;
 const DescPool = Impl.DescPool;
 const DescSet = Impl.DescSet;
+const ShaderCode = Impl.ShaderCode;
 const Error = @import("main.zig").Error;
 
 pub const DummyImpl = struct {
@@ -34,6 +35,7 @@ pub const DummyImpl = struct {
             .initSampler = DummyDevice.initSampler,
             .initDescLayout = DummyDevice.initDescLayout,
             .initDescPool = DummyDevice.initDescPool,
+            .initShaderCode = DummyDevice.initShaderCode,
         },
         .heap = .{
             .deinit = DummyHeap.deinit,
@@ -47,6 +49,7 @@ pub const DummyImpl = struct {
         .desc_layout = .{ .deinit = DummyDescLayout.deinit },
         .desc_pool = .{ .deinit = DummyDescPool.deinit, .allocSets = DummyDescPool.allocSets },
         .desc_set = .{ .free = DummyDescSet.free },
+        .shader_code = .{ .deinit = DummyShaderCode.deinit },
     };
 
     fn deinit(_: *anyopaque) void {
@@ -106,6 +109,11 @@ const DummyDevice = struct {
 
     fn initDescPool(_: Device.Outer, _: DescPool.Config) Error!DescPool {
         log.debug("Dummy DescPool initialized", .{});
+        return .{ .ptr = undefined };
+    }
+
+    fn initShaderCode(_: Device.Outer, _: ShaderCode.Config) Error!ShaderCode {
+        log.debug("Dummy ShaderCode initialized", .{});
         return .{ .ptr = undefined };
     }
 };
@@ -177,5 +185,11 @@ const DummyDescPool = struct {
 const DummyDescSet = struct {
     fn free(_: DescSet.Outer) void {
         log.debug("Dummy DescSet freed", .{});
+    }
+};
+
+const DummyShaderCode = struct {
+    fn deinit(_: ShaderCode.Outer) void {
+        log.debug("Dummy ShaderCode deinitialized", .{});
     }
 };

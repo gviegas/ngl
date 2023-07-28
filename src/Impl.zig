@@ -94,6 +94,10 @@ pub const Device = struct {
     pub fn initDescPool(device: Outer, config: DescPool.Config) Error!DescPool {
         return device.impl.vtable.device.initDescPool(device, config);
     }
+
+    pub fn initShaderCode(device: Outer, config: ShaderCode.Config) Error!ShaderCode {
+        return device.impl.vtable.device.initShaderCode(device, config);
+    }
 };
 
 pub const Heap = struct {
@@ -212,6 +216,18 @@ pub const DescSet = struct {
     }
 };
 
+pub const ShaderCode = struct {
+    pub const Outer = @import("ShaderCode.zig");
+    pub const Config = Outer.Config;
+
+    ptr: *anyopaque,
+
+    pub fn deinit(self: *ShaderCode, shader_code: Outer) void {
+        shader_code.impl().vtable.shader_code.deinit(shader_code);
+        self.* = undefined;
+    }
+};
+
 pub const VTable = struct {
     impl: struct {
         deinit: *const fn (*anyopaque) void,
@@ -226,6 +242,7 @@ pub const VTable = struct {
         initSampler: *const fn (Device.Outer, Sampler.Config) Error!Sampler,
         initDescLayout: *const fn (Device.Outer, DescLayout.Config) Error!DescLayout,
         initDescPool: *const fn (Device.Outer, DescPool.Config) Error!DescPool,
+        initShaderCode: *const fn (Device.Outer, ShaderCode.Config) Error!ShaderCode,
     },
 
     heap: struct {
@@ -262,5 +279,9 @@ pub const VTable = struct {
 
     desc_set: struct {
         free: *const fn (DescSet.Outer) void,
+    },
+
+    shader_code: struct {
+        deinit: *const fn (ShaderCode.Outer) void,
     },
 };

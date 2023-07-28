@@ -7,6 +7,7 @@ pub const Sampler = @import("Sampler.zig");
 pub const DescLayout = @import("DescLayout.zig");
 pub const DescPool = @import("DescPool.zig");
 pub const DescSet = @import("DescSet.zig");
+pub const ShaderCode = @import("ShaderCode.zig");
 
 pub const Error = error{
     DeviceLost,
@@ -153,4 +154,7 @@ test "ngl" {
         }
         allocator.free(desc_sets);
     }
+
+    var shader_code = try device.initShaderCode(.{ .code = "" });
+    defer shader_code.deinit();
 }
