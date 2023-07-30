@@ -106,6 +106,10 @@ pub const Device = struct {
     pub fn initPipeline(device: Outer, config: Pipeline.Config) Error!Pipeline {
         return device.impl.vtable.device.initPipeline(device, config);
     }
+
+    pub fn initCmdPool(device: Outer, config: CmdPool.Config) Error!CmdPool {
+        return device.impl.vtable.device.initCmdPool(device, config);
+    }
 };
 
 pub const Heap = struct {
@@ -260,6 +264,18 @@ pub const Pipeline = struct {
     }
 };
 
+pub const CmdPool = struct {
+    pub const Outer = @import("CmdPool.zig");
+    pub const Config = Outer.Config;
+
+    ptr: *anyopaque,
+
+    pub fn deinit(self: *CmdPool, cmd_pool: Outer) void {
+        cmd_pool.impl().vtable.cmd_pool.deinit(cmd_pool);
+        self.* = undefined;
+    }
+};
+
 pub const VTable = struct {
     impl: struct {
         deinit: *const fn (*anyopaque) void,
@@ -277,6 +293,7 @@ pub const VTable = struct {
         initShaderCode: *const fn (Device.Outer, ShaderCode.Config) Error!ShaderCode,
         initPsLayout: *const fn (Device.Outer, PsLayout.Config) Error!PsLayout,
         initPipeline: *const fn (Device.Outer, Pipeline.Config) Error!Pipeline,
+        initCmdPool: *const fn (Device.Outer, CmdPool.Config) Error!CmdPool,
     },
 
     heap: struct {
@@ -325,5 +342,9 @@ pub const VTable = struct {
 
     pipeline: struct {
         deinit: *const fn (Pipeline.Outer) void,
+    },
+
+    cmd_pool: struct {
+        deinit: *const fn (CmdPool.Outer) void,
     },
 };

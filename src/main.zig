@@ -10,6 +10,7 @@ pub const DescSet = @import("DescSet.zig");
 pub const ShaderCode = @import("ShaderCode.zig");
 pub const PsLayout = @import("PsLayout.zig");
 pub const Pipeline = @import("Pipeline.zig");
+pub const CmdPool = @import("CmdPool.zig");
 
 pub const Error = error{
     DeviceLost,
@@ -192,4 +193,7 @@ test "ngl" {
         } },
     });
     defer compute.deinit();
+
+    var cmd_pool = try device.initCmdPool(.{});
+    defer cmd_pool.deinit();
 }

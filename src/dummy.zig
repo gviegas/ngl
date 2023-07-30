@@ -15,6 +15,7 @@ const DescSet = Impl.DescSet;
 const ShaderCode = Impl.ShaderCode;
 const PsLayout = Impl.PsLayout;
 const Pipeline = Impl.Pipeline;
+const CmdPool = Impl.CmdPool;
 const Error = @import("main.zig").Error;
 
 pub const impl = struct {
@@ -40,6 +41,7 @@ pub const impl = struct {
             .initShaderCode = device.initShaderCode,
             .initPsLayout = device.initPsLayout,
             .initPipeline = device.initPipeline,
+            .initCmdPool = device.initCmdPool,
         },
         .heap = .{
             .deinit = heap.deinit,
@@ -56,6 +58,7 @@ pub const impl = struct {
         .shader_code = .{ .deinit = shader_code.deinit },
         .ps_layout = .{ .deinit = ps_layout.deinit },
         .pipeline = .{ .deinit = pipeline.deinit },
+        .cmd_pool = .{ .deinit = cmd_pool.deinit },
     };
 
     fn deinit(_: *anyopaque) void {
@@ -130,6 +133,11 @@ const device = struct {
 
     fn initPipeline(_: Device.Outer, _: Pipeline.Config) Error!Pipeline {
         log.debug("Dummy Pipeline initialized", .{});
+        return .{ .ptr = undefined };
+    }
+
+    fn initCmdPool(_: Device.Outer, _: CmdPool.Config) Error!CmdPool {
+        log.debug("Dummy CmdPool initialized", .{});
         return .{ .ptr = undefined };
     }
 };
@@ -219,5 +227,11 @@ const ps_layout = struct {
 const pipeline = struct {
     fn deinit(_: Pipeline.Outer) void {
         log.debug("Dummy Pipeline deinitialized", .{});
+    }
+};
+
+const cmd_pool = struct {
+    fn deinit(_: CmdPool.Outer) void {
+        log.debug("Dummy CmdPool deinitialized", .{});
     }
 };

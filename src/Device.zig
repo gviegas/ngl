@@ -9,6 +9,7 @@ const DescPool = @import("DescPool.zig");
 const ShaderCode = @import("ShaderCode.zig");
 const PsLayout = @import("PsLayout.zig");
 const Pipeline = @import("Pipeline.zig");
+const CmdPool = @import("CmdPool.zig");
 const Buffer = @import("Buffer.zig");
 const Texture = @import("Texture.zig");
 const Error = @import("main.zig").Error;
@@ -146,5 +147,15 @@ pub fn initPipeline(self: *Self, config: Pipeline.Config) Error!Pipeline {
         .device = self,
         .inner = try Inner.initPipeline(self.*, config),
         .kind = config.state,
+    };
+}
+
+pub fn initCmdPool(self: *Self, config: CmdPool.Config) Error!CmdPool {
+    // TODO: Validation.
+    return .{
+        .device = self,
+        .inner = try Inner.initCmdPool(self.*, config),
+        .direct_count_hint = config.direct_count_hint,
+        .indirect_count_hint = config.indirect_count_hint,
     };
 }
