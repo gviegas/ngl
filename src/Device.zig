@@ -8,6 +8,7 @@ const DescLayout = @import("DescLayout.zig");
 const DescPool = @import("DescPool.zig");
 const ShaderCode = @import("ShaderCode.zig");
 const PsLayout = @import("PsLayout.zig");
+const Pipeline = @import("Pipeline.zig");
 const Buffer = @import("Buffer.zig");
 const Texture = @import("Texture.zig");
 const Error = @import("main.zig").Error;
@@ -136,5 +137,14 @@ pub fn initPsLayout(self: *Self, config: PsLayout.Config) Error!PsLayout {
     return .{
         .device = self,
         .inner = try Inner.initPsLayout(self.*, config),
+    };
+}
+
+pub fn initPipeline(self: *Self, config: Pipeline.Config) Error!Pipeline {
+    // TODO: Validation.
+    return .{
+        .device = self,
+        .inner = try Inner.initPipeline(self.*, config),
+        .kind = config.state,
     };
 }

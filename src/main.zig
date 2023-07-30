@@ -9,6 +9,7 @@ pub const DescPool = @import("DescPool.zig");
 pub const DescSet = @import("DescSet.zig");
 pub const ShaderCode = @import("ShaderCode.zig");
 pub const PsLayout = @import("PsLayout.zig");
+pub const Pipeline = @import("Pipeline.zig");
 
 pub const Error = error{
     DeviceLost,
@@ -168,4 +169,27 @@ test "ngl" {
         }},
     });
     defer ps_layout.deinit();
+
+    var render = try device.initPipeline(.{
+        .layout = &ps_layout,
+        .state = .{ .render = &Pipeline.RenderPs{
+            .vs = .{ .code = &shader_code },
+            .fs = null,
+            .input = &.{},
+            .raster = null,
+            .ds = null,
+            .blend = null,
+            .color_formats = &.{},
+            .ds_format = null,
+        } },
+    });
+    defer render.deinit();
+
+    var compute = try device.initPipeline(.{
+        .layout = &ps_layout,
+        .state = .{ .compute = &Pipeline.ComputePs{
+            .cs = .{ .code = &shader_code },
+        } },
+    });
+    defer compute.deinit();
 }
