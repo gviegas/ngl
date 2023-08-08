@@ -50,6 +50,7 @@ pub fn allocSets(
     errdefer allocator.free(sets);
     for (sets) |*set| {
         set.pool = self;
+        set.inner = undefined;
     }
     try Inner.allocSets(self.*, sets, configs);
     return sets;
