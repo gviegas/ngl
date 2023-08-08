@@ -274,6 +274,26 @@ pub const CmdPool = struct {
         cmd_pool.impl().vtable.cmd_pool.deinit(cmd_pool);
         self.* = undefined;
     }
+
+    pub fn allocBuffers(
+        cmd_pool: CmdPool.Outer,
+        dest: []CmdBuffer.Outer,
+        configs: []const CmdBuffer.Config,
+    ) Error!void {
+        return cmd_pool.impl().vtable.cmd_pool.allocBuffers(cmd_pool, dest, configs);
+    }
+};
+
+pub const CmdBuffer = struct {
+    pub const Outer = @import("CmdBuffer.zig");
+    pub const Config = Outer.Config;
+
+    ptr: *anyopaque,
+
+    pub fn free(self: *CmdBuffer, cmd_buffer: Outer) void {
+        cmd_buffer.impl().vtable.cmd_buffer.free(cmd_buffer);
+        self.* = undefined;
+    }
 };
 
 pub const VTable = struct {
@@ -346,5 +366,14 @@ pub const VTable = struct {
 
     cmd_pool: struct {
         deinit: *const fn (CmdPool.Outer) void,
+        allocBuffers: *const fn (
+            CmdPool.Outer,
+            []CmdBuffer.Outer,
+            []const CmdBuffer.Config,
+        ) Error!void,
+    },
+
+    cmd_buffer: struct {
+        free: *const fn (CmdBuffer.Outer) void,
     },
 };

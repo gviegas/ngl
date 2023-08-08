@@ -11,6 +11,7 @@ pub const ShaderCode = @import("ShaderCode.zig");
 pub const PsLayout = @import("PsLayout.zig");
 pub const Pipeline = @import("Pipeline.zig");
 pub const CmdPool = @import("CmdPool.zig");
+pub const CmdBuffer = @import("CmdBuffer.zig");
 
 pub const Error = error{
     DeviceLost,
@@ -196,4 +197,16 @@ test "ngl" {
 
     var cmd_pool = try device.initCmdPool(.{});
     defer cmd_pool.deinit();
+
+    var cmd_buffers = try cmd_pool.allocBuffers(allocator, &[3]CmdBuffer.Config{
+        .{ .kind = .direct },
+        .{ .kind = .indirect },
+        .{ .kind = .indirect },
+    });
+    defer {
+        for (cmd_buffers) |*cbuf| {
+            cbuf.free();
+        }
+        allocator.free(cmd_buffers);
+    }
 }

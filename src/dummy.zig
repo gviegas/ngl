@@ -16,6 +16,7 @@ const ShaderCode = Impl.ShaderCode;
 const PsLayout = Impl.PsLayout;
 const Pipeline = Impl.Pipeline;
 const CmdPool = Impl.CmdPool;
+const CmdBuffer = Impl.CmdBuffer;
 const Error = @import("main.zig").Error;
 
 pub const impl = struct {
@@ -58,7 +59,8 @@ pub const impl = struct {
         .shader_code = .{ .deinit = shader_code.deinit },
         .ps_layout = .{ .deinit = ps_layout.deinit },
         .pipeline = .{ .deinit = pipeline.deinit },
-        .cmd_pool = .{ .deinit = cmd_pool.deinit },
+        .cmd_pool = .{ .deinit = cmd_pool.deinit, .allocBuffers = cmd_pool.allocBuffers },
+        .cmd_buffer = .{ .free = cmd_buffer.free },
     };
 
     fn deinit(_: *anyopaque) void {
@@ -233,5 +235,22 @@ const pipeline = struct {
 const cmd_pool = struct {
     fn deinit(_: CmdPool.Outer) void {
         log.debug("Dummy CmdPool deinitialized", .{});
+    }
+
+    fn allocBuffers(
+        _: CmdPool.Outer,
+        dest: []CmdBuffer.Outer,
+        _: []const CmdBuffer.Config,
+    ) Error!void {
+        log.debug("Dummy CmdBuffer(s) allocated", .{});
+        for (dest) |*d| {
+            d.inner = .{ .ptr = undefined };
+        }
+    }
+};
+
+const cmd_buffer = struct {
+    fn free(_: CmdBuffer.Outer) void {
+        log.debug("Dummy CmdBuffer freed", .{});
     }
 };
