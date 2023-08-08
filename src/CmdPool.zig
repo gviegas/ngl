@@ -23,20 +23,21 @@ pub fn deinit(self: *Self) void {
     self.* = undefined;
 }
 
-pub fn allocBuffers(
+pub fn alloc(
     self: *Self,
     allocator: Allocator,
-    configs: []const CmdBuffer.Config,
+    n: u32,
+    config: CmdBuffer.Config,
 ) Error![]CmdBuffer {
     // TODO: Validation.
-    var cbufs = try allocator.alloc(CmdBuffer, configs.len);
+    var cbufs = try allocator.alloc(CmdBuffer, n);
     errdefer allocator.free(cbufs);
-    for (cbufs, configs) |*cbuf, config| {
+    for (cbufs) |*cbuf| {
         cbuf.pool = self;
         cbuf.inner = undefined;
         cbuf.kind = config.kind;
     }
-    try Inner.allocBuffers(self.*, cbufs, configs);
+    try Inner.alloc(self.*, cbufs, config);
     return cbufs;
 }
 

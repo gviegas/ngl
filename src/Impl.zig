@@ -271,12 +271,12 @@ pub const CmdPool = struct {
         self.* = undefined;
     }
 
-    pub fn allocBuffers(
+    pub fn alloc(
         cmd_pool: CmdPool.Outer,
         dest: []CmdBuffer.Outer,
-        configs: []const CmdBuffer.Config,
+        config: CmdBuffer.Config,
     ) Error!void {
-        return cmd_pool.impl().vtable.cmd_pool.allocBuffers(cmd_pool, dest, configs);
+        return cmd_pool.impl().vtable.cmd_pool.alloc(cmd_pool, dest, config);
     }
 };
 
@@ -362,11 +362,7 @@ pub const VTable = struct {
 
     cmd_pool: struct {
         deinit: *const fn (CmdPool.Outer) void,
-        allocBuffers: *const fn (
-            CmdPool.Outer,
-            []CmdBuffer.Outer,
-            []const CmdBuffer.Config,
-        ) Error!void,
+        alloc: *const fn (CmdPool.Outer, []CmdBuffer.Outer, CmdBuffer.Config) Error!void,
     },
 
     cmd_buffer: struct {

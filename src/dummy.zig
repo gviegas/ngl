@@ -59,7 +59,7 @@ pub const impl = struct {
         .shader_code = .{ .deinit = shader_code.deinit },
         .ps_layout = .{ .deinit = ps_layout.deinit },
         .pipeline = .{ .deinit = pipeline.deinit },
-        .cmd_pool = .{ .deinit = cmd_pool.deinit, .allocBuffers = cmd_pool.allocBuffers },
+        .cmd_pool = .{ .deinit = cmd_pool.deinit, .alloc = cmd_pool.alloc },
         .cmd_buffer = .{ .free = cmd_buffer.free },
     };
 
@@ -237,11 +237,7 @@ const cmd_pool = struct {
         log.debug("Dummy CmdPool deinitialized", .{});
     }
 
-    fn allocBuffers(
-        _: CmdPool.Outer,
-        dest: []CmdBuffer.Outer,
-        _: []const CmdBuffer.Config,
-    ) Error!void {
+    fn alloc(_: CmdPool.Outer, dest: []CmdBuffer.Outer, _: CmdBuffer.Config) Error!void {
         log.debug("Dummy CmdBuffer(s) allocated", .{});
         for (dest) |*d| {
             d.inner = .{ .ptr = undefined };

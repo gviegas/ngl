@@ -192,11 +192,7 @@ test "ngl" {
     var cmd_pool = try device.initCmdPool(.{});
     defer cmd_pool.deinit();
 
-    var cmd_buffers = try cmd_pool.allocBuffers(allocator, &[3]CmdBuffer.Config{
-        .{ .kind = .direct },
-        .{ .kind = .indirect },
-        .{ .kind = .indirect },
-    });
+    var cmd_buffers = try cmd_pool.alloc(allocator, 2, CmdBuffer.Config{ .kind = .direct });
     defer {
         for (cmd_buffers) |*cbuf| {
             cbuf.free();
