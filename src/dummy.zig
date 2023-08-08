@@ -54,7 +54,7 @@ pub const impl = struct {
         .tex_view = .{ .deinit = tex_view.deinit },
         .sampler = .{ .deinit = sampler.deinit },
         .desc_layout = .{ .deinit = desc_layout.deinit },
-        .desc_pool = .{ .deinit = desc_pool.deinit, .allocSets = desc_pool.allocSets },
+        .desc_pool = .{ .deinit = desc_pool.deinit, .alloc = desc_pool.alloc },
         .desc_set = .{ .free = desc_set.free },
         .shader_code = .{ .deinit = shader_code.deinit },
         .ps_layout = .{ .deinit = ps_layout.deinit },
@@ -200,7 +200,7 @@ const desc_pool = struct {
         log.debug("Dummy DescPool deinitialized", .{});
     }
 
-    fn allocSets(_: DescPool.Outer, dest: []DescSet.Outer, _: []const DescSet.Config) Error!void {
+    fn alloc(_: DescPool.Outer, dest: []DescSet.Outer, _: DescSet.Config) Error!void {
         log.debug("Dummy DescSet(s) allocated", .{});
         for (dest) |*d| {
             d.inner = .{ .ptr = undefined };

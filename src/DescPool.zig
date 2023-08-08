@@ -33,26 +33,15 @@ pub fn deinit(self: *Self) void {
     self.* = undefined;
 }
 
-pub fn allocSets(
-    self: *Self,
-    allocator: Allocator,
-    configs: []const DescSet.Config,
-) Error![]DescSet {
+pub fn alloc(self: *Self, allocator: Allocator, n: u32, config: DescSet.Config) Error![]DescSet {
     // TODO: Validation.
-    const n = blk: {
-        var n: u32 = 0;
-        for (configs) |config| {
-            n += config.count;
-        }
-        break :blk n;
-    };
     var sets = try allocator.alloc(DescSet, n);
     errdefer allocator.free(sets);
     for (sets) |*set| {
         set.pool = self;
         set.inner = undefined;
     }
-    try Inner.allocSets(self.*, sets, configs);
+    try Inner.alloc(self.*, sets, config);
     return sets;
 }
 

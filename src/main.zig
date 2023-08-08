@@ -145,13 +145,7 @@ test "ngl" {
     });
     defer desc_pool.deinit();
 
-    var desc_sets = try desc_pool.allocSets(allocator, &[2]DescSet.Config{ .{
-        .layout = &desc_layout,
-        .count = 15,
-    }, .{
-        .layout = &desc_layout,
-        .count = 1,
-    } });
+    var desc_sets = try desc_pool.alloc(allocator, 16, DescSet.Config{ .layout = &desc_layout });
     defer {
         for (desc_sets) |*set| {
             set.free();

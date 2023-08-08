@@ -207,12 +207,8 @@ pub const DescPool = struct {
         self.* = undefined;
     }
 
-    pub fn allocSets(
-        desc_pool: Outer,
-        dest: []DescSet.Outer,
-        configs: []const DescSet.Config,
-    ) Error!void {
-        return desc_pool.impl().vtable.desc_pool.allocSets(desc_pool, dest, configs);
+    pub fn alloc(desc_pool: Outer, dest: []DescSet.Outer, config: DescSet.Config) Error!void {
+        return desc_pool.impl().vtable.desc_pool.alloc(desc_pool, dest, config);
     }
 };
 
@@ -345,7 +341,7 @@ pub const VTable = struct {
 
     desc_pool: struct {
         deinit: *const fn (DescPool.Outer) void,
-        allocSets: *const fn (DescPool.Outer, []DescSet.Outer, []const DescSet.Config) Error!void,
+        alloc: *const fn (DescPool.Outer, []DescSet.Outer, DescSet.Config) Error!void,
     },
 
     desc_set: struct {
