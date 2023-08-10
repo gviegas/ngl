@@ -295,24 +295,82 @@ pub fn dispatchIndirect(self: *Self) void {
     _ = self;
 }
 
+pub const TexAspect = enum {
+    all,
+    depth,
+    stencil,
+};
+
+pub const TexRegion = struct {
+    texture: *Texture,
+    level: u32,
+    x: u32,
+    y: u32,
+    z_or_layer: u32,
+    aspect: TexAspect,
+};
+
+pub const BufTiling = struct {
+    buffer: *Buffer,
+    offset: u64,
+    bytes_per_row: u32,
+    rows_per_slice: u32,
+};
+
+pub const TexWrite = struct {
+    dest: TexRegion,
+    src: BufTiling,
+    width: u32,
+    height: u32,
+    depth_or_layers: u32,
+};
+
+pub const TexRead = struct {
+    dest: BufTiling,
+    src: TexRegion,
+    width: u32,
+    height: u32,
+    depth_or_layers: u32,
+};
+
+pub const TexCopy = struct {
+    dest: TexRegion,
+    src: TexRegion,
+    width: u32,
+    height: u32,
+    depth_or_layers: u32,
+};
+
+pub const BufCopy = struct {
+    dest: *Buffer,
+    dest_offset: u64,
+    src: *Buffer,
+    src_offset: u64,
+    size: u64,
+};
+
 // TODO
-pub fn writeTexture(self: *Self) void {
+pub fn writeTexture(self: *Self, writes: []const TexWrite) void {
     _ = self;
+    _ = writes;
 }
 
 // TODO
-pub fn readTexture(self: *Self) void {
+pub fn readTexture(self: *Self, reads: []const TexRead) void {
     _ = self;
+    _ = reads;
 }
 
 // TODO
-pub fn copyTexture(self: *Self) void {
+pub fn copyTexture(self: *Self, copies: []const TexCopy) void {
     _ = self;
+    _ = copies;
 }
 
 // TODO
-pub fn copyBuffer(self: *Self) void {
+pub fn copyBuffer(self: *Self, copies: []const BufCopy) void {
     _ = self;
+    _ = copies;
 }
 
 // TODO
