@@ -10,7 +10,7 @@ usage: Usage,
 
 pub const Usage = struct {
     copy_src: bool = false,
-    copy_dst: bool = false,
+    copy_dest: bool = false,
     storage: bool = false,
     uniform: bool = false,
     index: bool = false,

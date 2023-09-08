@@ -89,20 +89,20 @@ pub fn endPass(self: *Self) void {
 pub const SyncScope = packed struct {
     none: bool = false,
     vertex_input: bool = false,
-    vertex_shading: bool = false,
-    fragment_shading: bool = false,
+    vertex_shader: bool = false,
+    fragment_shader: bool = false,
     ds_output: bool = false,
     color_output: bool = false,
-    all_rendering: bool = false,
-    compute_shading: bool = false,
+    rendering: bool = false,
+    compute_shader: bool = false,
     copy: bool = false,
     all: bool = false,
 };
 
 pub const SyncAccess = packed struct {
     none: bool = false,
-    vertex_buffer_read: bool = false,
     index_buffer_read: bool = false,
+    vertex_buffer_read: bool = false,
     shader_read: bool = false,
     shader_write: bool = false,
     color_read: bool = false,
@@ -136,7 +136,7 @@ pub const TexLayout = enum {
     ds_attachment,
     ds_read,
     copy_src,
-    copy_dst,
+    copy_dest,
     present,
 };
 

@@ -46,7 +46,7 @@ test "ngl" {
         .height = 2048,
         .depth_or_layers = 16,
         .usage = .{
-            .copy_dst = true,
+            .copy_dest = true,
             .sampled = true,
         },
     });
@@ -77,7 +77,7 @@ test "ngl" {
         .levels = 1,
         .samples = 1,
         .usage = .{
-            .copy_dst = true,
+            .copy_dest = true,
             .sampled = true,
         },
     });

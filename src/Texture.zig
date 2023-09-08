@@ -30,7 +30,7 @@ pub const Format = enum {
 
 pub const Usage = struct {
     copy_src: bool = false,
-    copy_dst: bool = false,
+    copy_dest: bool = false,
     storage: bool = false,
     sampled: bool = false,
     attachment: bool = false,
