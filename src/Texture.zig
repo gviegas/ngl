@@ -34,6 +34,8 @@ pub const Usage = struct {
     storage: bool = false,
     sampled: bool = false,
     attachment: bool = false,
+    input: bool = false,
+    transient: bool = false,
 };
 
 pub const Config = struct {
