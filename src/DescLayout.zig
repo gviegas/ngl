@@ -9,11 +9,10 @@ entries: []Entry,
 pub const Descriptor = enum {
     storage_buffer,
     uniform_buffer,
-    dynamic_storage_buffer,
-    dynamic_uniform_buffer,
     storage_texture,
     sampled_texture,
     sampler,
+    input_texture,
 };
 
 pub const Entry = struct {

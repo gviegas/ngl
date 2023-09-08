@@ -108,7 +108,7 @@ test "ngl" {
         .entries = &[4]DescLayout.Entry{
             .{
                 .binding = 2,
-                .descriptor = .dynamic_uniform_buffer,
+                .descriptor = .uniform_buffer,
                 .count = 1,
                 .visibility = .{ .vertex = true, .fragment = true },
             },
@@ -139,7 +139,7 @@ test "ngl" {
         .size = .{
             .sampled_texture = 225,
             .sampler = 150,
-            .dynamic_uniform_buffer = 300,
+            .uniform_buffer = 300,
             .storage_texture = 12,
         },
     });

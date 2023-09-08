@@ -14,11 +14,10 @@ size: Size,
 pub const Size = struct {
     storage_buffer: u32 = 0,
     uniform_buffer: u32 = 0,
-    dynamic_storage_buffer: u32 = 0,
-    dynamic_uniform_buffer: u32 = 0,
     storage_texture: u32 = 0,
     sampled_texture: u32 = 0,
     sampler: u32 = 0,
+    input_texture: u32 = 0,
 };
 
 pub const Config = struct {
