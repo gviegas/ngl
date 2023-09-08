@@ -19,6 +19,7 @@ pub const CpuAccess = enum {
 pub const Config = struct {
     size: u64,
     cpu_access: CpuAccess,
+    lazily_allocated: bool = false,
 };
 
 const Self = @This();
