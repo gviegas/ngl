@@ -7,9 +7,10 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     const main_tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = .{ .path = "src/ngl.zig" },
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
 
     const run_main_tests = b.addRunArtifact(main_tests);
@@ -21,6 +22,6 @@ pub fn build(b: *std.Build) void {
 /// Creates the module.
 pub fn createModule(b: *std.Build) *std.Build.Module {
     const dir = comptime fs.path.dirname(@src().file) orelse ".";
-    const path = dir ++ "/src/main.zig";
+    const path = dir ++ "/src/ngl.zig";
     return b.createModule(.{ .source_file = .{ .path = path } });
 }
