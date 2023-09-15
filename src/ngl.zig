@@ -12,8 +12,10 @@ pub const Error = error{
     Fragmentation,
     OutOfMemory,
     NotSupported,
+    NotPresent,
     InitializationFailed,
     DeviceLost,
+    Other,
 };
 
 // TODO: Consider adding a `Context` type
