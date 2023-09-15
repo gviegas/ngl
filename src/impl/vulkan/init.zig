@@ -5,6 +5,7 @@ const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
+const conv = @import("conv.zig");
 
 var libvulkan: ?*anyopaque = null;
 var getInstanceProcAddr: c.PFN_vkGetInstanceProcAddr = null;
@@ -156,10 +157,7 @@ pub const Instance = struct {
             .ppEnabledExtensionNames = null,
         };
         var inst: c.VkInstance = undefined;
-        switch (vkCreateInstance(&create_info, null, &inst)) {
-            c.VK_SUCCESS => {},
-            else => return Error.InitializationFailed,
-        }
+        try conv.check(vkCreateInstance(&create_info, null, &inst));
 
         // TODO: Destroy inst on failure
 
@@ -187,17 +185,11 @@ pub const Instance = struct {
         const inst = Instance.cast(instance);
 
         var dev_n: u32 = undefined;
-        if (inst.vkEnumeratePhysicalDevices(&dev_n, null) != c.VK_SUCCESS) {
-            // TODO: Error conv
-            return Error.InitializationFailed;
-        }
+        try conv.check(inst.vkEnumeratePhysicalDevices(&dev_n, null));
         if (dev_n == 0) return Error.NotSupported; // TODO: Need better error
         var devs = try allocator.alloc(c.VkPhysicalDevice, dev_n);
         defer allocator.free(devs);
-        if (inst.vkEnumeratePhysicalDevices(&dev_n, devs.ptr) != c.VK_SUCCESS) {
-            // TODO: Error conv
-            return Error.InitializationFailed;
-        }
+        try conv.check(inst.vkEnumeratePhysicalDevices(&dev_n, devs.ptr));
 
         var descs = try allocator.alloc(ngl.Device.Desc, dev_n);
         errdefer allocator.free(descs);
@@ -387,10 +379,7 @@ pub const Device = struct {
             .pEnabledFeatures = null, // TODO
         };
         var dev: c.VkDevice = undefined;
-        switch (inst.vkCreateDevice(phys_dev, &create_info, null, &dev)) {
-            c.VK_SUCCESS => {},
-            else => return Error.InitializationFailed,
-        }
+        try conv.check(inst.vkCreateDevice(phys_dev, &create_info, null, &dev));
 
         // TODO: Destroy dev on failure
 
