@@ -433,11 +433,11 @@ pub const Device = struct {
 
     fn getQueues(
         _: *anyopaque,
-        allocation: *[ngl.Queue.max]Impl.Queue,
+        allocation: *[ngl.Queue.max]*Impl.Queue,
         device: *Impl.Device,
-    ) []Impl.Queue {
+    ) []*Impl.Queue {
         const dev = Device.cast(device);
-        for (0..dev.queue_n) |i| allocation[i] = .{ device, i };
+        for (0..dev.queue_n) |i| allocation[i] = @ptrCast(&dev.queues[i]);
         return allocation[0..dev.queue_n];
     }
 

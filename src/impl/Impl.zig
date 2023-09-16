@@ -9,7 +9,8 @@ vtable: *const VTable,
 
 pub const Instance = opaque {};
 pub const Device = opaque {};
-pub const Queue = struct { *Device, usize };
+pub const Queue = opaque {};
+pub const Memory = opaque {};
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -45,9 +46,9 @@ pub const VTable = struct {
 
     getQueues: *const fn (
         ctx: *anyopaque,
-        allocation: *[ngl.Queue.max]Queue,
+        allocation: *[ngl.Queue.max]*Queue,
         device: *Device,
-    ) []Queue,
+    ) []*Queue,
 
     getMemoryTypes: *const fn (
         ctx: *anyopaque,
@@ -123,7 +124,7 @@ pub fn initDevice(
     return self.vtable.initDevice(self.ptr, allocator, instance, desc);
 }
 
-pub fn getQueues(self: *Self, allocation: *[ngl.Queue.max]Queue, device: *Device) []Queue {
+pub fn getQueues(self: *Self, allocation: *[ngl.Queue.max]*Queue, device: *Device) []*Queue {
     return self.vtable.getQueues(self.ptr, allocation, device);
 }
 
