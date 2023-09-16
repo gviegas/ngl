@@ -1,6 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+pub const log = std.log.scoped(.@"ngl/impl/vulkan");
+
 const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
@@ -120,6 +122,7 @@ pub const Instance = struct {
     enumeratePhysicalDevices: c.PFN_vkEnumeratePhysicalDevices,
     getPhysicalDeviceProperties: c.PFN_vkGetPhysicalDeviceProperties,
     getPhysicalDeviceQueueFamilyProperties: c.PFN_vkGetPhysicalDeviceQueueFamilyProperties,
+    getPhysicalDeviceMemoryProperties: c.PFN_vkGetPhysicalDeviceMemoryProperties,
     createDevice: c.PFN_vkCreateDevice,
     enumerateDeviceExtensionProperties: c.PFN_vkEnumerateDeviceExtensionProperties,
 
@@ -170,6 +173,7 @@ pub const Instance = struct {
             .enumeratePhysicalDevices = @ptrCast(try Instance.getProc(inst, "vkEnumeratePhysicalDevices")),
             .getPhysicalDeviceProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceProperties")),
             .getPhysicalDeviceQueueFamilyProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceQueueFamilyProperties")),
+            .getPhysicalDeviceMemoryProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceMemoryProperties")),
             .createDevice = @ptrCast(try Instance.getProc(inst, "vkCreateDevice")),
             .enumerateDeviceExtensionProperties = @ptrCast(try Instance.getProc(inst, "vkEnumerateDeviceExtensionProperties")),
         };
@@ -283,6 +287,14 @@ pub const Instance = struct {
         self.getPhysicalDeviceQueueFamilyProperties.?(device, property_count, properties);
     }
 
+    pub inline fn vkGetPhysicalDeviceMemoryProperties(
+        self: *Instance,
+        device: c.VkPhysicalDevice,
+        properties: *c.VkPhysicalDeviceMemoryProperties,
+    ) void {
+        self.getPhysicalDeviceMemoryProperties.?(device, properties);
+    }
+
     pub inline fn vkCreateDevice(
         self: *Instance,
         physical_device: c.VkPhysicalDevice,
@@ -310,8 +322,9 @@ pub const Instance = struct {
 };
 
 pub const Device = struct {
-    handle: c.VkDevice,
+    instance: *Instance,
     physical_device: c.VkPhysicalDevice,
+    handle: c.VkDevice,
     queues: [ngl.Queue.max]Queue,
     queue_n: u8,
 
@@ -392,8 +405,9 @@ pub const Device = struct {
         errdefer allocator.destroy(ptr);
 
         ptr.* = .{
-            .handle = dev,
+            .instance = inst,
             .physical_device = phys_dev,
+            .handle = dev,
             .queues = undefined,
             .queue_n = 0,
             .getDeviceProcAddr = get,
@@ -425,6 +439,43 @@ pub const Device = struct {
         const dev = Device.cast(device);
         for (0..dev.queue_n) |i| allocation[i] = .{ device, i };
         return allocation[0..dev.queue_n];
+    }
+
+    fn getMemoryTypes(
+        _: *anyopaque,
+        allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
+        device: *Impl.Device,
+    ) []ngl.Memory.Type {
+        const dev = Device.cast(device);
+
+        // TODO: May need to store this on device
+        var props: c.VkPhysicalDeviceMemoryProperties = undefined;
+        dev.instance.vkGetPhysicalDeviceMemoryProperties(dev.physical_device, &props);
+        const mask: u32 =
+            c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
+            c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT |
+            c.VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
+            c.VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+
+        for (0..props.memoryTypeCount) |i| {
+            const flags = props.memoryTypes[i].propertyFlags;
+            const heap: u8 = @intCast(props.memoryTypes[i].heapIndex);
+            // TODO: Handle this somehow
+            if (~mask & flags != 0) log.warn("Memory type {} has unexposed flag(s)", .{i});
+            allocation[i] = .{
+                .properties = .{
+                    .device_local = flags & c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT != 0,
+                    .host_visible = flags & c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT != 0,
+                    .host_coherent = flags & c.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT != 0,
+                    .host_cached = flags & c.VK_MEMORY_PROPERTY_HOST_CACHED_BIT != 0,
+                    .lazily_allocated = flags & c.VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT != 0,
+                },
+                .heap_index = heap,
+            };
+        }
+
+        return allocation[0..props.memoryTypeCount];
     }
 
     fn deinit(_: *anyopaque, allocator: std.mem.Allocator, device: *Impl.Device) void {
@@ -466,5 +517,6 @@ const vtable = Impl.VTable{
 
     .initDevice = Device.init,
     .getQueues = Device.getQueues,
+    .getMemoryTypes = Device.getMemoryTypes,
     .deinitDevice = Device.deinit,
 };

@@ -49,6 +49,12 @@ pub const VTable = struct {
         device: *Device,
     ) []Queue,
 
+    getMemoryTypes: *const fn (
+        ctx: *anyopaque,
+        allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
+        device: *Device,
+    ) []ngl.Memory.Type,
+
     deinitDevice: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator, device: *Device) void,
 };
 
@@ -119,6 +125,14 @@ pub fn initDevice(
 
 pub fn getQueues(self: *Self, allocation: *[ngl.Queue.max]Queue, device: *Device) []Queue {
     return self.vtable.getQueues(self.ptr, allocation, device);
+}
+
+pub fn getMemoryTypes(
+    self: *Self,
+    allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
+    device: *Device,
+) []ngl.Memory.Type {
+    return self.vtable.getMemoryTypes(self.ptr, allocation, device);
 }
 
 pub fn deinitDevice(self: *Self, allocator: std.mem.Allocator, device: *Device) void {

@@ -35,6 +35,8 @@ pub const Device = struct {
     allocator: std.mem.Allocator,
     queues: [Queue.max]Queue,
     queue_n: u8,
+    mem_types: [Memory.max_type]Memory.Type,
+    mem_type_n: u8,
 
     pub const Type = enum {
         discrete_gpu,
@@ -58,11 +60,14 @@ pub const Device = struct {
             .allocator = allocator,
             .queues = undefined,
             .queue_n = 0,
+            .mem_types = undefined,
+            .mem_type_n = 0,
         };
         var queue_alloc: [Queue.max]Impl.Queue = undefined;
         const queues = Impl.get().getQueues(&queue_alloc, self.impl);
         for (queues, 0..) |q, i| self.queues[i] = .{ .impl = q };
         self.queue_n = @intCast(queues.len);
+        self.mem_type_n = @intCast(Impl.get().getMemoryTypes(&self.mem_types, self.impl).len);
         return self;
     }
 
@@ -94,4 +99,24 @@ pub const Queue = struct {
     };
 
     pub const max = 4;
+};
+
+pub const Memory = struct {
+    impl: Impl.Memory,
+
+    pub const Properties = packed struct {
+        device_local: bool = false,
+        host_visible: bool = false,
+        host_coherent: bool = false,
+        host_cached: bool = false,
+        lazily_allocated: bool = false,
+    };
+
+    pub const Type = struct {
+        properties: Properties,
+        heap_index: u8,
+    };
+
+    pub const max_type = 32;
+    pub const max_heap = 16;
 };
