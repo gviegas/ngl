@@ -20,32 +20,44 @@ pub const Error = error{
     Other,
 };
 
-// TODO: Consider adding a `Context` type
-pub fn initDefault(allocator: std.mem.Allocator) Error!struct { Instance, Device } {
-    var inst = try Instance.init(allocator, .{});
-    errdefer inst.deinit();
-    var descs = try inst.listDevices(allocator);
-    defer allocator.free(descs);
-    var desc_i: usize = 0;
-    // TODO: Improve selection criteria
-    for (0..descs.len) |i| {
-        if (descs[i].type == .discrete_gpu) {
-            desc_i = i;
-            break;
+pub const Context = struct {
+    instance: Instance,
+    device: Device,
+
+    const Self = @This();
+
+    pub fn initDefault(allocator: std.mem.Allocator) Error!Self {
+        var inst = try Instance.init(allocator, .{});
+        errdefer inst.deinit();
+        var descs = try inst.listDevices(allocator);
+        defer allocator.free(descs);
+        var desc_i: usize = 0;
+        // TODO: Improve selection criteria
+        for (0..descs.len) |i| {
+            if (descs[i].type == .discrete_gpu) {
+                desc_i = i;
+                break;
+            }
+            if (descs[i].type == .integrated_gpu) desc_i = i;
         }
-        if (descs[i].type == .integrated_gpu) desc_i = i;
+        return .{
+            .instance = inst,
+            .device = try Device.init(allocator, &inst, descs[desc_i]),
+        };
     }
-    return .{ inst, try Device.init(allocator, &inst, descs[desc_i]) };
-}
+
+    pub fn deinit(self: *Self) void {
+        self.device.deinit();
+        self.instance.deinit();
+        self.* = undefined;
+        @import("impl/Impl.zig").get().deinit(); // XXX
+    }
+};
 
 test {
-    var ctx = try initDefault(std.testing.allocator);
-    defer {
-        ctx.@"1".deinit();
-        ctx.@"0".deinit();
-        @import("impl/Impl.zig").get().deinit();
-    }
+    var ctx = try Context.initDefault(std.testing.allocator);
+    defer ctx.deinit();
 
-    var cmd_pool = try CommandPool.init(&ctx.@"1", .{ .queue = &ctx.@"1".queues[0] });
-    defer cmd_pool.deinit(&ctx.@"1");
+    var cmd_pool = try CommandPool.init(&ctx.device, .{ .queue = &ctx.device.queues[0] });
+    defer cmd_pool.deinit(&ctx.device);
 }
