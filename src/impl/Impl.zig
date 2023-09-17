@@ -7,25 +7,19 @@ const Error = ngl.Error;
 ptr: *anyopaque,
 vtable: *const VTable,
 
-pub const Instance = opaque {};
-pub const Device = opaque {};
-pub const Queue = opaque {};
-pub const Memory = opaque {};
-pub const CommandPool = opaque {};
-
-// TODO
-pub inline fn cast(comptime T: type, api: anytype) *T {
-    switch (@typeInfo(@TypeOf(api))) {
-        .Pointer => |ptr| {
-            switch (@typeInfo(ptr.child)) {
-                .Struct => {},
-                else => @compileError("Not a valid pointee type"),
-            }
-        },
-        else => @compileError("Not a pointer type"),
-    }
-    return @ptrCast(@alignCast(@field(api, "impl")));
+fn Opaque(comptime Api: type) type {
+    return opaque {
+        pub inline fn cast(api: *const Api) *@This() {
+            return @ptrCast(@alignCast(api.impl));
+        }
+    };
 }
+
+pub const Instance = Opaque(ngl.Instance);
+pub const Device = Opaque(ngl.Device);
+pub const Queue = Opaque(ngl.Queue);
+pub const Memory = Opaque(ngl.Memory);
+pub const CommandPool = Opaque(ngl.CommandPool);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
