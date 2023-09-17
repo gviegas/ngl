@@ -11,6 +11,21 @@ pub const Instance = opaque {};
 pub const Device = opaque {};
 pub const Queue = opaque {};
 pub const Memory = opaque {};
+pub const CommandPool = opaque {};
+
+// TODO
+pub inline fn cast(comptime T: type, api: anytype) *T {
+    switch (@typeInfo(@TypeOf(api))) {
+        .Pointer => |ptr| {
+            switch (@typeInfo(ptr.child)) {
+                .Struct => {},
+                else => @compileError("Not a valid pointee type"),
+            }
+        },
+        else => @compileError("Not a pointer type"),
+    }
+    return @ptrCast(@alignCast(@field(api, "impl")));
+}
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -57,6 +72,22 @@ pub const VTable = struct {
     ) []ngl.Memory.Type,
 
     deinitDevice: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator, device: *Device) void,
+
+    // CommandPool -----------------------------------------
+
+    initCommandPool: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.CommandPool.Desc,
+    ) Error!*CommandPool,
+
+    deinitCommandPool: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        command_pool: *CommandPool,
+    ) void,
 };
 
 const Self = @This();
@@ -138,4 +169,22 @@ pub fn getMemoryTypes(
 
 pub fn deinitDevice(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
     self.vtable.deinitDevice(self.ptr, allocator, device);
+}
+
+pub fn initCommandPool(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.CommandPool.Desc,
+) Error!*CommandPool {
+    return self.vtable.initCommandPool(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitCommandPool(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    command_pool: *CommandPool,
+) void {
+    self.vtable.deinitCommandPool(self.ptr, allocator, device, command_pool);
 }

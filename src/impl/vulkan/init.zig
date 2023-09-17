@@ -186,7 +186,7 @@ pub const Instance = struct {
         allocator: std.mem.Allocator,
         instance: *Impl.Instance,
     ) Error![]ngl.Device.Desc {
-        const inst = Instance.cast(instance);
+        const inst = cast(instance);
 
         var dev_n: u32 = undefined;
         try conv.check(inst.vkEnumeratePhysicalDevices(&dev_n, null));
@@ -246,7 +246,7 @@ pub const Instance = struct {
     }
 
     fn deinit(_: *anyopaque, allocator: std.mem.Allocator, instance: *Impl.Instance) void {
-        const inst = Instance.cast(instance);
+        const inst = cast(instance);
         // TODO: Need to gate destruction until all devices
         // and instance-level objects have been destroyed
         inst.vkDestroyInstance(null);
@@ -333,6 +333,8 @@ pub const Device = struct {
     // v1.0
     destroyDevice: c.PFN_vkDestroyDevice,
     getDeviceQueue: c.PFN_vkGetDeviceQueue,
+    createCommandPool: c.PFN_vkCreateCommandPool,
+    destroyCommandPool: c.PFN_vkDestroyCommandPool,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -413,6 +415,8 @@ pub const Device = struct {
             .getDeviceProcAddr = get,
             .destroyDevice = @ptrCast(try Device.getProc(get, dev, "vkDestroyDevice")),
             .getDeviceQueue = @ptrCast(try Device.getProc(get, dev, "vkGetDeviceQueue")),
+            .createCommandPool = @ptrCast(try Device.getProc(get, dev, "vkCreateCommandPool")),
+            .destroyCommandPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyCommandPool")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -436,7 +440,7 @@ pub const Device = struct {
         allocation: *[ngl.Queue.max]*Impl.Queue,
         device: *Impl.Device,
     ) []*Impl.Queue {
-        const dev = Device.cast(device);
+        const dev = cast(device);
         for (0..dev.queue_n) |i| allocation[i] = @ptrCast(&dev.queues[i]);
         return allocation[0..dev.queue_n];
     }
@@ -446,7 +450,7 @@ pub const Device = struct {
         allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
         device: *Impl.Device,
     ) []ngl.Memory.Type {
-        const dev = Device.cast(device);
+        const dev = cast(device);
 
         // TODO: May need to store this on device
         var props: c.VkPhysicalDeviceMemoryProperties = undefined;
@@ -479,7 +483,7 @@ pub const Device = struct {
     }
 
     fn deinit(_: *anyopaque, allocator: std.mem.Allocator, device: *Impl.Device) void {
-        const dev = Device.cast(device);
+        const dev = cast(device);
         // TODO: Need to gate destruction until all
         // device-level objects have been destroyed
         dev.vkDestroyDevice(null);
@@ -488,7 +492,10 @@ pub const Device = struct {
 
     // Wrappers --------------------------------------------
 
-    pub inline fn vkDestroyDevice(self: *Device, vk_allocator: ?*c.VkAllocationCallbacks) void {
+    pub inline fn vkDestroyDevice(
+        self: *Device,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
         self.destroyDevice.?(self.handle, vk_allocator);
     }
 
@@ -500,13 +507,37 @@ pub const Device = struct {
     ) void {
         self.getDeviceQueue.?(self.handle, queue_family, queue_index, queue);
     }
+
+    pub inline fn vkCreateCommandPool(
+        self: *Device,
+        create_info: *const c.VkCommandPoolCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        command_pool: *c.VkCommandPool,
+    ) c.VkResult {
+        return self.createCommandPool.?(self.handle, create_info, vk_allocator, command_pool);
+    }
+
+    pub inline fn vkDestroyCommandPool(
+        self: *Device,
+        command_pool: c.VkCommandPool,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        return self.destroyCommandPool.?(self.handle, command_pool, vk_allocator);
+    }
 };
 
 pub const Queue = struct {
     handle: c.VkQueue,
     family: u32,
     index: u32,
+
+    pub inline fn cast(impl: *Impl.Queue) *Queue {
+        return @ptrCast(@alignCast(impl));
+    }
 };
+
+// TODO
+pub const Memory = struct {};
 
 const vtable = Impl.VTable{
     .deinit = deinit,
@@ -519,4 +550,7 @@ const vtable = Impl.VTable{
     .getQueues = Device.getQueues,
     .getMemoryTypes = Device.getMemoryTypes,
     .deinitDevice = Device.deinit,
+
+    .initCommandPool = @import("cmd.zig").CommandPool.init,
+    .deinitCommandPool = @import("cmd.zig").CommandPool.deinit,
 };
