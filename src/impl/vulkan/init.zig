@@ -335,6 +335,8 @@ pub const Device = struct {
     getDeviceQueue: c.PFN_vkGetDeviceQueue,
     createCommandPool: c.PFN_vkCreateCommandPool,
     destroyCommandPool: c.PFN_vkDestroyCommandPool,
+    allocateCommandBuffers: c.PFN_vkAllocateCommandBuffers,
+    freeCommandBuffers: c.PFN_vkFreeCommandBuffers,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -417,6 +419,8 @@ pub const Device = struct {
             .getDeviceQueue = @ptrCast(try Device.getProc(get, dev, "vkGetDeviceQueue")),
             .createCommandPool = @ptrCast(try Device.getProc(get, dev, "vkCreateCommandPool")),
             .destroyCommandPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyCommandPool")),
+            .allocateCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkAllocateCommandBuffers")),
+            .freeCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkFreeCommandBuffers")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -524,6 +528,23 @@ pub const Device = struct {
     ) void {
         return self.destroyCommandPool.?(self.handle, command_pool, vk_allocator);
     }
+
+    pub inline fn vkAllocateCommandBuffers(
+        self: *Device,
+        allocate_info: *const c.VkCommandBufferAllocateInfo,
+        command_buffers: [*]c.VkCommandBuffer,
+    ) c.VkResult {
+        return self.allocateCommandBuffers.?(self.handle, allocate_info, command_buffers);
+    }
+
+    pub inline fn vkFreeCommandBuffers(
+        self: *Device,
+        command_pool: c.VkCommandPool,
+        command_buffer_count: u32,
+        command_buffers: [*]const c.VkCommandBuffer,
+    ) void {
+        self.freeCommandBuffers.?(self.handle, command_pool, command_buffer_count, command_buffers);
+    }
 };
 
 pub const Queue = struct {
@@ -552,5 +573,7 @@ const vtable = Impl.VTable{
     .deinitDevice = Device.deinit,
 
     .initCommandPool = @import("cmd.zig").CommandPool.init,
+    .allocCommandBuffers = @import("cmd.zig").CommandPool.alloc,
+    .freeCommandBuffers = @import("cmd.zig").CommandPool.free,
     .deinitCommandPool = @import("cmd.zig").CommandPool.deinit,
 };

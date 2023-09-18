@@ -20,6 +20,7 @@ pub const Device = Opaque(ngl.Device);
 pub const Queue = Opaque(ngl.Queue);
 pub const Memory = Opaque(ngl.Memory);
 pub const CommandPool = Opaque(ngl.CommandPool);
+pub const CommandBuffer = Opaque(ngl.CommandBuffer);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -75,6 +76,23 @@ pub const VTable = struct {
         device: *Device,
         desc: ngl.CommandPool.Desc,
     ) Error!*CommandPool,
+
+    allocCommandBuffers: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        command_pool: *CommandPool,
+        device: *Device,
+        desc: ngl.CommandBuffer.Desc,
+        command_buffers: []ngl.CommandBuffer,
+    ) Error!void,
+
+    freeCommandBuffers: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        command_pool: *CommandPool,
+        device: *Device,
+        command_buffers: []const ngl.CommandBuffer,
+    ) void,
 
     deinitCommandPool: *const fn (
         ctx: *anyopaque,
@@ -172,6 +190,34 @@ pub fn initCommandPool(
     desc: ngl.CommandPool.Desc,
 ) Error!*CommandPool {
     return self.vtable.initCommandPool(self.ptr, allocator, device, desc);
+}
+
+pub fn allocCommandBuffers(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    command_pool: *CommandPool,
+    device: *Device,
+    desc: ngl.CommandBuffer.Desc,
+    command_buffers: []ngl.CommandBuffer,
+) Error!void {
+    return self.vtable.allocCommandBuffers(
+        self.ptr,
+        allocator,
+        command_pool,
+        device,
+        desc,
+        command_buffers,
+    );
+}
+
+pub fn freeCommandBuffers(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    command_pool: *CommandPool,
+    device: *Device,
+    command_buffers: []const ngl.CommandBuffer,
+) void {
+    self.vtable.freeCommandBuffers(self.ptr, allocator, command_pool, device, command_buffers);
 }
 
 pub fn deinitCommandPool(

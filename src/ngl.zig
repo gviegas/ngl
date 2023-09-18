@@ -5,6 +5,7 @@ pub const Device = @import("core/init.zig").Device;
 pub const Queue = @import("core/init.zig").Queue;
 pub const Memory = @import("core/init.zig").Memory;
 pub const CommandPool = @import("core/cmd.zig").CommandPool;
+pub const CommandBuffer = @import("core/cmd.zig").CommandBuffer;
 
 pub const Error = error{
     NotReady,
@@ -55,9 +56,19 @@ pub const Context = struct {
 };
 
 test {
-    var ctx = try Context.initDefault(std.testing.allocator);
+    const allocator = std.testing.allocator;
+
+    var ctx = try Context.initDefault(allocator);
     defer ctx.deinit();
 
-    var cmd_pool = try CommandPool.init(&ctx.device, .{ .queue = &ctx.device.queues[0] });
-    defer cmd_pool.deinit(&ctx.device);
+    var cmd_pool = try CommandPool.init(allocator, &ctx.device, .{
+        .queue = &ctx.device.queues[0],
+    });
+    defer cmd_pool.deinit(allocator, &ctx.device);
+
+    var cmd_bufs = try cmd_pool.alloc(allocator, &ctx.device, .{
+        .level = .primary,
+        .count = 3,
+    });
+    defer cmd_pool.free(allocator, &ctx.device, cmd_bufs);
 }
