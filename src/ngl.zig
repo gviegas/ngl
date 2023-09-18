@@ -55,6 +55,31 @@ pub const Context = struct {
     }
 };
 
+pub fn Flags(comptime E: type) type {
+    const StructField = std.builtin.Type.StructField;
+    var fields: []const StructField = &[_]StructField{};
+    switch (@typeInfo(E)) {
+        .Enum => |e| {
+            for (e.fields) |f| {
+                fields = fields ++ &[1]StructField{.{
+                    .name = f.name,
+                    .type = bool,
+                    .default_value = @ptrCast(&false),
+                    .is_comptime = false,
+                    .alignment = 0,
+                }};
+            }
+        },
+        else => @compileError("E must be an enum type"),
+    }
+    return @Type(.{ .Struct = .{
+        .layout = .Packed,
+        .fields = fields,
+        .decls = &.{},
+        .is_tuple = false,
+    } });
+}
+
 test {
     const allocator = std.testing.allocator;
 
