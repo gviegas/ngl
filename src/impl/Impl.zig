@@ -23,6 +23,7 @@ pub const CommandPool = Opaque(ngl.CommandPool);
 pub const CommandBuffer = Opaque(ngl.CommandBuffer);
 pub const Fence = Opaque(ngl.Fence);
 pub const Semaphore = Opaque(ngl.Semaphore);
+pub const Buffer = Opaque(ngl.Buffer);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -137,6 +138,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         semaphore: *Semaphore,
+    ) void,
+
+    // Buffer ----------------------------------------------
+
+    initBuffer: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.Buffer.Desc,
+    ) Error!*Buffer,
+
+    deinitBuffer: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        buffer: *Buffer,
     ) void,
 };
 
@@ -296,4 +313,22 @@ pub fn deinitSemaphore(
     semaphore: *Semaphore,
 ) void {
     self.vtable.deinitSemaphore(self.ptr, allocator, device, semaphore);
+}
+
+pub fn initBuffer(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.Buffer.Desc,
+) Error!*Buffer {
+    return self.vtable.initBuffer(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitBuffer(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    buffer: *Buffer,
+) void {
+    self.vtable.deinitBuffer(self.ptr, allocator, device, buffer);
 }
