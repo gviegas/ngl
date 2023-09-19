@@ -6,6 +6,8 @@ pub const Queue = @import("core/init.zig").Queue;
 pub const Memory = @import("core/init.zig").Memory;
 pub const CommandPool = @import("core/cmd.zig").CommandPool;
 pub const CommandBuffer = @import("core/cmd.zig").CommandBuffer;
+pub const PipelineStage = @import("core/sync.zig").PipelineStage;
+pub const Access = @import("core/sync.zig").Access;
 
 pub const Error = error{
     NotReady,
@@ -96,4 +98,7 @@ test {
         .count = 3,
     });
     defer cmd_pool.free(allocator, &ctx.device, cmd_bufs);
+
+    _ = PipelineStage.Flags{ .compute_shader = true };
+    _ = Access.Flags{ .shader_storage_write = true };
 }
