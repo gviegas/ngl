@@ -9,6 +9,7 @@ pub const CommandBuffer = @import("core/cmd.zig").CommandBuffer;
 pub const PipelineStage = @import("core/sync.zig").PipelineStage;
 pub const Access = @import("core/sync.zig").Access;
 pub const Fence = @import("core/sync.zig").Fence;
+pub const Semaphore = @import("core/sync.zig").Semaphore;
 
 pub const Error = error{
     NotReady,
@@ -105,4 +106,7 @@ test {
 
     var fence = try Fence.init(allocator, &ctx.device, .{});
     defer fence.deinit(allocator, &ctx.device);
+
+    var sema = try Semaphore.init(allocator, &ctx.device, .{});
+    defer sema.deinit(allocator, &ctx.device);
 }

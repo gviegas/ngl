@@ -66,3 +66,19 @@ pub const Fence = struct {
         Impl.get().deinitFence(allocator, device.impl, self.impl);
     }
 };
+
+pub const Semaphore = struct {
+    impl: *Impl.Semaphore,
+
+    pub const Desc = struct {};
+
+    const Self = @This();
+
+    pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        return .{ .impl = try Impl.get().initSemaphore(allocator, device.impl, desc) };
+    }
+
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
+        Impl.get().deinitSemaphore(allocator, device.impl, self.impl);
+    }
+};

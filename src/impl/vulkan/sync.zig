@@ -26,10 +26,10 @@ pub const Fence = struct {
         errdefer allocator.destroy(ptr);
 
         var fence: c.VkFence = undefined;
-        try conv.check(dev.vkCreateFence(&c.VkFenceCreateInfo{
+        try conv.check(dev.vkCreateFence(&.{
             .sType = c.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .pNext = null,
-            .flags = if (desc.signaled) c.VK_FENCE_CREATE_SIGNALED_BIT else 0,
+            .flags = if (desc.signaled) @as(c.VkFlags, c.VK_FENCE_CREATE_SIGNALED_BIT) else 0,
         }, null, &fence));
 
         ptr.* = .{ .handle = fence };
@@ -46,5 +46,47 @@ pub const Fence = struct {
         const fnc = cast(fence);
         dev.vkDestroyFence(fnc.handle, null);
         allocator.destroy(fnc);
+    }
+};
+
+pub const Semaphore = struct {
+    handle: c.VkSemaphore,
+
+    pub inline fn cast(impl: *Impl.Semaphore) *Semaphore {
+        return @ptrCast(@alignCast(impl));
+    }
+
+    pub fn init(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        _: ngl.Semaphore.Desc,
+    ) Error!*Impl.Semaphore {
+        const dev = Device.cast(device);
+
+        var ptr = try allocator.create(Semaphore);
+        errdefer allocator.destroy(ptr);
+
+        var sema: c.VkSemaphore = undefined;
+        try conv.check(dev.vkCreateSemaphore(&.{
+            .sType = c.VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+        }, null, &sema));
+
+        ptr.* = .{ .handle = sema };
+        return @ptrCast(ptr);
+    }
+
+    pub fn deinit(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        semaphore: *Impl.Semaphore,
+    ) void {
+        const dev = Device.cast(device);
+        const sema = cast(semaphore);
+        dev.vkDestroySemaphore(sema.handle, null);
+        allocator.destroy(sema);
     }
 };

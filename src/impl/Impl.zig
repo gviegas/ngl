@@ -22,6 +22,7 @@ pub const Memory = Opaque(ngl.Memory);
 pub const CommandPool = Opaque(ngl.CommandPool);
 pub const CommandBuffer = Opaque(ngl.CommandBuffer);
 pub const Fence = Opaque(ngl.Fence);
+pub const Semaphore = Opaque(ngl.Semaphore);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -120,6 +121,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         fence: *Fence,
+    ) void,
+
+    // Semaphore -------------------------------------------
+
+    initSemaphore: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.Semaphore.Desc,
+    ) Error!*Semaphore,
+
+    deinitSemaphore: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        semaphore: *Semaphore,
     ) void,
 };
 
@@ -261,4 +278,22 @@ pub fn initFence(
 
 pub fn deinitFence(self: *Self, allocator: std.mem.Allocator, device: *Device, fence: *Fence) void {
     self.vtable.deinitFence(self.ptr, allocator, device, fence);
+}
+
+pub fn initSemaphore(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.Semaphore.Desc,
+) Error!*Semaphore {
+    return self.vtable.initSemaphore(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitSemaphore(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    semaphore: *Semaphore,
+) void {
+    self.vtable.deinitSemaphore(self.ptr, allocator, device, semaphore);
 }
