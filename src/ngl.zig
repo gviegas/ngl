@@ -8,6 +8,7 @@ pub const CommandPool = @import("core/cmd.zig").CommandPool;
 pub const CommandBuffer = @import("core/cmd.zig").CommandBuffer;
 pub const PipelineStage = @import("core/sync.zig").PipelineStage;
 pub const Access = @import("core/sync.zig").Access;
+pub const Fence = @import("core/sync.zig").Fence;
 
 pub const Error = error{
     NotReady,
@@ -101,4 +102,7 @@ test {
 
     _ = PipelineStage.Flags{ .compute_shader = true };
     _ = Access.Flags{ .shader_storage_write = true };
+
+    var fence = try Fence.init(allocator, &ctx.device, .{});
+    defer fence.deinit(allocator, &ctx.device);
 }

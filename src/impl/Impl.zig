@@ -21,6 +21,7 @@ pub const Queue = Opaque(ngl.Queue);
 pub const Memory = Opaque(ngl.Memory);
 pub const CommandPool = Opaque(ngl.CommandPool);
 pub const CommandBuffer = Opaque(ngl.CommandBuffer);
+pub const Fence = Opaque(ngl.Fence);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -99,6 +100,26 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         command_pool: *CommandPool,
+    ) void,
+
+    // CommandBuffer ---------------------------------------
+
+    // TODO
+
+    // Fence -----------------------------------------------
+
+    initFence: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.Fence.Desc,
+    ) Error!*Fence,
+
+    deinitFence: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        fence: *Fence,
     ) void,
 };
 
@@ -227,4 +248,17 @@ pub fn deinitCommandPool(
     command_pool: *CommandPool,
 ) void {
     self.vtable.deinitCommandPool(self.ptr, allocator, device, command_pool);
+}
+
+pub fn initFence(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.Fence.Desc,
+) Error!*Fence {
+    return self.vtable.initFence(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitFence(self: *Self, allocator: std.mem.Allocator, device: *Device, fence: *Fence) void {
+    self.vtable.deinitFence(self.ptr, allocator, device, fence);
 }

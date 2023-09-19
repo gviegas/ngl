@@ -337,6 +337,8 @@ pub const Device = struct {
     destroyCommandPool: c.PFN_vkDestroyCommandPool,
     allocateCommandBuffers: c.PFN_vkAllocateCommandBuffers,
     freeCommandBuffers: c.PFN_vkFreeCommandBuffers,
+    createFence: c.PFN_vkCreateFence,
+    destroyFence: c.PFN_vkDestroyFence,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -421,6 +423,8 @@ pub const Device = struct {
             .destroyCommandPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyCommandPool")),
             .allocateCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkAllocateCommandBuffers")),
             .freeCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkFreeCommandBuffers")),
+            .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
+            .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -545,6 +549,23 @@ pub const Device = struct {
     ) void {
         self.freeCommandBuffers.?(self.handle, command_pool, command_buffer_count, command_buffers);
     }
+
+    pub inline fn vkCreateFence(
+        self: *Device,
+        create_info: *const c.VkFenceCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        fence: *c.VkFence,
+    ) c.VkResult {
+        return self.createFence.?(self.handle, create_info, vk_allocator, fence);
+    }
+
+    pub inline fn vkDestroyFence(
+        self: *Device,
+        fence: c.VkFence,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroyFence.?(self.handle, fence, vk_allocator);
+    }
 };
 
 pub const Queue = struct {
@@ -576,4 +597,7 @@ const vtable = Impl.VTable{
     .allocCommandBuffers = @import("cmd.zig").CommandPool.alloc,
     .freeCommandBuffers = @import("cmd.zig").CommandPool.free,
     .deinitCommandPool = @import("cmd.zig").CommandPool.deinit,
+
+    .initFence = @import("sync.zig").Fence.init,
+    .deinitFence = @import("sync.zig").Fence.deinit,
 };

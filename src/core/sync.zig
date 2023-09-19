@@ -48,3 +48,21 @@ pub const Access = enum {
 
     pub const Flags = ngl.Flags(Access);
 };
+
+pub const Fence = struct {
+    impl: *Impl.Fence,
+
+    pub const Desc = struct {
+        signaled: bool = false,
+    };
+
+    const Self = @This();
+
+    pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        return .{ .impl = try Impl.get().initFence(allocator, device.impl, desc) };
+    }
+
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
+        Impl.get().deinitFence(allocator, device.impl, self.impl);
+    }
+};
