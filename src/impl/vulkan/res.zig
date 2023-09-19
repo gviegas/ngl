@@ -27,10 +27,10 @@ pub const Buffer = struct {
 
         const usage = blk: {
             var usage: c.VkBufferUsageFlags = 0;
+            if (desc.usage.uniform_texel_buffer) usage |= c.VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+            if (desc.usage.storage_texel_buffer) usage |= c.VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
             if (desc.usage.uniform_buffer) usage |= c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-            //if (desc.usage.uniform_texel_buffer) usage |= c.VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
             if (desc.usage.storage_buffer) usage |= c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-            //if (desc.usage.storage_texel_buffer) usage |= c.VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
             if (desc.usage.index_buffer) usage |= c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
             if (desc.usage.vertex_buffer) usage |= c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
             if (desc.usage.indirect_buffer) usage |= c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
@@ -44,7 +44,7 @@ pub const Buffer = struct {
             .sType = c.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .pNext = null,
             .flags = 0,
-            .size = @as(c.VkDeviceSize, desc.size),
+            .size = desc.size,
             .usage = usage,
             .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
@@ -65,5 +65,52 @@ pub const Buffer = struct {
         const buf = cast(buffer);
         dev.vkDestroyBuffer(buf.handle, null);
         allocator.destroy(buf);
+    }
+};
+
+pub const BufferView = struct {
+    handle: c.VkBufferView,
+
+    pub inline fn cast(impl: *Impl.BufferView) *BufferView {
+        return @ptrCast(@alignCast(impl));
+    }
+
+    pub fn init(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        desc: ngl.BufferView.Desc,
+    ) Error!*Impl.BufferView {
+        const dev = Device.cast(device);
+        const buf = Buffer.cast(Impl.Buffer.cast(desc.buffer));
+
+        var ptr = try allocator.create(BufferView);
+        errdefer allocator.destroy(ptr);
+
+        var buf_view: c.VkBufferView = undefined;
+        try conv.check(dev.vkCreateBufferView(&.{
+            .sType = c.VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .buffer = buf.handle,
+            .format = c.VK_FORMAT_R8G8B8A8_UNORM, // TODO: Format conversion
+            .offset = desc.offset,
+            .range = desc.range orelse c.VK_WHOLE_SIZE,
+        }, null, &buf_view));
+
+        ptr.* = .{ .handle = buf_view };
+        return @ptrCast(ptr);
+    }
+
+    pub fn deinit(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        buffer_view: *Impl.BufferView,
+    ) void {
+        const dev = Device.cast(device);
+        const buf_view = cast(buffer_view);
+        dev.vkDestroyBufferView(buf_view.handle, null);
+        allocator.destroy(buf_view);
     }
 };

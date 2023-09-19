@@ -24,6 +24,7 @@ pub const CommandBuffer = Opaque(ngl.CommandBuffer);
 pub const Fence = Opaque(ngl.Fence);
 pub const Semaphore = Opaque(ngl.Semaphore);
 pub const Buffer = Opaque(ngl.Buffer);
+pub const BufferView = Opaque(ngl.BufferView);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -154,6 +155,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         buffer: *Buffer,
+    ) void,
+
+    // BufferView ------------------------------------------
+
+    initBufferView: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.BufferView.Desc,
+    ) Error!*BufferView,
+
+    deinitBufferView: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        buffer: *BufferView,
     ) void,
 };
 
@@ -331,4 +348,22 @@ pub fn deinitBuffer(
     buffer: *Buffer,
 ) void {
     self.vtable.deinitBuffer(self.ptr, allocator, device, buffer);
+}
+
+pub fn initBufferView(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.BufferView.Desc,
+) Error!*BufferView {
+    return self.vtable.initBufferView(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitBufferView(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    buffer_view: *BufferView,
+) void {
+    self.vtable.deinitBufferView(self.ptr, allocator, device, buffer_view);
 }

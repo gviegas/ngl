@@ -343,6 +343,8 @@ pub const Device = struct {
     destroySemaphore: c.PFN_vkDestroySemaphore,
     createBuffer: c.PFN_vkCreateBuffer,
     destroyBuffer: c.PFN_vkDestroyBuffer,
+    createBufferView: c.PFN_vkCreateBufferView,
+    destroyBufferView: c.PFN_vkDestroyBufferView,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -433,6 +435,8 @@ pub const Device = struct {
             .destroySemaphore = @ptrCast(try Device.getProc(get, dev, "vkDestroySemaphore")),
             .createBuffer = @ptrCast(try Device.getProc(get, dev, "vkCreateBuffer")),
             .destroyBuffer = @ptrCast(try Device.getProc(get, dev, "vkDestroyBuffer")),
+            .createBufferView = @ptrCast(try Device.getProc(get, dev, "vkCreateBufferView")),
+            .destroyBufferView = @ptrCast(try Device.getProc(get, dev, "vkDestroyBufferView")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -608,6 +612,23 @@ pub const Device = struct {
     ) void {
         self.destroyBuffer.?(self.handle, buffer, vk_allocator);
     }
+
+    pub inline fn vkCreateBufferView(
+        self: *Device,
+        create_info: *const c.VkBufferViewCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        buffer_view: *c.VkBufferView,
+    ) c.VkResult {
+        return self.createBufferView.?(self.handle, create_info, vk_allocator, buffer_view);
+    }
+
+    pub inline fn vkDestroyBufferView(
+        self: *Device,
+        buffer_view: c.VkBufferView,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroyBufferView.?(self.handle, buffer_view, vk_allocator);
+    }
 };
 
 pub const Queue = struct {
@@ -648,4 +669,7 @@ const vtable = Impl.VTable{
 
     .initBuffer = @import("res.zig").Buffer.init,
     .deinitBuffer = @import("res.zig").Buffer.deinit,
+
+    .initBufferView = @import("res.zig").BufferView.init,
+    .deinitBufferView = @import("res.zig").BufferView.deinit,
 };

@@ -11,6 +11,7 @@ pub const Access = @import("core/sync.zig").Access;
 pub const Fence = @import("core/sync.zig").Fence;
 pub const Semaphore = @import("core/sync.zig").Semaphore;
 pub const Buffer = @import("core/res.zig").Buffer;
+pub const BufferView = @import("core/res.zig").BufferView;
 
 pub const Error = error{
     NotReady,
@@ -114,10 +115,18 @@ test {
     var buf = try Buffer.init(allocator, &ctx.device, .{
         .size = 1 << 20,
         .usage = .{
-            .storage_buffer = true,
+            .storage_texel_buffer = true,
             .transfer_source = true,
             .transfer_dest = false,
         },
     });
     defer buf.deinit(allocator, &ctx.device);
+
+    var buf_view = try BufferView.init(allocator, &ctx.device, .{
+        .buffer = &buf,
+        .format = .rgba8_unorm,
+        .offset = 0,
+        .range = null,
+    });
+    defer buf_view.deinit(allocator, &ctx.device);
 }
