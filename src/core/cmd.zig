@@ -49,6 +49,7 @@ pub const CommandPool = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitCommandPool(allocator, device.impl, self.impl);
+        self.* = undefined;
     }
 };
 

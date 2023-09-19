@@ -64,6 +64,7 @@ pub const Fence = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitFence(allocator, device.impl, self.impl);
+        self.* = undefined;
     }
 };
 
@@ -80,5 +81,6 @@ pub const Semaphore = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitSemaphore(allocator, device.impl, self.impl);
+        self.* = undefined;
     }
 };
