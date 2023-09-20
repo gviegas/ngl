@@ -181,6 +181,18 @@ pub const BufferView = struct {
     }
 };
 
+pub const SampleCount = enum {
+    @"1",
+    @"2",
+    @"4",
+    @"8",
+    @"16",
+    @"32",
+    @"64",
+
+    pub const Flags = ngl.Flags(SampleCount);
+};
+
 pub const Image = struct {
     impl: *Impl.Image,
     //memory: ?*Impl.Memory,
@@ -241,7 +253,7 @@ pub const Image = struct {
         height: u32,
         depth_or_layers: u32,
         levels: u32,
-        //samples: Sample.Flags, // TODO
+        samples: SampleCount,
         tiling: Tiling,
         usage: Usage,
         misc: Misc,

@@ -13,6 +13,7 @@ pub const Semaphore = @import("core/sync.zig").Semaphore;
 pub const Format = @import("core/res.zig").Format;
 pub const Buffer = @import("core/res.zig").Buffer;
 pub const BufferView = @import("core/res.zig").BufferView;
+pub const SampleCount = @import("core/res.zig").SampleCount;
 pub const Image = @import("core/res.zig").Image;
 pub const ImageView = @import("core/res.zig").ImageView;
 
@@ -140,6 +141,7 @@ test {
         .height = 1024,
         .depth_or_layers = 1,
         .levels = 1,
+        .samples = .@"1",
         .tiling = .optimal,
         .usage = .{
             .sampled_image = true,
