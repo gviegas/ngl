@@ -13,6 +13,7 @@ pub const Semaphore = @import("core/sync.zig").Semaphore;
 pub const Format = @import("core/res.zig").Format;
 pub const Buffer = @import("core/res.zig").Buffer;
 pub const BufferView = @import("core/res.zig").BufferView;
+pub const Image = @import("core/res.zig").Image;
 
 pub const Error = error{
     NotReady,
@@ -130,4 +131,24 @@ test {
         .range = null,
     });
     defer buf_view.deinit(allocator, &ctx.device);
+
+    var image = try Image.init(allocator, &ctx.device, .{
+        .type = .@"2d",
+        .format = .rgba8_unorm,
+        .width = 1024,
+        .height = 1024,
+        .depth_or_layers = 1,
+        .levels = 1,
+        .tiling = .optimal,
+        .usage = .{
+            .sampled_image = true,
+            .transfer_source = false,
+            .transfer_dest = true,
+        },
+        .misc = .{
+            .view_formats = &[1]Format{.rgba8_srgb},
+        },
+        .initial_layout = .undefined,
+    });
+    defer image.deinit(allocator, &ctx.device);
 }

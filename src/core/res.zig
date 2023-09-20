@@ -180,3 +180,66 @@ pub const BufferView = struct {
         self.* = undefined;
     }
 };
+
+pub const Image = struct {
+    impl: *Impl.Image,
+    //memory: ?*Impl.Memory,
+
+    pub const Layout = enum {
+        // TODO
+        undefined,
+    };
+
+    pub const Type = enum {
+        @"1d",
+        @"2d",
+        @"3d",
+    };
+
+    pub const Tiling = enum {
+        linear,
+        optimal,
+    };
+
+    pub const Usage = packed struct {
+        sampled_image: bool = false,
+        storage_image: bool = false,
+        color_attachment: bool = false,
+        depth_stencil_attachment: bool = false,
+        transient_attachment: bool = false,
+        input_attachment: bool = false,
+        // Be explicit about these
+        transfer_source: bool,
+        transfer_dest: bool,
+    };
+
+    pub const Misc = struct {
+        view_formats: ?[]const Format = null,
+        cube_compatible: bool = false,
+    };
+
+    pub const Desc = struct {
+        type: Type,
+        format: Format,
+        width: u32,
+        height: u32,
+        depth_or_layers: u32,
+        levels: u32,
+        //samples: Sample.Flags, // TODO
+        tiling: Tiling,
+        usage: Usage,
+        misc: Misc,
+        initial_layout: Layout,
+    };
+
+    const Self = @This();
+
+    pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        return .{ .impl = try Impl.get().initImage(allocator, device.impl, desc) };
+    }
+
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
+        Impl.get().deinitImage(allocator, device.impl, self.impl);
+        self.* = undefined;
+    }
+};

@@ -114,3 +114,97 @@ pub const BufferView = struct {
         allocator.destroy(buf_view);
     }
 };
+
+pub const Image = struct {
+    handle: c.VkImage,
+
+    pub inline fn cast(impl: *Impl.Image) *Image {
+        return @ptrCast(@alignCast(impl));
+    }
+
+    pub fn init(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        desc: ngl.Image.Desc,
+    ) Error!*Impl.Image {
+        const dev = Device.cast(device);
+
+        var ptr = try allocator.create(Image);
+        errdefer allocator.destroy(ptr);
+
+        const @"type": c.VkImageType = switch (desc.type) {
+            .@"1d" => c.VK_IMAGE_TYPE_1D,
+            .@"2d" => c.VK_IMAGE_TYPE_2D,
+            .@"3d" => c.VK_IMAGE_TYPE_3D,
+        };
+        const extent: c.VkExtent3D = .{
+            .width = desc.width,
+            .height = desc.height,
+            .depth = if (desc.type == .@"3d") desc.depth_or_layers else 1,
+        };
+        const layers = if (desc.type == .@"3d") 1 else desc.depth_or_layers;
+        const tiling: c.VkImageTiling = switch (desc.tiling) {
+            .linear => c.VK_IMAGE_TILING_LINEAR,
+            .optimal => c.VK_IMAGE_TILING_OPTIMAL,
+        };
+        const usage = blk: {
+            var usage: c.VkImageUsageFlags = 0;
+            if (desc.usage.sampled_image) usage |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
+            if (desc.usage.storage_image) usage |= c.VK_IMAGE_USAGE_STORAGE_BIT;
+            if (desc.usage.color_attachment) usage |= c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            if (desc.usage.depth_stencil_attachment) usage |= c.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+            if (desc.usage.transient_attachment) usage |= c.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+            if (desc.usage.input_attachment) usage |= c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+            if (desc.usage.transfer_source) usage |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+            if (desc.usage.transfer_dest) usage |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+            break :blk usage;
+        };
+        const flags = blk: {
+            var flags: c.VkImageCreateFlags = 0;
+            if (desc.misc.view_formats) |fmts| {
+                for (fmts) |f| {
+                    if (f == desc.format) continue;
+                    flags |= c.VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+                    break;
+                }
+            }
+            if (desc.misc.cube_compatible) flags |= c.VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+            break :blk flags;
+        };
+
+        var image: c.VkImage = undefined;
+        try conv.check(dev.vkCreateImage(&.{
+            .sType = c.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext = null,
+            .flags = flags,
+            .imageType = @"type",
+            .format = c.VK_FORMAT_R8G8B8A8_UNORM, // TODO: Format conversion
+            .extent = extent,
+            .mipLevels = desc.levels,
+            .arrayLayers = layers,
+            .samples = c.VK_SAMPLE_COUNT_1_BIT, // TODO
+            .tiling = tiling,
+            .usage = usage,
+            .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = null,
+            .initialLayout = c.VK_IMAGE_LAYOUT_UNDEFINED, // TODO: Image.Layout conversion
+        }, null, &image));
+
+        ptr.* = .{ .handle = image };
+        return @ptrCast(ptr);
+    }
+
+    pub fn deinit(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        image: *Impl.Image,
+    ) void {
+        const dev = Device.cast(device);
+        const img = cast(image);
+        dev.vkDestroyImage(img.handle, null);
+        allocator.destroy(img);
+    }
+};

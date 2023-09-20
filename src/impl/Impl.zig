@@ -25,6 +25,7 @@ pub const Fence = Opaque(ngl.Fence);
 pub const Semaphore = Opaque(ngl.Semaphore);
 pub const Buffer = Opaque(ngl.Buffer);
 pub const BufferView = Opaque(ngl.BufferView);
+pub const Image = Opaque(ngl.Image);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -172,12 +173,29 @@ pub const VTable = struct {
         device: *Device,
         buffer: *BufferView,
     ) void,
+
+    // Image -----------------------------------------------
+
+    initImage: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.Image.Desc,
+    ) Error!*Image,
+
+    deinitImage: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        image: *Image,
+    ) void,
 };
 
 const Self = @This();
 
 var lock = std.Thread.Mutex{};
 var impl: ?Self = null;
+// TODO: This isn't needed currently
 var gpa: ?std.mem.Allocator = null;
 
 /// It's only valid to call this after `init()` succeeds.
@@ -366,4 +384,17 @@ pub fn deinitBufferView(
     buffer_view: *BufferView,
 ) void {
     self.vtable.deinitBufferView(self.ptr, allocator, device, buffer_view);
+}
+
+pub fn initImage(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.Image.Desc,
+) Error!*Image {
+    return self.vtable.initImage(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitImage(self: *Self, allocator: std.mem.Allocator, device: *Device, image: *Image) void {
+    self.vtable.deinitImage(self.ptr, allocator, device, image);
 }
