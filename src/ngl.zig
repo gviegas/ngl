@@ -14,6 +14,7 @@ pub const Format = @import("core/res.zig").Format;
 pub const Buffer = @import("core/res.zig").Buffer;
 pub const BufferView = @import("core/res.zig").BufferView;
 pub const Image = @import("core/res.zig").Image;
+pub const ImageView = @import("core/res.zig").ImageView;
 
 pub const Error = error{
     NotReady,
@@ -151,4 +152,18 @@ test {
         .initial_layout = .undefined,
     });
     defer image.deinit(allocator, &ctx.device);
+
+    var img_view = try ImageView.init(allocator, &ctx.device, .{
+        .image = &image,
+        .type = .@"2d",
+        .format = .rgba8_srgb,
+        .range = .{
+            .aspect_mask = .{ .color = true },
+            .base_level = 0,
+            .levels = 1,
+            .base_layer = 0,
+            .layers = 1,
+        },
+    });
+    defer img_view.deinit(allocator, &ctx.device);
 }

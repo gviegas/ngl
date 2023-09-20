@@ -185,6 +185,22 @@ pub const Image = struct {
     impl: *Impl.Image,
     //memory: ?*Impl.Memory,
 
+    pub const Range = struct {
+        aspect_mask: Aspect.Flags,
+        base_level: u32,
+        levels: ?u32,
+        base_layer: u32,
+        layers: ?u32,
+    };
+
+    pub const Aspect = enum {
+        color,
+        depth,
+        stencil,
+
+        pub const Flags = ngl.Flags(Aspect);
+    };
+
     pub const Layout = enum {
         // TODO
         undefined,
@@ -240,6 +256,39 @@ pub const Image = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitImage(allocator, device.impl, self.impl);
+        self.* = undefined;
+    }
+};
+
+pub const ImageView = struct {
+    impl: *Impl.ImageView,
+
+    pub const Type = enum {
+        @"1d",
+        @"2d",
+        @"3d",
+        cube,
+        @"1d_array",
+        @"2d_array",
+        cube_array, // Not supported everywhere
+    };
+
+    pub const Desc = struct {
+        image: *const Image,
+        type: Type,
+        format: Format,
+        range: Image.Range,
+        // TODO: Swizzle
+    };
+
+    const Self = @This();
+
+    pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        return .{ .impl = try Impl.get().initImageView(allocator, device.impl, desc) };
+    }
+
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
+        Impl.get().deinitImageView(allocator, device.impl, self.impl);
         self.* = undefined;
     }
 };

@@ -208,3 +208,75 @@ pub const Image = struct {
         allocator.destroy(img);
     }
 };
+
+pub const ImageView = struct {
+    handle: c.VkImageView,
+
+    pub inline fn cast(impl: *Impl.ImageView) *ImageView {
+        return @ptrCast(@alignCast(impl));
+    }
+
+    pub fn init(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        desc: ngl.ImageView.Desc,
+    ) Error!*Impl.ImageView {
+        const dev = Device.cast(device);
+        const image = Image.cast(Impl.Image.cast(desc.image));
+
+        var ptr = try allocator.create(ImageView);
+        errdefer allocator.destroy(ptr);
+
+        const @"type": c.VkImageViewType = switch (desc.type) {
+            .@"1d" => c.VK_IMAGE_VIEW_TYPE_1D,
+            .@"2d" => c.VK_IMAGE_VIEW_TYPE_2D,
+            .@"3d" => c.VK_IMAGE_VIEW_TYPE_3D,
+            .cube => c.VK_IMAGE_VIEW_TYPE_CUBE,
+            .@"1d_array" => c.VK_IMAGE_VIEW_TYPE_1D_ARRAY,
+            .@"2d_array" => c.VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+            .cube_array => c.VK_IMAGE_VIEW_TYPE_CUBE_ARRAY,
+        };
+        // TODO
+        const swizzle: c.VkComponentMapping = .{
+            .r = c.VK_COMPONENT_SWIZZLE_R,
+            .g = c.VK_COMPONENT_SWIZZLE_G,
+            .b = c.VK_COMPONENT_SWIZZLE_B,
+            .a = c.VK_COMPONENT_SWIZZLE_A,
+        };
+        const range: c.VkImageSubresourceRange = .{
+            .aspectMask = c.VK_IMAGE_ASPECT_COLOR_BIT, // TODO: Image.Aspect.Flags conversion
+            .baseMipLevel = desc.range.base_level,
+            .levelCount = desc.range.levels orelse c.VK_REMAINING_MIP_LEVELS,
+            .baseArrayLayer = desc.range.base_layer,
+            .layerCount = desc.range.layers orelse c.VK_REMAINING_ARRAY_LAYERS,
+        };
+
+        var img_view: c.VkImageView = undefined;
+        try conv.check(dev.vkCreateImageView(&.{
+            .sType = c.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .image = image.handle,
+            .viewType = @"type",
+            .format = c.VK_FORMAT_R8G8B8A8_UNORM, // TODO: Format conversion
+            .components = swizzle,
+            .subresourceRange = range,
+        }, null, &img_view));
+
+        ptr.* = .{ .handle = img_view };
+        return @ptrCast(ptr);
+    }
+
+    pub fn deinit(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        image_view: *Impl.ImageView,
+    ) void {
+        const dev = Device.cast(device);
+        const img_view = cast(image_view);
+        dev.vkDestroyImageView(img_view.handle, null);
+        allocator.destroy(img_view);
+    }
+};

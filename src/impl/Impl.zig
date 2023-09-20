@@ -26,6 +26,7 @@ pub const Semaphore = Opaque(ngl.Semaphore);
 pub const Buffer = Opaque(ngl.Buffer);
 pub const BufferView = Opaque(ngl.BufferView);
 pub const Image = Opaque(ngl.Image);
+pub const ImageView = Opaque(ngl.ImageView);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -188,6 +189,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         image: *Image,
+    ) void,
+
+    // ImageView -------------------------------------------
+
+    initImageView: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.ImageView.Desc,
+    ) Error!*ImageView,
+
+    deinitImageView: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        image_view: *ImageView,
     ) void,
 };
 
@@ -397,4 +414,22 @@ pub fn initImage(
 
 pub fn deinitImage(self: *Self, allocator: std.mem.Allocator, device: *Device, image: *Image) void {
     self.vtable.deinitImage(self.ptr, allocator, device, image);
+}
+
+pub fn initImageView(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.ImageView.Desc,
+) Error!*ImageView {
+    return self.vtable.initImageView(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitImageView(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    image_view: *ImageView,
+) void {
+    self.vtable.deinitImageView(self.ptr, allocator, device, image_view);
 }
