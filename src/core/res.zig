@@ -14,6 +14,7 @@ pub const Format = enum {
     r8_snorm,
     r8_uint,
     r8_sint,
+    a8_unorm,
     r4g4_unorm,
 
     r16_unorm,
@@ -34,6 +35,7 @@ pub const Format = enum {
     b5g6r5_unorm,
     rgb5a1_unorm,
     bgr5a1_unorm,
+    a1rgb5_unorm,
     a1bgr5_unorm,
 
     rgb8_unorm,

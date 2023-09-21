@@ -93,7 +93,7 @@ pub const BufferView = struct {
             .pNext = null,
             .flags = 0,
             .buffer = buf.handle,
-            .format = c.VK_FORMAT_R8G8B8A8_UNORM, // TODO: Format conversion
+            .format = try conv.toVkFormat(desc.format),
             .offset = desc.offset,
             .range = desc.range orelse c.VK_WHOLE_SIZE,
         }, null, &buf_view));
@@ -179,7 +179,7 @@ pub const Image = struct {
             .pNext = null,
             .flags = flags,
             .imageType = @"type",
-            .format = c.VK_FORMAT_R8G8B8A8_UNORM, // TODO: Format conversion
+            .format = try conv.toVkFormat(desc.format),
             .extent = extent,
             .mipLevels = desc.levels,
             .arrayLayers = layers,
@@ -259,7 +259,7 @@ pub const ImageView = struct {
             .flags = 0,
             .image = image.handle,
             .viewType = @"type",
-            .format = c.VK_FORMAT_R8G8B8A8_UNORM, // TODO: Format conversion
+            .format = try conv.toVkFormat(desc.format),
             .components = swizzle,
             .subresourceRange = range,
         }, null, &img_view));
