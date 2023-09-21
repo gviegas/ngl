@@ -214,8 +214,15 @@ pub const Image = struct {
     };
 
     pub const Layout = enum {
-        // TODO
         undefined,
+        preinitialized,
+        general,
+        attachment_optimal,
+        read_only_optimal,
+        transfer_source_optimal,
+        transfer_dest_optimal,
+        present_source, // Extension
+        shared_present, // Extension
     };
 
     pub const Type = enum {
