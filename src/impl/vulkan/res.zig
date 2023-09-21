@@ -189,7 +189,7 @@ pub const Image = struct {
             .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices = null,
-            .initialLayout = c.VK_IMAGE_LAYOUT_UNDEFINED, // TODO: Image.Layout conversion
+            .initialLayout = conv.toVkImageLayout(desc.initial_layout),
         }, null, &image));
 
         ptr.* = .{ .handle = image };

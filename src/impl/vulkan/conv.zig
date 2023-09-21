@@ -196,3 +196,20 @@ pub fn toVkImageAspectFlags(image_aspect_flags: ngl.Image.Aspect.Flags) c.VkImag
     if (image_aspect_flags.stencil) flags |= c.VK_IMAGE_ASPECT_STENCIL_BIT;
     return flags;
 }
+
+pub fn toVkImageLayout(image_layout: ngl.Image.Layout) c.VkImageLayout {
+    return switch (image_layout) {
+        .undefined => c.VK_IMAGE_LAYOUT_UNDEFINED,
+        .preinitialized => c.VK_IMAGE_LAYOUT_PREINITIALIZED,
+        .general => c.VK_IMAGE_LAYOUT_GENERAL,
+        .color_attachment_optimal => c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .depth_stencil_attachment_optimal => c.VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        .depth_stencil_read_only_optimal => c.VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+        .shader_read_only_optimal => c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        .transfer_source_optimal => c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        .transfer_dest_optimal => c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        // TODO: Should check availability
+        .present_source__ext => c.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        .shared_present__ext => c.VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR,
+    };
+}

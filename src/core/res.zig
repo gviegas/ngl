@@ -219,12 +219,15 @@ pub const Image = struct {
         undefined,
         preinitialized,
         general,
-        attachment_optimal,
-        read_only_optimal,
+        color_attachment_optimal,
+        depth_stencil_attachment_optimal,
+        depth_stencil_read_only_optimal,
+        shader_read_only_optimal,
         transfer_source_optimal,
         transfer_dest_optimal,
-        present_source, // Extension
-        shared_present, // Extension
+        // Extensions
+        present_source__ext,
+        shared_present__ext,
     };
 
     pub const Type = enum {
