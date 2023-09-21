@@ -245,7 +245,7 @@ pub const ImageView = struct {
             .a = c.VK_COMPONENT_SWIZZLE_A,
         };
         const range: c.VkImageSubresourceRange = .{
-            .aspectMask = c.VK_IMAGE_ASPECT_COLOR_BIT, // TODO: Image.Aspect.Flags conversion
+            .aspectMask = conv.toVkImageAspectFlags(desc.range.aspect_mask),
             .baseMipLevel = desc.range.base_level,
             .levelCount = desc.range.levels orelse c.VK_REMAINING_MIP_LEVELS,
             .baseArrayLayer = desc.range.base_layer,

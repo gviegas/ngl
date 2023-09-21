@@ -180,3 +180,19 @@ pub fn toVkSampleCountFlags(sample_count_flags: ngl.SampleCount.Flags) c.VkSampl
     if (sample_count_flags.@"64") flags |= c.VK_SAMPLE_COUNT_64_BIT;
     return flags;
 }
+
+pub fn toVkImageAspect(image_aspect: ngl.Image.Aspect) c.VkImageAspectFlagBits {
+    return switch (image_aspect) {
+        .color => c.VK_IMAGE_ASPECT_COLOR_BIT,
+        .depth => c.VK_IMAGE_ASPECT_DEPTH_BIT,
+        .stencil => c.VK_IMAGE_ASPECT_STENCIL_BIT,
+    };
+}
+
+pub fn toVkImageAspectFlags(image_aspect_flags: ngl.Image.Aspect.Flags) c.VkImageAspectFlags {
+    var flags: c.VkImageAspectFlags = 0;
+    if (image_aspect_flags.color) flags |= c.VK_IMAGE_ASPECT_COLOR_BIT;
+    if (image_aspect_flags.depth) flags |= c.VK_IMAGE_ASPECT_DEPTH_BIT;
+    if (image_aspect_flags.stencil) flags |= c.VK_IMAGE_ASPECT_STENCIL_BIT;
+    return flags;
+}
