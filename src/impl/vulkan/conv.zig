@@ -156,3 +156,27 @@ pub fn toVkFormat(format: ngl.Format) Error!c.VkFormat {
         // TODO: Compressed formats
     };
 }
+
+pub fn toVkSampleCount(sample_count: ngl.SampleCount) c.VkSampleCountFlagBits {
+    return switch (sample_count) {
+        .@"1" => c.VK_SAMPLE_COUNT_1_BIT,
+        .@"2" => c.VK_SAMPLE_COUNT_2_BIT,
+        .@"4" => c.VK_SAMPLE_COUNT_4_BIT,
+        .@"8" => c.VK_SAMPLE_COUNT_8_BIT,
+        .@"16" => c.VK_SAMPLE_COUNT_16_BIT,
+        .@"32" => c.VK_SAMPLE_COUNT_32_BIT,
+        .@"64" => c.VK_SAMPLE_COUNT_64_BIT,
+    };
+}
+
+pub fn toVkSampleCountFlags(sample_count_flags: ngl.SampleCount.Flags) c.VkSampleCountFlags {
+    var flags: c.VkSampleCountFlags = 0;
+    if (sample_count_flags.@"1") flags |= c.VK_SAMPLE_COUNT_1_BIT;
+    if (sample_count_flags.@"2") flags |= c.VK_SAMPLE_COUNT_2_BIT;
+    if (sample_count_flags.@"4") flags |= c.VK_SAMPLE_COUNT_4_BIT;
+    if (sample_count_flags.@"8") flags |= c.VK_SAMPLE_COUNT_8_BIT;
+    if (sample_count_flags.@"16") flags |= c.VK_SAMPLE_COUNT_16_BIT;
+    if (sample_count_flags.@"32") flags |= c.VK_SAMPLE_COUNT_32_BIT;
+    if (sample_count_flags.@"64") flags |= c.VK_SAMPLE_COUNT_64_BIT;
+    return flags;
+}
