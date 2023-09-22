@@ -301,12 +301,12 @@ pub const Sampler = struct {
 
         var cmp_enable: c.VkBool32 = undefined;
         var compare: c.VkCompareOp = undefined;
-        if (desc.compare) |_| {
+        if (desc.compare) |cmp| {
             cmp_enable = c.VK_TRUE;
-            compare = c.VK_COMPARE_OP_NEVER; // TODO
+            compare = conv.toVkCompareOp(cmp);
         } else {
             cmp_enable = c.VK_FALSE;
-            compare = c.VK_COMPARE_OP_NEVER; // TODO
+            compare = c.VK_COMPARE_OP_NEVER;
         }
 
         var splr: c.VkSampler = undefined;
@@ -314,12 +314,12 @@ pub const Sampler = struct {
             .sType = c.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
             .pNext = null,
             .flags = 0,
-            .magFilter = c.VK_FILTER_NEAREST, // TODO
-            .minFilter = c.VK_FILTER_NEAREST, // TODO
-            .mipmapMode = c.VK_SAMPLER_MIPMAP_MODE_NEAREST, // TODO
-            .addressModeU = c.VK_SAMPLER_ADDRESS_MODE_REPEAT, // TODO
-            .addressModeV = c.VK_SAMPLER_ADDRESS_MODE_REPEAT, // TODO
-            .addressModeW = c.VK_SAMPLER_ADDRESS_MODE_REPEAT, // TODO
+            .magFilter = conv.toVkFilter(desc.mag),
+            .minFilter = conv.toVkFilter(desc.min),
+            .mipmapMode = conv.toVkSamplerMipmapMode(desc.mipmap),
+            .addressModeU = conv.toVkSamplerAddressMode(desc.u_address),
+            .addressModeV = conv.toVkSamplerAddressMode(desc.v_address),
+            .addressModeW = conv.toVkSamplerAddressMode(desc.w_address),
             .mipLodBias = 0,
             .anisotropyEnable = c.VK_FALSE, // TODO: Need to enable the feature
             .maxAnisotropy = 1, // TODO: Need to clamp as specified in limits
@@ -327,7 +327,7 @@ pub const Sampler = struct {
             .compareOp = compare,
             .minLod = desc.min_lod,
             .maxLod = if (desc.max_lod) |x| x else c.VK_LOD_CLAMP_NONE,
-            .borderColor = c.VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, // TODO
+            .borderColor = conv.toVkBorderColor(desc.border_color orelse .transparent_black_float),
             .unnormalizedCoordinates = if (desc.normalized_coordinates) c.VK_FALSE else c.VK_TRUE,
         }, null, &splr));
 

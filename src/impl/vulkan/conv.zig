@@ -213,3 +213,54 @@ pub fn toVkImageLayout(image_layout: ngl.Image.Layout) c.VkImageLayout {
         .shared_present__ext => c.VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR,
     };
 }
+
+pub fn toVkCompareOp(compare_op: ngl.CompareOp) c.VkCompareOp {
+    return switch (compare_op) {
+        .never => c.VK_COMPARE_OP_NEVER,
+        .less => c.VK_COMPARE_OP_LESS,
+        .equal => c.VK_COMPARE_OP_EQUAL,
+        .less_equal => c.VK_COMPARE_OP_LESS_OR_EQUAL,
+        .greater => c.VK_COMPARE_OP_GREATER,
+        .not_equal => c.VK_COMPARE_OP_NOT_EQUAL,
+        .greater_equal => c.VK_COMPARE_OP_GREATER_OR_EQUAL,
+        .always => c.VK_COMPARE_OP_ALWAYS,
+    };
+}
+
+pub fn toVkSamplerAddressMode(
+    sampler_address_mode: ngl.Sampler.AddressMode,
+) c.VkSamplerAddressMode {
+    return switch (sampler_address_mode) {
+        .clamp_to_edge => c.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        .clamp_to_border => c.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+        .repeat => c.VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .mirror_repeat => c.VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
+        // TODO: Should check availability
+        .mirror_clamp_to_edge__ext => c.VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,
+    };
+}
+
+pub fn toVkBorderColor(sampler_border_color: ngl.Sampler.BorderColor) c.VkBorderColor {
+    return switch (sampler_border_color) {
+        .transparent_black_float => c.VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        .transparent_black_int => c.VK_BORDER_COLOR_INT_TRANSPARENT_BLACK,
+        .opaque_black_float => c.VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
+        .opaque_black_int => c.VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        .opaque_white_float => c.VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+        .opaque_white_int => c.VK_BORDER_COLOR_INT_OPAQUE_WHITE,
+    };
+}
+
+pub fn toVkFilter(sampler_filter: ngl.Sampler.Filter) c.VkFilter {
+    return switch (sampler_filter) {
+        .nearest => c.VK_FILTER_NEAREST,
+        .linear => c.VK_FILTER_LINEAR,
+    };
+}
+
+pub fn toVkSamplerMipmapMode(sampler_mipmap_mode: ngl.Sampler.MipmapMode) c.VkSamplerMipmapMode {
+    return switch (sampler_mipmap_mode) {
+        .nearest => c.VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        .linear => c.VK_SAMPLER_MIPMAP_MODE_LINEAR,
+    };
+}
