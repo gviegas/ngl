@@ -16,6 +16,8 @@ pub const BufferView = @import("core/res.zig").BufferView;
 pub const SampleCount = @import("core/res.zig").SampleCount;
 pub const Image = @import("core/res.zig").Image;
 pub const ImageView = @import("core/res.zig").ImageView;
+pub const CompareOp = @import("core/res.zig").CompareOp;
+pub const Sampler = @import("core/res.zig").Sampler;
 
 pub const Error = error{
     NotReady,
@@ -168,4 +170,20 @@ test {
         },
     });
     defer img_view.deinit(allocator, &ctx.device);
+
+    var splr = try Sampler.init(allocator, &ctx.device, .{
+        .normalized_coordinates = true,
+        .u_address = .clamp_to_edge,
+        .v_address = .clamp_to_border,
+        .w_address = .mirror_repeat,
+        .border_color = .transparent_black_float,
+        .mag = .linear,
+        .min = .linear,
+        .mipmap = .nearest,
+        .min_lod = 0,
+        .max_lod = null,
+        .max_anisotropy = 16,
+        .compare = null,
+    });
+    defer splr.deinit(allocator, &ctx.device);
 }

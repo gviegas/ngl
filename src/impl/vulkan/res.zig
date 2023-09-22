@@ -280,3 +280,70 @@ pub const ImageView = struct {
         allocator.destroy(img_view);
     }
 };
+
+pub const Sampler = struct {
+    handle: c.VkSampler,
+
+    pub inline fn cast(impl: *Impl.Sampler) *Sampler {
+        return @ptrCast(@alignCast(impl));
+    }
+
+    pub fn init(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        desc: ngl.Sampler.Desc,
+    ) Error!*Impl.Sampler {
+        const dev = Device.cast(device);
+
+        var ptr = try allocator.create(Sampler);
+        errdefer allocator.destroy(ptr);
+
+        var cmp_enable: c.VkBool32 = undefined;
+        var compare: c.VkCompareOp = undefined;
+        if (desc.compare) |_| {
+            cmp_enable = c.VK_TRUE;
+            compare = c.VK_COMPARE_OP_NEVER; // TODO
+        } else {
+            cmp_enable = c.VK_FALSE;
+            compare = c.VK_COMPARE_OP_NEVER; // TODO
+        }
+
+        var splr: c.VkSampler = undefined;
+        try conv.check(dev.vkCreateSampler(&.{
+            .sType = c.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .magFilter = c.VK_FILTER_NEAREST, // TODO
+            .minFilter = c.VK_FILTER_NEAREST, // TODO
+            .mipmapMode = c.VK_SAMPLER_MIPMAP_MODE_NEAREST, // TODO
+            .addressModeU = c.VK_SAMPLER_ADDRESS_MODE_REPEAT, // TODO
+            .addressModeV = c.VK_SAMPLER_ADDRESS_MODE_REPEAT, // TODO
+            .addressModeW = c.VK_SAMPLER_ADDRESS_MODE_REPEAT, // TODO
+            .mipLodBias = 0,
+            .anisotropyEnable = c.VK_FALSE, // TODO: Need to enable the feature
+            .maxAnisotropy = 1, // TODO: Need to clamp as specified in limits
+            .compareEnable = cmp_enable,
+            .compareOp = compare,
+            .minLod = desc.min_lod,
+            .maxLod = if (desc.max_lod) |x| x else c.VK_LOD_CLAMP_NONE,
+            .borderColor = c.VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, // TODO
+            .unnormalizedCoordinates = if (desc.normalized_coordinates) c.VK_FALSE else c.VK_TRUE,
+        }, null, &splr));
+
+        ptr.* = .{ .handle = splr };
+        return @ptrCast(ptr);
+    }
+
+    pub fn deinit(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        sampler: *Impl.Sampler,
+    ) void {
+        const dev = Device.cast(device);
+        const splr = cast(sampler);
+        dev.vkDestroySampler(splr.handle, null);
+        allocator.destroy(splr);
+    }
+};

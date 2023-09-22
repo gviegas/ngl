@@ -349,6 +349,8 @@ pub const Device = struct {
     destroyImage: c.PFN_vkDestroyImage,
     createImageView: c.PFN_vkCreateImageView,
     destroyImageView: c.PFN_vkDestroyImageView,
+    createSampler: c.PFN_vkCreateSampler,
+    destroySampler: c.PFN_vkDestroySampler,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -445,6 +447,8 @@ pub const Device = struct {
             .destroyImage = @ptrCast(try Device.getProc(get, dev, "vkDestroyImage")),
             .createImageView = @ptrCast(try Device.getProc(get, dev, "vkCreateImageView")),
             .destroyImageView = @ptrCast(try Device.getProc(get, dev, "vkDestroyImageView")),
+            .createSampler = @ptrCast(try Device.getProc(get, dev, "vkCreateSampler")),
+            .destroySampler = @ptrCast(try Device.getProc(get, dev, "vkDestroySampler")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -671,6 +675,23 @@ pub const Device = struct {
     ) void {
         self.destroyImageView.?(self.handle, image_view, vk_allocator);
     }
+
+    pub inline fn vkCreateSampler(
+        self: *Device,
+        create_info: *const c.VkSamplerCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        sampler: *c.VkSampler,
+    ) c.VkResult {
+        return self.createSampler.?(self.handle, create_info, vk_allocator, sampler);
+    }
+
+    pub inline fn vkDestroySampler(
+        self: *Device,
+        sampler: c.VkSampler,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroySampler.?(self.handle, sampler, vk_allocator);
+    }
 };
 
 pub const Queue = struct {
@@ -720,4 +741,7 @@ const vtable = Impl.VTable{
 
     .initImageView = @import("res.zig").ImageView.init,
     .deinitImageView = @import("res.zig").ImageView.deinit,
+
+    .initSampler = @import("res.zig").Sampler.init,
+    .deinitSampler = @import("res.zig").Sampler.deinit,
 };

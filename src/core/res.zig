@@ -316,3 +316,71 @@ pub const ImageView = struct {
         self.* = undefined;
     }
 };
+
+pub const CompareOp = enum {
+    never,
+    less,
+    equal,
+    less_equal,
+    greater,
+    not_equal,
+    greater_equal,
+    always,
+};
+
+pub const Sampler = struct {
+    impl: *Impl.Sampler,
+
+    pub const AddressMode = enum {
+        clamp_to_edge,
+        clamp_to_border,
+        repeat,
+        mirror_repeat,
+        // Extensions
+        mirror_clamp_to_edge__ext,
+    };
+
+    pub const BorderColor = enum {
+        transparent_black_float,
+        transparent_black_int,
+        opaque_black_float,
+        opaque_black_int,
+        opaque_white_float,
+        opaque_white_int,
+    };
+
+    pub const Filter = enum {
+        nearest,
+        linear,
+    };
+
+    pub const MipmapMode = enum {
+        nearest,
+        linear,
+    };
+
+    pub const Desc = struct {
+        normalized_coordinates: bool,
+        u_address: AddressMode,
+        v_address: AddressMode,
+        w_address: AddressMode,
+        border_color: ?BorderColor,
+        mag: Filter,
+        min: Filter,
+        mipmap: MipmapMode,
+        min_lod: f32,
+        max_lod: ?f32,
+        max_anisotropy: ?u5,
+        compare: ?CompareOp,
+    };
+
+    const Self = @This();
+
+    pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        return .{ .impl = try Impl.get().initSampler(allocator, device.impl, desc) };
+    }
+
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
+        Impl.get().deinitSampler(allocator, device.impl, self.impl);
+    }
+};

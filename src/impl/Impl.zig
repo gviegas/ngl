@@ -27,6 +27,7 @@ pub const Buffer = Opaque(ngl.Buffer);
 pub const BufferView = Opaque(ngl.BufferView);
 pub const Image = Opaque(ngl.Image);
 pub const ImageView = Opaque(ngl.ImageView);
+pub const Sampler = Opaque(ngl.Sampler);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -205,6 +206,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         image_view: *ImageView,
+    ) void,
+
+    // Sampler ---------------------------------------------
+
+    initSampler: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.Sampler.Desc,
+    ) Error!*Sampler,
+
+    deinitSampler: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        sampler: *Sampler,
     ) void,
 };
 
@@ -432,4 +449,22 @@ pub fn deinitImageView(
     image_view: *ImageView,
 ) void {
     self.vtable.deinitImageView(self.ptr, allocator, device, image_view);
+}
+
+pub fn initSampler(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.Sampler.Desc,
+) Error!*Sampler {
+    return self.vtable.initSampler(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitSampler(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    sampler: *Sampler,
+) void {
+    self.vtable.deinitSampler(self.ptr, allocator, device, sampler);
 }
