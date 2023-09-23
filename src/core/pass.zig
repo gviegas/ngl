@@ -78,7 +78,6 @@ pub const RenderPass = struct {
         };
     };
 
-    // TODO: Dependency flags
     pub const Dependency = struct {
         source_subpass: Subpass.Ref,
         dest_subpass: Subpass.Ref,
@@ -86,6 +85,7 @@ pub const RenderPass = struct {
         dest_stage_mask: PipelineStage.Flags,
         source_access_mask: Access.Flags,
         dest_access_mask: Access.Flags,
+        by_region: bool,
     };
 
     pub const Desc = struct {
