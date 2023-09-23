@@ -28,6 +28,7 @@ pub const BufferView = Opaque(ngl.BufferView);
 pub const Image = Opaque(ngl.Image);
 pub const ImageView = Opaque(ngl.ImageView);
 pub const Sampler = Opaque(ngl.Sampler);
+pub const RenderPass = Opaque(ngl.RenderPass);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -222,6 +223,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         sampler: *Sampler,
+    ) void,
+
+    // RenderPass ------------------------------------------
+
+    initRenderPass: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.RenderPass.Desc,
+    ) Error!*RenderPass,
+
+    deinitRenderPass: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        render_pass: *RenderPass,
     ) void,
 };
 
@@ -467,4 +484,22 @@ pub fn deinitSampler(
     sampler: *Sampler,
 ) void {
     self.vtable.deinitSampler(self.ptr, allocator, device, sampler);
+}
+
+pub fn initRenderPass(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.RenderPass.Desc,
+) Error!*RenderPass {
+    return self.vtable.initRenderPass(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitRenderPass(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    render_pass: *RenderPass,
+) void {
+    self.vtable.deinitRenderPass(self.ptr, allocator, device, render_pass);
 }

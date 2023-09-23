@@ -351,6 +351,8 @@ pub const Device = struct {
     destroyImageView: c.PFN_vkDestroyImageView,
     createSampler: c.PFN_vkCreateSampler,
     destroySampler: c.PFN_vkDestroySampler,
+    createRenderPass: c.PFN_vkCreateRenderPass,
+    destroyRenderPass: c.PFN_vkDestroyRenderPass,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -449,6 +451,8 @@ pub const Device = struct {
             .destroyImageView = @ptrCast(try Device.getProc(get, dev, "vkDestroyImageView")),
             .createSampler = @ptrCast(try Device.getProc(get, dev, "vkCreateSampler")),
             .destroySampler = @ptrCast(try Device.getProc(get, dev, "vkDestroySampler")),
+            .createRenderPass = @ptrCast(try Device.getProc(get, dev, "vkCreateRenderPass")),
+            .destroyRenderPass = @ptrCast(try Device.getProc(get, dev, "vkDestroyRenderPass")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -692,6 +696,23 @@ pub const Device = struct {
     ) void {
         self.destroySampler.?(self.handle, sampler, vk_allocator);
     }
+
+    pub inline fn vkCreateRenderPass(
+        self: *Device,
+        create_info: *const c.VkRenderPassCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        render_pass: *c.VkRenderPass,
+    ) c.VkResult {
+        return self.createRenderPass.?(self.handle, create_info, vk_allocator, render_pass);
+    }
+
+    pub inline fn vkDestroyRenderPass(
+        self: *Device,
+        render_pass: c.VkRenderPass,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroyRenderPass.?(self.handle, render_pass, vk_allocator);
+    }
 };
 
 pub const Queue = struct {
@@ -744,4 +765,7 @@ const vtable = Impl.VTable{
 
     .initSampler = @import("res.zig").Sampler.init,
     .deinitSampler = @import("res.zig").Sampler.deinit,
+
+    .initRenderPass = @import("pass.zig").RenderPass.init,
+    .deinitRenderPass = @import("pass.zig").RenderPass.deinit,
 };

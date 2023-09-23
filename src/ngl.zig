@@ -18,6 +18,10 @@ pub const Image = @import("core/res.zig").Image;
 pub const ImageView = @import("core/res.zig").ImageView;
 pub const CompareOp = @import("core/res.zig").CompareOp;
 pub const Sampler = @import("core/res.zig").Sampler;
+pub const LoadOp = @import("core/pass.zig").LoadOp;
+pub const StoreOp = @import("core/pass.zig").StoreOp;
+pub const ResolveMode = @import("core/pass.zig").ResolveMode;
+pub const RenderPass = @import("core/pass.zig").RenderPass;
 
 pub const Error = error{
     NotReady,
@@ -186,4 +190,11 @@ test {
         .compare = null,
     });
     defer splr.deinit(allocator, &ctx.device);
+
+    var rp = try RenderPass.init(allocator, &ctx.device, .{
+        .attachments = &.{},
+        .subpasses = &.{},
+        .dependencies = &.{},
+    });
+    defer rp.deinit(allocator, &ctx.device);
 }
