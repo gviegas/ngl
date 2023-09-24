@@ -328,3 +328,85 @@ pub fn toVkPipelineStageFlags(
         flags |= c.VK_PIPELINE_STAGE_TRANSFER_BIT;
     return flags;
 }
+
+// TODO: toVkAccess2
+pub fn toVkAccess(_: ngl.Access) c.VkAccessFlagBits {
+    // Nothing in Vulkan 1.3 seems to use these values
+    // by themselves, only as `VkAccessFlags`
+    @compileError("What do you need this for?");
+}
+
+// TODO: toVkAccessFlags2
+pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
+    if (access_flags.none) return 0; // c.VK_ACCESS_NONE
+
+    var flags: c.VkAccessFlags = 0;
+
+    if (access_flags.memory_read) {
+        flags |= c.VK_ACCESS_MEMORY_READ_BIT;
+        if (access_flags.memory_write) {
+            flags |= c.VK_ACCESS_MEMORY_WRITE_BIT;
+        } else {
+            if (access_flags.shader_storage_write)
+                flags |= c.VK_ACCESS_SHADER_WRITE_BIT;
+            if (access_flags.color_attachment_write)
+                flags |= c.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            if (access_flags.depth_stencil_attachment_write)
+                flags |= c.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            if (access_flags.transfer_write)
+                flags |= c.VK_ACCESS_TRANSFER_WRITE_BIT;
+        }
+        return flags;
+    }
+
+    if (access_flags.memory_write) {
+        flags |= c.VK_ACCESS_MEMORY_WRITE_BIT;
+        if (access_flags.indirect_command_read)
+            flags |= c.VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+        if (access_flags.index_read)
+            flags |= c.VK_ACCESS_INDEX_READ_BIT;
+        if (access_flags.vertex_attribute_read)
+            flags |= c.VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+        if (access_flags.uniform_read)
+            flags |= c.VK_ACCESS_UNIFORM_READ_BIT;
+        if (access_flags.input_attachment_read)
+            flags |= c.VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+        if (access_flags.shader_sampled_read or access_flags.shader_storage_read)
+            flags |= c.VK_ACCESS_SHADER_READ_BIT;
+        if (access_flags.color_attachment_read)
+            flags |= c.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        if (access_flags.depth_stencil_attachment_read)
+            flags |= c.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+        if (access_flags.transfer_read)
+            flags |= c.VK_ACCESS_TRANSFER_READ_BIT;
+        return flags;
+    }
+
+    if (access_flags.indirect_command_read)
+        flags |= c.VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+    if (access_flags.index_read)
+        flags |= c.VK_ACCESS_INDEX_READ_BIT;
+    if (access_flags.vertex_attribute_read)
+        flags |= c.VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+    if (access_flags.uniform_read)
+        flags |= c.VK_ACCESS_UNIFORM_READ_BIT;
+    if (access_flags.input_attachment_read)
+        flags |= c.VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+    if (access_flags.shader_sampled_read or access_flags.shader_storage_read)
+        flags |= c.VK_ACCESS_SHADER_READ_BIT;
+    if (access_flags.shader_storage_write)
+        flags |= c.VK_ACCESS_SHADER_WRITE_BIT;
+    if (access_flags.color_attachment_read)
+        flags |= c.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+    if (access_flags.color_attachment_write)
+        flags |= c.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    if (access_flags.depth_stencil_attachment_read)
+        flags |= c.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    if (access_flags.depth_stencil_attachment_write)
+        flags |= c.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    if (access_flags.transfer_read)
+        flags |= c.VK_ACCESS_TRANSFER_READ_BIT;
+    if (access_flags.transfer_write)
+        flags |= c.VK_ACCESS_TRANSFER_WRITE_BIT;
+    return flags;
+}
