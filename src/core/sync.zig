@@ -51,7 +51,7 @@ pub const Access = enum {
 
 pub const SyncScope = struct {
     stage_mask: PipelineStage.Flags,
-    access_mask: PipelineStage.Flags,
+    access_mask: Access.Flags,
 };
 
 pub const Fence = struct {
