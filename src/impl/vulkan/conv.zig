@@ -264,3 +264,67 @@ pub fn toVkSamplerMipmapMode(sampler_mipmap_mode: ngl.Sampler.MipmapMode) c.VkSa
         .linear => c.VK_SAMPLER_MIPMAP_MODE_LINEAR,
     };
 }
+
+// TODO: `toVkPipelineStage2`
+pub fn toVkPipelineStage(pipeline_stage: ngl.PipelineStage) c.VkPipelineStageFlagBits {
+    return switch (pipeline_stage) {
+        .none => c.VK_PIPELINE_STAGE_NONE,
+        .all_commands => c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+        .all_graphics => c.VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+        .draw_indirect => c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+
+        .index_input,
+        .vertex_attribute_input,
+        => c.VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
+
+        .vertex_shader => c.VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+        .early_fragment_tests => c.VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+        .fragment_shader => c.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        .late_fragment_tests => c.VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+        .color_attachment_output => c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .compute_shader => c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+
+        .clear,
+        .copy,
+        => c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+    };
+}
+
+// TODO: `toVkPipelineStageFlags2`
+pub fn toVkPipelineStageFlags(
+    pipeline_stage_flags: ngl.PipelineStage.Flags,
+) c.VkPipelineStageFlags {
+    if (pipeline_stage_flags.none) return 0; // c.VK_PIPELINE_STAGE_NONE
+    if (pipeline_stage_flags.all_commands) return c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+    var flags: c.VkPipelineStageFlags = 0;
+
+    if (pipeline_stage_flags.all_graphics) {
+        flags |= c.VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+        if (pipeline_stage_flags.compute_shader)
+            flags |= c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        if (pipeline_stage_flags.clear or pipeline_stage_flags.copy)
+            flags |= c.VK_PIPELINE_STAGE_TRANSFER_BIT;
+        return flags;
+    }
+
+    if (pipeline_stage_flags.draw_indirect)
+        flags |= c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+    if (pipeline_stage_flags.index_input or pipeline_stage_flags.vertex_attribute_input)
+        flags |= c.VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+    if (pipeline_stage_flags.vertex_shader)
+        flags |= c.VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+    if (pipeline_stage_flags.early_fragment_tests)
+        flags |= c.VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+    if (pipeline_stage_flags.fragment_shader)
+        flags |= c.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    if (pipeline_stage_flags.late_fragment_tests)
+        flags |= c.VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    if (pipeline_stage_flags.color_attachment_output)
+        flags |= c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    if (pipeline_stage_flags.compute_shader)
+        flags |= c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+    if (pipeline_stage_flags.clear or pipeline_stage_flags.copy)
+        flags |= c.VK_PIPELINE_STAGE_TRANSFER_BIT;
+    return flags;
+}
