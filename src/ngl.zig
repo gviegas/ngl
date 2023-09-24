@@ -97,6 +97,16 @@ pub fn Flags(comptime E: type) type {
     } });
 }
 
+pub inline fn noFlagsSet(flags: anytype) bool {
+    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+    return @as(U, @bitCast(flags)) == 0;
+}
+
+pub inline fn allFlagsSet(flags: anytype) bool {
+    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+    return @as(U, @bitCast(flags)) == ~@as(U, 0);
+}
+
 test {
     const allocator = std.testing.allocator;
 
