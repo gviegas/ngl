@@ -9,7 +9,6 @@ pub const PipelineStage = enum {
     none,
     all_commands,
     all_graphics,
-    all_transfer,
     draw_indirect,
     index_input,
     vertex_attribute_input,
@@ -18,11 +17,9 @@ pub const PipelineStage = enum {
     fragment_shader,
     late_fragment_tests,
     color_attachment_output,
-    dispatch_indirect,
     compute_shader,
     clear,
     copy,
-    blit,
 
     pub const Flags = ngl.Flags(PipelineStage);
 };
