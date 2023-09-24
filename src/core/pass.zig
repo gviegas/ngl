@@ -5,8 +5,7 @@ const Device = ngl.Device;
 const Format = ngl.Format;
 const SampleCount = ngl.SampleCount;
 const Image = ngl.Image;
-const PipelineStage = ngl.PipelineStage;
-const Access = ngl.Access;
+const SyncScope = ngl.SyncScope;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
@@ -81,10 +80,8 @@ pub const RenderPass = struct {
     pub const Dependency = struct {
         source_subpass: Subpass.Ref,
         dest_subpass: Subpass.Ref,
-        source_stage_mask: PipelineStage.Flags,
-        dest_stage_mask: PipelineStage.Flags,
-        source_access_mask: Access.Flags,
-        dest_access_mask: Access.Flags,
+        first_scope: SyncScope,
+        second_scope: SyncScope,
         by_region: bool,
     };
 
