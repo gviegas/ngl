@@ -8,6 +8,7 @@ pub const CommandPool = @import("core/cmd.zig").CommandPool;
 pub const CommandBuffer = @import("core/cmd.zig").CommandBuffer;
 pub const PipelineStage = @import("core/sync.zig").PipelineStage;
 pub const Access = @import("core/sync.zig").Access;
+pub const SyncScope = @import("core/sync.zig").SyncScope;
 pub const Fence = @import("core/sync.zig").Fence;
 pub const Semaphore = @import("core/sync.zig").Semaphore;
 pub const Format = @import("core/res.zig").Format;
