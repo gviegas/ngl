@@ -294,7 +294,7 @@ pub fn toVkPipelineStage(pipeline_stage: ngl.PipelineStage) c.VkPipelineStageFla
 pub fn toVkPipelineStageFlags(
     pipeline_stage_flags: ngl.PipelineStage.Flags,
 ) c.VkPipelineStageFlags {
-    if (pipeline_stage_flags.none) return 0; // c.VK_PIPELINE_STAGE_NONE
+    if (pipeline_stage_flags.none or ngl.noFlagsSet(pipeline_stage_flags)) return 0; // c.VK_PIPELINE_STAGE_NONE
     if (pipeline_stage_flags.all_commands) return c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
     var flags: c.VkPipelineStageFlags = 0;
@@ -338,7 +338,7 @@ pub fn toVkAccess(_: ngl.Access) c.VkAccessFlagBits {
 
 // TODO: toVkAccessFlags2
 pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
-    if (access_flags.none) return 0; // c.VK_ACCESS_NONE
+    if (access_flags.none or ngl.noFlagsSet(access_flags)) return 0; // c.VK_ACCESS_NONE
 
     var flags: c.VkAccessFlags = 0;
 
