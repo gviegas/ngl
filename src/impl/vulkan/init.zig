@@ -353,6 +353,8 @@ pub const Device = struct {
     destroySampler: c.PFN_vkDestroySampler,
     createRenderPass: c.PFN_vkCreateRenderPass,
     destroyRenderPass: c.PFN_vkDestroyRenderPass,
+    createFramebuffer: c.PFN_vkCreateFramebuffer,
+    destroyFramebuffer: c.PFN_vkDestroyFramebuffer,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -453,6 +455,8 @@ pub const Device = struct {
             .destroySampler = @ptrCast(try Device.getProc(get, dev, "vkDestroySampler")),
             .createRenderPass = @ptrCast(try Device.getProc(get, dev, "vkCreateRenderPass")),
             .destroyRenderPass = @ptrCast(try Device.getProc(get, dev, "vkDestroyRenderPass")),
+            .createFramebuffer = @ptrCast(try Device.getProc(get, dev, "vkCreateFramebuffer")),
+            .destroyFramebuffer = @ptrCast(try Device.getProc(get, dev, "vkDestroyFramebuffer")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -713,6 +717,23 @@ pub const Device = struct {
     ) void {
         self.destroyRenderPass.?(self.handle, render_pass, vk_allocator);
     }
+
+    pub inline fn vkCreateFramebuffer(
+        self: *Device,
+        create_info: *const c.VkFramebufferCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        framebuffer: *c.VkFramebuffer,
+    ) c.VkResult {
+        return self.createFramebuffer.?(self.handle, create_info, vk_allocator, framebuffer);
+    }
+
+    pub inline fn vkDestroyFramebuffer(
+        self: *Device,
+        framebuffer: c.VkFramebuffer,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroyFramebuffer.?(self.handle, framebuffer, vk_allocator);
+    }
 };
 
 pub const Queue = struct {
@@ -768,4 +789,7 @@ const vtable = Impl.VTable{
 
     .initRenderPass = @import("pass.zig").RenderPass.init,
     .deinitRenderPass = @import("pass.zig").RenderPass.deinit,
+
+    .initFrameBuffer = @import("pass.zig").FrameBuffer.init,
+    .deinitFrameBuffer = @import("pass.zig").FrameBuffer.deinit,
 };

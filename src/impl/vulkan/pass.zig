@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const ngl = @import("../../ngl.zig");
+const ImageView = @import("res.zig").ImageView;
 const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
@@ -229,5 +230,68 @@ pub const RenderPass = struct {
         const rp = cast(render_pass);
         dev.vkDestroyRenderPass(rp.handle, null);
         allocator.destroy(rp);
+    }
+};
+
+pub const FrameBuffer = struct {
+    handle: c.VkFramebuffer,
+
+    pub inline fn cast(impl: *Impl.FrameBuffer) *FrameBuffer {
+        return @ptrCast(@alignCast(impl));
+    }
+
+    pub fn init(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        desc: ngl.FrameBuffer.Desc,
+    ) Error!*Impl.FrameBuffer {
+        const dev = Device.cast(device);
+        const rp = RenderPass.cast(Impl.RenderPass.cast(desc.render_pass));
+
+        const attach_n: u32 = if (desc.attachments) |x| @intCast(x.len) else 0;
+        var attachs: ?[]c.VkImageView = blk: {
+            if (attach_n == 0) break :blk null;
+            var handles = try allocator.alloc(c.VkImageView, attach_n);
+            for (handles, desc.attachments.?) |*handle, attach| {
+                handle.* = if (attach) |v|
+                    ImageView.cast(Impl.ImageView.cast(v)).handle
+                else
+                    @ptrCast(c.VK_NULL_HANDLE);
+            }
+            break :blk handles;
+        };
+        defer if (attachs) |x| allocator.free(x);
+
+        var ptr = try allocator.create(FrameBuffer);
+        errdefer allocator.destroy(ptr);
+
+        var fb: c.VkFramebuffer = undefined;
+        try conv.check(dev.vkCreateFramebuffer(&.{
+            .sType = c.VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .renderPass = rp.handle,
+            .attachmentCount = attach_n,
+            .pAttachments = if (attachs) |x| x.ptr else null,
+            .width = desc.width,
+            .height = desc.height,
+            .layers = desc.layers,
+        }, null, &fb));
+
+        ptr.* = .{ .handle = fb };
+        return @ptrCast(ptr);
+    }
+
+    pub fn deinit(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        frame_buffer: *Impl.FrameBuffer,
+    ) void {
+        const dev = Device.cast(device);
+        const fb = cast(frame_buffer);
+        dev.vkDestroyFramebuffer(fb.handle, null);
+        allocator.destroy(fb);
     }
 };

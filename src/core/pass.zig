@@ -3,6 +3,7 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
 const Format = ngl.Format;
+const ImageView = ngl.ImageView;
 const SampleCount = ngl.SampleCount;
 const Image = ngl.Image;
 const SyncScope = ngl.SyncScope;
@@ -99,6 +100,29 @@ pub const RenderPass = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitRenderPass(allocator, device.impl, self.impl);
+        self.* = undefined;
+    }
+};
+
+pub const FrameBuffer = struct {
+    impl: *Impl.FrameBuffer,
+
+    pub const Desc = struct {
+        render_pass: *const RenderPass,
+        attachments: ?[]const ?*const ImageView,
+        width: u32,
+        height: u32,
+        layers: u32,
+    };
+
+    const Self = @This();
+
+    pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        return .{ .impl = try Impl.get().initFrameBuffer(allocator, device.impl, desc) };
+    }
+
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
+        Impl.get().deinitFrameBuffer(allocator, device.impl, self.impl);
         self.* = undefined;
     }
 };

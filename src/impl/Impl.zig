@@ -29,6 +29,7 @@ pub const Image = Opaque(ngl.Image);
 pub const ImageView = Opaque(ngl.ImageView);
 pub const Sampler = Opaque(ngl.Sampler);
 pub const RenderPass = Opaque(ngl.RenderPass);
+pub const FrameBuffer = Opaque(ngl.FrameBuffer);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -239,6 +240,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         render_pass: *RenderPass,
+    ) void,
+
+    // FrameBuffer -----------------------------------------
+
+    initFrameBuffer: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.FrameBuffer.Desc,
+    ) Error!*FrameBuffer,
+
+    deinitFrameBuffer: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        frame_buffer: *FrameBuffer,
     ) void,
 };
 
@@ -502,4 +519,22 @@ pub fn deinitRenderPass(
     render_pass: *RenderPass,
 ) void {
     self.vtable.deinitRenderPass(self.ptr, allocator, device, render_pass);
+}
+
+pub fn initFrameBuffer(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.FrameBuffer.Desc,
+) Error!*FrameBuffer {
+    return self.vtable.initFrameBuffer(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitFrameBuffer(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    frame_buffer: *FrameBuffer,
+) void {
+    self.vtable.deinitFrameBuffer(self.ptr, allocator, device, frame_buffer);
 }

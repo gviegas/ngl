@@ -23,6 +23,7 @@ pub const LoadOp = @import("core/pass.zig").LoadOp;
 pub const StoreOp = @import("core/pass.zig").StoreOp;
 pub const ResolveMode = @import("core/pass.zig").ResolveMode;
 pub const RenderPass = @import("core/pass.zig").RenderPass;
+pub const FrameBuffer = @import("core/pass.zig").FrameBuffer;
 
 pub const Error = error{
     NotReady,
@@ -205,7 +206,7 @@ test {
     var rp = try RenderPass.init(allocator, &ctx.device, .{
         .attachments = &.{
             .{
-                .format = .rgba8_unorm,
+                .format = .rgba8_srgb,
                 .samples = .@"1",
                 .load_op = .clear,
                 .store_op = .store,
@@ -215,20 +216,20 @@ test {
                 .combined = null,
                 .may_alias = false,
             },
-            .{
-                .format = .d24_unorm_s8_uint,
-                .samples = .@"1",
-                .load_op = .clear,
-                .store_op = .dont_care,
-                .initial_layout = .undefined,
-                .final_layout = .undefined,
-                .resolve_mode = null,
-                .combined = .{
-                    .stencil_load_op = .clear,
-                    .stencil_store_op = .dont_care,
-                },
-                .may_alias = false,
-            },
+            //.{
+            //    .format = .d24_unorm_s8_uint,
+            //    .samples = .@"1",
+            //    .load_op = .clear,
+            //    .store_op = .dont_care,
+            //    .initial_layout = .undefined,
+            //    .final_layout = .undefined,
+            //    .resolve_mode = null,
+            //    .combined = .{
+            //        .stencil_load_op = .clear,
+            //        .stencil_store_op = .dont_care,
+            //    },
+            //    .may_alias = false,
+            //},
         },
         .subpasses = &.{
             .{
@@ -241,12 +242,13 @@ test {
                         .resolve = null,
                     },
                 },
-                .depth_stencil_attachment = .{
-                    .index = 1,
-                    .layout = .depth_stencil_attachment_optimal,
-                    .aspect_mask = .{ .depth = true, .stencil = true },
-                    .resolve = null,
-                },
+                //.depth_stencil_attachment = .{
+                //    .index = 1,
+                //    .layout = .depth_stencil_attachment_optimal,
+                //    .aspect_mask = .{ .depth = true, .stencil = true },
+                //    .resolve = null,
+                //},
+                .depth_stencil_attachment = null,
                 .preserve_attachments = null,
             },
         },
@@ -259,7 +261,7 @@ test {
                     .access_mask = .{ .memory_read = true, .memory_write = true },
                 },
                 .second_scope = .{
-                    .stage_mask = .{ .early_fragment_tests = true },
+                    .stage_mask = .{ .color_attachment_output = true },
                     .access_mask = .{ .memory_write = true },
                 },
                 .by_region = true,
@@ -267,4 +269,13 @@ test {
         },
     });
     defer rp.deinit(allocator, &ctx.device);
+
+    var fb = try FrameBuffer.init(allocator, &ctx.device, .{
+        .render_pass = &rp,
+        .attachments = &.{&img_view},
+        .width = 1024,
+        .height = 1024,
+        .layers = 1,
+    });
+    defer fb.deinit(allocator, &ctx.device);
 }
