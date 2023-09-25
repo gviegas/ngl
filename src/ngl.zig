@@ -203,9 +203,68 @@ test {
     defer splr.deinit(allocator, &ctx.device);
 
     var rp = try RenderPass.init(allocator, &ctx.device, .{
-        .attachments = &.{},
-        .subpasses = &.{},
-        .dependencies = &.{},
+        .attachments = &.{
+            .{
+                .format = .rgba8_unorm,
+                .samples = .@"1",
+                .load_op = .clear,
+                .store_op = .store,
+                .initial_layout = .undefined,
+                .final_layout = .general,
+                .resolve_mode = null,
+                .combined = null,
+                .may_alias = false,
+            },
+            .{
+                .format = .d24_unorm_s8_uint,
+                .samples = .@"1",
+                .load_op = .clear,
+                .store_op = .dont_care,
+                .initial_layout = .undefined,
+                .final_layout = .undefined,
+                .resolve_mode = null,
+                .combined = .{
+                    .stencil_load_op = .clear,
+                    .stencil_store_op = .dont_care,
+                },
+                .may_alias = false,
+            },
+        },
+        .subpasses = &.{
+            .{
+                .input_attachments = null,
+                .color_attachments = &.{
+                    .{
+                        .index = 0,
+                        .layout = .color_attachment_optimal,
+                        .aspect_mask = .{ .color = true },
+                        .resolve = null,
+                    },
+                },
+                .depth_stencil_attachment = .{
+                    .index = 1,
+                    .layout = .depth_stencil_attachment_optimal,
+                    .aspect_mask = .{ .depth = true, .stencil = true },
+                    .resolve = null,
+                },
+                .preserve_attachments = null,
+            },
+        },
+        .dependencies = &.{
+            .{
+                .source_subpass = .external,
+                .dest_subpass = .{ .index = 0 },
+                .first_scope = .{
+                    .stage_mask = .{ .color_attachment_output = true },
+                    .access_mask = .{ .memory_read = true, .memory_write = true },
+                },
+                .second_scope = .{
+                    .stage_mask = .{ .early_fragment_tests = true },
+                    .access_mask = .{ .memory_write = true },
+                },
+                .by_region = true,
+            },
+        },
     });
     defer rp.deinit(allocator, &ctx.device);
 }
