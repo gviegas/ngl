@@ -66,10 +66,10 @@ pub const RenderPass = struct {
 
     // TODO: Pipeline identification
     pub const Subpass = struct {
-        preserve_attachments: ?[]const Attachment.Ref,
         input_attachments: ?[]const ?Attachment.Ref,
         color_attachments: ?[]const ?Attachment.Ref,
         depth_stencil_attachment: ?Attachment.Ref,
+        preserve_attachments: ?[]const Index,
 
         pub const Ref = union(enum) {
             index: Index,
