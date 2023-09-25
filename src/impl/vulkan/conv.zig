@@ -425,3 +425,23 @@ pub fn toVkAttachmentStoreOp(store_op: ngl.StoreOp) c.VkAttachmentStoreOp {
         .dont_care => c.VK_ATTACHMENT_STORE_OP_DONT_CARE,
     };
 }
+
+/// v1.2
+pub fn toVkResolveMode(resolve_mode: ngl.ResolveMode) c.VkResolveModeFlagBits {
+    return switch (resolve_mode) {
+        .average => c.VK_RESOLVE_MODE_AVERAGE_BIT,
+        .sample_zero => c.VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,
+        .min => c.VK_RESOLVE_MODE_MIN_BIT,
+        .max => c.VK_RESOLVE_MODE_MAX_BIT,
+    };
+}
+
+/// v1.2
+pub fn toVkResolveModeFlags(resolve_mode_flags: ngl.ResolveMode.Flags) c.VkResolveModeFlags {
+    var flags: c.VkResolveModeFlags = 0;
+    if (resolve_mode_flags.average) flags |= c.VK_RESOLVE_MODE_AVERAGE_BIT;
+    if (resolve_mode_flags.sample_zero) flags |= c.VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+    if (resolve_mode_flags.min) flags |= c.VK_RESOLVE_MODE_MIN_BIT;
+    if (resolve_mode_flags.max) flags |= c.VK_RESOLVE_MODE_MAX_BIT;
+    return flags;
+}
