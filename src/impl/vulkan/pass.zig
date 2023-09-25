@@ -6,6 +6,7 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const log = @import("init.zig").log;
 const Device = @import("init.zig").Device;
 
 pub const RenderPass = struct {
@@ -161,6 +162,11 @@ pub const RenderPass = struct {
                         .attachment = ref.index,
                         .layout = conv.toVkImageLayout(ref.layout),
                     };
+                    // TODO
+                    if (ref.resolve != null) {
+                        log.warn("Depth/stencil resolve not implemented", .{});
+                        return Error.NotSupported;
+                    }
                     refs_ptr += 2;
                 } else {
                     subp_desc.pDepthStencilAttachment = null;
