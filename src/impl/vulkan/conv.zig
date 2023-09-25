@@ -410,3 +410,18 @@ pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
         flags |= c.VK_ACCESS_TRANSFER_WRITE_BIT;
     return flags;
 }
+
+pub fn toVkAttachmentLoadOp(load_op: ngl.LoadOp) c.VkAttachmentLoadOp {
+    return switch (load_op) {
+        .load => c.VK_ATTACHMENT_LOAD_OP_LOAD,
+        .clear => c.VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .dont_care => c.VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+    };
+}
+
+pub fn toVkAttachmentStoreOp(store_op: ngl.StoreOp) c.VkAttachmentStoreOp {
+    return switch (store_op) {
+        .store => c.VK_ATTACHMENT_STORE_OP_STORE,
+        .dont_care => c.VK_ATTACHMENT_STORE_OP_DONT_CARE,
+    };
+}
