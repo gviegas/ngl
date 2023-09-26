@@ -43,3 +43,28 @@ pub const DescriptorSetLayout = struct {
         Impl.get().deinitDescriptorSetLayout(allocator, device.impl, self.impl);
     }
 };
+
+// TODO: Allowed pipeline stages
+pub const PushConstantRange = struct {
+    offset: u16,
+    size: u16,
+};
+
+pub const PipelineLayout = struct {
+    impl: *Impl.PipelineLayout,
+
+    pub const Desc = struct {
+        descriptor_set_layouts: ?[]const *const DescriptorSetLayout,
+        push_constant_ranges: ?[]const PushConstantRange,
+    };
+
+    const Self = @This();
+
+    pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        return .{ .impl = try Impl.get().initPipelineLayout(allocator, device.impl, desc) };
+    }
+
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
+        Impl.get().deinitPipelineLayout(allocator, device.impl, self.impl);
+    }
+};

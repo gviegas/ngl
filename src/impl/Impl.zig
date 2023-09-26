@@ -31,6 +31,7 @@ pub const Sampler = Opaque(ngl.Sampler);
 pub const RenderPass = Opaque(ngl.RenderPass);
 pub const FrameBuffer = Opaque(ngl.FrameBuffer);
 pub const DescriptorSetLayout = Opaque(ngl.DescriptorSetLayout);
+pub const PipelineLayout = Opaque(ngl.PipelineLayout);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -273,6 +274,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         descriptor_set_layout: *DescriptorSetLayout,
+    ) void,
+
+    // PipelineLayout --------------------------------------
+
+    initPipelineLayout: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.PipelineLayout.Desc,
+    ) Error!*PipelineLayout,
+
+    deinitPipelineLayout: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        pipeline_layout: *PipelineLayout,
     ) void,
 };
 
@@ -572,4 +589,22 @@ pub fn deinitDescriptorSetLayout(
     descriptor_set_layout: *DescriptorSetLayout,
 ) void {
     self.vtable.deinitDescriptorSetLayout(self.ptr, allocator, device, descriptor_set_layout);
+}
+
+pub fn initPipelineLayout(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.PipelineLayout.Desc,
+) Error!*PipelineLayout {
+    return self.vtable.initPipelineLayout(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitPipelineLayout(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    pipeline_layout: *PipelineLayout,
+) void {
+    self.vtable.deinitPipelineLayout(self.ptr, allocator, device, pipeline_layout);
 }

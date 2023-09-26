@@ -357,6 +357,8 @@ pub const Device = struct {
     destroyFramebuffer: c.PFN_vkDestroyFramebuffer,
     createDescriptorSetLayout: c.PFN_vkCreateDescriptorSetLayout,
     destroyDescriptorSetLayout: c.PFN_vkDestroyDescriptorSetLayout,
+    createPipelineLayout: c.PFN_vkCreatePipelineLayout,
+    destroyPipelineLayout: c.PFN_vkDestroyPipelineLayout,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -461,6 +463,8 @@ pub const Device = struct {
             .destroyFramebuffer = @ptrCast(try Device.getProc(get, dev, "vkDestroyFramebuffer")),
             .createDescriptorSetLayout = @ptrCast(try Device.getProc(get, dev, "vkCreateDescriptorSetLayout")),
             .destroyDescriptorSetLayout = @ptrCast(try Device.getProc(get, dev, "vkDestroyDescriptorSetLayout")),
+            .createPipelineLayout = @ptrCast(try Device.getProc(get, dev, "vkCreatePipelineLayout")),
+            .destroyPipelineLayout = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipelineLayout")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -760,6 +764,23 @@ pub const Device = struct {
     ) void {
         self.destroyDescriptorSetLayout.?(self.handle, descriptor_set_layout, vk_allocator);
     }
+
+    pub inline fn vkCreatePipelineLayout(
+        self: *Device,
+        create_info: *const c.VkPipelineLayoutCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        pipeline_layout: *c.VkPipelineLayout,
+    ) c.VkResult {
+        return self.createPipelineLayout.?(self.handle, create_info, vk_allocator, pipeline_layout);
+    }
+
+    pub inline fn vkDestroyPipelineLayout(
+        self: *Device,
+        pipeline_layout: c.VkPipelineLayout,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroyPipelineLayout.?(self.handle, pipeline_layout, vk_allocator);
+    }
 };
 
 pub const Queue = struct {
@@ -821,4 +842,7 @@ const vtable = Impl.VTable{
 
     .initDescriptorSetLayout = @import("desc.zig").DescriptorSetLayout.init,
     .deinitDescriptorSetLayout = @import("desc.zig").DescriptorSetLayout.deinit,
+
+    .initPipelineLayout = @import("desc.zig").PipelineLayout.init,
+    .deinitPipelineLayout = @import("desc.zig").PipelineLayout.deinit,
 };

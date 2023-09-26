@@ -26,6 +26,8 @@ pub const RenderPass = @import("core/pass.zig").RenderPass;
 pub const FrameBuffer = @import("core/pass.zig").FrameBuffer;
 pub const DescriptorType = @import("core/desc.zig").DescriptorType;
 pub const DescriptorSetLayout = @import("core/desc.zig").DescriptorSetLayout;
+pub const PushConstantRange = @import("core/desc/zig").PushConstantRange;
+pub const PipelineLayout = @import("core/desc.zig").PipelineLayout;
 
 pub const Error = error{
     NotReady,
@@ -302,4 +304,10 @@ test {
         },
     } });
     defer set_layout.deinit(allocator, &ctx.device);
+
+    var pl_layout = try PipelineLayout.init(allocator, &ctx.device, .{
+        .descriptor_set_layouts = &.{&set_layout},
+        .push_constant_ranges = &.{.{ .offset = 0, .size = 64 }},
+    });
+    defer pl_layout.deinit(allocator, &ctx.device);
 }
