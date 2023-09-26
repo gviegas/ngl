@@ -24,6 +24,8 @@ pub const StoreOp = @import("core/pass.zig").StoreOp;
 pub const ResolveMode = @import("core/pass.zig").ResolveMode;
 pub const RenderPass = @import("core/pass.zig").RenderPass;
 pub const FrameBuffer = @import("core/pass.zig").FrameBuffer;
+pub const DescriptorType = @import("core/desc.zig").DescriptorType;
+pub const DescriptorSetLayout = @import("core/desc.zig").DescriptorSetLayout;
 
 pub const Error = error{
     NotReady,
@@ -278,4 +280,7 @@ test {
         .layers = 1,
     });
     defer fb.deinit(allocator, &ctx.device);
+
+    var set_layout = try DescriptorSetLayout.init(allocator, &ctx.device, .{ .bindings = &.{} });
+    defer set_layout.deinit(allocator, &ctx.device);
 }

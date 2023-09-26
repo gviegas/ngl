@@ -30,6 +30,7 @@ pub const ImageView = Opaque(ngl.ImageView);
 pub const Sampler = Opaque(ngl.Sampler);
 pub const RenderPass = Opaque(ngl.RenderPass);
 pub const FrameBuffer = Opaque(ngl.FrameBuffer);
+pub const DescriptorSetLayout = Opaque(ngl.DescriptorSetLayout);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -256,6 +257,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         frame_buffer: *FrameBuffer,
+    ) void,
+
+    // DescriptorSetLayout ---------------------------------
+
+    initDescriptorSetLayout: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.DescriptorSetLayout.Desc,
+    ) Error!*DescriptorSetLayout,
+
+    deinitDescriptorSetLayout: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        descriptor_set_layout: *DescriptorSetLayout,
     ) void,
 };
 
@@ -537,4 +554,22 @@ pub fn deinitFrameBuffer(
     frame_buffer: *FrameBuffer,
 ) void {
     self.vtable.deinitFrameBuffer(self.ptr, allocator, device, frame_buffer);
+}
+
+pub fn initDescriptorSetLayout(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.DescriptorSetLayout.Desc,
+) Error!*DescriptorSetLayout {
+    return self.vtable.initDescriptorSetLayout(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitDescriptorSetLayout(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    descriptor_set_layout: *DescriptorSetLayout,
+) void {
+    self.vtable.deinitDescriptorSetLayout(self.ptr, allocator, device, descriptor_set_layout);
 }

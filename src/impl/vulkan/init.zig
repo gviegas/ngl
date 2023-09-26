@@ -355,6 +355,8 @@ pub const Device = struct {
     destroyRenderPass: c.PFN_vkDestroyRenderPass,
     createFramebuffer: c.PFN_vkCreateFramebuffer,
     destroyFramebuffer: c.PFN_vkDestroyFramebuffer,
+    createDescriptorSetLayout: c.PFN_vkCreateDescriptorSetLayout,
+    destroyDescriptorSetLayout: c.PFN_vkDestroyDescriptorSetLayout,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -457,6 +459,8 @@ pub const Device = struct {
             .destroyRenderPass = @ptrCast(try Device.getProc(get, dev, "vkDestroyRenderPass")),
             .createFramebuffer = @ptrCast(try Device.getProc(get, dev, "vkCreateFramebuffer")),
             .destroyFramebuffer = @ptrCast(try Device.getProc(get, dev, "vkDestroyFramebuffer")),
+            .createDescriptorSetLayout = @ptrCast(try Device.getProc(get, dev, "vkCreateDescriptorSetLayout")),
+            .destroyDescriptorSetLayout = @ptrCast(try Device.getProc(get, dev, "vkDestroyDescriptorSetLayout")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -734,6 +738,28 @@ pub const Device = struct {
     ) void {
         self.destroyFramebuffer.?(self.handle, framebuffer, vk_allocator);
     }
+
+    pub inline fn vkCreateDescriptorSetLayout(
+        self: *Device,
+        create_info: *const c.VkDescriptorSetLayoutCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        descriptor_set_layout: *c.VkDescriptorSetLayout,
+    ) c.VkResult {
+        return self.createDescriptorSetLayout.?(
+            self.handle,
+            create_info,
+            vk_allocator,
+            descriptor_set_layout,
+        );
+    }
+
+    pub inline fn vkDestroyDescriptorSetLayout(
+        self: *Device,
+        descriptor_set_layout: c.VkDescriptorSetLayout,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroyDescriptorSetLayout.?(self.handle, descriptor_set_layout, vk_allocator);
+    }
 };
 
 pub const Queue = struct {
@@ -792,4 +818,7 @@ const vtable = Impl.VTable{
 
     .initFrameBuffer = @import("pass.zig").FrameBuffer.init,
     .deinitFrameBuffer = @import("pass.zig").FrameBuffer.deinit,
+
+    .initDescriptorSetLayout = @import("desc.zig").DescriptorSetLayout.init,
+    .deinitDescriptorSetLayout = @import("desc.zig").DescriptorSetLayout.deinit,
 };
