@@ -445,3 +445,17 @@ pub fn toVkResolveModeFlags(resolve_mode_flags: ngl.ResolveMode.Flags) c.VkResol
     if (resolve_mode_flags.max) flags |= c.VK_RESOLVE_MODE_MAX_BIT;
     return flags;
 }
+
+pub fn toVkDescriptorType(descriptor_type: ngl.DescriptorType) c.VkDescriptorType {
+    return switch (descriptor_type) {
+        .sampler => c.VK_DESCRIPTOR_TYPE_SAMPLER,
+        .combined_image_sampler => c.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .sampled_image => c.VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+        .storage_image => c.VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+        .uniform_texel_buffer => c.VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+        .storage_texel_buffer => c.VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+        .uniform_buffer => c.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .storage_buffer => c.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        .input_attachment => c.VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+    };
+}
