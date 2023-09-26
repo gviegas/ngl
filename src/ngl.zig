@@ -281,6 +281,25 @@ test {
     });
     defer fb.deinit(allocator, &ctx.device);
 
-    var set_layout = try DescriptorSetLayout.init(allocator, &ctx.device, .{ .bindings = &.{} });
+    var set_layout = try DescriptorSetLayout.init(allocator, &ctx.device, .{ .bindings = &.{
+        .{
+            .binding = 0,
+            .type = .sampler,
+            .count = 1,
+            .immutable_samplers = &.{&splr},
+        },
+        .{
+            .binding = 1,
+            .type = .combined_image_sampler,
+            .count = 2,
+            .immutable_samplers = &.{ &splr, &splr },
+        },
+        .{
+            .binding = 2,
+            .type = .storage_image,
+            .count = 3,
+            .immutable_samplers = null,
+        },
+    } });
     defer set_layout.deinit(allocator, &ctx.device);
 }
