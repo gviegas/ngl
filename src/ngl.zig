@@ -28,6 +28,7 @@ pub const DescriptorType = @import("core/desc.zig").DescriptorType;
 pub const DescriptorSetLayout = @import("core/desc.zig").DescriptorSetLayout;
 pub const PushConstantRange = @import("core/desc/zig").PushConstantRange;
 pub const PipelineLayout = @import("core/desc.zig").PipelineLayout;
+pub const DescriptorPool = @import("core/desc.zig").DescriptorPool;
 
 pub const Error = error{
     NotReady,
@@ -310,4 +311,17 @@ test {
         .push_constant_ranges = &.{.{ .offset = 0, .size = 64 }},
     });
     defer pl_layout.deinit(allocator, &ctx.device);
+
+    var desc_pool = try DescriptorPool.init(allocator, &ctx.device, .{
+        .max_sets = 60,
+        .pool_size = .{
+            .sampler = 12,
+            .combined_image_sampler = 35,
+            .sampled_image = 20,
+            .storage_image = 1,
+            .uniform_buffer = 75,
+            .input_attachment = 4,
+        },
+    });
+    defer desc_pool.deinit(allocator, &ctx.device);
 }

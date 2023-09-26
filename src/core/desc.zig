@@ -68,3 +68,43 @@ pub const PipelineLayout = struct {
         Impl.get().deinitPipelineLayout(allocator, device.impl, self.impl);
     }
 };
+
+pub const DescriptorPool = struct {
+    impl: *Impl.DescriptorPool,
+
+    pub const PoolSize = @Type(.{
+        .Struct = .{
+            .layout = .Auto,
+            .fields = blk: {
+                const StructField = std.builtin.Type.StructField;
+                var fields: []const StructField = &[_]StructField{};
+                for (@typeInfo(DescriptorType).Enum.fields) |f|
+                    fields = fields ++ &[1]StructField{.{
+                        .name = f.name,
+                        .type = u32,
+                        .default_value = &@as(u32, 0),
+                        .is_comptime = false,
+                        .alignment = @alignOf(u32),
+                    }};
+                break :blk fields;
+            },
+            .decls = &.{},
+            .is_tuple = false,
+        },
+    });
+
+    pub const Desc = struct {
+        max_sets: u32,
+        pool_size: PoolSize,
+    };
+
+    const Self = @This();
+
+    pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        return .{ .impl = try Impl.get().initDescriptorPool(allocator, device.impl, desc) };
+    }
+
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
+        Impl.get().deinitDescriptorPool(allocator, device.impl, self.impl);
+    }
+};

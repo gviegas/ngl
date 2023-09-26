@@ -161,3 +161,65 @@ pub const PipelineLayout = struct {
         allocator.destroy(pl_layout);
     }
 };
+
+pub const DescriptorPool = struct {
+    handle: c.VkDescriptorPool,
+
+    pub inline fn cast(impl: *Impl.DescriptorPool) *DescriptorPool {
+        return @ptrCast(@alignCast(impl));
+    }
+
+    pub fn init(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        desc: ngl.DescriptorPool.Desc,
+    ) Error!*Impl.DescriptorPool {
+        const dev = Device.cast(device);
+
+        const max_type = @typeInfo(ngl.DescriptorType).Enum.fields.len;
+        var pool_sizes: [max_type]c.VkDescriptorPoolSize = undefined;
+        const pool_size_n = blk: {
+            var n: u32 = 0;
+            inline for (@typeInfo(ngl.DescriptorPool.PoolSize).Struct.fields) |f| {
+                const size = @field(desc.pool_size, f.name);
+                if (size > 0) {
+                    pool_sizes[n] = .{
+                        .type = conv.toVkDescriptorType(@field(ngl.DescriptorType, f.name)),
+                        .descriptorCount = size,
+                    };
+                    n += 1;
+                }
+            }
+            break :blk n;
+        };
+
+        var ptr = try allocator.create(DescriptorPool);
+        errdefer allocator.destroy(ptr);
+
+        var desc_pool: c.VkDescriptorPool = undefined;
+        try conv.check(dev.vkCreateDescriptorPool(&.{
+            .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .maxSets = desc.max_sets,
+            .poolSizeCount = pool_size_n,
+            .pPoolSizes = if (pool_size_n > 0) pool_sizes[0..].ptr else null,
+        }, null, &desc_pool));
+
+        ptr.* = .{ .handle = desc_pool };
+        return @ptrCast(ptr);
+    }
+
+    pub fn deinit(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        descriptor_pool: *Impl.DescriptorPool,
+    ) void {
+        const dev = Device.cast(device);
+        const desc_pool = cast(descriptor_pool);
+        dev.vkDestroyDescriptorPool(desc_pool.handle, null);
+        allocator.destroy(desc_pool);
+    }
+};

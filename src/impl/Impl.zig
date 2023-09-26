@@ -32,6 +32,7 @@ pub const RenderPass = Opaque(ngl.RenderPass);
 pub const FrameBuffer = Opaque(ngl.FrameBuffer);
 pub const DescriptorSetLayout = Opaque(ngl.DescriptorSetLayout);
 pub const PipelineLayout = Opaque(ngl.PipelineLayout);
+pub const DescriptorPool = Opaque(ngl.DescriptorPool);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -290,6 +291,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         pipeline_layout: *PipelineLayout,
+    ) void,
+
+    // DescriptorPool --------------------------------------
+
+    initDescriptorPool: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.DescriptorPool.Desc,
+    ) Error!*DescriptorPool,
+
+    deinitDescriptorPool: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        descriptor_pool: *DescriptorPool,
     ) void,
 };
 
@@ -607,4 +624,22 @@ pub fn deinitPipelineLayout(
     pipeline_layout: *PipelineLayout,
 ) void {
     self.vtable.deinitPipelineLayout(self.ptr, allocator, device, pipeline_layout);
+}
+
+pub fn initDescriptorPool(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.DescriptorPool.Desc,
+) Error!*DescriptorPool {
+    return self.vtable.initDescriptorPool(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitDescriptorPool(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    descriptor_pool: *DescriptorPool,
+) void {
+    self.vtable.deinitDescriptorPool(self.ptr, allocator, device, descriptor_pool);
 }
