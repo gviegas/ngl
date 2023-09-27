@@ -30,6 +30,7 @@ pub const PushConstantRange = @import("core/desc/zig").PushConstantRange;
 pub const PipelineLayout = @import("core/desc.zig").PipelineLayout;
 pub const DescriptorPool = @import("core/desc.zig").DescriptorPool;
 pub const DescriptorSet = @import("core/desc.zig").DescriptorSet;
+pub const Pipeline = @import("core/state.zig").Pipeline;
 
 pub const Error = error{
     NotReady,
@@ -130,9 +131,6 @@ test {
         .count = 3,
     });
     defer cmd_pool.free(allocator, &ctx.device, cmd_bufs);
-
-    _ = PipelineStage.Flags{ .compute_shader = true };
-    _ = Access.Flags{ .shader_storage_write = true };
 
     var fence = try Fence.init(allocator, &ctx.device, .{});
     defer fence.deinit(allocator, &ctx.device);
@@ -328,4 +326,8 @@ test {
 
     var desc_sets = try desc_pool.alloc(allocator, &ctx.device, .{ .layouts = &.{&set_layout} });
     defer desc_pool.free(allocator, &ctx.device, desc_sets);
+
+    var pl = Pipeline{ .impl = undefined, .type = .compute }; // XXX
+    //defer pl.deinit(allocator, &ctx.device);
+    _ = pl;
 }

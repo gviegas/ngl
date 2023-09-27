@@ -363,6 +363,7 @@ pub const Device = struct {
     destroyDescriptorPool: c.PFN_vkDestroyDescriptorPool,
     allocateDescriptorSets: c.PFN_vkAllocateDescriptorSets,
     freeDescriptorSets: c.PFN_vkFreeDescriptorSets,
+    destroyPipeline: c.PFN_vkDestroyPipeline,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -473,6 +474,7 @@ pub const Device = struct {
             .destroyDescriptorPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyDescriptorPool")),
             .allocateDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkAllocateDescriptorSets")),
             .freeDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkFreeDescriptorSets")),
+            .destroyPipeline = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipeline")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -828,6 +830,14 @@ pub const Device = struct {
             descriptor_sets,
         );
     }
+
+    pub inline fn vkDestroyPipeline(
+        self: *Device,
+        pipeline: c.VkPipeline,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroyPipeline.?(self.handle, pipeline, vk_allocator);
+    }
 };
 
 pub const Queue = struct {
@@ -897,4 +907,6 @@ const vtable = Impl.VTable{
     .allocDescriptorSets = @import("desc.zig").DescriptorPool.alloc,
     .freeDescriptorSets = @import("desc.zig").DescriptorPool.free,
     .deinitDescriptorPool = @import("desc.zig").DescriptorPool.deinit,
+
+    .deinitPipeline = @import("state.zig").Pipeline.deinit,
 };

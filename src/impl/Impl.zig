@@ -26,6 +26,7 @@ pub const DescriptorSetLayout = opaque {};
 pub const PipelineLayout = opaque {};
 pub const DescriptorPool = opaque {};
 pub const DescriptorSet = opaque {};
+pub const Pipeline = opaque {};
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -317,6 +318,16 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         descriptor_pool: *DescriptorPool,
+    ) void,
+
+    // Pipeline --------------------------------------------
+
+    deinitPipeline: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        pipeline: *Pipeline,
+        type: ngl.Pipeline.Type,
     ) void,
 };
 
@@ -680,4 +691,14 @@ pub fn deinitDescriptorPool(
     descriptor_pool: *DescriptorPool,
 ) void {
     self.vtable.deinitDescriptorPool(self.ptr, allocator, device, descriptor_pool);
+}
+
+pub fn deinitPipeline(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    pipeline: *Pipeline,
+    @"type": ngl.Pipeline.Type,
+) void {
+    self.vtable.deinitPipeline(self, allocator, device, pipeline, @"type");
 }
