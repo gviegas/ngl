@@ -27,6 +27,7 @@ pub const PipelineLayout = opaque {};
 pub const DescriptorPool = opaque {};
 pub const DescriptorSet = opaque {};
 pub const Pipeline = opaque {};
+pub const PipelineCache = opaque {};
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -328,6 +329,22 @@ pub const VTable = struct {
         device: *Device,
         pipeline: *Pipeline,
         type: ngl.Pipeline.Type,
+    ) void,
+
+    // PipelineCache ---------------------------------------
+
+    initPipelineCache: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.PipelineCache.Desc,
+    ) Error!*PipelineCache,
+
+    deinitPipelineCache: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        pipeline_cache: *PipelineCache,
     ) void,
 };
 
@@ -701,4 +718,22 @@ pub fn deinitPipeline(
     @"type": ngl.Pipeline.Type,
 ) void {
     self.vtable.deinitPipeline(self, allocator, device, pipeline, @"type");
+}
+
+pub fn initPipelineCache(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.PipelineCache.Desc,
+) Error!*PipelineCache {
+    return self.vtable.initPipelineCache(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitPipelineCache(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    pipeline_cache: *PipelineCache,
+) void {
+    self.vtable.deinitPipelineCache(self.ptr, allocator, device, pipeline_cache);
 }

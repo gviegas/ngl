@@ -364,6 +364,8 @@ pub const Device = struct {
     allocateDescriptorSets: c.PFN_vkAllocateDescriptorSets,
     freeDescriptorSets: c.PFN_vkFreeDescriptorSets,
     destroyPipeline: c.PFN_vkDestroyPipeline,
+    createPipelineCache: c.PFN_vkCreatePipelineCache,
+    destroyPipelineCache: c.PFN_vkDestroyPipelineCache,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -475,6 +477,8 @@ pub const Device = struct {
             .allocateDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkAllocateDescriptorSets")),
             .freeDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkFreeDescriptorSets")),
             .destroyPipeline = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipeline")),
+            .createPipelineCache = @ptrCast(try Device.getProc(get, dev, "vkCreatePipelineCache")),
+            .destroyPipelineCache = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipelineCache")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -838,6 +842,23 @@ pub const Device = struct {
     ) void {
         self.destroyPipeline.?(self.handle, pipeline, vk_allocator);
     }
+
+    pub inline fn vkCreatePipelineCache(
+        self: *Device,
+        create_info: *const c.VkPipelineCacheCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        pipeline_cache: *c.VkPipelineCache,
+    ) c.VkResult {
+        return self.createPipelineCache.?(self.handle, create_info, vk_allocator, pipeline_cache);
+    }
+
+    pub inline fn vkDestroyPipelineCache(
+        self: *Device,
+        pipeline_cache: c.VkPipelineCache,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroyPipelineCache.?(self.handle, pipeline_cache, vk_allocator);
+    }
 };
 
 pub const Queue = struct {
@@ -909,4 +930,7 @@ const vtable = Impl.VTable{
     .deinitDescriptorPool = @import("desc.zig").DescriptorPool.deinit,
 
     .deinitPipeline = @import("state.zig").Pipeline.deinit,
+
+    .initPipelineCache = @import("state.zig").PipelineCache.init,
+    .deinitPipelineCache = @import("state.zig").PipelineCache.deinit,
 };
