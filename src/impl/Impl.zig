@@ -33,6 +33,7 @@ pub const FrameBuffer = Opaque(ngl.FrameBuffer);
 pub const DescriptorSetLayout = Opaque(ngl.DescriptorSetLayout);
 pub const PipelineLayout = Opaque(ngl.PipelineLayout);
 pub const DescriptorPool = Opaque(ngl.DescriptorPool);
+pub const DescriptorSet = Opaque(ngl.DescriptorSet);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -301,6 +302,23 @@ pub const VTable = struct {
         device: *Device,
         desc: ngl.DescriptorPool.Desc,
     ) Error!*DescriptorPool,
+
+    allocDescriptorSets: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        descriptor_pool: *DescriptorPool,
+        device: *Device,
+        desc: ngl.DescriptorSet.Desc,
+        descriptor_sets: []ngl.DescriptorSet,
+    ) Error!void,
+
+    freeDescriptorSets: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        descriptor_pool: *DescriptorPool,
+        device: *Device,
+        descriptor_sets: []const ngl.DescriptorSet,
+    ) void,
 
     deinitDescriptorPool: *const fn (
         ctx: *anyopaque,
@@ -633,6 +651,34 @@ pub fn initDescriptorPool(
     desc: ngl.DescriptorPool.Desc,
 ) Error!*DescriptorPool {
     return self.vtable.initDescriptorPool(self.ptr, allocator, device, desc);
+}
+
+pub fn allocDescriptorSets(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    descriptor_pool: *DescriptorPool,
+    device: *Device,
+    desc: ngl.DescriptorSet.Desc,
+    descriptor_sets: []ngl.DescriptorSet,
+) Error!void {
+    return self.vtable.allocDescriptorSets(
+        self.ptr,
+        allocator,
+        descriptor_pool,
+        device,
+        desc,
+        descriptor_sets,
+    );
+}
+
+pub fn freeDescriptorSets(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    descriptor_pool: *DescriptorPool,
+    device: *Device,
+    descriptor_sets: []const ngl.DescriptorSet,
+) void {
+    self.vtable.freeDescriptorSets(self.ptr, allocator, descriptor_pool, device, descriptor_sets);
 }
 
 pub fn deinitDescriptorPool(

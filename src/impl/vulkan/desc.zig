@@ -211,6 +211,83 @@ pub const DescriptorPool = struct {
         return @ptrCast(ptr);
     }
 
+    pub fn alloc(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        descriptor_pool: *Impl.DescriptorPool,
+        device: *Impl.Device,
+        desc: ngl.DescriptorSet.Desc,
+        descriptor_sets: []ngl.DescriptorSet,
+    ) Error!void {
+        const desc_pool = cast(descriptor_pool);
+        const dev = Device.cast(device);
+
+        var set_layouts = try allocator.alloc(c.VkDescriptorSetLayout, desc.layouts.len);
+        defer allocator.free(set_layouts);
+        for (set_layouts, desc.layouts) |*handle, layout|
+            handle.* = DescriptorSetLayout.cast(layout.impl).handle;
+
+        var desc_sets = try allocator.alloc(c.VkDescriptorSet, desc.layouts.len);
+        defer allocator.free(desc_sets);
+
+        const alloc_info = c.VkDescriptorSetAllocateInfo{
+            .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext = null,
+            .descriptorPool = desc_pool.handle,
+            .descriptorSetCount = @intCast(set_layouts.len),
+            .pSetLayouts = set_layouts.ptr,
+        };
+
+        try conv.check(dev.vkAllocateDescriptorSets(&alloc_info, desc_sets.ptr));
+        // TODO: This call may fail
+        errdefer _ = dev.vkFreeDescriptorSets(
+            desc_pool.handle,
+            @intCast(desc_sets.len),
+            desc_sets.ptr,
+        );
+
+        for (desc_sets, 0..) |set, i| {
+            var ptr = allocator.create(DescriptorSet) catch |err| {
+                for (0..i) |j| allocator.destroy(DescriptorSet.cast(descriptor_sets[j].impl));
+                return err;
+            };
+            ptr.* = .{ .handle = set };
+            descriptor_sets[i].impl = @ptrCast(ptr);
+        }
+    }
+
+    pub fn free(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        descriptor_pool: *Impl.DescriptorPool,
+        device: *Impl.Device,
+        descriptor_sets: []const ngl.DescriptorSet,
+    ) void {
+        const desc_pool = cast(descriptor_pool);
+        const dev = Device.cast(device);
+        const n = descriptor_sets.len;
+
+        var desc_sets = allocator.alloc(c.VkDescriptorSet, n) catch {
+            for (descriptor_sets) |set| {
+                var ptr = DescriptorSet.cast(set.impl);
+                const h: *[1]c.VkDescriptorSet = &ptr.handle;
+                // TODO: This call may fail
+                _ = dev.vkFreeDescriptorSets(desc_pool.handle, 1, h);
+                allocator.destroy(ptr);
+            }
+            return;
+        };
+        defer allocator.free(desc_sets);
+
+        for (0..n) |i| {
+            var ptr = DescriptorSet.cast(descriptor_sets[i].impl);
+            desc_sets[i] = ptr.handle;
+            allocator.destroy(ptr);
+        }
+        // TODO: This call may fail
+        _ = dev.vkFreeDescriptorSets(desc_pool.handle, @intCast(n), desc_sets.ptr);
+    }
+
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
@@ -221,5 +298,13 @@ pub const DescriptorPool = struct {
         const desc_pool = cast(descriptor_pool);
         dev.vkDestroyDescriptorPool(desc_pool.handle, null);
         allocator.destroy(desc_pool);
+    }
+};
+
+pub const DescriptorSet = struct {
+    handle: c.VkDescriptorSet,
+
+    pub inline fn cast(impl: *Impl.DescriptorSet) *DescriptorSet {
+        return @ptrCast(@alignCast(impl));
     }
 };

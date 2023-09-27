@@ -29,7 +29,7 @@ pub const CommandPool = struct {
         var cmd_bufs = try allocator.alloc(CommandBuffer, desc.count);
         errdefer allocator.free(cmd_bufs);
         // TODO: Update this when adding more fields to `CommandBuffer`
-        if (std.meta.fields(CommandBuffer).len > 1) @compileError(
+        if (@typeInfo(CommandBuffer).Struct.fields.len > 1) @compileError(
             \\Impl only sets the impl field
             \\This function must initialize the others
         );
@@ -66,5 +66,5 @@ pub const CommandBuffer = struct {
         count: u32,
     };
 
-    pub const Self = @This();
+    const Self = @This();
 };

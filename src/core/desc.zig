@@ -104,7 +104,44 @@ pub const DescriptorPool = struct {
         return .{ .impl = try Impl.get().initDescriptorPool(allocator, device.impl, desc) };
     }
 
+    pub fn alloc(
+        self: *Self,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: DescriptorSet.Desc,
+    ) Error![]DescriptorSet {
+        std.debug.assert(desc.layouts.len > 0);
+        var desc_sets = try allocator.alloc(DescriptorSet, desc.layouts.len);
+        errdefer allocator.free(desc_sets);
+        // TODO: Update this when adding more fields to `DescriptorSet`
+        if (@typeInfo(DescriptorSet).Struct.fields.len > 1) @compileError(
+            \\Impl only sets the impl field
+            \\This function must initialize the others
+        );
+        try Impl.get().allocDescriptorSets(allocator, self.impl, device.impl, desc, desc_sets);
+        return desc_sets;
+    }
+
+    pub fn free(
+        self: *Self,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        descriptor_sets: []DescriptorSet,
+    ) void {
+        Impl.get().freeDescriptorSets(allocator, self.impl, device.impl, descriptor_sets);
+        allocator.free(descriptor_sets);
+    }
+
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitDescriptorPool(allocator, device.impl, self.impl);
     }
+};
+
+pub const DescriptorSet = struct {
+    impl: *Impl.DescriptorSet,
+
+    pub const Desc = struct {
+        // TODO: Layout plus count pairs
+        layouts: []const *const DescriptorSetLayout,
+    };
 };

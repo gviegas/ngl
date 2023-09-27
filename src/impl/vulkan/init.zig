@@ -361,6 +361,8 @@ pub const Device = struct {
     destroyPipelineLayout: c.PFN_vkDestroyPipelineLayout,
     createDescriptorPool: c.PFN_vkCreateDescriptorPool,
     destroyDescriptorPool: c.PFN_vkDestroyDescriptorPool,
+    allocateDescriptorSets: c.PFN_vkAllocateDescriptorSets,
+    freeDescriptorSets: c.PFN_vkFreeDescriptorSets,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -469,6 +471,8 @@ pub const Device = struct {
             .destroyPipelineLayout = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipelineLayout")),
             .createDescriptorPool = @ptrCast(try Device.getProc(get, dev, "vkCreateDescriptorPool")),
             .destroyDescriptorPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyDescriptorPool")),
+            .allocateDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkAllocateDescriptorSets")),
+            .freeDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkFreeDescriptorSets")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -802,6 +806,28 @@ pub const Device = struct {
     ) void {
         self.destroyDescriptorPool.?(self.handle, descriptor_pool, vk_allocator);
     }
+
+    pub inline fn vkAllocateDescriptorSets(
+        self: *Device,
+        allocate_info: *const c.VkDescriptorSetAllocateInfo,
+        descriptor_sets: [*]c.VkDescriptorSet,
+    ) c.VkResult {
+        return self.allocateDescriptorSets.?(self.handle, allocate_info, descriptor_sets);
+    }
+
+    pub inline fn vkFreeDescriptorSets(
+        self: *Device,
+        descriptor_pool: c.VkDescriptorPool,
+        descriptor_set_count: u32,
+        descriptor_sets: [*]const c.VkDescriptorSet,
+    ) c.VkResult {
+        return self.freeDescriptorSets.?(
+            self.handle,
+            descriptor_pool,
+            descriptor_set_count,
+            descriptor_sets,
+        );
+    }
 };
 
 pub const Queue = struct {
@@ -868,5 +894,7 @@ const vtable = Impl.VTable{
     .deinitPipelineLayout = @import("desc.zig").PipelineLayout.deinit,
 
     .initDescriptorPool = @import("desc.zig").DescriptorPool.init,
+    .allocDescriptorSets = @import("desc.zig").DescriptorPool.alloc,
+    .freeDescriptorSets = @import("desc.zig").DescriptorPool.free,
     .deinitDescriptorPool = @import("desc.zig").DescriptorPool.deinit,
 };
