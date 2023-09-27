@@ -289,18 +289,21 @@ test {
             .binding = 0,
             .type = .sampler,
             .count = 1,
+            .stage_mask = .{ .fragment = true },
             .immutable_samplers = &.{&splr},
         },
         .{
             .binding = 1,
             .type = .combined_image_sampler,
             .count = 2,
+            .stage_mask = .{ .fragment = true, .vertex = true },
             .immutable_samplers = &.{ &splr, &splr },
         },
         .{
             .binding = 2,
             .type = .storage_image,
             .count = 3,
+            .stage_mask = .{ .compute = true },
             .immutable_samplers = null,
         },
     } });
@@ -308,7 +311,11 @@ test {
 
     var pl_layout = try PipelineLayout.init(allocator, &ctx.device, .{
         .descriptor_set_layouts = &.{&set_layout},
-        .push_constant_ranges = &.{.{ .offset = 0, .size = 64 }},
+        .push_constant_ranges = &.{.{
+            .offset = 0,
+            .size = 64,
+            .stage_mask = .{ .vertex = true, .fragment = true, .compute = true },
+        }},
     });
     defer pl_layout.deinit(allocator, &ctx.device);
 

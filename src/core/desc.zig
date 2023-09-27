@@ -3,6 +3,7 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
 const Sampler = ngl.Sampler;
+const ShaderStage = ngl.ShaderStage;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
@@ -21,11 +22,11 @@ pub const DescriptorType = enum {
 pub const DescriptorSetLayout = struct {
     impl: *Impl.DescriptorSetLayout,
 
-    // TODO: Allowed pipeline stages
     pub const Binding = struct {
         binding: u32,
         type: DescriptorType,
         count: u32,
+        stage_mask: ShaderStage.Flags,
         immutable_samplers: ?[]const *const Sampler,
     };
 
@@ -45,10 +46,10 @@ pub const DescriptorSetLayout = struct {
     }
 };
 
-// TODO: Allowed pipeline stages
 pub const PushConstantRange = struct {
     offset: u16,
     size: u16,
+    stage_mask: ShaderStage.Flags,
 };
 
 pub const PipelineLayout = struct {

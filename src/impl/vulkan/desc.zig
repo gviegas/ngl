@@ -44,7 +44,7 @@ pub const DescriptorSetLayout = struct {
                     .binding = bind.binding,
                     .descriptorType = conv.toVkDescriptorType(bind.type),
                     .descriptorCount = bind.count,
-                    .stageFlags = c.VK_SHADER_STAGE_ALL, // TODO
+                    .stageFlags = conv.toVkShaderStageFlags(bind.stage_mask),
                     .pImmutableSamplers = blk: {
                         const bind_splrs = bind.immutable_samplers orelse &.{};
                         if (bind_splrs.len == 0) break :blk null;
@@ -121,7 +121,7 @@ pub const PipelineLayout = struct {
             var const_ranges = try allocator.alloc(c.VkPushConstantRange, const_range_n);
             for (const_ranges, desc.push_constant_ranges.?) |*vk_const_range, const_range|
                 vk_const_range.* = .{
-                    .stageFlags = c.VK_SHADER_STAGE_ALL, // TODO
+                    .stageFlags = conv.toVkShaderStageFlags(const_range.stage_mask),
                     .offset = const_range.offset,
                     .size = const_range.size,
                 };
