@@ -22,7 +22,7 @@ pub const CommandPool = struct {
         desc: ngl.CommandPool.Desc,
     ) Error!*Impl.CommandPool {
         const dev = Device.cast(device);
-        const queue = Queue.cast(Impl.Queue.cast(desc.queue));
+        const queue = Queue.cast(desc.queue.impl);
 
         var ptr = try allocator.create(CommandPool);
         errdefer allocator.destroy(ptr);

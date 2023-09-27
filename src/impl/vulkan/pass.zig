@@ -253,7 +253,7 @@ pub const FrameBuffer = struct {
         desc: ngl.FrameBuffer.Desc,
     ) Error!*Impl.FrameBuffer {
         const dev = Device.cast(device);
-        const rp = RenderPass.cast(Impl.RenderPass.cast(desc.render_pass));
+        const rp = RenderPass.cast(desc.render_pass.impl);
 
         const attach_n: u32 = if (desc.attachments) |x| @intCast(x.len) else 0;
         var attachs: ?[]c.VkImageView = blk: {
@@ -261,7 +261,7 @@ pub const FrameBuffer = struct {
             var handles = try allocator.alloc(c.VkImageView, attach_n);
             for (handles, desc.attachments.?) |*handle, attach| {
                 handle.* = if (attach) |v|
-                    ImageView.cast(Impl.ImageView.cast(v)).handle
+                    ImageView.cast(v.impl).handle
                 else
                     @ptrCast(c.VK_NULL_HANDLE);
             }

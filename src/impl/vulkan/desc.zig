@@ -48,8 +48,7 @@ pub const DescriptorSetLayout = struct {
                     .pImmutableSamplers = blk: {
                         const bind_splrs = bind.immutable_samplers orelse &.{};
                         if (bind_splrs.len == 0) break :blk null;
-                        for (bind_splrs, 0..) |s, i|
-                            splrs_ptr[i] = Sampler.cast(Impl.Sampler.cast(s)).handle;
+                        for (bind_splrs, 0..) |s, i| splrs_ptr[i] = Sampler.cast(s.impl).handle;
                         splrs_ptr += bind_splrs.len;
                         break :blk splrs_ptr - bind_splrs.len;
                     },
@@ -111,9 +110,7 @@ pub const PipelineLayout = struct {
             if (set_layout_n == 0) break :blk null;
             var handles = try allocator.alloc(c.VkDescriptorSetLayout, set_layout_n);
             for (handles, desc.descriptor_set_layouts.?) |*handle, set_layout|
-                handle.* = DescriptorSetLayout.cast(Impl.DescriptorSetLayout.cast(
-                    set_layout,
-                )).handle;
+                handle.* = DescriptorSetLayout.cast(set_layout.impl).handle;
             break :blk handles;
         };
         defer if (set_layouts) |x| allocator.free(x);

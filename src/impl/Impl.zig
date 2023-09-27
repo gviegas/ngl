@@ -7,33 +7,25 @@ const Error = ngl.Error;
 ptr: *anyopaque,
 vtable: *const VTable,
 
-fn Opaque(comptime Api: type) type {
-    return opaque {
-        pub inline fn cast(api: *const Api) *@This() {
-            return @ptrCast(@alignCast(api.impl));
-        }
-    };
-}
-
-pub const Instance = Opaque(ngl.Instance);
-pub const Device = Opaque(ngl.Device);
-pub const Queue = Opaque(ngl.Queue);
-pub const Memory = Opaque(ngl.Memory);
-pub const CommandPool = Opaque(ngl.CommandPool);
-pub const CommandBuffer = Opaque(ngl.CommandBuffer);
-pub const Fence = Opaque(ngl.Fence);
-pub const Semaphore = Opaque(ngl.Semaphore);
-pub const Buffer = Opaque(ngl.Buffer);
-pub const BufferView = Opaque(ngl.BufferView);
-pub const Image = Opaque(ngl.Image);
-pub const ImageView = Opaque(ngl.ImageView);
-pub const Sampler = Opaque(ngl.Sampler);
-pub const RenderPass = Opaque(ngl.RenderPass);
-pub const FrameBuffer = Opaque(ngl.FrameBuffer);
-pub const DescriptorSetLayout = Opaque(ngl.DescriptorSetLayout);
-pub const PipelineLayout = Opaque(ngl.PipelineLayout);
-pub const DescriptorPool = Opaque(ngl.DescriptorPool);
-pub const DescriptorSet = Opaque(ngl.DescriptorSet);
+pub const Instance = opaque {};
+pub const Device = opaque {};
+pub const Queue = opaque {};
+pub const Memory = opaque {};
+pub const CommandPool = opaque {};
+pub const CommandBuffer = opaque {};
+pub const Fence = opaque {};
+pub const Semaphore = opaque {};
+pub const Buffer = opaque {};
+pub const BufferView = opaque {};
+pub const Image = opaque {};
+pub const ImageView = opaque {};
+pub const Sampler = opaque {};
+pub const RenderPass = opaque {};
+pub const FrameBuffer = opaque {};
+pub const DescriptorSetLayout = opaque {};
+pub const PipelineLayout = opaque {};
+pub const DescriptorPool = opaque {};
+pub const DescriptorSet = opaque {};
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,

@@ -82,7 +82,7 @@ pub const BufferView = struct {
         desc: ngl.BufferView.Desc,
     ) Error!*Impl.BufferView {
         const dev = Device.cast(device);
-        const buf = Buffer.cast(Impl.Buffer.cast(desc.buffer));
+        const buf = Buffer.cast(desc.buffer.impl);
 
         var ptr = try allocator.create(BufferView);
         errdefer allocator.destroy(ptr);
@@ -223,7 +223,7 @@ pub const ImageView = struct {
         desc: ngl.ImageView.Desc,
     ) Error!*Impl.ImageView {
         const dev = Device.cast(device);
-        const image = Image.cast(Impl.Image.cast(desc.image));
+        const image = Image.cast(desc.image.impl);
 
         var ptr = try allocator.create(ImageView);
         errdefer allocator.destroy(ptr);
