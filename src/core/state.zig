@@ -21,3 +21,11 @@ pub const Pipeline = struct {
         self.* = undefined;
     }
 };
+
+pub const ShaderStage = enum {
+    vertex,
+    fragment,
+    compute,
+
+    pub const Flags = ngl.Flags(ShaderStage);
+};

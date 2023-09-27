@@ -31,6 +31,7 @@ pub const PipelineLayout = @import("core/desc.zig").PipelineLayout;
 pub const DescriptorPool = @import("core/desc.zig").DescriptorPool;
 pub const DescriptorSet = @import("core/desc.zig").DescriptorSet;
 pub const Pipeline = @import("core/state.zig").Pipeline;
+pub const ShaderStage = @import("core/state.zig").ShaderStage;
 
 pub const Error = error{
     NotReady,
@@ -330,4 +331,9 @@ test {
     var pl = Pipeline{ .impl = undefined, .type = .compute }; // XXX
     //defer pl.deinit(allocator, &ctx.device);
     _ = pl;
+
+    var stage = ShaderStage.fragment;
+    var stage_flags = ShaderStage.Flags{ .vertex = true, .fragment = true, .compute = true };
+    _ = stage;
+    _ = stage_flags;
 }

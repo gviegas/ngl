@@ -466,3 +466,19 @@ pub fn toVkPipelineBindPoint(pipeline_type: ngl.Pipeline.Type) c.VkPipelineBindP
         .compute => c.VK_PIPELINE_BIND_POINT_COMPUTE,
     };
 }
+
+pub fn toVkShaderStage(shader_stage: ngl.ShaderStage) c.VkShaderStageFlagBits {
+    return switch (shader_stage) {
+        .vertex => c.VK_SHADER_STAGE_VERTEX_BIT,
+        .fragment => c.VK_SHADER_STAGE_FRAGMENT_BIT,
+        .compute => c.VK_SHADER_STAGE_COMPUTE_BIT,
+    };
+}
+
+pub fn toVkShaderStageFlags(shader_stage_flags: ngl.ShaderStage.Flags) c.VkShaderStageFlags {
+    var flags: c.VkShaderStageFlags = 0;
+    if (shader_stage_flags.vertex) flags |= c.VK_SHADER_STAGE_VERTEX_BIT;
+    if (shader_stage_flags.fragment) flags |= c.VK_SHADER_STAGE_FRAGMENT_BIT;
+    if (shader_stage_flags.compute) flags |= c.VK_SHADER_STAGE_COMPUTE_BIT;
+    return flags;
+}
