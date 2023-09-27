@@ -5,6 +5,7 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const log = @import("init.zig").log;
 const Device = @import("init.zig").Device;
 const Sampler = @import("res.zig").Sampler;
 
@@ -201,7 +202,8 @@ pub const DescriptorPool = struct {
         try conv.check(dev.vkCreateDescriptorPool(&.{
             .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext = null,
-            .flags = 0,
+            // TODO: Expose this (or disallow freeing sets altogether)
+            .flags = c.VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
             .maxSets = desc.max_sets,
             .poolSizeCount = pool_size_n,
             .pPoolSizes = if (pool_size_n > 0) pool_sizes[0..].ptr else null,
@@ -240,11 +242,14 @@ pub const DescriptorPool = struct {
 
         try conv.check(dev.vkAllocateDescriptorSets(&alloc_info, desc_sets.ptr));
         // TODO: This call may fail
-        errdefer _ = dev.vkFreeDescriptorSets(
-            desc_pool.handle,
-            @intCast(desc_sets.len),
-            desc_sets.ptr,
-        );
+        errdefer {
+            const r = dev.vkFreeDescriptorSets(
+                desc_pool.handle,
+                @intCast(desc_sets.len),
+                desc_sets.ptr,
+            );
+            if (r != c.VK_SUCCESS) log.warn("vkFreeDescriptorSets failed ({})", .{r});
+        }
 
         for (desc_sets, 0..) |set, i| {
             var ptr = allocator.create(DescriptorSet) catch |err| {
@@ -271,9 +276,9 @@ pub const DescriptorPool = struct {
             for (descriptor_sets) |set| {
                 var ptr = DescriptorSet.cast(set.impl);
                 const h: *[1]c.VkDescriptorSet = &ptr.handle;
-                // TODO: This call may fail
-                _ = dev.vkFreeDescriptorSets(desc_pool.handle, 1, h);
+                const r = dev.vkFreeDescriptorSets(desc_pool.handle, 1, h);
                 allocator.destroy(ptr);
+                if (r != c.VK_SUCCESS) log.warn("vkFreeDescriptorSets failed ({})", .{r});
             }
             return;
         };
@@ -284,8 +289,8 @@ pub const DescriptorPool = struct {
             desc_sets[i] = ptr.handle;
             allocator.destroy(ptr);
         }
-        // TODO: This call may fail
-        _ = dev.vkFreeDescriptorSets(desc_pool.handle, @intCast(n), desc_sets.ptr);
+        const r = dev.vkFreeDescriptorSets(desc_pool.handle, @intCast(n), desc_sets.ptr);
+        if (r != c.VK_SUCCESS) log.warn("vkFreeDescriptorSets failed ({})", .{r});
     }
 
     pub fn deinit(
