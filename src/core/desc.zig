@@ -41,6 +41,7 @@ pub const DescriptorSetLayout = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitDescriptorSetLayout(allocator, device.impl, self.impl);
+        self.* = undefined;
     }
 };
 
@@ -66,6 +67,7 @@ pub const PipelineLayout = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitPipelineLayout(allocator, device.impl, self.impl);
+        self.* = undefined;
     }
 };
 
@@ -134,6 +136,7 @@ pub const DescriptorPool = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitDescriptorPool(allocator, device.impl, self.impl);
+        self.* = undefined;
     }
 };
 
