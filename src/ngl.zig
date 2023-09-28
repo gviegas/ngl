@@ -32,6 +32,11 @@ pub const DescriptorPool = @import("core/desc.zig").DescriptorPool;
 pub const DescriptorSet = @import("core/desc.zig").DescriptorSet;
 pub const Pipeline = @import("core/state.zig").Pipeline;
 pub const ShaderStage = @import("core/state.zig").ShaderStage;
+pub const VertexInput = @import("core/state.zig").VertexInput;
+pub const Viewport = @import("core/state.zig").Viewport;
+pub const Rasterization = @import("core/state.zig").Rasterization;
+pub const DepthStencil = @import("core/state.zig").DepthStencil;
+pub const ColorBlend = @import("core/state.zig").ColorBlend;
 pub const GraphicsState = @import("core/state.zig").GraphicsState;
 pub const ComputeState = @import("core/state.zig").ComputeState;
 pub const PipelineCache = @import("core/state.zig").PipelineCache;
@@ -342,17 +347,61 @@ test {
     defer pl_cache.deinit(allocator, &ctx.device);
 
     const graph = GraphicsState{
-        .stages = &.{},
+        .stages = &.{
+            .{
+                .stage = .vertex,
+                .code = &.{}, // TODO
+                .name = "main",
+            },
+            .{
+                .stage = .fragment,
+                .code = &.{}, // TODO
+                .name = "main",
+            },
+        },
         .layout = &pl_layout,
-        .vertex_input = null,
-        .input_assembly = null,
-        .viewport = null,
-        .rasterization = null,
-        .multisample = null,
-        .depth_stencil = null,
-        .color_blend = null,
-        .render_pass = null,
-        .subpass = null,
+        .vertex_input = &.{
+            .bindings = &.{.{ .binding = 0, .stride = 12 }},
+            .attributes = &.{.{
+                .location = 0,
+                .binding = 0,
+                .format = .rgb32_sfloat,
+                .offset = 0,
+            }},
+            .topology = .triangle_list,
+        },
+        .viewport = &.{
+            .x = 0,
+            .y = 0,
+            .width = 512,
+            .height = 512,
+            .near = 1,
+            .far = 0,
+        },
+        .rasterization = &.{
+            .polygon_mode = .fill,
+            .cull_mode = .back,
+            .clockwise = false,
+            .samples = .@"1",
+        },
+        .depth_stencil = &.{
+            .depth_compare = null,
+            .depth_write = false,
+            .stencil_front = null,
+            .stencil_back = null,
+        },
+        .color_blend = &.{
+            .attachments = &.{.{
+                .color_source_factor = .source_alpha,
+                .color_dest_factor = .one_minus_source_alpha,
+                .color_blend_op = .add,
+                .alpha_source_factor = .one,
+                .alpha_dest_factor = .zero,
+                .alpha_blend_op = .add,
+            }},
+        },
+        .render_pass = &rp,
+        .subpass = 0,
     };
     var graph_pl = try Pipeline.initGraphics(allocator, &ctx.device, .{
         .states = &.{graph},

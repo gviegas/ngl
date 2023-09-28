@@ -2,6 +2,9 @@ const std = @import("std");
 
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
+const Format = ngl.Format;
+const SampleCount = ngl.SampleCount;
+const CompareOp = ngl.CompareOp;
 const RenderPass = ngl.RenderPass;
 const PipelineLayout = ngl.PipelineLayout;
 const Error = ngl.Error;
@@ -72,47 +75,161 @@ pub const ShaderStage = enum {
     };
 };
 
+pub const VertexInput = struct {
+    bindings: []const Binding,
+    attributes: []const Attribute,
+    topology: Topology,
+    primitive_restart: bool = false,
+
+    pub const Binding = struct {
+        binding: u32,
+        stride: u32,
+        per_instance: bool = false,
+        //divisor: u32 = 1,
+    };
+
+    pub const Attribute = struct {
+        location: u32,
+        binding: u32,
+        format: Format,
+        offset: u32,
+    };
+
+    pub const Topology = enum {
+        point_list,
+        line_list,
+        line_strip,
+        triangle_list,
+        triangle_strip,
+    };
+};
+
+pub const Viewport = struct {
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    near: f32,
+    far: f32,
+    scissor: ?struct {
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+    } = null,
+};
+
+pub const Rasterization = struct {
+    polygon_mode: PolygonMode,
+    cull_mode: CullMode,
+    clockwise: bool = false,
+    depth_clamp: bool = false,
+    depth_bias: ?struct {
+        value: f32,
+        slope: f32,
+        clamp: f32,
+    } = null,
+    samples: SampleCount,
+    sample_mask: u64 = ~@as(u64, 0),
+    alpha_to_coverage: bool = false,
+    alpha_to_one: bool = false,
+
+    pub const PolygonMode = enum {
+        fill,
+        line,
+    };
+
+    pub const CullMode = enum {
+        none,
+        front,
+        back,
+    };
+};
+
+pub const DepthStencil = struct {
+    depth_compare: ?CompareOp,
+    depth_write: bool,
+    stencil_front: ?StencilTest,
+    stencil_back: ?StencilTest,
+
+    pub const StencilTest = struct {
+        fail_op: StencilOp,
+        pass_op: StencilOp,
+        depth_fail_op: StencilOp,
+        compare: CompareOp,
+        read_mask: u32,
+        write_mask: u32,
+        reference: u32,
+    };
+
+    pub const StencilOp = enum {
+        keep,
+        zero,
+        replace,
+        increment_clamp,
+        decrement_clamp,
+        invert,
+        increment_wrap,
+        decrement_wrap,
+    };
+};
+
+pub const ColorBlend = struct {
+    attachments: []const ?Attachment,
+    constants: [4]f32 = [_]f32{0} ** 4,
+
+    pub const Attachment = struct {
+        color_source_factor: BlendFactor,
+        color_dest_factor: BlendFactor,
+        color_blend_op: BlendOp,
+        alpha_source_factor: BlendFactor,
+        alpha_dest_factor: BlendFactor,
+        alpha_blend_op: BlendOp,
+        write_mask: packed struct {
+            r: bool = true,
+            g: bool = true,
+            b: bool = true,
+            a: bool = true,
+        } = .{},
+    };
+
+    pub const BlendFactor = enum {
+        zero,
+        one,
+        source_color,
+        one_minus_source_color,
+        dest_color,
+        one_minus_dest_color,
+        source_alpha,
+        one_minus_source_alpha,
+        dest_alpha,
+        one_minus_dest_alpha,
+        constant_color,
+        one_minus_constant_color,
+        constant_alpha,
+        one_minus_constant_alpha,
+        source_alpha_saturate,
+    };
+
+    pub const BlendOp = enum {
+        add,
+        subtract,
+        reverse_subtract,
+        min,
+        max,
+    };
+};
+
 pub const GraphicsState = struct {
     stages: []const ShaderStage.Desc,
     layout: *const PipelineLayout,
-    vertex_input: ?VertexInput,
-    input_assembly: ?InputAssembly,
-    viewport: ?Viewport,
-    rasterization: ?Rasterization,
-    multisample: ?Multisample,
-    depth_stencil: ?DepthStencil,
-    color_blend: ?ColorBlend,
-    // TODO: Dynamic state
+    vertex_input: ?*const VertexInput,
+    viewport: ?*const Viewport,
+    rasterization: ?*const Rasterization,
+    depth_stencil: ?*const DepthStencil,
+    color_blend: ?*const ColorBlend,
     render_pass: ?*const RenderPass,
     subpass: ?RenderPass.Index,
-
-    pub const VertexInput = struct {
-        // TODO
-    };
-
-    pub const InputAssembly = struct {
-        // TODO
-    };
-
-    pub const Viewport = struct {
-        // TODO
-    };
-
-    pub const Rasterization = struct {
-        // TODO
-    };
-
-    pub const Multisample = struct {
-        // TODO
-    };
-
-    pub const DepthStencil = struct {
-        // TODO
-    };
-
-    pub const ColorBlend = struct {
-        // TODO
-    };
 };
 
 pub const ComputeState = struct {
