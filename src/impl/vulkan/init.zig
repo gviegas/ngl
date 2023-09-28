@@ -363,6 +363,8 @@ pub const Device = struct {
     destroyDescriptorPool: c.PFN_vkDestroyDescriptorPool,
     allocateDescriptorSets: c.PFN_vkAllocateDescriptorSets,
     freeDescriptorSets: c.PFN_vkFreeDescriptorSets,
+    createGraphicsPipelines: c.PFN_vkCreateGraphicsPipelines,
+    createComputePipelines: c.PFN_vkCreateComputePipelines,
     destroyPipeline: c.PFN_vkDestroyPipeline,
     createPipelineCache: c.PFN_vkCreatePipelineCache,
     destroyPipelineCache: c.PFN_vkDestroyPipelineCache,
@@ -476,6 +478,8 @@ pub const Device = struct {
             .destroyDescriptorPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyDescriptorPool")),
             .allocateDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkAllocateDescriptorSets")),
             .freeDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkFreeDescriptorSets")),
+            .createGraphicsPipelines = @ptrCast(try Device.getProc(get, dev, "vkCreateGraphicsPipelines")),
+            .createComputePipelines = @ptrCast(try Device.getProc(get, dev, "vkCreateComputePipelines")),
             .destroyPipeline = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipeline")),
             .createPipelineCache = @ptrCast(try Device.getProc(get, dev, "vkCreatePipelineCache")),
             .destroyPipelineCache = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipelineCache")),
@@ -835,6 +839,42 @@ pub const Device = struct {
         );
     }
 
+    pub inline fn vkCreateGraphicsPipelines(
+        self: *Device,
+        pipeline_cache: c.VkPipelineCache,
+        create_info_count: u32,
+        create_infos: [*]const c.VkGraphicsPipelineCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        pipelines: [*]c.VkPipeline,
+    ) c.VkResult {
+        return self.createGraphicsPipelines.?(
+            self.handle,
+            pipeline_cache,
+            create_info_count,
+            create_infos,
+            vk_allocator,
+            pipelines,
+        );
+    }
+
+    pub inline fn vkCreateComputePipelines(
+        self: *Device,
+        pipeline_cache: c.VkPipelineCache,
+        create_info_count: u32,
+        create_infos: [*]const c.VkComputePipelineCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        pipelines: [*]c.VkPipeline,
+    ) c.VkResult {
+        return self.createComputePipelines.?(
+            self.handle,
+            pipeline_cache,
+            create_info_count,
+            create_infos,
+            vk_allocator,
+            pipelines,
+        );
+    }
+
     pub inline fn vkDestroyPipeline(
         self: *Device,
         pipeline: c.VkPipeline,
@@ -929,6 +969,8 @@ const vtable = Impl.VTable{
     .freeDescriptorSets = @import("desc.zig").DescriptorPool.free,
     .deinitDescriptorPool = @import("desc.zig").DescriptorPool.deinit,
 
+    .initPipelinesGraphics = @import("state.zig").Pipeline.initGraphics,
+    .initPipelinesCompute = @import("state.zig").Pipeline.initCompute,
     .deinitPipeline = @import("state.zig").Pipeline.deinit,
 
     .initPipelineCache = @import("state.zig").PipelineCache.init,

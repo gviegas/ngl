@@ -32,6 +32,8 @@ pub const DescriptorPool = @import("core/desc.zig").DescriptorPool;
 pub const DescriptorSet = @import("core/desc.zig").DescriptorSet;
 pub const Pipeline = @import("core/state.zig").Pipeline;
 pub const ShaderStage = @import("core/state.zig").ShaderStage;
+pub const GraphicsState = @import("core/state.zig").GraphicsState;
+pub const ComputeState = @import("core/state.zig").ComputeState;
 pub const PipelineCache = @import("core/state.zig").PipelineCache;
 
 pub const Error = error{
@@ -336,10 +338,39 @@ test {
     var desc_sets = try desc_pool.alloc(allocator, &ctx.device, .{ .layouts = &.{&set_layout} });
     defer desc_pool.free(allocator, &ctx.device, desc_sets);
 
-    var pl = Pipeline{ .impl = undefined, .type = .compute }; // XXX
-    //defer pl.deinit(allocator, &ctx.device);
-    _ = pl;
-
     var pl_cache = try PipelineCache.init(allocator, &ctx.device, .{ .initial_data = null });
     defer pl_cache.deinit(allocator, &ctx.device);
+
+    const graph = GraphicsState{
+        .stages = &.{},
+        .layout = &pl_layout,
+        .vertex_input = null,
+        .input_assembly = null,
+        .viewport = null,
+        .rasterization = null,
+        .multisample = null,
+        .depth_stencil = null,
+        .color_blend = null,
+        .render_pass = null,
+        .subpass = null,
+    };
+    var graph_pl = try Pipeline.initGraphics(allocator, &ctx.device, .{
+        .states = &.{graph},
+        .cache = &pl_cache,
+    });
+    defer graph_pl[0].deinit(allocator, &ctx.device);
+
+    const comp = ComputeState{
+        .stage = .{
+            .stage = .compute,
+            .code = &.{},
+            .name = "main",
+        },
+        .layout = &pl_layout,
+    };
+    var comp_pl = try Pipeline.initCompute(allocator, &ctx.device, .{
+        .states = &.{comp},
+        .cache = &pl_cache,
+    });
+    defer comp_pl[0].deinit(allocator, &ctx.device);
 }

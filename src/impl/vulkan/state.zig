@@ -14,6 +14,40 @@ pub const Pipeline = struct {
         return @ptrCast(@alignCast(impl));
     }
 
+    pub fn initGraphics(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        desc: ngl.Pipeline.Desc(ngl.GraphicsState),
+        pipelines: []ngl.Pipeline,
+    ) Error!void {
+        const dev = Device.cast(device);
+
+        // TODO
+        _ = dev;
+        _ = allocator;
+        _ = desc;
+        _ = pipelines;
+        return Error.Other;
+    }
+
+    pub fn initCompute(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        desc: ngl.Pipeline.Desc(ngl.ComputeState),
+        pipelines: []ngl.Pipeline,
+    ) Error!void {
+        const dev = Device.cast(device);
+
+        // TODO
+        _ = dev;
+        _ = allocator;
+        _ = desc;
+        _ = pipelines;
+        return Error.Other;
+    }
+
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,

@@ -323,6 +323,22 @@ pub const VTable = struct {
 
     // Pipeline --------------------------------------------
 
+    initPipelinesGraphics: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.Pipeline.Desc(ngl.GraphicsState),
+        pipelines: []ngl.Pipeline,
+    ) Error!void,
+
+    initPipelinesCompute: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.Pipeline.Desc(ngl.ComputeState),
+        pipelines: []ngl.Pipeline,
+    ) Error!void,
+
     deinitPipeline: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -708,6 +724,26 @@ pub fn deinitDescriptorPool(
     descriptor_pool: *DescriptorPool,
 ) void {
     self.vtable.deinitDescriptorPool(self.ptr, allocator, device, descriptor_pool);
+}
+
+pub fn initPipelinesGraphics(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.Pipeline.Desc(ngl.GraphicsState),
+    pipelines: []ngl.Pipeline,
+) Error!void {
+    return self.vtable.initPipelinesGraphics(self.ptr, allocator, device, desc, pipelines);
+}
+
+pub fn initPipelinesCompute(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.Pipeline.Desc(ngl.ComputeState),
+    pipelines: []ngl.Pipeline,
+) Error!void {
+    return self.vtable.initPipelinesCompute(self.ptr, allocator, device, desc, pipelines);
 }
 
 pub fn deinitPipeline(
