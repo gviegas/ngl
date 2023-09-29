@@ -482,3 +482,72 @@ pub fn toVkShaderStageFlags(shader_stage_flags: ngl.ShaderStage.Flags) c.VkShade
     if (shader_stage_flags.compute) flags |= c.VK_SHADER_STAGE_COMPUTE_BIT;
     return flags;
 }
+
+pub fn toVkPrimitiveTopology(topology: ngl.VertexInput.Topology) c.VkPrimitiveTopology {
+    return switch (topology) {
+        .point_list => c.VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+        .line_list => c.VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+        .line_strip => c.VK_PRIMITIVE_TOPOLOGY_LINE_STRIP,
+        .triangle_list => c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .triangle_strip => c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+    };
+}
+
+pub fn toVkPolygonMode(polygon_mode: ngl.Rasterization.PolygonMode) c.VkPolygonMode {
+    return switch (polygon_mode) {
+        .fill => c.VK_POLYGON_MODE_FILL,
+        .line => c.VK_POLYGON_MODE_LINE,
+    };
+}
+
+/// Always used as flags type
+pub fn toVkCullModeFlags(cull_mode: ngl.Rasterization.CullMode) c.VkCullModeFlags {
+    return switch (cull_mode) {
+        .none => c.VK_CULL_MODE_NONE,
+        .front => c.VK_CULL_MODE_BACK_BIT,
+        .back => c.VK_CULL_MODE_FRONT_BIT,
+    };
+}
+
+pub fn toVkStencilOp(stencil_op: ngl.DepthStencil.StencilOp) c.VkStencilOp {
+    return switch (stencil_op) {
+        .keep => c.VK_STENCIL_OP_KEEP,
+        .zero => c.VK_STENCIL_OP_ZERO,
+        .replace => c.VK_STENCIL_OP_REPLACE,
+        .increment_clamp => c.VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+        .decrement_clamp => c.VK_STENCIL_OP_DECREMENT_AND_CLAMP,
+        .invert => c.VK_STENCIL_OP_INVERT,
+        .increment_wrap => c.VK_STENCIL_OP_INCREMENT_AND_WRAP,
+        .decrement_wrap => c.VK_STENCIL_OP_DECREMENT_AND_WRAP,
+    };
+}
+
+pub fn toVkBlendFactor(blend_factor: ngl.ColorBlend.BlendFactor) c.VkBlendFactor {
+    return switch (blend_factor) {
+        .zero => c.VK_BLEND_FACTOR_ZERO,
+        .one => c.VK_BLEND_FACTOR_ONE,
+        .source_color => c.VK_BLEND_FACTOR_SRC_COLOR,
+        .one_minus_source_color => c.VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
+        .dest_color => c.VK_BLEND_FACTOR_DST_COLOR,
+        .one_minus_dest_color => c.VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
+        .source_alpha => c.VK_BLEND_FACTOR_SRC_ALPHA,
+        .one_minus_source_alpha => c.VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+        .dest_alpha => c.VK_BLEND_FACTOR_DST_ALPHA,
+        .one_minus_dest_alpha => c.VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
+        .constant_color => c.VK_BLEND_FACTOR_CONSTANT_COLOR,
+        .one_minus_constant_color => c.VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
+        .constant_alpha => c.VK_BLEND_FACTOR_CONSTANT_ALPHA,
+        .one_minus_constant_alpha => c.VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
+        .source_alpha_saturate => c.VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,
+    };
+}
+
+pub fn toVkBlendOp(blend_op: ngl.ColorBlend.BlendOp) c.VkBlendOp {
+    return switch (blend_op) {
+        .add => c.VK_BLEND_OP_ADD,
+        .subtract => c.VK_BLEND_OP_SUBTRACT,
+        .reverse_subtract => c.VK_BLEND_OP_REVERSE_SUBTRACT,
+        .min => c.VK_BLEND_OP_MIN,
+        .max => c.VK_BLEND_OP_MAX,
+    };
+}
