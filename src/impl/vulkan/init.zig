@@ -368,6 +368,8 @@ pub const Device = struct {
     destroyPipeline: c.PFN_vkDestroyPipeline,
     createPipelineCache: c.PFN_vkCreatePipelineCache,
     destroyPipelineCache: c.PFN_vkDestroyPipelineCache,
+    createShaderModule: c.PFN_vkCreateShaderModule,
+    destroyShaderModule: c.PFN_vkDestroyShaderModule,
 
     pub fn cast(impl: *Impl.Device) *Device {
         return @ptrCast(@alignCast(impl));
@@ -483,6 +485,8 @@ pub const Device = struct {
             .destroyPipeline = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipeline")),
             .createPipelineCache = @ptrCast(try Device.getProc(get, dev, "vkCreatePipelineCache")),
             .destroyPipelineCache = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipelineCache")),
+            .createShaderModule = @ptrCast(try Device.getProc(get, dev, "vkCreateShaderModule")),
+            .destroyShaderModule = @ptrCast(try Device.getProc(get, dev, "vkDestroyShaderModule")),
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -898,6 +902,23 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.destroyPipelineCache.?(self.handle, pipeline_cache, vk_allocator);
+    }
+
+    pub inline fn vkCreateShaderModule(
+        self: *Device,
+        create_info: *const c.VkShaderModuleCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        shader_module: *c.VkShaderModule,
+    ) c.VkResult {
+        return self.createShaderModule.?(self.handle, create_info, vk_allocator, shader_module);
+    }
+
+    pub inline fn vkDestroyShaderModule(
+        self: *Device,
+        shader_module: c.VkShaderModule,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroyShaderModule.?(self.handle, shader_module, vk_allocator);
     }
 };
 
