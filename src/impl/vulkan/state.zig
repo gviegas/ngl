@@ -7,12 +7,13 @@ const c = @import("../c.zig");
 const conv = @import("conv.zig");
 const Device = @import("init.zig").Device;
 const PipelineLayout = @import("desc.zig").PipelineLayout;
+const RenderPass = @import("pass.zig").RenderPass;
 
 pub const Pipeline = struct {
     handle: c.VkPipeline,
-    modules: [max_module]c.VkShaderModule,
+    modules: [max_stage]c.VkShaderModule,
 
-    const max_module = 2;
+    const max_stage = 2;
 
     pub inline fn cast(impl: *Impl.Pipeline) *Pipeline {
         return @ptrCast(@alignCast(impl));
@@ -27,12 +28,473 @@ pub const Pipeline = struct {
     ) Error!void {
         const dev = Device.cast(device);
 
-        // TODO
-        _ = dev;
-        _ = allocator;
-        _ = desc;
-        _ = pipelines;
-        return Error.Other;
+        var create_infos = try allocator.alloc(c.VkGraphicsPipelineCreateInfo, desc.states.len);
+        defer allocator.free(create_infos);
+
+        var create_inner = try allocator.alloc(
+            struct {
+                vertex_input_state: c.VkPipelineVertexInputStateCreateInfo,
+                input_assembly_state: c.VkPipelineInputAssemblyStateCreateInfo,
+                viewport_state: c.VkPipelineViewportStateCreateInfo,
+                viewport_state_viewport: c.VkViewport,
+                viewport_state_scissor: c.VkRect2D,
+                rasterization_state: c.VkPipelineRasterizationStateCreateInfo,
+                multisample_state: c.VkPipelineMultisampleStateCreateInfo,
+                multisample_state_sample_mask: [2]u32,
+                depth_stencil_state: c.VkPipelineDepthStencilStateCreateInfo,
+                color_blend_state: c.VkPipelineColorBlendStateCreateInfo,
+            },
+            desc.states.len,
+        );
+        defer allocator.free(create_inner);
+
+        var stages: []c.VkPipelineShaderStageCreateInfo = &.{};
+        var vert_binds: []c.VkVertexInputBindingDescription = &.{};
+        var vert_attrs: []c.VkVertexInputAttributeDescription = &.{};
+        var blend_attachs: []c.VkPipelineColorBlendAttachmentState = &.{};
+        defer {
+            if (stages.len > 0) allocator.free(stages);
+            if (vert_binds.len > 0) allocator.free(vert_binds);
+            if (vert_attrs.len > 0) allocator.free(vert_attrs);
+            if (blend_attachs.len > 0) allocator.free(blend_attachs);
+        }
+        {
+            var stage_n: usize = 0;
+            var bind_n: usize = 0;
+            var attr_n: usize = 0;
+            var blend_n: usize = 0;
+            for (desc.states) |state| {
+                stage_n += state.stages.len;
+                if (state.vertex_input) |x| {
+                    bind_n += x.bindings.len;
+                    attr_n += x.attributes.len;
+                }
+                if (state.color_blend) |x| blend_n += x.attachments.len;
+            }
+            if (stage_n > 0) stages = try allocator.alloc(
+                c.VkPipelineShaderStageCreateInfo,
+                stage_n,
+            ) else unreachable;
+            if (bind_n > 0) vert_binds = try allocator.alloc(
+                c.VkVertexInputBindingDescription,
+                bind_n,
+            );
+            if (attr_n > 0) vert_attrs = try allocator.alloc(
+                c.VkVertexInputAttributeDescription,
+                attr_n,
+            );
+            if (blend_n > 0) blend_attachs = try allocator.alloc(
+                c.VkPipelineColorBlendAttachmentState,
+                blend_n,
+            );
+        }
+        var stages_ptr = stages.ptr;
+        var vert_binds_ptr = vert_binds.ptr;
+        var vert_attrs_ptr = vert_attrs.ptr;
+        var blend_attachs_ptr = blend_attachs.ptr;
+
+        const defaults: struct {
+            vertex_input_state: c.VkPipelineVertexInputStateCreateInfo = .{
+                .sType = c.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+                .vertexBindingDescriptionCount = 0,
+                .pVertexBindingDescriptions = null,
+                .vertexAttributeDescriptionCount = 0,
+                .pVertexAttributeDescriptions = null,
+            },
+            input_assembly_state: c.VkPipelineInputAssemblyStateCreateInfo = .{
+                .sType = c.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+                .topology = c.VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+                .primitiveRestartEnable = c.VK_FALSE,
+            },
+            tessellation_state: c.VkPipelineTessellationStateCreateInfo = .{
+                .sType = c.VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+                .patchControlPoints = 4,
+            },
+            viewport_state: c.VkPipelineViewportStateCreateInfo = .{
+                .sType = c.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+                .viewportCount = 1,
+                .pViewports = null,
+                .scissorCount = 1,
+                .pScissors = null,
+            },
+            rasterization_state: c.VkPipelineRasterizationStateCreateInfo = .{
+                .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+                .depthClampEnable = c.VK_FALSE,
+                .rasterizerDiscardEnable = c.VK_TRUE,
+                .polygonMode = c.VK_POLYGON_MODE_FILL,
+                .cullMode = c.VK_CULL_MODE_FRONT_AND_BACK,
+                .frontFace = c.VK_FRONT_FACE_COUNTER_CLOCKWISE,
+                .depthBiasEnable = c.VK_FALSE,
+                .depthBiasConstantFactor = 0,
+                .depthBiasClamp = 0,
+                .depthBiasSlopeFactor = 0,
+                .lineWidth = 1,
+            },
+            multisample_state: c.VkPipelineMultisampleStateCreateInfo = .{
+                .sType = c.VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+                .rasterizationSamples = c.VK_SAMPLE_COUNT_1_BIT,
+                .sampleShadingEnable = c.VK_FALSE,
+                .minSampleShading = 0,
+                .pSampleMask = null,
+                .alphaToCoverageEnable = c.VK_FALSE,
+                .alphaToOneEnable = c.VK_FALSE,
+            },
+            depth_stencil_state: c.VkPipelineDepthStencilStateCreateInfo = .{
+                .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+                .depthTestEnable = c.VK_FALSE,
+                .depthWriteEnable = c.VK_FALSE,
+                .depthCompareOp = c.VK_COMPARE_OP_NEVER,
+                .depthBoundsTestEnable = c.VK_FALSE,
+                .stencilTestEnable = c.VK_FALSE,
+                .front = .{
+                    .failOp = c.VK_STENCIL_OP_KEEP,
+                    .passOp = c.VK_STENCIL_OP_KEEP,
+                    .depthFailOp = c.VK_STENCIL_OP_KEEP,
+                    .compareOp = c.VK_COMPARE_OP_NEVER,
+                    .compareMask = 0,
+                    .writeMask = 0,
+                    .reference = 0,
+                },
+                .back = .{
+                    .failOp = c.VK_STENCIL_OP_KEEP,
+                    .passOp = c.VK_STENCIL_OP_KEEP,
+                    .depthFailOp = c.VK_STENCIL_OP_KEEP,
+                    .compareOp = c.VK_COMPARE_OP_NEVER,
+                    .compareMask = 0,
+                    .writeMask = 0,
+                    .reference = 0,
+                },
+                .minDepthBounds = 0,
+                .maxDepthBounds = 0,
+            },
+            color_blend_state: c.VkPipelineColorBlendStateCreateInfo = .{
+                .sType = c.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+                .logicOpEnable = c.VK_FALSE,
+                .logicOp = c.VK_LOGIC_OP_CLEAR,
+                .attachmentCount = 0,
+                .pAttachments = null,
+                .blendConstants = .{ 0, 0, 0, 0 },
+            },
+            dynamic_state: c.VkPipelineDynamicStateCreateInfo = .{
+                .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+                .dynamicStateCount = 4,
+                .pDynamicStates = &[4]c.VkDynamicState{
+                    c.VK_DYNAMIC_STATE_VIEWPORT,
+                    c.VK_DYNAMIC_STATE_SCISSOR,
+                    c.VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+                    c.VK_DYNAMIC_STATE_STENCIL_REFERENCE,
+                },
+            },
+        } = .{};
+
+        for (create_infos, create_inner, desc.states) |*info, *inner, state| {
+            info.* = .{
+                .sType = c.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+                .pNext = null,
+                .flags = 0,
+                .stageCount = @intCast(state.stages.len),
+                .pStages = undefined, // Set below
+                .pVertexInputState = &inner.vertex_input_state,
+                .pInputAssemblyState = &inner.input_assembly_state,
+                .pTessellationState = &defaults.tessellation_state,
+                .pViewportState = &inner.viewport_state,
+                .pRasterizationState = &inner.rasterization_state,
+                .pMultisampleState = &inner.multisample_state,
+                .pDepthStencilState = &inner.depth_stencil_state,
+                .pColorBlendState = &inner.color_blend_state,
+                .pDynamicState = &defaults.dynamic_state,
+                .layout = PipelineLayout.cast(state.layout.impl).handle,
+                // TODO: Disallow null render pass/subpass
+                .renderPass = if (state.render_pass) |x| RenderPass.cast(x.impl).handle else null,
+                .subpass = state.subpass orelse 0,
+                // TODO: Expose these
+                .basePipelineHandle = null,
+                .basePipelineIndex = -1,
+            };
+
+            inner.vertex_input_state = if (state.vertex_input) |s| .{
+                .sType = defaults.vertex_input_state.sType,
+                .pNext = null,
+                .flags = 0,
+                .vertexBindingDescriptionCount = @intCast(s.bindings.len),
+                .pVertexBindingDescriptions = blk: {
+                    for (vert_binds_ptr, s.bindings) |*p, b|
+                        p.* = .{
+                            .binding = b.binding,
+                            .stride = b.stride,
+                            .inputRate = if (b.per_instance)
+                                c.VK_VERTEX_INPUT_RATE_INSTANCE
+                            else
+                                c.VK_VERTEX_INPUT_RATE_VERTEX,
+                        };
+                    defer vert_binds_ptr += s.bindings.len;
+                    break :blk vert_binds_ptr;
+                },
+                .vertexAttributeDescriptionCount = @intCast(s.attributes.len),
+                .pVertexAttributeDescriptions = blk: {
+                    for (vert_attrs_ptr, s.attributes) |*p, a|
+                        p.* = .{
+                            .location = a.location,
+                            .binding = a.binding,
+                            .format = try conv.toVkFormat(a.format),
+                            .offset = a.offset,
+                        };
+                    defer vert_attrs_ptr += s.attributes.len;
+                    break :blk vert_attrs_ptr;
+                },
+            } else defaults.vertex_input_state;
+
+            inner.input_assembly_state = if (state.vertex_input) |s| .{
+                .sType = defaults.input_assembly_state.sType,
+                .pNext = null,
+                .flags = 0,
+                .topology = conv.toVkPrimitiveTopology(s.topology),
+                .primitiveRestartEnable = if (s.primitive_restart) c.VK_TRUE else c.VK_FALSE,
+            } else defaults.input_assembly_state;
+
+            inner.viewport_state = if (state.viewport) |s| .{
+                .sType = defaults.viewport_state.sType,
+                .pNext = null,
+                .flags = 0,
+                .viewportCount = 1,
+                .pViewports = blk: {
+                    inner.viewport_state_viewport = .{
+                        .x = s.x,
+                        .y = s.y,
+                        .width = s.width,
+                        .height = s.height,
+                        .minDepth = s.near,
+                        .maxDepth = s.far,
+                    };
+                    break :blk &inner.viewport_state_viewport;
+                },
+                .scissorCount = 1,
+                .pScissors = blk: {
+                    inner.viewport_state_scissor = if (s.scissor) |x| .{
+                        .offset = .{
+                            .x = @min(x.x, std.math.maxInt(i32)),
+                            .y = @min(x.y, std.math.maxInt(i32)),
+                        },
+                        .extent = .{
+                            .width = x.width,
+                            .height = x.height,
+                        },
+                    } else .{
+                        .offset = .{
+                            .x = @intFromFloat(@min(@fabs(s.x), std.math.maxInt(i32))),
+                            .y = @intFromFloat(@min(@fabs(s.y), std.math.maxInt(i32))),
+                        },
+                        .extent = .{
+                            .width = @intFromFloat(@min(@fabs(s.width), std.math.maxInt(u32))),
+                            .height = @intFromFloat(@min(@fabs(s.height), std.math.maxInt(u32))),
+                        },
+                    };
+                    break :blk &inner.viewport_state_scissor;
+                },
+            } else defaults.viewport_state;
+
+            inner.rasterization_state = if (state.rasterization) |s| .{
+                .sType = defaults.rasterization_state.sType,
+                .pNext = null,
+                .flags = 0,
+                .depthClampEnable = if (s.depth_clamp) c.VK_TRUE else c.VK_FALSE,
+                .rasterizerDiscardEnable = c.VK_FALSE,
+                .polygonMode = conv.toVkPolygonMode(s.polygon_mode),
+                .cullMode = conv.toVkCullModeFlags(s.cull_mode),
+                .frontFace = if (s.clockwise)
+                    c.VK_FRONT_FACE_CLOCKWISE
+                else
+                    c.VK_FRONT_FACE_COUNTER_CLOCKWISE,
+                .depthBiasEnable = if (s.depth_bias == null) c.VK_FALSE else c.VK_TRUE,
+                .depthBiasConstantFactor = if (s.depth_bias) |x| x.value else 0,
+                .depthBiasClamp = if (s.depth_bias) |x| x.clamp else 0,
+                .depthBiasSlopeFactor = if (s.depth_bias) |x| x.slope else 0,
+                .lineWidth = 1.0,
+            } else defaults.rasterization_state;
+
+            inner.multisample_state = if (state.rasterization) |s| .{
+                .sType = defaults.rasterization_state.sType,
+                .pNext = null,
+                .flags = 0,
+                .rasterizationSamples = conv.toVkSampleCount(s.samples),
+                .sampleShadingEnable = c.VK_FALSE,
+                .minSampleShading = 0,
+                .pSampleMask = blk: {
+                    inner.multisample_state_sample_mask[0] = @truncate(s.sample_mask);
+                    inner.multisample_state_sample_mask[1] = @truncate(s.sample_mask >> 32);
+                    break :blk inner.multisample_state_sample_mask[0..].ptr;
+                },
+                .alphaToCoverageEnable = if (s.alpha_to_coverage) c.VK_TRUE else c.VK_FALSE,
+                .alphaToOneEnable = if (s.alpha_to_one) c.VK_TRUE else c.VK_FALSE,
+            } else defaults.multisample_state;
+
+            inner.depth_stencil_state = if (state.depth_stencil) |s| .{
+                .sType = defaults.depth_stencil_state.sType,
+                .pNext = null,
+                .flags = 0,
+                .depthTestEnable = if (s.depth_compare == null) c.VK_FALSE else c.VK_TRUE,
+                .depthWriteEnable = if (s.depth_write) c.VK_TRUE else c.VK_FALSE,
+                .depthCompareOp = conv.toVkCompareOp(s.depth_compare orelse .never),
+                .depthBoundsTestEnable = c.VK_FALSE,
+                .stencilTestEnable = if (s.stencil_front != null or s.stencil_back != null)
+                    c.VK_TRUE
+                else
+                    c.VK_FALSE,
+                .front = if (s.stencil_front) |t| .{
+                    .failOp = conv.toVkStencilOp(t.fail_op),
+                    .passOp = conv.toVkStencilOp(t.pass_op),
+                    .depthFailOp = conv.toVkStencilOp(t.depth_fail_op),
+                    .compareOp = conv.toVkCompareOp(t.compare),
+                    .compareMask = t.read_mask,
+                    .writeMask = t.write_mask,
+                    .reference = t.reference,
+                } else defaults.depth_stencil_state.front,
+                .back = if (s.stencil_back) |t| .{
+                    .failOp = conv.toVkStencilOp(t.fail_op),
+                    .passOp = conv.toVkStencilOp(t.pass_op),
+                    .depthFailOp = conv.toVkStencilOp(t.depth_fail_op),
+                    .compareOp = conv.toVkCompareOp(t.compare),
+                    .compareMask = t.read_mask,
+                    .writeMask = t.write_mask,
+                    .reference = t.reference,
+                } else defaults.depth_stencil_state.back,
+                .minDepthBounds = 0,
+                .maxDepthBounds = 0,
+            } else defaults.depth_stencil_state;
+
+            inner.color_blend_state = if (state.color_blend) |s| .{
+                .sType = defaults.color_blend_state.sType,
+                .pNext = null,
+                .flags = 0,
+                .logicOpEnable = c.VK_FALSE,
+                .logicOp = c.VK_LOGIC_OP_CLEAR,
+                .attachmentCount = @intCast(s.attachments.len),
+                .pAttachments = blk: {
+                    // TODO: Untie write mask from blending
+                    for (blend_attachs_ptr, s.attachments) |*p, a|
+                        p.* = if (a) |x| .{
+                            .blendEnable = c.VK_TRUE,
+                            .srcColorBlendFactor = conv.toVkBlendFactor(x.color_source_factor),
+                            .dstColorBlendFactor = conv.toVkBlendFactor(x.color_dest_factor),
+                            .colorBlendOp = conv.toVkBlendOp(x.color_blend_op),
+                            .srcAlphaBlendFactor = conv.toVkBlendFactor(x.alpha_source_factor),
+                            .dstAlphaBlendFactor = conv.toVkBlendFactor(x.alpha_dest_factor),
+                            .alphaBlendOp = conv.toVkBlendOp(x.alpha_blend_op),
+                            .colorWriteMask = blk2: {
+                                var flags: c.VkColorComponentFlags = 0;
+                                if (x.write_mask.r) flags |= c.VK_COLOR_COMPONENT_R_BIT;
+                                if (x.write_mask.g) flags |= c.VK_COLOR_COMPONENT_G_BIT;
+                                if (x.write_mask.b) flags |= c.VK_COLOR_COMPONENT_B_BIT;
+                                if (x.write_mask.a) flags |= c.VK_COLOR_COMPONENT_A_BIT;
+                                break :blk2 flags;
+                            },
+                        } else .{
+                            .blendEnable = c.VK_FALSE,
+                            .srcColorBlendFactor = c.VK_BLEND_FACTOR_ZERO,
+                            .dstColorBlendFactor = c.VK_BLEND_FACTOR_ZERO,
+                            .colorBlendOp = c.VK_BLEND_OP_ADD,
+                            .srcAlphaBlendFactor = c.VK_BLEND_FACTOR_ZERO,
+                            .dstAlphaBlendFactor = c.VK_BLEND_FACTOR_ZERO,
+                            .alphaBlendOp = c.VK_BLEND_OP_ADD,
+                            .colorWriteMask = c.VK_COLOR_COMPONENT_R_BIT |
+                                c.VK_COLOR_COMPONENT_G_BIT |
+                                c.VK_COLOR_COMPONENT_B_BIT |
+                                c.VK_COLOR_COMPONENT_A_BIT,
+                        };
+                    defer blend_attachs_ptr += s.attachments.len;
+                    break :blk blend_attachs_ptr;
+                },
+                .blendConstants = s.constants,
+            } else defaults.color_blend_state;
+        }
+
+        var module_create_infos: []c.VkShaderModuleCreateInfo = &.{};
+        defer if (module_create_infos.len > 0) allocator.free(module_create_infos);
+
+        errdefer for (stages) |s| {
+            if (s.module == null) break;
+            dev.vkDestroyShaderModule(s.module, null);
+        };
+
+        if (false) { // TODO: Don't create modules if maintenance5 is available
+            stages_ptr[0].module = null;
+            // TODO...
+        } else {
+            for (create_infos, desc.states) |*info, state| {
+                errdefer stages_ptr[0].module = null;
+
+                info.*.pStages = stages.ptr;
+
+                for (state.stages) |stage| {
+                    stages_ptr[0] = .{
+                        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                        .pNext = null,
+                        .flags = 0,
+                        .stage = conv.toVkShaderStage(stage.stage),
+                        .module = undefined,
+                        .pName = stage.name,
+                        .pSpecializationInfo = null, // TODO
+                    };
+
+                    try conv.check(dev.vkCreateShaderModule(&.{
+                        .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                        .pNext = null,
+                        .flags = 0,
+                        .codeSize = stage.code.len,
+                        .pCode = @as([*]const u32, @ptrCast(stage.code.ptr)),
+                    }, null, &stages_ptr[0].module));
+
+                    stages_ptr += 1;
+                }
+            }
+        }
+
+        var handles = try allocator.alloc(c.VkPipeline, create_infos.len);
+        defer allocator.free(handles);
+
+        try conv.check(dev.vkCreateGraphicsPipelines(
+            if (desc.cache) |x| PipelineCache.cast(x.impl).handle else null,
+            @intCast(create_infos.len),
+            create_infos.ptr,
+            null,
+            handles.ptr,
+        ));
+
+        stages_ptr = stages.ptr;
+
+        for (pipelines, handles, desc.states, 0..) |*pl, h, s, i| {
+            var ptr = allocator.create(Pipeline) catch |err| {
+                for (0..i) |j| {
+                    allocator.destroy(cast(pipelines[j].impl));
+                    pipelines[j].impl = undefined;
+                }
+                return err;
+            };
+            std.debug.assert(s.stages.len <= max_stage);
+            @memset(ptr.modules[s.stages.len..], null);
+            ptr.handle = h;
+            for (0..s.stages.len) |j| ptr.modules[j] = stages_ptr[j].module;
+            stages_ptr += s.stages.len;
+            pl.impl = @ptrCast(ptr);
+        }
     }
 
     pub fn initCompute(
@@ -60,8 +522,8 @@ pub const Pipeline = struct {
             };
         }
 
-        var module_create_infos: ?[]c.VkShaderModuleCreateInfo = null;
-        defer if (module_create_infos) |x| allocator.free(x);
+        var module_create_infos: []c.VkShaderModuleCreateInfo = &.{};
+        defer if (module_create_infos.len > 0) allocator.free(module_create_infos);
 
         var modules = try allocator.alloc(c.VkShaderModule, desc.states.len);
         defer allocator.free(modules);
