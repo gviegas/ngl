@@ -343,10 +343,12 @@ pub const Device = struct {
     destroySemaphore: c.PFN_vkDestroySemaphore,
     createBuffer: c.PFN_vkCreateBuffer,
     destroyBuffer: c.PFN_vkDestroyBuffer,
+    getBufferMemoryRequirements: c.PFN_vkGetBufferMemoryRequirements,
     createBufferView: c.PFN_vkCreateBufferView,
     destroyBufferView: c.PFN_vkDestroyBufferView,
     createImage: c.PFN_vkCreateImage,
     destroyImage: c.PFN_vkDestroyImage,
+    getImageMemoryRequirements: c.PFN_vkGetImageMemoryRequirements,
     createImageView: c.PFN_vkCreateImageView,
     destroyImageView: c.PFN_vkDestroyImageView,
     createSampler: c.PFN_vkCreateSampler,
@@ -460,10 +462,12 @@ pub const Device = struct {
             .destroySemaphore = @ptrCast(try Device.getProc(get, dev, "vkDestroySemaphore")),
             .createBuffer = @ptrCast(try Device.getProc(get, dev, "vkCreateBuffer")),
             .destroyBuffer = @ptrCast(try Device.getProc(get, dev, "vkDestroyBuffer")),
+            .getBufferMemoryRequirements = @ptrCast(try Device.getProc(get, dev, "vkGetBufferMemoryRequirements")),
             .createBufferView = @ptrCast(try Device.getProc(get, dev, "vkCreateBufferView")),
             .destroyBufferView = @ptrCast(try Device.getProc(get, dev, "vkDestroyBufferView")),
             .createImage = @ptrCast(try Device.getProc(get, dev, "vkCreateImage")),
             .destroyImage = @ptrCast(try Device.getProc(get, dev, "vkDestroyImage")),
+            .getImageMemoryRequirements = @ptrCast(try Device.getProc(get, dev, "vkGetImageMemoryRequirements")),
             .createImageView = @ptrCast(try Device.getProc(get, dev, "vkCreateImageView")),
             .destroyImageView = @ptrCast(try Device.getProc(get, dev, "vkDestroyImageView")),
             .createSampler = @ptrCast(try Device.getProc(get, dev, "vkCreateSampler")),
@@ -663,6 +667,14 @@ pub const Device = struct {
         self.destroyBuffer.?(self.handle, buffer, vk_allocator);
     }
 
+    pub inline fn vkGetBufferMemoryRequirements(
+        self: *Device,
+        buffer: c.VkBuffer,
+        memory_requirements: *c.VkMemoryRequirements,
+    ) void {
+        self.getBufferMemoryRequirements.?(self.handle, buffer, memory_requirements);
+    }
+
     pub inline fn vkCreateBufferView(
         self: *Device,
         create_info: *const c.VkBufferViewCreateInfo,
@@ -695,6 +707,14 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.destroyImage.?(self.handle, image, vk_allocator);
+    }
+
+    pub inline fn vkGetImageMemoryRequirements(
+        self: *Device,
+        image: c.VkImage,
+        memory_requirements: *c.VkMemoryRequirements,
+    ) void {
+        self.getImageMemoryRequirements.?(self.handle, image, memory_requirements);
     }
 
     pub inline fn vkCreateImageView(
@@ -959,12 +979,14 @@ const vtable = Impl.VTable{
     .deinitSemaphore = @import("sync.zig").Semaphore.deinit,
 
     .initBuffer = @import("res.zig").Buffer.init,
+    .getMemoryRequirementsBuffer = @import("res.zig").Buffer.getMemoryRequirements,
     .deinitBuffer = @import("res.zig").Buffer.deinit,
 
     .initBufferView = @import("res.zig").BufferView.init,
     .deinitBufferView = @import("res.zig").BufferView.deinit,
 
     .initImage = @import("res.zig").Image.init,
+    .getMemoryRequirementsImage = @import("res.zig").Image.getMemoryRequirements,
     .deinitImage = @import("res.zig").Image.deinit,
 
     .initImageView = @import("res.zig").ImageView.init,

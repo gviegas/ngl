@@ -161,6 +161,9 @@ test {
     });
     defer buf.deinit(allocator, &ctx.device);
 
+    const buf_req = buf.getMemoryRequirements(&ctx.device);
+    _ = buf_req;
+
     var buf_view = try BufferView.init(allocator, &ctx.device, .{
         .buffer = &buf,
         .format = .rgba8_unorm,
@@ -189,6 +192,9 @@ test {
         .initial_layout = .undefined,
     });
     defer image.deinit(allocator, &ctx.device);
+
+    const img_req = image.getMemoryRequirements(&ctx.device);
+    _ = img_req;
 
     var img_view = try ImageView.init(allocator, &ctx.device, .{
         .image = &image,

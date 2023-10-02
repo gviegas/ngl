@@ -2,7 +2,7 @@ const std = @import("std");
 
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
-const memory = ngl.Memory;
+const Memory = ngl.Memory;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
@@ -155,6 +155,10 @@ pub const Buffer = struct {
         return .{ .impl = try Impl.get().initBuffer(allocator, device.impl, desc) };
     }
 
+    pub fn getMemoryRequirements(self: *Self, device: *Device) Memory.Requirements {
+        return Impl.get().getMemoryRequirementsBuffer(device.impl, self.impl);
+    }
+
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitBuffer(allocator, device.impl, self.impl);
         self.* = undefined;
@@ -276,6 +280,10 @@ pub const Image = struct {
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
         return .{ .impl = try Impl.get().initImage(allocator, device.impl, desc) };
+    }
+
+    pub fn getMemoryRequirements(self: *Self, device: *Device) Memory.Requirements {
+        return Impl.get().getMemoryRequirementsImage(device.impl, self.impl);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {

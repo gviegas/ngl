@@ -55,6 +55,20 @@ pub const Buffer = struct {
         return @ptrCast(ptr);
     }
 
+    pub fn getMemoryRequirements(
+        _: *anyopaque,
+        device: *Impl.Device,
+        buffer: *Impl.Buffer,
+    ) ngl.Memory.Requirements {
+        var mem_req: c.VkMemoryRequirements = undefined;
+        Device.cast(device).vkGetBufferMemoryRequirements(cast(buffer).handle, &mem_req);
+        return .{
+            .size = mem_req.size,
+            .alignment = mem_req.alignment,
+            .mem_type_bits = mem_req.memoryTypeBits,
+        };
+    }
+
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
@@ -194,6 +208,20 @@ pub const Image = struct {
 
         ptr.* = .{ .handle = image };
         return @ptrCast(ptr);
+    }
+
+    pub fn getMemoryRequirements(
+        _: *anyopaque,
+        device: *Impl.Device,
+        image: *Impl.Image,
+    ) ngl.Memory.Requirements {
+        var mem_req: c.VkMemoryRequirements = undefined;
+        Device.cast(device).vkGetImageMemoryRequirements(cast(image).handle, &mem_req);
+        return .{
+            .size = mem_req.size,
+            .alignment = mem_req.alignment,
+            .mem_type_bits = mem_req.memoryTypeBits,
+        };
     }
 
     pub fn deinit(
