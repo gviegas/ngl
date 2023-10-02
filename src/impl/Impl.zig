@@ -87,8 +87,8 @@ pub const VTable = struct {
     allocCommandBuffers: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        command_pool: *CommandPool,
         device: *Device,
+        command_pool: *CommandPool,
         desc: ngl.CommandBuffer.Desc,
         command_buffers: []ngl.CommandBuffer,
     ) Error!void,
@@ -96,8 +96,8 @@ pub const VTable = struct {
     freeCommandBuffers: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        command_pool: *CommandPool,
         device: *Device,
+        command_pool: *CommandPool,
         command_buffers: []const ngl.CommandBuffer,
     ) void,
 
@@ -300,8 +300,8 @@ pub const VTable = struct {
     allocDescriptorSets: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        descriptor_pool: *DescriptorPool,
         device: *Device,
+        descriptor_pool: *DescriptorPool,
         desc: ngl.DescriptorSet.Desc,
         descriptor_sets: []ngl.DescriptorSet,
     ) Error!void,
@@ -309,8 +309,8 @@ pub const VTable = struct {
     freeDescriptorSets: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        descriptor_pool: *DescriptorPool,
         device: *Device,
+        descriptor_pool: *DescriptorPool,
         descriptor_sets: []const ngl.DescriptorSet,
     ) void,
 
@@ -458,16 +458,16 @@ pub fn initCommandPool(
 pub fn allocCommandBuffers(
     self: *Self,
     allocator: std.mem.Allocator,
-    command_pool: *CommandPool,
     device: *Device,
+    command_pool: *CommandPool,
     desc: ngl.CommandBuffer.Desc,
     command_buffers: []ngl.CommandBuffer,
 ) Error!void {
     return self.vtable.allocCommandBuffers(
         self.ptr,
         allocator,
-        command_pool,
         device,
+        command_pool,
         desc,
         command_buffers,
     );
@@ -476,11 +476,11 @@ pub fn allocCommandBuffers(
 pub fn freeCommandBuffers(
     self: *Self,
     allocator: std.mem.Allocator,
-    command_pool: *CommandPool,
     device: *Device,
+    command_pool: *CommandPool,
     command_buffers: []const ngl.CommandBuffer,
 ) void {
-    self.vtable.freeCommandBuffers(self.ptr, allocator, command_pool, device, command_buffers);
+    self.vtable.freeCommandBuffers(self.ptr, allocator, device, command_pool, command_buffers);
 }
 
 pub fn deinitCommandPool(
@@ -692,16 +692,16 @@ pub fn initDescriptorPool(
 pub fn allocDescriptorSets(
     self: *Self,
     allocator: std.mem.Allocator,
-    descriptor_pool: *DescriptorPool,
     device: *Device,
+    descriptor_pool: *DescriptorPool,
     desc: ngl.DescriptorSet.Desc,
     descriptor_sets: []ngl.DescriptorSet,
 ) Error!void {
     return self.vtable.allocDescriptorSets(
         self.ptr,
         allocator,
-        descriptor_pool,
         device,
+        descriptor_pool,
         desc,
         descriptor_sets,
     );
@@ -710,11 +710,11 @@ pub fn allocDescriptorSets(
 pub fn freeDescriptorSets(
     self: *Self,
     allocator: std.mem.Allocator,
-    descriptor_pool: *DescriptorPool,
     device: *Device,
+    descriptor_pool: *DescriptorPool,
     descriptor_sets: []const ngl.DescriptorSet,
 ) void {
-    self.vtable.freeDescriptorSets(self.ptr, allocator, descriptor_pool, device, descriptor_sets);
+    self.vtable.freeDescriptorSets(self.ptr, allocator, device, descriptor_pool, descriptor_sets);
 }
 
 pub fn deinitDescriptorPool(

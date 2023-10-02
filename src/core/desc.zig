@@ -121,7 +121,7 @@ pub const DescriptorPool = struct {
             \\Impl only sets the impl field
             \\This function must initialize the others
         );
-        try Impl.get().allocDescriptorSets(allocator, self.impl, device.impl, desc, desc_sets);
+        try Impl.get().allocDescriptorSets(allocator, device.impl, self.impl, desc, desc_sets);
         return desc_sets;
     }
 
@@ -131,7 +131,7 @@ pub const DescriptorPool = struct {
         device: *Device,
         descriptor_sets: []DescriptorSet,
     ) void {
-        Impl.get().freeDescriptorSets(allocator, self.impl, device.impl, descriptor_sets);
+        Impl.get().freeDescriptorSets(allocator, device.impl, self.impl, descriptor_sets);
         allocator.free(descriptor_sets);
     }
 

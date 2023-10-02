@@ -33,7 +33,7 @@ pub const CommandPool = struct {
             \\Impl only sets the impl field
             \\This function must initialize the others
         );
-        try Impl.get().allocCommandBuffers(allocator, self.impl, device.impl, desc, cmd_bufs);
+        try Impl.get().allocCommandBuffers(allocator, device.impl, self.impl, desc, cmd_bufs);
         return cmd_bufs;
     }
 
@@ -43,7 +43,7 @@ pub const CommandPool = struct {
         device: *Device,
         command_buffers: []CommandBuffer,
     ) void {
-        Impl.get().freeCommandBuffers(allocator, self.impl, device.impl, command_buffers);
+        Impl.get().freeCommandBuffers(allocator, device.impl, self.impl, command_buffers);
         allocator.free(command_buffers);
     }
 

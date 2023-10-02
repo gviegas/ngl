@@ -42,13 +42,13 @@ pub const CommandPool = struct {
     pub fn alloc(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        command_pool: *Impl.CommandPool,
         device: *Impl.Device,
+        command_pool: *Impl.CommandPool,
         desc: ngl.CommandBuffer.Desc,
         command_buffers: []ngl.CommandBuffer,
     ) Error!void {
-        const cmd_pool = cast(command_pool);
         const dev = Device.cast(device);
+        const cmd_pool = cast(command_pool);
 
         var cmd_bufs = try allocator.alloc(c.VkCommandBuffer, desc.count);
         defer allocator.free(cmd_bufs);
@@ -80,12 +80,12 @@ pub const CommandPool = struct {
     pub fn free(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        command_pool: *Impl.CommandPool,
         device: *Impl.Device,
+        command_pool: *Impl.CommandPool,
         command_buffers: []const ngl.CommandBuffer,
     ) void {
-        const cmd_pool = cast(command_pool);
         const dev = Device.cast(device);
+        const cmd_pool = cast(command_pool);
         const n = command_buffers.len;
 
         var cmd_bufs = allocator.alloc(c.VkCommandBuffer, n) catch {

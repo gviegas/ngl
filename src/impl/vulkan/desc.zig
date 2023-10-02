@@ -213,13 +213,13 @@ pub const DescriptorPool = struct {
     pub fn alloc(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        descriptor_pool: *Impl.DescriptorPool,
         device: *Impl.Device,
+        descriptor_pool: *Impl.DescriptorPool,
         desc: ngl.DescriptorSet.Desc,
         descriptor_sets: []ngl.DescriptorSet,
     ) Error!void {
-        const desc_pool = cast(descriptor_pool);
         const dev = Device.cast(device);
+        const desc_pool = cast(descriptor_pool);
 
         var set_layouts = try allocator.alloc(c.VkDescriptorSetLayout, desc.layouts.len);
         defer allocator.free(set_layouts);
@@ -261,12 +261,12 @@ pub const DescriptorPool = struct {
     pub fn free(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        descriptor_pool: *Impl.DescriptorPool,
         device: *Impl.Device,
+        descriptor_pool: *Impl.DescriptorPool,
         descriptor_sets: []const ngl.DescriptorSet,
     ) void {
-        const desc_pool = cast(descriptor_pool);
         const dev = Device.cast(device);
+        const desc_pool = cast(descriptor_pool);
         const n = descriptor_sets.len;
 
         var desc_sets = allocator.alloc(c.VkDescriptorSet, n) catch {
