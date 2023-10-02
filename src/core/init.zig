@@ -117,6 +117,16 @@ pub const Memory = struct {
         heap_index: u8,
     };
 
+    pub const Requirements = struct {
+        size: usize,
+        alignment: usize,
+        mem_type_bits: u32,
+
+        pub inline fn supportsMemoryType(self: Requirements, memory_type_index: u5) bool {
+            return self.mem_type_bits & (@as(u32, 1) << memory_type_index) != 0;
+        }
+    };
+
     pub const max_type = 32;
     pub const max_heap = 16;
 };
