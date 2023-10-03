@@ -5,7 +5,6 @@ const Impl = @import("../impl/Impl.zig");
 
 pub const Instance = struct {
     impl: *Impl.Instance,
-    allocator: std.mem.Allocator,
 
     // TODO
     pub const Desc = struct {};
@@ -14,25 +13,21 @@ pub const Instance = struct {
 
     pub fn init(allocator: std.mem.Allocator, desc: Desc) Error!Self {
         try Impl.init(allocator);
-        return .{
-            .impl = try Impl.get().initInstance(allocator, desc),
-            .allocator = allocator,
-        };
+        return .{ .impl = try Impl.get().initInstance(allocator, desc) };
     }
 
     pub fn listDevices(self: *Self, allocator: std.mem.Allocator) Error![]Device.Desc {
         return Impl.get().listDevices(allocator, self.impl);
     }
 
-    pub fn deinit(self: *Self) void {
-        Impl.get().deinitInstance(self.allocator, self.impl);
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
+        Impl.get().deinitInstance(allocator, self.impl);
         self.* = undefined;
     }
 };
 
 pub const Device = struct {
     impl: *Impl.Device,
-    allocator: std.mem.Allocator,
     queues: [Queue.max]Queue,
     queue_n: u8,
     mem_types: [Memory.max_type]Memory.Type,
@@ -57,7 +52,6 @@ pub const Device = struct {
     pub fn init(allocator: std.mem.Allocator, instance: *Instance, desc: Desc) Error!Self {
         var self = Self{
             .impl = try Impl.get().initDevice(allocator, instance.impl, desc),
-            .allocator = allocator,
             .queues = undefined,
             .queue_n = 0,
             .mem_types = undefined,
@@ -80,8 +74,8 @@ pub const Device = struct {
         memory.* = undefined;
     }
 
-    pub fn deinit(self: *Self) void {
-        Impl.get().deinitDevice(self.allocator, self.impl);
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
+        Impl.get().deinitDevice(allocator, self.impl);
         self.* = undefined;
     }
 };

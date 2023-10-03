@@ -63,7 +63,7 @@ pub const Context = struct {
 
     pub fn initDefault(allocator: std.mem.Allocator) Error!Self {
         var inst = try Instance.init(allocator, .{});
-        errdefer inst.deinit();
+        errdefer inst.deinit(allocator);
         var descs = try inst.listDevices(allocator);
         defer allocator.free(descs);
         var desc_i: usize = 0;
@@ -81,9 +81,9 @@ pub const Context = struct {
         };
     }
 
-    pub fn deinit(self: *Self) void {
-        self.device.deinit();
-        self.instance.deinit();
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
+        self.device.deinit(allocator);
+        self.instance.deinit(allocator);
         self.* = undefined;
         @import("impl/Impl.zig").get().deinit(); // XXX
     }
@@ -132,7 +132,7 @@ test {
     const allocator = std.testing.allocator;
 
     var ctx = try Context.initDefault(allocator);
-    defer ctx.deinit();
+    defer ctx.deinit(allocator);
 
     var cmd_pool = try CommandPool.init(allocator, &ctx.device, .{
         .queue = &ctx.device.queues[0],
