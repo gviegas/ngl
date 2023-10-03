@@ -71,6 +71,15 @@ pub const Device = struct {
         return self;
     }
 
+    pub fn alloc(self: *Self, allocator: std.mem.Allocator, desc: Memory.Desc) Error!Memory {
+        return .{ .impl = try Impl.get().allocMemory(allocator, self.impl, desc) };
+    }
+
+    pub fn free(self: *Self, allocator: std.mem.Allocator, memory: *Memory) void {
+        Impl.get().freeMemory(allocator, self.impl, memory.impl);
+        memory.* = undefined;
+    }
+
     pub fn deinit(self: *Self) void {
         Impl.get().deinitDevice(self.allocator, self.impl);
         self.* = undefined;
@@ -114,7 +123,7 @@ pub const Memory = struct {
 
     pub const Type = struct {
         properties: Properties,
-        heap_index: u8,
+        heap_index: u4,
     };
 
     pub const Requirements = struct {
@@ -125,6 +134,11 @@ pub const Memory = struct {
         pub inline fn supportsMemoryType(self: Requirements, memory_type_index: u5) bool {
             return self.mem_type_bits & (@as(u32, 1) << memory_type_index) != 0;
         }
+    };
+
+    pub const Desc = struct {
+        size: usize,
+        mem_type_index: u5,
     };
 
     pub const max_type = 32;

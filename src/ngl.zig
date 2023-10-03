@@ -161,8 +161,17 @@ test {
     });
     defer buf.deinit(allocator, &ctx.device);
 
-    const buf_req = buf.getMemoryRequirements(&ctx.device);
-    _ = buf_req;
+    var mem_buf = try blk: {
+        const mem_req = buf.getMemoryRequirements(&ctx.device);
+
+        break :blk ctx.device.alloc(allocator, .{
+            .size = mem_req.size,
+            .mem_type_index = for (0..ctx.device.mem_type_n) |i| {
+                if (mem_req.supportsMemoryType(@intCast(i))) break @intCast(i);
+            } else unreachable,
+        });
+    };
+    defer ctx.device.free(allocator, &mem_buf);
 
     var buf_view = try BufferView.init(allocator, &ctx.device, .{
         .buffer = &buf,
@@ -193,8 +202,17 @@ test {
     });
     defer image.deinit(allocator, &ctx.device);
 
-    const img_req = image.getMemoryRequirements(&ctx.device);
-    _ = img_req;
+    var mem_img = try blk: {
+        const mem_req = image.getMemoryRequirements(&ctx.device);
+
+        break :blk ctx.device.alloc(allocator, .{
+            .size = mem_req.size,
+            .mem_type_index = for (0..ctx.device.mem_type_n) |i| {
+                if (mem_req.supportsMemoryType(@intCast(i))) break @intCast(i);
+            } else unreachable,
+        });
+    };
+    defer ctx.device.free(allocator, &mem_img);
 
     var img_view = try ImageView.init(allocator, &ctx.device, .{
         .image = &image,

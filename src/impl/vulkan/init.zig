@@ -333,6 +333,8 @@ pub const Device = struct {
     // v1.0
     destroyDevice: c.PFN_vkDestroyDevice,
     getDeviceQueue: c.PFN_vkGetDeviceQueue,
+    allocateMemory: c.PFN_vkAllocateMemory,
+    freeMemory: c.PFN_vkFreeMemory,
     createCommandPool: c.PFN_vkCreateCommandPool,
     destroyCommandPool: c.PFN_vkDestroyCommandPool,
     allocateCommandBuffers: c.PFN_vkAllocateCommandBuffers,
@@ -452,6 +454,8 @@ pub const Device = struct {
             .getDeviceProcAddr = get,
             .destroyDevice = @ptrCast(try Device.getProc(get, dev, "vkDestroyDevice")),
             .getDeviceQueue = @ptrCast(try Device.getProc(get, dev, "vkGetDeviceQueue")),
+            .allocateMemory = @ptrCast(try Device.getProc(get, dev, "vkAllocateMemory")),
+            .freeMemory = @ptrCast(try Device.getProc(get, dev, "vkFreeMemory")),
             .createCommandPool = @ptrCast(try Device.getProc(get, dev, "vkCreateCommandPool")),
             .destroyCommandPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyCommandPool")),
             .allocateCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkAllocateCommandBuffers")),
@@ -538,7 +542,7 @@ pub const Device = struct {
 
         for (0..props.memoryTypeCount) |i| {
             const flags = props.memoryTypes[i].propertyFlags;
-            const heap: u8 = @intCast(props.memoryTypes[i].heapIndex);
+            const heap: u4 = @intCast(props.memoryTypes[i].heapIndex);
             // TODO: Handle this somehow
             if (~mask & flags != 0) log.warn("Memory type {} has unexposed flag(s)", .{i});
             allocation[i] = .{
@@ -554,6 +558,41 @@ pub const Device = struct {
         }
 
         return allocation[0..props.memoryTypeCount];
+    }
+
+    fn alloc(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        desc: ngl.Memory.Desc,
+    ) Error!*Impl.Memory {
+        const dev = cast(device);
+
+        var ptr = try allocator.create(Memory);
+        errdefer allocator.destroy(ptr);
+
+        var mem: c.VkDeviceMemory = undefined;
+        try conv.check(dev.vkAllocateMemory(&.{
+            .sType = c.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext = null,
+            .allocationSize = desc.size,
+            .memoryTypeIndex = desc.mem_type_index,
+        }, null, &mem));
+
+        ptr.* = .{ .handle = mem };
+        return @ptrCast(ptr);
+    }
+
+    fn free(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        memory: *Impl.Memory,
+    ) void {
+        const dev = cast(device);
+        const mem = Memory.cast(memory);
+        dev.vkFreeMemory(mem.handle, null);
+        allocator.destroy(mem);
     }
 
     fn deinit(_: *anyopaque, allocator: std.mem.Allocator, device: *Impl.Device) void {
@@ -580,6 +619,23 @@ pub const Device = struct {
         queue: *c.VkQueue,
     ) void {
         self.getDeviceQueue.?(self.handle, queue_family, queue_index, queue);
+    }
+
+    pub inline fn vkAllocateMemory(
+        self: *Device,
+        allocate_info: *const c.VkMemoryAllocateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        memory: *c.VkDeviceMemory,
+    ) c.VkResult {
+        return self.allocateMemory.?(self.handle, allocate_info, vk_allocator, memory);
+    }
+
+    pub inline fn vkFreeMemory(
+        self: *Device,
+        memory: c.VkDeviceMemory,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.freeMemory.?(self.handle, memory, vk_allocator);
     }
 
     pub inline fn vkCreateCommandPool(
@@ -952,8 +1008,15 @@ pub const Queue = struct {
     }
 };
 
-// TODO
-pub const Memory = struct {};
+// TODO: Consider using the Vulkan handle directly
+// rather than storing it in this type
+pub const Memory = struct {
+    handle: c.VkDeviceMemory,
+
+    pub inline fn cast(impl: *Impl.Memory) *Memory {
+        return @ptrCast(@alignCast(impl));
+    }
+};
 
 const vtable = Impl.VTable{
     .deinit = deinit,
@@ -965,6 +1028,8 @@ const vtable = Impl.VTable{
     .initDevice = Device.init,
     .getQueues = Device.getQueues,
     .getMemoryTypes = Device.getMemoryTypes,
+    .allocMemory = Device.alloc,
+    .freeMemory = Device.free,
     .deinitDevice = Device.deinit,
 
     .initCommandPool = @import("cmd.zig").CommandPool.init,

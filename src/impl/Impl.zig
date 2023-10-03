@@ -73,6 +73,20 @@ pub const VTable = struct {
         device: *Device,
     ) []ngl.Memory.Type,
 
+    allocMemory: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: ngl.Memory.Desc,
+    ) Error!*Memory,
+
+    freeMemory: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        memory: *Memory,
+    ) void,
+
     deinitDevice: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator, device: *Device) void,
 
     // CommandPool -----------------------------------------
@@ -452,6 +466,24 @@ pub fn getMemoryTypes(
     device: *Device,
 ) []ngl.Memory.Type {
     return self.vtable.getMemoryTypes(self.ptr, allocation, device);
+}
+
+pub fn allocMemory(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    desc: ngl.Memory.Desc,
+) Error!*Memory {
+    return self.vtable.allocMemory(self.ptr, allocator, device, desc);
+}
+
+pub fn freeMemory(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    memory: *Memory,
+) void {
+    self.vtable.freeMemory(self.ptr, allocator, device, memory);
 }
 
 pub fn deinitDevice(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
