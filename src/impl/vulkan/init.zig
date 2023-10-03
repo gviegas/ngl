@@ -335,6 +335,8 @@ pub const Device = struct {
     getDeviceQueue: c.PFN_vkGetDeviceQueue,
     allocateMemory: c.PFN_vkAllocateMemory,
     freeMemory: c.PFN_vkFreeMemory,
+    mapMemory: c.PFN_vkMapMemory,
+    unmapMemory: c.PFN_vkUnmapMemory,
     createCommandPool: c.PFN_vkCreateCommandPool,
     destroyCommandPool: c.PFN_vkDestroyCommandPool,
     allocateCommandBuffers: c.PFN_vkAllocateCommandBuffers,
@@ -458,6 +460,8 @@ pub const Device = struct {
             .getDeviceQueue = @ptrCast(try Device.getProc(get, dev, "vkGetDeviceQueue")),
             .allocateMemory = @ptrCast(try Device.getProc(get, dev, "vkAllocateMemory")),
             .freeMemory = @ptrCast(try Device.getProc(get, dev, "vkFreeMemory")),
+            .mapMemory = @ptrCast(try Device.getProc(get, dev, "vkMapMemory")),
+            .unmapMemory = @ptrCast(try Device.getProc(get, dev, "vkUnmapMemory")),
             .createCommandPool = @ptrCast(try Device.getProc(get, dev, "vkCreateCommandPool")),
             .destroyCommandPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyCommandPool")),
             .allocateCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkAllocateCommandBuffers")),
@@ -640,6 +644,21 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.freeMemory.?(self.handle, memory, vk_allocator);
+    }
+
+    pub inline fn vkMapMemory(
+        self: *Device,
+        memory: c.VkDeviceMemory,
+        offset: c.VkDeviceSize,
+        size: c.VkDeviceSize,
+        flags: c.VkMemoryMapFlags,
+        data: *?*anyopaque,
+    ) c.VkResult {
+        return self.mapMemory.?(self.handle, memory, offset, size, flags, data);
+    }
+
+    pub inline fn vkUnmapMemory(self: *Device, memory: c.VkDeviceMemory) void {
+        return self.unmapMemory.?(self.handle, memory);
     }
 
     pub inline fn vkCreateCommandPool(
@@ -1038,6 +1057,28 @@ pub const Memory = struct {
     pub inline fn cast(impl: *Impl.Memory) *Memory {
         return @ptrCast(@alignCast(impl));
     }
+
+    fn map(
+        _: *anyopaque,
+        device: *Impl.Device,
+        memory: *Impl.Memory,
+        offset: usize,
+        size: ?usize,
+    ) Error![*]u8 {
+        var data: ?*anyopaque = undefined;
+        try conv.check(Device.cast(device).vkMapMemory(
+            cast(memory).handle,
+            offset,
+            size orelse c.VK_WHOLE_SIZE,
+            0,
+            &data,
+        ));
+        return @ptrCast(data);
+    }
+
+    fn unmap(_: *anyopaque, device: *Impl.Device, memory: *Impl.Memory) void {
+        Device.cast(device).vkUnmapMemory(cast(memory).handle);
+    }
 };
 
 const vtable = Impl.VTable{
@@ -1053,6 +1094,9 @@ const vtable = Impl.VTable{
     .allocMemory = Device.alloc,
     .freeMemory = Device.free,
     .deinitDevice = Device.deinit,
+
+    .mapMemory = Memory.map,
+    .unmapMemory = Memory.unmap,
 
     .initCommandPool = @import("cmd.zig").CommandPool.init,
     .allocCommandBuffers = @import("cmd.zig").CommandPool.alloc,

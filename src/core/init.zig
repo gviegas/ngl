@@ -137,4 +137,17 @@ pub const Memory = struct {
 
     pub const max_type = 32;
     pub const max_heap = 16;
+
+    const Self = @This();
+
+    // TODO: Consider storing the size of the memory allocation
+    // so this method can return a slice
+    pub fn map(self: *Self, device: *Device, offset: usize, size: ?usize) Error![*]u8 {
+        return try Impl.get().mapMemory(device.impl, self.impl, offset, size);
+    }
+
+    // TODO: Track memory state
+    pub fn unmap(self: *Self, device: *Device) void {
+        Impl.get().unmapMemory(device.impl, self.impl);
+    }
 };

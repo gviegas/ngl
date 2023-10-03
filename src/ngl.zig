@@ -134,6 +134,24 @@ test {
     var ctx = try Context.initDefault(allocator);
     defer ctx.deinit(allocator);
 
+    {
+        const mem_size = 16384;
+        var mem_mappable = try blk: {
+            const idx: u5 = for (0..ctx.device.mem_type_n) |i| {
+                if (ctx.device.mem_types[i].properties.host_visible) break @intCast(i);
+            } else unreachable;
+            break :blk ctx.device.alloc(allocator, .{ .size = mem_size, .mem_type_index = idx });
+        };
+        defer ctx.device.free(allocator, &mem_mappable);
+
+        _ = try mem_mappable.map(&ctx.device, 0, null);
+        mem_mappable.unmap(&ctx.device);
+        _ = try mem_mappable.map(&ctx.device, 4096, 128);
+        mem_mappable.unmap(&ctx.device);
+        _ = try mem_mappable.map(&ctx.device, 256, mem_size - 256);
+        // Can be freed while mapped
+    }
+
     var cmd_pool = try CommandPool.init(allocator, &ctx.device, .{
         .queue = &ctx.device.queues[0],
     });

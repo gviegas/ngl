@@ -89,6 +89,18 @@ pub const VTable = struct {
 
     deinitDevice: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator, device: *Device) void,
 
+    // Memory ----------------------------------------------
+
+    mapMemory: *const fn (
+        ctx: *anyopaque,
+        device: *Device,
+        memory: *Memory,
+        offset: usize,
+        size: ?usize,
+    ) Error![*]u8,
+
+    unmapMemory: *const fn (ctx: *anyopaque, device: *Device, memory: *Memory) void,
+
     // CommandPool -----------------------------------------
 
     initCommandPool: *const fn (
@@ -504,6 +516,20 @@ pub fn freeMemory(
 
 pub fn deinitDevice(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
     self.vtable.deinitDevice(self.ptr, allocator, device);
+}
+
+pub fn mapMemory(
+    self: *Self,
+    device: *Device,
+    memory: *Memory,
+    offset: usize,
+    size: ?usize,
+) Error![*]u8 {
+    return self.vtable.mapMemory(self.ptr, device, memory, offset, size);
+}
+
+pub fn unmapMemory(self: *Self, device: *Device, memory: *Memory) void {
+    self.vtable.unmapMemory(self.ptr, device, memory);
 }
 
 pub fn initCommandPool(
