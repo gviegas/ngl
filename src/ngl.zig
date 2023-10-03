@@ -173,6 +173,8 @@ test {
     };
     defer ctx.device.free(allocator, &mem_buf);
 
+    try buf.bindMemory(&ctx.device, &mem_buf, 0);
+
     var buf_view = try BufferView.init(allocator, &ctx.device, .{
         .buffer = &buf,
         .format = .rgba8_unorm,
@@ -213,6 +215,8 @@ test {
         });
     };
     defer ctx.device.free(allocator, &mem_img);
+
+    try image.bindMemory(&ctx.device, &mem_img, 0);
 
     var img_view = try ImageView.init(allocator, &ctx.device, .{
         .image = &image,

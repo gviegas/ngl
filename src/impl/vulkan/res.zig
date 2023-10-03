@@ -6,6 +6,7 @@ const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
 const Device = @import("init.zig").Device;
+const Memory = @import("init.zig").Memory;
 
 pub const Buffer = struct {
     handle: c.VkBuffer,
@@ -67,6 +68,20 @@ pub const Buffer = struct {
             .alignment = mem_req.alignment,
             .mem_type_bits = mem_req.memoryTypeBits,
         };
+    }
+
+    pub fn bindMemory(
+        _: *anyopaque,
+        device: *Impl.Device,
+        buffer: *Impl.Buffer,
+        memory: *Impl.Memory,
+        memory_offset: usize,
+    ) Error!void {
+        try conv.check(Device.cast(device).vkBindBufferMemory(
+            cast(buffer).handle,
+            Memory.cast(memory).handle,
+            memory_offset,
+        ));
     }
 
     pub fn deinit(
@@ -222,6 +237,20 @@ pub const Image = struct {
             .alignment = mem_req.alignment,
             .mem_type_bits = mem_req.memoryTypeBits,
         };
+    }
+
+    pub fn bindMemory(
+        _: *anyopaque,
+        device: *Impl.Device,
+        image: *Impl.Image,
+        memory: *Impl.Memory,
+        memory_offset: usize,
+    ) Error!void {
+        try conv.check(Device.cast(device).vkBindImageMemory(
+            cast(image).handle,
+            Memory.cast(memory).handle,
+            memory_offset,
+        ));
     }
 
     pub fn deinit(

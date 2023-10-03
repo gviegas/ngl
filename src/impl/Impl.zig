@@ -173,6 +173,14 @@ pub const VTable = struct {
         buffer: *Buffer,
     ) ngl.Memory.Requirements,
 
+    bindMemoryBuffer: *const fn (
+        ctx: *anyopaque,
+        device: *Device,
+        buffer: *Buffer,
+        memory: *Memory,
+        memory_offset: usize,
+    ) Error!void,
+
     deinitBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -210,6 +218,14 @@ pub const VTable = struct {
         device: *Device,
         image: *Image,
     ) ngl.Memory.Requirements,
+
+    bindMemoryImage: *const fn (
+        ctx: *anyopaque,
+        device: *Device,
+        image: *Image,
+        memory: *Memory,
+        memory_offset: usize,
+    ) Error!void,
 
     deinitImage: *const fn (
         ctx: *anyopaque,
@@ -584,6 +600,16 @@ pub fn getMemoryRequirementsBuffer(
     return self.vtable.getMemoryRequirementsBuffer(self.ptr, device, buffer);
 }
 
+pub fn bindMemoryBuffer(
+    self: *Self,
+    device: *Device,
+    buffer: *Buffer,
+    memory: *Memory,
+    memory_offset: usize,
+) Error!void {
+    return self.vtable.bindMemoryBuffer(self.ptr, device, buffer, memory, memory_offset);
+}
+
 pub fn deinitBuffer(
     self: *Self,
     allocator: std.mem.Allocator,
@@ -630,6 +656,16 @@ pub fn getMemoryRequirementsImage(
     image: *Image,
 ) ngl.Memory.Requirements {
     return self.vtable.getMemoryRequirementsImage(self.ptr, device, image);
+}
+
+pub fn bindMemoryImage(
+    self: *Self,
+    device: *Device,
+    image: *Image,
+    memory: *Memory,
+    memory_offset: usize,
+) Error!void {
+    return self.vtable.bindMemoryImage(self.ptr, device, image, memory, memory_offset);
 }
 
 pub fn initImageView(

@@ -159,6 +159,15 @@ pub const Buffer = struct {
         return Impl.get().getMemoryRequirementsBuffer(device.impl, self.impl);
     }
 
+    pub fn bindMemory(
+        self: *Self,
+        device: *Device,
+        memory: *Memory,
+        memory_offset: usize,
+    ) Error!void {
+        return Impl.get().bindMemoryBuffer(device.impl, self.impl, memory.impl, memory_offset);
+    }
+
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitBuffer(allocator, device.impl, self.impl);
         self.* = undefined;
@@ -284,6 +293,15 @@ pub const Image = struct {
 
     pub fn getMemoryRequirements(self: *Self, device: *Device) Memory.Requirements {
         return Impl.get().getMemoryRequirementsImage(device.impl, self.impl);
+    }
+
+    pub fn bindMemory(
+        self: *Self,
+        device: *Device,
+        memory: *Memory,
+        memory_offset: usize,
+    ) Error!void {
+        return Impl.get().bindMemoryImage(device.impl, self.impl, memory.impl, memory_offset);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
