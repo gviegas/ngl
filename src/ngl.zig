@@ -195,6 +195,15 @@ test {
     var sema = try Semaphore.init(allocator, &ctx.device, .{});
     defer sema.deinit(allocator, &ctx.device);
 
+    {
+        var queue = &ctx.device.queues[0];
+        try queue.submit(allocator, &ctx.device, null, &.{.{
+            .commands = &.{},
+            .wait = &.{},
+            .signal = &.{},
+        }});
+    }
+
     var buf = try Buffer.init(allocator, &ctx.device, .{
         .size = 1 << 20,
         .usage = .{

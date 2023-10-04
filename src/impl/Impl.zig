@@ -89,6 +89,17 @@ pub const VTable = struct {
 
     deinitDevice: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator, device: *Device) void,
 
+    // Queue -----------------------------------------------
+
+    submit: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        queue: *Queue,
+        fence: ?*Fence,
+        submits: []const ngl.Queue.Submit,
+    ) Error!void,
+
     // Memory ----------------------------------------------
 
     mapMemory: *const fn (
@@ -534,6 +545,17 @@ pub fn freeMemory(
 
 pub fn deinitDevice(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
     self.vtable.deinitDevice(self.ptr, allocator, device);
+}
+
+pub fn submit(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    queue: *Queue,
+    fence: ?*Fence,
+    submits: []const ngl.Queue.Submit,
+) Error!void {
+    return self.vtable.submit(self.ptr, allocator, device, queue, fence, submits);
 }
 
 pub fn mapMemory(

@@ -8,6 +8,9 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const CommandBuffer = @import("cmd.zig").CommandBuffer;
+const Fence = @import("sync.zig").Fence;
+const Semaphore = @import("sync.zig").Semaphore;
 
 var libvulkan: ?*anyopaque = null;
 var getInstanceProcAddr: c.PFN_vkGetInstanceProcAddr = null;
@@ -333,6 +336,7 @@ pub const Device = struct {
     // v1.0
     destroyDevice: c.PFN_vkDestroyDevice,
     getDeviceQueue: c.PFN_vkGetDeviceQueue,
+    queueSubmit: c.PFN_vkQueueSubmit,
     allocateMemory: c.PFN_vkAllocateMemory,
     freeMemory: c.PFN_vkFreeMemory,
     mapMemory: c.PFN_vkMapMemory,
@@ -460,6 +464,7 @@ pub const Device = struct {
             .getDeviceProcAddr = get,
             .destroyDevice = @ptrCast(try Device.getProc(get, dev, "vkDestroyDevice")),
             .getDeviceQueue = @ptrCast(try Device.getProc(get, dev, "vkGetDeviceQueue")),
+            .queueSubmit = @ptrCast(try Device.getProc(get, dev, "vkQueueSubmit")),
             .allocateMemory = @ptrCast(try Device.getProc(get, dev, "vkAllocateMemory")),
             .freeMemory = @ptrCast(try Device.getProc(get, dev, "vkFreeMemory")),
             .mapMemory = @ptrCast(try Device.getProc(get, dev, "vkMapMemory")),
@@ -631,6 +636,16 @@ pub const Device = struct {
         queue: *c.VkQueue,
     ) void {
         self.getDeviceQueue.?(self.handle, queue_family, queue_index, queue);
+    }
+
+    pub inline fn vkQueueSubmit(
+        self: *Device,
+        queue: c.VkQueue,
+        submit_count: u32,
+        submits: ?[*]const c.VkSubmitInfo,
+        fence: c.VkFence,
+    ) c.VkResult {
+        return self.queueSubmit.?(queue, submit_count, submits, fence);
     }
 
     pub inline fn vkAllocateMemory(
@@ -1067,6 +1082,114 @@ pub const Queue = struct {
     pub inline fn cast(impl: *Impl.Queue) *Queue {
         return @ptrCast(@alignCast(impl));
     }
+
+    // TODO: Don't allocate on every call
+    pub fn submit(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        queue: *Impl.Queue,
+        fence: ?*Impl.Fence,
+        submits: []const ngl.Queue.Submit,
+    ) Error!void {
+        var subm_info: [1]c.VkSubmitInfo = undefined;
+        var subm_infos = if (submits.len > 1) try allocator.alloc(
+            c.VkSubmitInfo,
+            submits.len,
+        ) else &subm_info;
+        defer if (subm_infos.len > 1) allocator.free(subm_infos);
+
+        var cmd_buf: [1]c.VkCommandBuffer = undefined;
+        var cmd_bufs: []c.VkCommandBuffer = undefined;
+        var sema: [1]c.VkSemaphore = undefined;
+        var semas: []c.VkSemaphore = undefined;
+        var stage: [1]c.VkPipelineStageFlags = undefined;
+        var stages: []c.VkPipelineStageFlags = undefined;
+        {
+            var cmd_buf_n: usize = 0;
+            var sema_n: usize = 0;
+            var stage_n: usize = 0;
+            for (submits) |subms| {
+                cmd_buf_n += subms.commands.len;
+                sema_n += subms.wait.len + subms.signal.len;
+                stage_n += subms.wait.len;
+            }
+
+            cmd_bufs = if (cmd_buf_n > 1) try allocator.alloc(
+                c.VkCommandBuffer,
+                cmd_buf_n,
+            ) else &cmd_buf;
+            errdefer if (cmd_buf_n > 1) allocator.free(cmd_bufs);
+
+            semas = if (sema_n > 1) try allocator.alloc(
+                c.VkSemaphore,
+                sema_n,
+            ) else &sema;
+            errdefer if (sema_n > 1) allocator.free(semas);
+
+            stages = if (stage_n > 1) try allocator.alloc(
+                c.VkPipelineStageFlags,
+                stage_n,
+            ) else &stage;
+        }
+        defer if (cmd_buf.len > 1) allocator.free(cmd_bufs);
+        defer if (semas.len > 1) allocator.free(semas);
+        defer if (stages.len > 1) allocator.free(stages);
+
+        var cmd_bufs_ptr = cmd_bufs.ptr;
+        var semas_ptr = semas.ptr;
+        var stages_ptr = stages.ptr;
+
+        for (subm_infos, submits) |*info, subm| {
+            info.* = .{
+                .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                .pNext = null,
+                .waitSemaphoreCount = @intCast(subm.wait.len),
+                .pWaitSemaphores = undefined, // Set below
+                .pWaitDstStageMask = undefined, // Set below
+                .commandBufferCount = @intCast(subm.commands.len),
+                .pCommandBuffers = undefined, // Set below
+                .signalSemaphoreCount = @intCast(subm.signal.len),
+                .pSignalSemaphores = undefined, // Set below
+            };
+
+            if (subm.commands.len > 0) {
+                info.pCommandBuffers = cmd_bufs_ptr;
+                for (cmd_bufs_ptr, subm.commands) |*handle, cmds|
+                    handle.* = CommandBuffer.cast(cmds.command_buffer.impl).handle;
+                cmd_bufs_ptr += subm.commands.len;
+            } else info.pCommandBuffers = null;
+
+            if (subm.wait.len > 0) {
+                info.pWaitSemaphores = semas_ptr;
+                info.pWaitDstStageMask = stages_ptr;
+                for (semas_ptr, stages_ptr, subm.wait) |*handle, *mask, wait| {
+                    handle.* = Semaphore.cast(wait.semaphore.impl).handle;
+                    mask.* = conv.toVkPipelineStageFlags(wait.stage_mask);
+                }
+                semas_ptr += subm.wait.len;
+                stages_ptr += subm.wait.len;
+            } else {
+                info.pWaitSemaphores = null;
+                info.pWaitDstStageMask = null;
+            }
+
+            if (subm.signal.len > 0) {
+                info.pSignalSemaphores = semas_ptr;
+                for (semas_ptr, subm.signal) |*handle, signal|
+                    // No signal stage mask on vanilla submission
+                    handle.* = Semaphore.cast(signal.semaphore.impl).handle;
+                semas_ptr += subm.signal.len;
+            } else info.pSignalSemaphores = null;
+        }
+
+        try conv.check(Device.cast(device).vkQueueSubmit(
+            cast(queue).handle,
+            @intCast(submits.len), // Note `submits`
+            if (submits.len > 0) subm_infos.ptr else null,
+            if (fence) |x| Fence.cast(x).handle else null,
+        ));
+    }
 };
 
 // TODO: Consider using the Vulkan handle directly
@@ -1100,6 +1223,7 @@ pub const Memory = struct {
         Device.cast(device).vkUnmapMemory(cast(memory).handle);
     }
 
+    // TODO: Don't allocate on every call
     fn flushOrInvalidateMapped(
         comptime call: enum { flush, invalidate },
         allocator: std.mem.Allocator,
@@ -1112,10 +1236,10 @@ pub const Memory = struct {
         const mem = cast(memory);
 
         var mapped_range: [1]c.VkMappedMemoryRange = undefined;
-        var mapped_ranges: []c.VkMappedMemoryRange = if (offsets.len == 1)
-            &mapped_range
-        else
-            try allocator.alloc(c.VkMappedMemoryRange, offsets.len);
+        var mapped_ranges = if (offsets.len > 1) try allocator.alloc(
+            c.VkMappedMemoryRange,
+            offsets.len,
+        ) else &mapped_range;
         defer if (mapped_ranges.len > 1) allocator.free(mapped_ranges);
 
         if (sizes) |szs| {
@@ -1178,6 +1302,8 @@ const vtable = Impl.VTable{
     .allocMemory = Device.alloc,
     .freeMemory = Device.free,
     .deinitDevice = Device.deinit,
+
+    .submit = Queue.submit,
 
     .mapMemory = Memory.map,
     .unmapMemory = Memory.unmap,

@@ -1,6 +1,11 @@
 const std = @import("std");
 
-const Error = @import("../ngl.zig").Error;
+const ngl = @import("../ngl.zig");
+const CommandBuffer = ngl.CommandBuffer;
+const PipelineStage = ngl.PipelineStage;
+const Fence = ngl.Fence;
+const Semaphore = ngl.Semaphore;
+const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
 pub const Instance = struct {
@@ -102,6 +107,39 @@ pub const Queue = struct {
     };
 
     pub const max = 4;
+
+    pub const Submit = struct {
+        commands: []const CommandBufferSubmit,
+        wait: []const SemaphoreSubmit,
+        signal: []const SemaphoreSubmit,
+
+        pub const CommandBufferSubmit = struct {
+            command_buffer: *const CommandBuffer,
+        };
+
+        pub const SemaphoreSubmit = struct {
+            semaphore: *const Semaphore,
+            stage_mask: PipelineStage.Flags,
+        };
+    };
+
+    const Self = @This();
+
+    pub fn submit(
+        self: *Self,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        fence: ?*Fence,
+        submits: []const Submit,
+    ) Error!void {
+        return Impl.get().submit(
+            allocator,
+            device.impl,
+            self.impl,
+            if (fence) |x| x.impl else null,
+            submits,
+        );
+    }
 };
 
 pub const Memory = struct {
