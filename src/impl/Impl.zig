@@ -101,6 +101,24 @@ pub const VTable = struct {
 
     unmapMemory: *const fn (ctx: *anyopaque, device: *Device, memory: *Memory) void,
 
+    flushMappedMemory: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        memory: *Memory,
+        offsets: []const usize,
+        sizes: ?[]const usize,
+    ) Error!void,
+
+    invalidateMappedMemory: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        memory: *Memory,
+        offsets: []const usize,
+        sizes: ?[]const usize,
+    ) Error!void,
+
     // CommandPool -----------------------------------------
 
     initCommandPool: *const fn (
@@ -530,6 +548,28 @@ pub fn mapMemory(
 
 pub fn unmapMemory(self: *Self, device: *Device, memory: *Memory) void {
     self.vtable.unmapMemory(self.ptr, device, memory);
+}
+
+pub fn flushMappedMemory(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    memory: *Memory,
+    offsets: []const usize,
+    sizes: ?[]const usize,
+) Error!void {
+    return self.vtable.flushMappedMemory(self.ptr, allocator, device, memory, offsets, sizes);
+}
+
+pub fn invalidateMappedMemory(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    memory: *Memory,
+    offsets: []const usize,
+    sizes: ?[]const usize,
+) Error!void {
+    return self.vtable.invalidateMappedMemory(self.ptr, allocator, device, memory, offsets, sizes);
 }
 
 pub fn initCommandPool(

@@ -337,6 +337,8 @@ pub const Device = struct {
     freeMemory: c.PFN_vkFreeMemory,
     mapMemory: c.PFN_vkMapMemory,
     unmapMemory: c.PFN_vkUnmapMemory,
+    flushMappedMemoryRanges: c.PFN_vkFlushMappedMemoryRanges,
+    invalidateMappedMemoryRanges: c.PFN_vkInvalidateMappedMemoryRanges,
     createCommandPool: c.PFN_vkCreateCommandPool,
     destroyCommandPool: c.PFN_vkDestroyCommandPool,
     allocateCommandBuffers: c.PFN_vkAllocateCommandBuffers,
@@ -462,6 +464,8 @@ pub const Device = struct {
             .freeMemory = @ptrCast(try Device.getProc(get, dev, "vkFreeMemory")),
             .mapMemory = @ptrCast(try Device.getProc(get, dev, "vkMapMemory")),
             .unmapMemory = @ptrCast(try Device.getProc(get, dev, "vkUnmapMemory")),
+            .flushMappedMemoryRanges = @ptrCast(try Device.getProc(get, dev, "vkFlushMappedMemoryRanges")),
+            .invalidateMappedMemoryRanges = @ptrCast(try Device.getProc(get, dev, "vkInvalidateMappedMemoryRanges")),
             .createCommandPool = @ptrCast(try Device.getProc(get, dev, "vkCreateCommandPool")),
             .destroyCommandPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyCommandPool")),
             .allocateCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkAllocateCommandBuffers")),
@@ -659,6 +663,22 @@ pub const Device = struct {
 
     pub inline fn vkUnmapMemory(self: *Device, memory: c.VkDeviceMemory) void {
         return self.unmapMemory.?(self.handle, memory);
+    }
+
+    pub inline fn vkFlushMappedMemoryRanges(
+        self: *Device,
+        memory_range_count: u32,
+        memory_ranges: [*]const c.VkMappedMemoryRange,
+    ) c.VkResult {
+        return self.flushMappedMemoryRanges.?(self.handle, memory_range_count, memory_ranges);
+    }
+
+    pub inline fn vkInvalidateMappedMemoryRanges(
+        self: *Device,
+        memory_range_count: u32,
+        memory_ranges: [*]const c.VkMappedMemoryRange,
+    ) c.VkResult {
+        return self.invalidateMappedMemoryRanges.?(self.handle, memory_range_count, memory_ranges);
     }
 
     pub inline fn vkCreateCommandPool(
@@ -1079,6 +1099,70 @@ pub const Memory = struct {
     fn unmap(_: *anyopaque, device: *Impl.Device, memory: *Impl.Memory) void {
         Device.cast(device).vkUnmapMemory(cast(memory).handle);
     }
+
+    fn flushOrInvalidateMapped(
+        comptime call: enum { flush, invalidate },
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        memory: *Impl.Memory,
+        offsets: []const usize,
+        sizes: ?[]const usize,
+    ) Error!void {
+        const dev = Device.cast(device);
+        const mem = cast(memory);
+
+        var mapped_range: [1]c.VkMappedMemoryRange = undefined;
+        var mapped_ranges: []c.VkMappedMemoryRange = if (offsets.len == 1)
+            &mapped_range
+        else
+            try allocator.alloc(c.VkMappedMemoryRange, offsets.len);
+        defer if (mapped_ranges.len > 1) allocator.free(mapped_ranges);
+
+        if (sizes) |szs| {
+            for (mapped_ranges, offsets, szs) |*range, offset, size|
+                range.* = .{
+                    .sType = c.VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+                    .pNext = null,
+                    .memory = mem.handle,
+                    .offset = offset,
+                    .size = size,
+                };
+        } else mapped_ranges[0] = .{
+            .sType = c.VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+            .pNext = null,
+            .memory = mem.handle,
+            .offset = offsets[0],
+            .size = c.VK_WHOLE_SIZE,
+        };
+
+        const callable = switch (call) {
+            .flush => Device.vkFlushMappedMemoryRanges,
+            .invalidate => Device.vkInvalidateMappedMemoryRanges,
+        };
+        try conv.check(callable(dev, @intCast(mapped_ranges.len), mapped_ranges.ptr));
+    }
+
+    fn flushMapped(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        memory: *Impl.Memory,
+        offsets: []const usize,
+        sizes: ?[]const usize,
+    ) Error!void {
+        return flushOrInvalidateMapped(.flush, allocator, device, memory, offsets, sizes);
+    }
+
+    fn invalidateMapped(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        memory: *Impl.Memory,
+        offsets: []const usize,
+        sizes: ?[]const usize,
+    ) Error!void {
+        return flushOrInvalidateMapped(.invalidate, allocator, device, memory, offsets, sizes);
+    }
 };
 
 const vtable = Impl.VTable{
@@ -1097,6 +1181,8 @@ const vtable = Impl.VTable{
 
     .mapMemory = Memory.map,
     .unmapMemory = Memory.unmap,
+    .flushMappedMemory = Memory.flushMapped,
+    .invalidateMappedMemory = Memory.invalidateMapped,
 
     .initCommandPool = @import("cmd.zig").CommandPool.init,
     .allocCommandBuffers = @import("cmd.zig").CommandPool.alloc,

@@ -145,6 +145,32 @@ test {
         defer ctx.device.free(allocator, &mem_mappable);
 
         _ = try mem_mappable.map(&ctx.device, 0, null);
+
+        try mem_mappable.flushMapped(
+            allocator,
+            &ctx.device,
+            &.{ 0, 1024, 4096 },
+            &.{ 512, 1024, 8192 },
+        );
+        try mem_mappable.flushMapped(
+            allocator,
+            &ctx.device,
+            &.{1024},
+            null,
+        );
+        try mem_mappable.invalidateMapped(
+            allocator,
+            &ctx.device,
+            &.{ 4096, 0 },
+            &.{ 1024, 2048 },
+        );
+        try mem_mappable.invalidateMapped(
+            allocator,
+            &ctx.device,
+            &.{0},
+            &.{16384},
+        );
+
         mem_mappable.unmap(&ctx.device);
         _ = try mem_mappable.map(&ctx.device, 4096, 128);
         mem_mappable.unmap(&ctx.device);

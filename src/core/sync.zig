@@ -20,6 +20,7 @@ pub const PipelineStage = enum {
     compute_shader,
     clear,
     copy,
+    host,
 
     pub const Flags = ngl.Flags(PipelineStage);
 };
@@ -42,6 +43,8 @@ pub const Access = enum {
     depth_stencil_attachment_write,
     transfer_read,
     transfer_write,
+    host_read,
+    host_write,
 
     pub const Flags = ngl.Flags(Access);
 };

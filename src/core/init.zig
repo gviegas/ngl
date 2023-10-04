@@ -150,4 +150,24 @@ pub const Memory = struct {
     pub fn unmap(self: *Self, device: *Device) void {
         Impl.get().unmapMemory(device.impl, self.impl);
     }
+
+    pub fn flushMapped(
+        self: *Self,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        offsets: []const usize,
+        sizes: ?[]const usize,
+    ) Error!void {
+        return Impl.get().flushMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
+    }
+
+    pub fn invalidateMapped(
+        self: *Self,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        offsets: []const usize,
+        sizes: ?[]const usize,
+    ) Error!void {
+        return Impl.get().invalidateMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
+    }
 };

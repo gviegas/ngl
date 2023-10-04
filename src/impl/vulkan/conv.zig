@@ -287,6 +287,8 @@ pub fn toVkPipelineStage(pipeline_stage: ngl.PipelineStage) c.VkPipelineStageFla
         .clear,
         .copy,
         => c.VK_PIPELINE_STAGE_TRANSFER_BIT,
+
+        .host => c.VK_PIPELINE_STAGE_HOST_BIT,
     };
 }
 
@@ -294,10 +296,17 @@ pub fn toVkPipelineStage(pipeline_stage: ngl.PipelineStage) c.VkPipelineStageFla
 pub fn toVkPipelineStageFlags(
     pipeline_stage_flags: ngl.PipelineStage.Flags,
 ) c.VkPipelineStageFlags {
-    if (pipeline_stage_flags.none or ngl.noFlagsSet(pipeline_stage_flags)) return 0; // c.VK_PIPELINE_STAGE_NONE
-    if (pipeline_stage_flags.all_commands) return c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+    if (pipeline_stage_flags.none or ngl.noFlagsSet(pipeline_stage_flags))
+        return 0; // c.VK_PIPELINE_STAGE_NONE
 
     var flags: c.VkPipelineStageFlags = 0;
+
+    if (pipeline_stage_flags.all_commands) {
+        flags |= c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+        if (pipeline_stage_flags.host)
+            flags |= c.VK_PIPELINE_STAGE_HOST_BIT;
+        return flags;
+    }
 
     if (pipeline_stage_flags.all_graphics) {
         flags |= c.VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
@@ -305,6 +314,8 @@ pub fn toVkPipelineStageFlags(
             flags |= c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
         if (pipeline_stage_flags.clear or pipeline_stage_flags.copy)
             flags |= c.VK_PIPELINE_STAGE_TRANSFER_BIT;
+        if (pipeline_stage_flags.host)
+            flags |= c.VK_PIPELINE_STAGE_HOST_BIT;
         return flags;
     }
 
@@ -326,6 +337,8 @@ pub fn toVkPipelineStageFlags(
         flags |= c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
     if (pipeline_stage_flags.clear or pipeline_stage_flags.copy)
         flags |= c.VK_PIPELINE_STAGE_TRANSFER_BIT;
+    if (pipeline_stage_flags.host)
+        flags |= c.VK_PIPELINE_STAGE_HOST_BIT;
     return flags;
 }
 
@@ -338,7 +351,8 @@ pub fn toVkAccess(_: ngl.Access) c.VkAccessFlagBits {
 
 // TODO: toVkAccessFlags2
 pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
-    if (access_flags.none or ngl.noFlagsSet(access_flags)) return 0; // c.VK_ACCESS_NONE
+    if (access_flags.none or ngl.noFlagsSet(access_flags))
+        return 0; // c.VK_ACCESS_NONE
 
     var flags: c.VkAccessFlags = 0;
 
@@ -355,6 +369,8 @@ pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
                 flags |= c.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
             if (access_flags.transfer_write)
                 flags |= c.VK_ACCESS_TRANSFER_WRITE_BIT;
+            if (access_flags.host_write)
+                flags |= c.VK_ACCESS_HOST_WRITE_BIT;
         }
         return flags;
     }
@@ -379,6 +395,8 @@ pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
             flags |= c.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
         if (access_flags.transfer_read)
             flags |= c.VK_ACCESS_TRANSFER_READ_BIT;
+        if (access_flags.host_read)
+            flags |= c.VK_ACCESS_HOST_READ_BIT;
         return flags;
     }
 
@@ -408,6 +426,10 @@ pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
         flags |= c.VK_ACCESS_TRANSFER_READ_BIT;
     if (access_flags.transfer_write)
         flags |= c.VK_ACCESS_TRANSFER_WRITE_BIT;
+    if (access_flags.host_read)
+        flags |= c.VK_ACCESS_HOST_READ_BIT;
+    if (access_flags.host_write)
+        flags |= c.VK_ACCESS_HOST_WRITE_BIT;
     return flags;
 }
 
