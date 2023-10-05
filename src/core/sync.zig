@@ -57,14 +57,36 @@ pub const SyncScope = struct {
 pub const Fence = struct {
     impl: *Impl.Fence,
 
+    pub const Status = enum {
+        unsignaled,
+        signaled,
+    };
+
     pub const Desc = struct {
-        signaled: bool = false,
+        initial_status: Status = .unsignaled,
     };
 
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
         return .{ .impl = try Impl.get().initFence(allocator, device.impl, desc) };
+    }
+
+    pub fn reset(allocator: std.mem.Allocator, device: *Device, fences: []const *Self) Error!void {
+        return Impl.get().resetFences(allocator, device.impl, fences);
+    }
+
+    pub fn wait(
+        allocator: std.mem.Allocator,
+        device: *Device,
+        timeout: u64,
+        fences: []const *Self,
+    ) Error!void {
+        return Impl.get().waitFences(allocator, device.impl, timeout, fences);
+    }
+
+    pub fn getStatus(self: *Self, device: *Device) Error!Status {
+        return Impl.get().getFenceStatus(device.impl, self.impl);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {

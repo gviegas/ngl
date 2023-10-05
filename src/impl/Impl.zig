@@ -176,6 +176,27 @@ pub const VTable = struct {
         desc: ngl.Fence.Desc,
     ) Error!*Fence,
 
+    resetFences: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        fences: []const *ngl.Fence,
+    ) Error!void,
+
+    waitFences: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        timeout: u64,
+        fences: []const *ngl.Fence,
+    ) Error!void,
+
+    getFenceStatus: *const fn (
+        ctx: *anyopaque,
+        device: *Device,
+        fence: *Fence,
+    ) Error!ngl.Fence.Status,
+
     deinitFence: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -647,6 +668,29 @@ pub fn initFence(
     desc: ngl.Fence.Desc,
 ) Error!*Fence {
     return self.vtable.initFence(self.ptr, allocator, device, desc);
+}
+
+pub fn resetFences(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    fences: []const *ngl.Fence,
+) Error!void {
+    return self.vtable.resetFences(self.ptr, allocator, device, fences);
+}
+
+pub fn waitFences(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: *Device,
+    timeout: u64,
+    fences: []const *ngl.Fence,
+) Error!void {
+    return self.vtable.waitFences(self.ptr, allocator, device, timeout, fences);
+}
+
+pub fn getFenceStatus(self: *Self, device: *Device, fence: *Fence) Error!ngl.Fence.Status {
+    return self.vtable.getFenceStatus(self.ptr, device, fence);
 }
 
 pub fn deinitFence(self: *Self, allocator: std.mem.Allocator, device: *Device, fence: *Fence) void {

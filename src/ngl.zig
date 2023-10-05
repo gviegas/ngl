@@ -191,6 +191,23 @@ test {
 
     var fence = try Fence.init(allocator, &ctx.device, .{});
     defer fence.deinit(allocator, &ctx.device);
+    {
+        try std.testing.expectEqual(fence.getStatus(&ctx.device), .unsignaled);
+        try Fence.reset(allocator, &ctx.device, &.{&fence});
+        Fence.wait(allocator, &ctx.device, std.time.ns_per_ms, &.{&fence}) catch |err| {
+            try std.testing.expectEqual(err, Error.Timeout);
+        };
+        try std.testing.expectEqual(fence.getStatus(&ctx.device), .unsignaled);
+
+        var fence_2 = try Fence.init(allocator, &ctx.device, .{ .initial_status = .signaled });
+        defer fence_2.deinit(allocator, &ctx.device);
+
+        try std.testing.expectEqual(fence_2.getStatus(&ctx.device), .signaled);
+        try Fence.wait(allocator, &ctx.device, std.time.ns_per_ms, &.{&fence_2});
+        try std.testing.expectEqual(fence_2.getStatus(&ctx.device), .signaled);
+        try Fence.reset(allocator, &ctx.device, &.{&fence_2});
+        try std.testing.expectEqual(fence_2.getStatus(&ctx.device), .unsignaled);
+    }
 
     var sema = try Semaphore.init(allocator, &ctx.device, .{});
     defer sema.deinit(allocator, &ctx.device);

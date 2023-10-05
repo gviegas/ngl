@@ -29,11 +29,64 @@ pub const Fence = struct {
         try conv.check(dev.vkCreateFence(&.{
             .sType = c.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .pNext = null,
-            .flags = if (desc.signaled) @as(c.VkFlags, c.VK_FENCE_CREATE_SIGNALED_BIT) else 0,
+            .flags = switch (desc.initial_status) {
+                .unsignaled => 0,
+                .signaled => @as(c.VkFlags, c.VK_FENCE_CREATE_SIGNALED_BIT),
+            },
         }, null, &fence));
 
         ptr.* = .{ .handle = fence };
         return @ptrCast(ptr);
+    }
+
+    pub fn reset(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        fences: []const *ngl.Fence,
+    ) Error!void {
+        var fnc: [1]c.VkFence = undefined;
+        var fncs = if (fences.len > 1) try allocator.alloc(c.VkFence, fences.len) else &fnc;
+        defer if (fncs.len > 1) allocator.free(fncs);
+
+        for (fncs, fences) |*handle, fence|
+            handle.* = cast(fence.impl).handle;
+
+        return conv.check(Device.cast(device).vkResetFences(@intCast(fncs.len), fncs.ptr));
+    }
+
+    pub fn wait(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: *Impl.Device,
+        timeout: u64,
+        fences: []const *ngl.Fence,
+    ) Error!void {
+        var fnc: [1]c.VkFence = undefined;
+        var fncs = if (fences.len > 1) try allocator.alloc(c.VkFence, fences.len) else &fnc;
+        defer if (fncs.len > 1) allocator.free(fncs);
+
+        for (fncs, fences) |*handle, fence|
+            handle.* = cast(fence.impl).handle;
+
+        return conv.check(Device.cast(device).vkWaitForFences(
+            @intCast(fncs.len),
+            fncs.ptr,
+            c.VK_TRUE, // TODO: Maybe expose this
+            timeout,
+        ));
+    }
+
+    pub fn getStatus(
+        _: *anyopaque,
+        device: *Impl.Device,
+        fence: *Impl.Fence,
+    ) Error!ngl.Fence.Status {
+        conv.check(Device.cast(device).vkGetFenceStatus(cast(fence).handle)) catch |err| {
+            if (err == Error.NotReady) return .unsignaled;
+            return err;
+        };
+        return .signaled;
     }
 
     pub fn deinit(

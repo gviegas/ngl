@@ -349,6 +349,9 @@ pub const Device = struct {
     freeCommandBuffers: c.PFN_vkFreeCommandBuffers,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
+    getFenceStatus: c.PFN_vkGetFenceStatus,
+    resetFences: c.PFN_vkResetFences,
+    waitForFences: c.PFN_vkWaitForFences,
     createSemaphore: c.PFN_vkCreateSemaphore,
     destroySemaphore: c.PFN_vkDestroySemaphore,
     createBuffer: c.PFN_vkCreateBuffer,
@@ -477,6 +480,9 @@ pub const Device = struct {
             .freeCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkFreeCommandBuffers")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
+            .getFenceStatus = @ptrCast(try Device.getProc(get, dev, "vkGetFenceStatus")),
+            .resetFences = @ptrCast(try Device.getProc(get, dev, "vkResetFences")),
+            .waitForFences = @ptrCast(try Device.getProc(get, dev, "vkWaitForFences")),
             .createSemaphore = @ptrCast(try Device.getProc(get, dev, "vkCreateSemaphore")),
             .destroySemaphore = @ptrCast(try Device.getProc(get, dev, "vkDestroySemaphore")),
             .createBuffer = @ptrCast(try Device.getProc(get, dev, "vkCreateBuffer")),
@@ -745,6 +751,28 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.destroyFence.?(self.handle, fence, vk_allocator);
+    }
+
+    pub inline fn vkGetFenceStatus(self: *Device, fence: c.VkFence) c.VkResult {
+        return self.getFenceStatus.?(self.handle, fence);
+    }
+
+    pub inline fn vkResetFences(
+        self: *Device,
+        fence_count: u32,
+        fences: [*]const c.VkFence,
+    ) c.VkResult {
+        return self.resetFences.?(self.handle, fence_count, fences);
+    }
+
+    pub inline fn vkWaitForFences(
+        self: *Device,
+        fence_count: u32,
+        fences: [*]const c.VkFence,
+        wait_all: c.VkBool32,
+        timeout: u64,
+    ) c.VkResult {
+        return self.waitForFences.?(self.handle, fence_count, fences, wait_all, timeout);
     }
 
     pub inline fn vkCreateSemaphore(
@@ -1316,6 +1344,9 @@ const vtable = Impl.VTable{
     .deinitCommandPool = @import("cmd.zig").CommandPool.deinit,
 
     .initFence = @import("sync.zig").Fence.init,
+    .resetFences = @import("sync.zig").Fence.reset,
+    .waitFences = @import("sync.zig").Fence.wait,
+    .getFenceStatus = @import("sync.zig").Fence.getStatus,
     .deinitFence = @import("sync.zig").Fence.deinit,
 
     .initSemaphore = @import("sync.zig").Semaphore.init,
