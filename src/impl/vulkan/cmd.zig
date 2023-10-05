@@ -77,6 +77,12 @@ pub const CommandPool = struct {
         }
     }
 
+    pub fn reset(_: *anyopaque, device: *Impl.Device, command_pool: *Impl.CommandPool) Error!void {
+        // TODO: Maybe expose flags
+        const flags: c.VkCommandPoolResetFlags = 0;
+        return conv.check(Device.cast(device).vkResetCommandPool(cast(command_pool).handle, flags));
+    }
+
     pub fn free(
         _: *anyopaque,
         allocator: std.mem.Allocator,

@@ -148,6 +148,12 @@ pub const VTable = struct {
         command_buffers: []ngl.CommandBuffer,
     ) Error!void,
 
+    resetCommandPool: *const fn (
+        ctx: *anyopaque,
+        device: *Device,
+        command_pool: *CommandPool,
+    ) Error!void,
+
     freeCommandBuffers: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -640,6 +646,10 @@ pub fn allocCommandBuffers(
         desc,
         command_buffers,
     );
+}
+
+pub fn resetCommandPool(self: *Self, device: *Device, command_pool: *CommandPool) Error!void {
+    return self.vtable.resetCommandPool(self.ptr, device, command_pool);
 }
 
 pub fn freeCommandBuffers(

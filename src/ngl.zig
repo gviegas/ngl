@@ -183,11 +183,15 @@ test {
     });
     defer cmd_pool.deinit(allocator, &ctx.device);
 
+    try cmd_pool.reset(&ctx.device);
+
     var cmd_bufs = try cmd_pool.alloc(allocator, &ctx.device, .{
         .level = .primary,
         .count = 3,
     });
     defer cmd_pool.free(allocator, &ctx.device, cmd_bufs);
+
+    try cmd_pool.reset(&ctx.device);
 
     var fence = try Fence.init(allocator, &ctx.device, .{});
     defer fence.deinit(allocator, &ctx.device);

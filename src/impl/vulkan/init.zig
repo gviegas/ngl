@@ -345,6 +345,7 @@ pub const Device = struct {
     invalidateMappedMemoryRanges: c.PFN_vkInvalidateMappedMemoryRanges,
     createCommandPool: c.PFN_vkCreateCommandPool,
     destroyCommandPool: c.PFN_vkDestroyCommandPool,
+    resetCommandPool: c.PFN_vkResetCommandPool,
     allocateCommandBuffers: c.PFN_vkAllocateCommandBuffers,
     freeCommandBuffers: c.PFN_vkFreeCommandBuffers,
     createFence: c.PFN_vkCreateFence,
@@ -476,6 +477,7 @@ pub const Device = struct {
             .invalidateMappedMemoryRanges = @ptrCast(try Device.getProc(get, dev, "vkInvalidateMappedMemoryRanges")),
             .createCommandPool = @ptrCast(try Device.getProc(get, dev, "vkCreateCommandPool")),
             .destroyCommandPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyCommandPool")),
+            .resetCommandPool = @ptrCast(try Device.getProc(get, dev, "vkResetCommandPool")),
             .allocateCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkAllocateCommandBuffers")),
             .freeCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkFreeCommandBuffers")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
@@ -717,6 +719,14 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         return self.destroyCommandPool.?(self.handle, command_pool, vk_allocator);
+    }
+
+    pub inline fn vkResetCommandPool(
+        self: *Device,
+        command_pool: c.VkCommandPool,
+        flags: c.VkCommandPoolResetFlags,
+    ) c.VkResult {
+        return self.resetCommandPool.?(self.handle, command_pool, flags);
     }
 
     pub inline fn vkAllocateCommandBuffers(
@@ -1340,6 +1350,7 @@ const vtable = Impl.VTable{
 
     .initCommandPool = @import("cmd.zig").CommandPool.init,
     .allocCommandBuffers = @import("cmd.zig").CommandPool.alloc,
+    .resetCommandPool = @import("cmd.zig").CommandPool.reset,
     .freeCommandBuffers = @import("cmd.zig").CommandPool.free,
     .deinitCommandPool = @import("cmd.zig").CommandPool.deinit,
 

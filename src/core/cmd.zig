@@ -26,15 +26,22 @@ pub const CommandPool = struct {
         desc: CommandBuffer.Desc,
     ) Error![]CommandBuffer {
         std.debug.assert(desc.count > 0);
+
         var cmd_bufs = try allocator.alloc(CommandBuffer, desc.count);
         errdefer allocator.free(cmd_bufs);
+
         // TODO: Update this when adding more fields to `CommandBuffer`
         if (@typeInfo(CommandBuffer).Struct.fields.len > 1) @compileError(
             \\Impl only sets the impl field
             \\This function must initialize the others
         );
+
         try Impl.get().allocCommandBuffers(allocator, device.impl, self.impl, desc, cmd_bufs);
         return cmd_bufs;
+    }
+
+    pub fn reset(self: *Self, device: *Device) Error!void {
+        return Impl.get().resetCommandPool(device.impl, self.impl);
     }
 
     pub fn free(
