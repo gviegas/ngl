@@ -31,7 +31,7 @@ pub const ResolveMode = enum {
 };
 
 pub const RenderPass = struct {
-    impl: *Impl.RenderPass,
+    impl: Impl.RenderPass,
 
     pub const Index = u16;
     pub const max_attachment_index = ~@as(Index, 0);
@@ -105,7 +105,7 @@ pub const RenderPass = struct {
 };
 
 pub const FrameBuffer = struct {
-    impl: *Impl.FrameBuffer,
+    impl: Impl.FrameBuffer,
 
     pub const Desc = struct {
         render_pass: *const RenderPass,

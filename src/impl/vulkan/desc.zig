@@ -9,11 +9,12 @@ const log = @import("init.zig").log;
 const Device = @import("init.zig").Device;
 const Sampler = @import("res.zig").Sampler;
 
+// TODO: Don't allocate this type on the heap
 pub const DescriptorSetLayout = struct {
     handle: c.VkDescriptorSetLayout,
 
-    pub inline fn cast(impl: *Impl.DescriptorSetLayout) *DescriptorSetLayout {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.DescriptorSetLayout) *DescriptorSetLayout {
+        return impl.ptr(DescriptorSetLayout);
     }
 
     pub fn init(
@@ -21,7 +22,7 @@ pub const DescriptorSetLayout = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.DescriptorSetLayout.Desc,
-    ) Error!*Impl.DescriptorSetLayout {
+    ) Error!Impl.DescriptorSetLayout {
         const dev = Device.cast(device);
 
         const bind_n: u32 = if (desc.bindings) |x| @intCast(x.len) else 0;
@@ -74,14 +75,14 @@ pub const DescriptorSetLayout = struct {
         }, null, &set_layout));
 
         ptr.* = .{ .handle = set_layout };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        descriptor_set_layout: *Impl.DescriptorSetLayout,
+        descriptor_set_layout: Impl.DescriptorSetLayout,
     ) void {
         const dev = Device.cast(device);
         const set_layout = cast(descriptor_set_layout);
@@ -90,11 +91,12 @@ pub const DescriptorSetLayout = struct {
     }
 };
 
+// TODO: Don't allocate this type on the heap
 pub const PipelineLayout = struct {
     handle: c.VkPipelineLayout,
 
-    pub inline fn cast(impl: *Impl.PipelineLayout) *PipelineLayout {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.PipelineLayout) *PipelineLayout {
+        return impl.ptr(PipelineLayout);
     }
 
     pub fn init(
@@ -102,7 +104,7 @@ pub const PipelineLayout = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.PipelineLayout.Desc,
-    ) Error!*Impl.PipelineLayout {
+    ) Error!Impl.PipelineLayout {
         const dev = Device.cast(device);
 
         const set_layout_n: u32 = if (desc.descriptor_set_layouts) |x| @intCast(x.len) else 0;
@@ -144,14 +146,14 @@ pub const PipelineLayout = struct {
         }, null, &pl_layout));
 
         ptr.* = .{ .handle = pl_layout };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        pipeline_layout: *Impl.PipelineLayout,
+        pipeline_layout: Impl.PipelineLayout,
     ) void {
         const dev = Device.cast(device);
         const pl_layout = cast(pipeline_layout);
@@ -160,11 +162,12 @@ pub const PipelineLayout = struct {
     }
 };
 
+// TODO: Don't allocate this type on the heap
 pub const DescriptorPool = struct {
     handle: c.VkDescriptorPool,
 
-    pub inline fn cast(impl: *Impl.DescriptorPool) *DescriptorPool {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.DescriptorPool) *DescriptorPool {
+        return impl.ptr(DescriptorPool);
     }
 
     pub fn init(
@@ -172,7 +175,7 @@ pub const DescriptorPool = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.DescriptorPool.Desc,
-    ) Error!*Impl.DescriptorPool {
+    ) Error!Impl.DescriptorPool {
         const dev = Device.cast(device);
 
         const max_type = @typeInfo(ngl.DescriptorType).Enum.fields.len;
@@ -206,14 +209,14 @@ pub const DescriptorPool = struct {
         }, null, &desc_pool));
 
         ptr.* = .{ .handle = desc_pool };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn alloc(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        descriptor_pool: *Impl.DescriptorPool,
+        descriptor_pool: Impl.DescriptorPool,
         desc: ngl.DescriptorSet.Desc,
         descriptor_sets: []ngl.DescriptorSet,
     ) Error!void {
@@ -246,7 +249,7 @@ pub const DescriptorPool = struct {
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        descriptor_pool: *Impl.DescriptorPool,
+        descriptor_pool: Impl.DescriptorPool,
     ) void {
         const dev = Device.cast(device);
         const desc_pool = cast(descriptor_pool);
@@ -255,7 +258,6 @@ pub const DescriptorPool = struct {
     }
 };
 
-// TODO: Add comptime checks to ensure that this has the expected layout
 pub const DescriptorSet = packed struct {
     handle: c.VkDescriptorSet,
 

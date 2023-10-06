@@ -11,7 +11,7 @@ const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
 pub const Pipeline = struct {
-    impl: *Impl.Pipeline,
+    impl: Impl.Pipeline,
     type: Type,
 
     pub const Type = enum {
@@ -238,7 +238,7 @@ pub const ComputeState = struct {
 };
 
 pub const PipelineCache = struct {
-    impl: *Impl.PipelineCache,
+    impl: Impl.PipelineCache,
 
     pub const Desc = struct {
         initial_data: ?[]const u8,

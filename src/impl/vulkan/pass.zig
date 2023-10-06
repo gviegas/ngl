@@ -9,11 +9,12 @@ const conv = @import("conv.zig");
 const log = @import("init.zig").log;
 const Device = @import("init.zig").Device;
 
+// TODO: Don't allocate this type on the heap
 pub const RenderPass = struct {
     handle: c.VkRenderPass,
 
-    pub inline fn cast(impl: *Impl.RenderPass) *RenderPass {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.RenderPass) *RenderPass {
+        return impl.ptr(RenderPass);
     }
 
     pub fn init(
@@ -21,7 +22,7 @@ pub const RenderPass = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.RenderPass.Desc,
-    ) Error!*Impl.RenderPass {
+    ) Error!Impl.RenderPass {
         const dev = Device.cast(device);
 
         // TODO:
@@ -223,14 +224,14 @@ pub const RenderPass = struct {
         try conv.check(dev.vkCreateRenderPass(&create_info, null, &rp));
 
         ptr.* = .{ .handle = rp };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        render_pass: *Impl.RenderPass,
+        render_pass: Impl.RenderPass,
     ) void {
         const dev = Device.cast(device);
         const rp = cast(render_pass);
@@ -239,11 +240,12 @@ pub const RenderPass = struct {
     }
 };
 
+// TODO: Don't allocate this type on the heap
 pub const FrameBuffer = struct {
     handle: c.VkFramebuffer,
 
-    pub inline fn cast(impl: *Impl.FrameBuffer) *FrameBuffer {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.FrameBuffer) *FrameBuffer {
+        return impl.ptr(FrameBuffer);
     }
 
     pub fn init(
@@ -251,7 +253,7 @@ pub const FrameBuffer = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.FrameBuffer.Desc,
-    ) Error!*Impl.FrameBuffer {
+    ) Error!Impl.FrameBuffer {
         const dev = Device.cast(device);
         const rp = RenderPass.cast(desc.render_pass.impl);
 
@@ -286,14 +288,14 @@ pub const FrameBuffer = struct {
         }, null, &fb));
 
         ptr.* = .{ .handle = fb };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        frame_buffer: *Impl.FrameBuffer,
+        frame_buffer: Impl.FrameBuffer,
     ) void {
         const dev = Device.cast(device);
         const fb = cast(frame_buffer);

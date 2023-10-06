@@ -35,14 +35,14 @@ pub const BufferView = Type(ngl.BufferView);
 pub const Image = Type(ngl.Image);
 pub const ImageView = Type(ngl.ImageView);
 pub const Sampler = Type(ngl.Sampler);
-pub const RenderPass = opaque {};
-pub const FrameBuffer = opaque {};
-pub const DescriptorSetLayout = opaque {};
-pub const PipelineLayout = opaque {};
-pub const DescriptorPool = opaque {};
+pub const RenderPass = Type(ngl.RenderPass);
+pub const FrameBuffer = Type(ngl.FrameBuffer);
+pub const DescriptorSetLayout = Type(ngl.DescriptorSetLayout);
+pub const PipelineLayout = Type(ngl.PipelineLayout);
+pub const DescriptorPool = Type(ngl.DescriptorPool);
 pub const DescriptorSet = Type(ngl.DescriptorSet);
-pub const Pipeline = opaque {};
-pub const PipelineCache = opaque {};
+pub const Pipeline = Type(ngl.Pipeline);
+pub const PipelineCache = Type(ngl.PipelineCache);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -356,13 +356,13 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.RenderPass.Desc,
-    ) Error!*RenderPass,
+    ) Error!RenderPass,
 
     deinitRenderPass: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        render_pass: *RenderPass,
+        render_pass: RenderPass,
     ) void,
 
     // FrameBuffer -----------------------------------------
@@ -372,13 +372,13 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.FrameBuffer.Desc,
-    ) Error!*FrameBuffer,
+    ) Error!FrameBuffer,
 
     deinitFrameBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        frame_buffer: *FrameBuffer,
+        frame_buffer: FrameBuffer,
     ) void,
 
     // DescriptorSetLayout ---------------------------------
@@ -388,13 +388,13 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.DescriptorSetLayout.Desc,
-    ) Error!*DescriptorSetLayout,
+    ) Error!DescriptorSetLayout,
 
     deinitDescriptorSetLayout: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        descriptor_set_layout: *DescriptorSetLayout,
+        descriptor_set_layout: DescriptorSetLayout,
     ) void,
 
     // PipelineLayout --------------------------------------
@@ -404,13 +404,13 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.PipelineLayout.Desc,
-    ) Error!*PipelineLayout,
+    ) Error!PipelineLayout,
 
     deinitPipelineLayout: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        pipeline_layout: *PipelineLayout,
+        pipeline_layout: PipelineLayout,
     ) void,
 
     // DescriptorPool --------------------------------------
@@ -420,13 +420,13 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.DescriptorPool.Desc,
-    ) Error!*DescriptorPool,
+    ) Error!DescriptorPool,
 
     allocDescriptorSets: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        descriptor_pool: *DescriptorPool,
+        descriptor_pool: DescriptorPool,
         desc: ngl.DescriptorSet.Desc,
         descriptor_sets: []ngl.DescriptorSet,
     ) Error!void,
@@ -435,7 +435,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        descriptor_pool: *DescriptorPool,
+        descriptor_pool: DescriptorPool,
     ) void,
 
     // Pipeline --------------------------------------------
@@ -460,7 +460,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        pipeline: *Pipeline,
+        pipeline: Pipeline,
         type: ngl.Pipeline.Type,
     ) void,
 
@@ -471,13 +471,13 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.PipelineCache.Desc,
-    ) Error!*PipelineCache,
+    ) Error!PipelineCache,
 
     deinitPipelineCache: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        pipeline_cache: *PipelineCache,
+        pipeline_cache: PipelineCache,
     ) void,
 };
 
@@ -858,7 +858,7 @@ pub fn initRenderPass(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.RenderPass.Desc,
-) Error!*RenderPass {
+) Error!RenderPass {
     return self.vtable.initRenderPass(self.ptr, allocator, device, desc);
 }
 
@@ -866,7 +866,7 @@ pub fn deinitRenderPass(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    render_pass: *RenderPass,
+    render_pass: RenderPass,
 ) void {
     self.vtable.deinitRenderPass(self.ptr, allocator, device, render_pass);
 }
@@ -876,7 +876,7 @@ pub fn initFrameBuffer(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.FrameBuffer.Desc,
-) Error!*FrameBuffer {
+) Error!FrameBuffer {
     return self.vtable.initFrameBuffer(self.ptr, allocator, device, desc);
 }
 
@@ -884,7 +884,7 @@ pub fn deinitFrameBuffer(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    frame_buffer: *FrameBuffer,
+    frame_buffer: FrameBuffer,
 ) void {
     self.vtable.deinitFrameBuffer(self.ptr, allocator, device, frame_buffer);
 }
@@ -894,7 +894,7 @@ pub fn initDescriptorSetLayout(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.DescriptorSetLayout.Desc,
-) Error!*DescriptorSetLayout {
+) Error!DescriptorSetLayout {
     return self.vtable.initDescriptorSetLayout(self.ptr, allocator, device, desc);
 }
 
@@ -902,7 +902,7 @@ pub fn deinitDescriptorSetLayout(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    descriptor_set_layout: *DescriptorSetLayout,
+    descriptor_set_layout: DescriptorSetLayout,
 ) void {
     self.vtable.deinitDescriptorSetLayout(self.ptr, allocator, device, descriptor_set_layout);
 }
@@ -912,7 +912,7 @@ pub fn initPipelineLayout(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.PipelineLayout.Desc,
-) Error!*PipelineLayout {
+) Error!PipelineLayout {
     return self.vtable.initPipelineLayout(self.ptr, allocator, device, desc);
 }
 
@@ -920,7 +920,7 @@ pub fn deinitPipelineLayout(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    pipeline_layout: *PipelineLayout,
+    pipeline_layout: PipelineLayout,
 ) void {
     self.vtable.deinitPipelineLayout(self.ptr, allocator, device, pipeline_layout);
 }
@@ -930,7 +930,7 @@ pub fn initDescriptorPool(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.DescriptorPool.Desc,
-) Error!*DescriptorPool {
+) Error!DescriptorPool {
     return self.vtable.initDescriptorPool(self.ptr, allocator, device, desc);
 }
 
@@ -938,7 +938,7 @@ pub fn allocDescriptorSets(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    descriptor_pool: *DescriptorPool,
+    descriptor_pool: DescriptorPool,
     desc: ngl.DescriptorSet.Desc,
     descriptor_sets: []ngl.DescriptorSet,
 ) Error!void {
@@ -956,7 +956,7 @@ pub fn deinitDescriptorPool(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    descriptor_pool: *DescriptorPool,
+    descriptor_pool: DescriptorPool,
 ) void {
     self.vtable.deinitDescriptorPool(self.ptr, allocator, device, descriptor_pool);
 }
@@ -985,7 +985,7 @@ pub fn deinitPipeline(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    pipeline: *Pipeline,
+    pipeline: Pipeline,
     @"type": ngl.Pipeline.Type,
 ) void {
     self.vtable.deinitPipeline(self, allocator, device, pipeline, @"type");
@@ -996,7 +996,7 @@ pub fn initPipelineCache(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.PipelineCache.Desc,
-) Error!*PipelineCache {
+) Error!PipelineCache {
     return self.vtable.initPipelineCache(self.ptr, allocator, device, desc);
 }
 
@@ -1004,7 +1004,7 @@ pub fn deinitPipelineCache(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    pipeline_cache: *PipelineCache,
+    pipeline_cache: PipelineCache,
 ) void {
     self.vtable.deinitPipelineCache(self.ptr, allocator, device, pipeline_cache);
 }

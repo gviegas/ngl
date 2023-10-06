@@ -15,8 +15,8 @@ pub const Pipeline = struct {
 
     const max_stage = 2;
 
-    pub inline fn cast(impl: *Impl.Pipeline) *Pipeline {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.Pipeline) *Pipeline {
+        return impl.ptr(Pipeline);
     }
 
     pub fn initGraphics(
@@ -493,7 +493,7 @@ pub const Pipeline = struct {
             ptr.handle = h;
             for (0..s.stages.len) |j| ptr.modules[j] = stages_ptr[j].module;
             stages_ptr += s.stages.len;
-            pl.impl = @ptrCast(ptr);
+            pl.impl = .{ .val = @intFromPtr(ptr) };
         }
     }
 
@@ -581,7 +581,7 @@ pub const Pipeline = struct {
             @memset(ptr.modules[1..], null);
             ptr.handle = h;
             ptr.modules[0] = modules[i];
-            pl.*.impl = @ptrCast(ptr);
+            pl.impl = .{ .val = @intFromPtr(ptr) };
         }
     }
 
@@ -589,7 +589,7 @@ pub const Pipeline = struct {
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        pipeline: *Impl.Pipeline,
+        pipeline: Impl.Pipeline,
         _: ngl.Pipeline.Type,
     ) void {
         const dev = Device.cast(device);
@@ -601,11 +601,12 @@ pub const Pipeline = struct {
     }
 };
 
+// TODO: Don't store this type on the heap
 pub const PipelineCache = struct {
     handle: c.VkPipelineCache,
 
-    pub inline fn cast(impl: *Impl.PipelineCache) *PipelineCache {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.PipelineCache) *PipelineCache {
+        return impl.ptr(PipelineCache);
     }
 
     pub fn init(
@@ -613,7 +614,7 @@ pub const PipelineCache = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.PipelineCache.Desc,
-    ) Error!*Impl.PipelineCache {
+    ) Error!Impl.PipelineCache {
         const dev = Device.cast(device);
 
         var ptr = try allocator.create(PipelineCache);
@@ -629,14 +630,14 @@ pub const PipelineCache = struct {
         }, null, &pl_cache));
 
         ptr.* = .{ .handle = pl_cache };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        pipeline_cache: *Impl.PipelineCache,
+        pipeline_cache: Impl.PipelineCache,
     ) void {
         const dev = Device.cast(device);
         const pl_cache = cast(pipeline_cache);

@@ -20,7 +20,7 @@ pub const DescriptorType = enum {
 };
 
 pub const DescriptorSetLayout = struct {
-    impl: *Impl.DescriptorSetLayout,
+    impl: Impl.DescriptorSetLayout,
 
     pub const Binding = struct {
         binding: u32,
@@ -53,7 +53,7 @@ pub const PushConstantRange = struct {
 };
 
 pub const PipelineLayout = struct {
-    impl: *Impl.PipelineLayout,
+    impl: Impl.PipelineLayout,
 
     pub const Desc = struct {
         descriptor_set_layouts: ?[]const *const DescriptorSetLayout,
@@ -73,7 +73,7 @@ pub const PipelineLayout = struct {
 };
 
 pub const DescriptorPool = struct {
-    impl: *Impl.DescriptorPool,
+    impl: Impl.DescriptorPool,
 
     pub const PoolSize = @Type(.{
         .Struct = .{
