@@ -11,8 +11,8 @@ const Queue = @import("init.zig").Queue;
 pub const CommandPool = struct {
     handle: c.VkCommandPool,
 
-    pub inline fn cast(impl: *Impl.CommandPool) *CommandPool {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.CommandPool) *CommandPool {
+        return impl.ptr(CommandPool);
     }
 
     pub fn init(
@@ -20,7 +20,7 @@ pub const CommandPool = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.CommandPool.Desc,
-    ) Error!*Impl.CommandPool {
+    ) Error!Impl.CommandPool {
         const dev = Device.cast(device);
         const queue = Queue.cast(desc.queue.impl);
 
@@ -36,14 +36,14 @@ pub const CommandPool = struct {
         }, null, &cmd_pool));
 
         ptr.* = .{ .handle = cmd_pool };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn alloc(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        command_pool: *Impl.CommandPool,
+        command_pool: Impl.CommandPool,
         desc: ngl.CommandBuffer.Desc,
         command_buffers: []ngl.CommandBuffer,
     ) Error!void {
@@ -71,7 +71,7 @@ pub const CommandPool = struct {
             cmd_buf.impl = .{ .val = @bitCast(CommandBuffer{ .handle = handle }) };
     }
 
-    pub fn reset(_: *anyopaque, device: Impl.Device, command_pool: *Impl.CommandPool) Error!void {
+    pub fn reset(_: *anyopaque, device: Impl.Device, command_pool: Impl.CommandPool) Error!void {
         // TODO: Maybe expose flags
         const flags: c.VkCommandPoolResetFlags = 0;
         return conv.check(Device.cast(device).vkResetCommandPool(cast(command_pool).handle, flags));
@@ -81,7 +81,7 @@ pub const CommandPool = struct {
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        command_pool: *Impl.CommandPool,
+        command_pool: Impl.CommandPool,
         command_buffers: []const *ngl.CommandBuffer,
     ) void {
         const dev = Device.cast(device);
@@ -106,7 +106,7 @@ pub const CommandPool = struct {
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        command_pool: *Impl.CommandPool,
+        command_pool: Impl.CommandPool,
     ) void {
         const dev = Device.cast(device);
         const cmd_pool = cast(command_pool);
@@ -115,7 +115,6 @@ pub const CommandPool = struct {
     }
 };
 
-// TODO: Add comptime checks to ensure that this has the expected layout
 pub const CommandBuffer = packed struct {
     handle: c.VkCommandBuffer,
 

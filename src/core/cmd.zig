@@ -7,7 +7,7 @@ const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
 pub const CommandPool = struct {
-    impl: *Impl.CommandPool,
+    impl: Impl.CommandPool,
 
     pub const Desc = struct {
         queue: *const Queue,

@@ -26,7 +26,7 @@ pub const Instance = Type(ngl.Instance);
 pub const Device = Type(ngl.Device);
 pub const Queue = Type(ngl.Queue);
 pub const Memory = Type(ngl.Memory);
-pub const CommandPool = opaque {};
+pub const CommandPool = Type(ngl.CommandPool);
 pub const CommandBuffer = Type(ngl.CommandBuffer);
 pub const Fence = opaque {};
 pub const Semaphore = opaque {};
@@ -152,13 +152,13 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.CommandPool.Desc,
-    ) Error!*CommandPool,
+    ) Error!CommandPool,
 
     allocCommandBuffers: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        command_pool: *CommandPool,
+        command_pool: CommandPool,
         desc: ngl.CommandBuffer.Desc,
         command_buffers: []ngl.CommandBuffer,
     ) Error!void,
@@ -166,14 +166,14 @@ pub const VTable = struct {
     resetCommandPool: *const fn (
         ctx: *anyopaque,
         device: Device,
-        command_pool: *CommandPool,
+        command_pool: CommandPool,
     ) Error!void,
 
     freeCommandBuffers: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        command_pool: *CommandPool,
+        command_pool: CommandPool,
         command_buffers: []const *ngl.CommandBuffer,
     ) void,
 
@@ -181,7 +181,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        command_pool: *CommandPool,
+        command_pool: CommandPool,
     ) void,
 
     // CommandBuffer ---------------------------------------
@@ -633,7 +633,7 @@ pub fn initCommandPool(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.CommandPool.Desc,
-) Error!*CommandPool {
+) Error!CommandPool {
     return self.vtable.initCommandPool(self.ptr, allocator, device, desc);
 }
 
@@ -641,7 +641,7 @@ pub fn allocCommandBuffers(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    command_pool: *CommandPool,
+    command_pool: CommandPool,
     desc: ngl.CommandBuffer.Desc,
     command_buffers: []ngl.CommandBuffer,
 ) Error!void {
@@ -655,7 +655,7 @@ pub fn allocCommandBuffers(
     );
 }
 
-pub fn resetCommandPool(self: *Self, device: Device, command_pool: *CommandPool) Error!void {
+pub fn resetCommandPool(self: *Self, device: Device, command_pool: CommandPool) Error!void {
     return self.vtable.resetCommandPool(self.ptr, device, command_pool);
 }
 
@@ -663,7 +663,7 @@ pub fn freeCommandBuffers(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    command_pool: *CommandPool,
+    command_pool: CommandPool,
     command_buffers: []const *ngl.CommandBuffer,
 ) void {
     self.vtable.freeCommandBuffers(self.ptr, allocator, device, command_pool, command_buffers);
@@ -673,7 +673,7 @@ pub fn deinitCommandPool(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    command_pool: *CommandPool,
+    command_pool: CommandPool,
 ) void {
     self.vtable.deinitCommandPool(self.ptr, allocator, device, command_pool);
 }
