@@ -199,8 +199,7 @@ pub const DescriptorPool = struct {
         try conv.check(dev.vkCreateDescriptorPool(&.{
             .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext = null,
-            // TODO: Expose this (or disallow freeing sets altogether)
-            .flags = c.VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+            .flags = 0,
             .maxSets = desc.max_sets,
             .poolSizeCount = pool_size_n,
             .pPoolSizes = if (pool_size_n > 0) pool_sizes[0..].ptr else null,
@@ -241,29 +240,6 @@ pub const DescriptorPool = struct {
 
         for (descriptor_sets, handles) |*set, handle|
             set.impl = .{ .val = @bitCast(DescriptorSet{ .handle = handle }) };
-    }
-
-    pub fn free(
-        _: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: *Impl.Device,
-        descriptor_pool: *Impl.DescriptorPool,
-        descriptor_sets: []const ngl.DescriptorSet,
-    ) void {
-        const dev = Device.cast(device);
-        const desc_pool = cast(descriptor_pool);
-        const n = descriptor_sets.len;
-
-        var handles = allocator.alloc(c.VkDescriptorSet, n) catch |err| {
-            log.warn("allocator.alloc failed ({}): cannot free descriptor sets", .{err});
-            return;
-        };
-        defer allocator.free(handles);
-
-        for (handles, descriptor_sets) |*handle, set|
-            handle.* = DescriptorSet.cast(set.impl).handle;
-        const r = dev.vkFreeDescriptorSets(desc_pool.handle, @intCast(n), handles.ptr);
-        if (r != c.VK_SUCCESS) log.warn("vkFreeDescriptorSets failed ({})", .{r});
     }
 
     pub fn deinit(

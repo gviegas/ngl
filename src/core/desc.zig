@@ -107,6 +107,7 @@ pub const DescriptorPool = struct {
         return .{ .impl = try Impl.get().initDescriptorPool(allocator, device.impl, desc) };
     }
 
+    /// Caller is responsible for freeing the returned slice.
     pub fn alloc(
         self: *Self,
         allocator: std.mem.Allocator,
@@ -120,16 +121,6 @@ pub const DescriptorPool = struct {
         if (@typeInfo(DescriptorSet).Struct.fields.len > 1) @compileError("Uninitialized field(s)");
         try Impl.get().allocDescriptorSets(allocator, device.impl, self.impl, desc, desc_sets);
         return desc_sets;
-    }
-
-    pub fn free(
-        self: *Self,
-        allocator: std.mem.Allocator,
-        device: *Device,
-        descriptor_sets: []DescriptorSet,
-    ) void {
-        Impl.get().freeDescriptorSets(allocator, device.impl, self.impl, descriptor_sets);
-        allocator.free(descriptor_sets);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {

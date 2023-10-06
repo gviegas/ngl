@@ -431,14 +431,6 @@ pub const VTable = struct {
         descriptor_sets: []ngl.DescriptorSet,
     ) Error!void,
 
-    freeDescriptorSets: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: *Device,
-        descriptor_pool: *DescriptorPool,
-        descriptor_sets: []const ngl.DescriptorSet,
-    ) void,
-
     deinitDescriptorPool: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -958,16 +950,6 @@ pub fn allocDescriptorSets(
         desc,
         descriptor_sets,
     );
-}
-
-pub fn freeDescriptorSets(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: *Device,
-    descriptor_pool: *DescriptorPool,
-    descriptor_sets: []const ngl.DescriptorSet,
-) void {
-    self.vtable.freeDescriptorSets(self.ptr, allocator, device, descriptor_pool, descriptor_sets);
 }
 
 pub fn deinitDescriptorPool(
