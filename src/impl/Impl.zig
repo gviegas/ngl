@@ -174,7 +174,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: *Device,
         command_pool: *CommandPool,
-        command_buffers: []const ngl.CommandBuffer,
+        command_buffers: []const *ngl.CommandBuffer,
     ) void,
 
     deinitCommandPool: *const fn (
@@ -672,7 +672,7 @@ pub fn freeCommandBuffers(
     allocator: std.mem.Allocator,
     device: *Device,
     command_pool: *CommandPool,
-    command_buffers: []const ngl.CommandBuffer,
+    command_buffers: []const *ngl.CommandBuffer,
 ) void {
     self.vtable.freeCommandBuffers(self.ptr, allocator, device, command_pool, command_buffers);
 }

@@ -189,7 +189,8 @@ test {
         .level = .primary,
         .count = 3,
     });
-    defer cmd_pool.free(allocator, &ctx.device, cmd_bufs);
+    defer allocator.free(cmd_bufs);
+    cmd_pool.free(allocator, &ctx.device, &.{&cmd_bufs[2]});
 
     try cmd_pool.reset(&ctx.device);
 

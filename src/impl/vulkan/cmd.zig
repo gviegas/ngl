@@ -68,7 +68,7 @@ pub const CommandPool = struct {
         errdefer dev.vkFreeCommandBuffers(cmd_pool.handle, desc.count, handles.ptr);
 
         for (command_buffers, handles) |*cmd_buf, handle|
-            cmd_buf.impl = @bitCast(CommandBuffer{ .handle = handle });
+            cmd_buf.impl = .{ .val = @bitCast(CommandBuffer{ .handle = handle }) };
     }
 
     pub fn reset(_: *anyopaque, device: *Impl.Device, command_pool: *Impl.CommandPool) Error!void {
@@ -82,7 +82,7 @@ pub const CommandPool = struct {
         allocator: std.mem.Allocator,
         device: *Impl.Device,
         command_pool: *Impl.CommandPool,
-        command_buffers: []const ngl.CommandBuffer,
+        command_buffers: []const *ngl.CommandBuffer,
     ) void {
         const dev = Device.cast(device);
         const cmd_pool = cast(command_pool);
