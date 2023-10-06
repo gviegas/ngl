@@ -30,11 +30,11 @@ pub const CommandPool = Type(ngl.CommandPool);
 pub const CommandBuffer = Type(ngl.CommandBuffer);
 pub const Fence = Type(ngl.Fence);
 pub const Semaphore = Type(ngl.Semaphore);
-pub const Buffer = opaque {};
-pub const BufferView = opaque {};
-pub const Image = opaque {};
-pub const ImageView = opaque {};
-pub const Sampler = opaque {};
+pub const Buffer = Type(ngl.Buffer);
+pub const BufferView = Type(ngl.BufferView);
+pub const Image = Type(ngl.Image);
+pub const ImageView = Type(ngl.ImageView);
+pub const Sampler = Type(ngl.Sampler);
 pub const RenderPass = opaque {};
 pub const FrameBuffer = opaque {};
 pub const DescriptorSetLayout = opaque {};
@@ -248,18 +248,18 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.Buffer.Desc,
-    ) Error!*Buffer,
+    ) Error!Buffer,
 
     getMemoryRequirementsBuffer: *const fn (
         ctx: *anyopaque,
         device: Device,
-        buffer: *Buffer,
+        buffer: Buffer,
     ) ngl.Memory.Requirements,
 
     bindMemoryBuffer: *const fn (
         ctx: *anyopaque,
         device: Device,
-        buffer: *Buffer,
+        buffer: Buffer,
         memory: Memory,
         memory_offset: usize,
     ) Error!void,
@@ -268,7 +268,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        buffer: *Buffer,
+        buffer: Buffer,
     ) void,
 
     // BufferView ------------------------------------------
@@ -278,13 +278,13 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.BufferView.Desc,
-    ) Error!*BufferView,
+    ) Error!BufferView,
 
     deinitBufferView: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        buffer: *BufferView,
+        buffer: BufferView,
     ) void,
 
     // Image -----------------------------------------------
@@ -294,18 +294,18 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.Image.Desc,
-    ) Error!*Image,
+    ) Error!Image,
 
     getMemoryRequirementsImage: *const fn (
         ctx: *anyopaque,
         device: Device,
-        image: *Image,
+        image: Image,
     ) ngl.Memory.Requirements,
 
     bindMemoryImage: *const fn (
         ctx: *anyopaque,
         device: Device,
-        image: *Image,
+        image: Image,
         memory: Memory,
         memory_offset: usize,
     ) Error!void,
@@ -314,7 +314,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        image: *Image,
+        image: Image,
     ) void,
 
     // ImageView -------------------------------------------
@@ -324,13 +324,13 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.ImageView.Desc,
-    ) Error!*ImageView,
+    ) Error!ImageView,
 
     deinitImageView: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        image_view: *ImageView,
+        image_view: ImageView,
     ) void,
 
     // Sampler ---------------------------------------------
@@ -340,13 +340,13 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.Sampler.Desc,
-    ) Error!*Sampler,
+    ) Error!Sampler,
 
     deinitSampler: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        sampler: *Sampler,
+        sampler: Sampler,
     ) void,
 
     // RenderPass ------------------------------------------
@@ -737,14 +737,14 @@ pub fn initBuffer(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.Buffer.Desc,
-) Error!*Buffer {
+) Error!Buffer {
     return self.vtable.initBuffer(self.ptr, allocator, device, desc);
 }
 
 pub fn getMemoryRequirementsBuffer(
     self: *Self,
     device: Device,
-    buffer: *Buffer,
+    buffer: Buffer,
 ) ngl.Memory.Requirements {
     return self.vtable.getMemoryRequirementsBuffer(self.ptr, device, buffer);
 }
@@ -752,7 +752,7 @@ pub fn getMemoryRequirementsBuffer(
 pub fn bindMemoryBuffer(
     self: *Self,
     device: Device,
-    buffer: *Buffer,
+    buffer: Buffer,
     memory: Memory,
     memory_offset: usize,
 ) Error!void {
@@ -763,7 +763,7 @@ pub fn deinitBuffer(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    buffer: *Buffer,
+    buffer: Buffer,
 ) void {
     self.vtable.deinitBuffer(self.ptr, allocator, device, buffer);
 }
@@ -773,7 +773,7 @@ pub fn initBufferView(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.BufferView.Desc,
-) Error!*BufferView {
+) Error!BufferView {
     return self.vtable.initBufferView(self.ptr, allocator, device, desc);
 }
 
@@ -781,7 +781,7 @@ pub fn deinitBufferView(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    buffer_view: *BufferView,
+    buffer_view: BufferView,
 ) void {
     self.vtable.deinitBufferView(self.ptr, allocator, device, buffer_view);
 }
@@ -791,18 +791,18 @@ pub fn initImage(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.Image.Desc,
-) Error!*Image {
+) Error!Image {
     return self.vtable.initImage(self.ptr, allocator, device, desc);
 }
 
-pub fn deinitImage(self: *Self, allocator: std.mem.Allocator, device: Device, image: *Image) void {
+pub fn deinitImage(self: *Self, allocator: std.mem.Allocator, device: Device, image: Image) void {
     self.vtable.deinitImage(self.ptr, allocator, device, image);
 }
 
 pub fn getMemoryRequirementsImage(
     self: *Self,
     device: Device,
-    image: *Image,
+    image: Image,
 ) ngl.Memory.Requirements {
     return self.vtable.getMemoryRequirementsImage(self.ptr, device, image);
 }
@@ -810,7 +810,7 @@ pub fn getMemoryRequirementsImage(
 pub fn bindMemoryImage(
     self: *Self,
     device: Device,
-    image: *Image,
+    image: Image,
     memory: Memory,
     memory_offset: usize,
 ) Error!void {
@@ -822,7 +822,7 @@ pub fn initImageView(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.ImageView.Desc,
-) Error!*ImageView {
+) Error!ImageView {
     return self.vtable.initImageView(self.ptr, allocator, device, desc);
 }
 
@@ -830,7 +830,7 @@ pub fn deinitImageView(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    image_view: *ImageView,
+    image_view: ImageView,
 ) void {
     self.vtable.deinitImageView(self.ptr, allocator, device, image_view);
 }
@@ -840,7 +840,7 @@ pub fn initSampler(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.Sampler.Desc,
-) Error!*Sampler {
+) Error!Sampler {
     return self.vtable.initSampler(self.ptr, allocator, device, desc);
 }
 
@@ -848,7 +848,7 @@ pub fn deinitSampler(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    sampler: *Sampler,
+    sampler: Sampler,
 ) void {
     self.vtable.deinitSampler(self.ptr, allocator, device, sampler);
 }

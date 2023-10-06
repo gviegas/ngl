@@ -128,8 +128,8 @@ pub const Format = enum {
 };
 
 pub const Buffer = struct {
-    impl: *Impl.Buffer,
-    //memory: ?*Impl.Memory,
+    impl: Impl.Buffer,
+    //memory: ?Impl.Memory,
 
     pub const Usage = packed struct {
         uniform_texel_buffer: bool = false,
@@ -175,7 +175,7 @@ pub const Buffer = struct {
 };
 
 pub const BufferView = struct {
-    impl: *Impl.BufferView,
+    impl: Impl.BufferView,
 
     pub const Desc = struct {
         buffer: *const Buffer,
@@ -209,8 +209,8 @@ pub const SampleCount = enum {
 };
 
 pub const Image = struct {
-    impl: *Impl.Image,
-    //memory: ?*Impl.Memory,
+    impl: Impl.Image,
+    //memory: ?Impl.Memory,
 
     pub const Range = struct {
         aspect_mask: Aspect.Flags,
@@ -311,7 +311,7 @@ pub const Image = struct {
 };
 
 pub const ImageView = struct {
-    impl: *Impl.ImageView,
+    impl: Impl.ImageView,
 
     pub const Type = enum {
         @"1d",
@@ -355,7 +355,7 @@ pub const CompareOp = enum {
 };
 
 pub const Sampler = struct {
-    impl: *Impl.Sampler,
+    impl: Impl.Sampler,
 
     pub const AddressMode = enum {
         clamp_to_edge,

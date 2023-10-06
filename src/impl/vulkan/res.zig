@@ -8,11 +8,12 @@ const conv = @import("conv.zig");
 const Device = @import("init.zig").Device;
 const Memory = @import("init.zig").Memory;
 
+// TODO: Don't allocate this type on the heap
 pub const Buffer = struct {
     handle: c.VkBuffer,
 
-    pub inline fn cast(impl: *Impl.Buffer) *Buffer {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.Buffer) *Buffer {
+        return impl.ptr(Buffer);
     }
 
     pub fn init(
@@ -20,7 +21,7 @@ pub const Buffer = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.Buffer.Desc,
-    ) Error!*Impl.Buffer {
+    ) Error!Impl.Buffer {
         const dev = Device.cast(device);
 
         var ptr = try allocator.create(Buffer);
@@ -53,13 +54,13 @@ pub const Buffer = struct {
         }, null, &buf));
 
         ptr.* = .{ .handle = buf };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn getMemoryRequirements(
         _: *anyopaque,
         device: Impl.Device,
-        buffer: *Impl.Buffer,
+        buffer: Impl.Buffer,
     ) ngl.Memory.Requirements {
         var mem_req: c.VkMemoryRequirements = undefined;
         Device.cast(device).vkGetBufferMemoryRequirements(cast(buffer).handle, &mem_req);
@@ -73,7 +74,7 @@ pub const Buffer = struct {
     pub fn bindMemory(
         _: *anyopaque,
         device: Impl.Device,
-        buffer: *Impl.Buffer,
+        buffer: Impl.Buffer,
         memory: Impl.Memory,
         memory_offset: usize,
     ) Error!void {
@@ -88,7 +89,7 @@ pub const Buffer = struct {
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        buffer: *Impl.Buffer,
+        buffer: Impl.Buffer,
     ) void {
         const dev = Device.cast(device);
         const buf = cast(buffer);
@@ -97,11 +98,12 @@ pub const Buffer = struct {
     }
 };
 
+// TODO: Don't allocate this type on the heap
 pub const BufferView = struct {
     handle: c.VkBufferView,
 
-    pub inline fn cast(impl: *Impl.BufferView) *BufferView {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.BufferView) *BufferView {
+        return impl.ptr(BufferView);
     }
 
     pub fn init(
@@ -109,7 +111,7 @@ pub const BufferView = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.BufferView.Desc,
-    ) Error!*Impl.BufferView {
+    ) Error!Impl.BufferView {
         const dev = Device.cast(device);
         const buf = Buffer.cast(desc.buffer.impl);
 
@@ -128,14 +130,14 @@ pub const BufferView = struct {
         }, null, &buf_view));
 
         ptr.* = .{ .handle = buf_view };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        buffer_view: *Impl.BufferView,
+        buffer_view: Impl.BufferView,
     ) void {
         const dev = Device.cast(device);
         const buf_view = cast(buffer_view);
@@ -144,11 +146,12 @@ pub const BufferView = struct {
     }
 };
 
+// TODO: Don't allocate this type on the heap
 pub const Image = struct {
     handle: c.VkImage,
 
-    pub inline fn cast(impl: *Impl.Image) *Image {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.Image) *Image {
+        return impl.ptr(Image);
     }
 
     pub fn init(
@@ -156,7 +159,7 @@ pub const Image = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.Image.Desc,
-    ) Error!*Impl.Image {
+    ) Error!Impl.Image {
         const dev = Device.cast(device);
 
         var ptr = try allocator.create(Image);
@@ -222,13 +225,13 @@ pub const Image = struct {
         }, null, &image));
 
         ptr.* = .{ .handle = image };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn getMemoryRequirements(
         _: *anyopaque,
         device: Impl.Device,
-        image: *Impl.Image,
+        image: Impl.Image,
     ) ngl.Memory.Requirements {
         var mem_req: c.VkMemoryRequirements = undefined;
         Device.cast(device).vkGetImageMemoryRequirements(cast(image).handle, &mem_req);
@@ -242,7 +245,7 @@ pub const Image = struct {
     pub fn bindMemory(
         _: *anyopaque,
         device: Impl.Device,
-        image: *Impl.Image,
+        image: Impl.Image,
         memory: Impl.Memory,
         memory_offset: usize,
     ) Error!void {
@@ -257,7 +260,7 @@ pub const Image = struct {
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        image: *Impl.Image,
+        image: Impl.Image,
     ) void {
         const dev = Device.cast(device);
         const img = cast(image);
@@ -266,11 +269,12 @@ pub const Image = struct {
     }
 };
 
+// TODO: Don't allocate this type on the heap
 pub const ImageView = struct {
     handle: c.VkImageView,
 
-    pub inline fn cast(impl: *Impl.ImageView) *ImageView {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.ImageView) *ImageView {
+        return impl.ptr(ImageView);
     }
 
     pub fn init(
@@ -278,7 +282,7 @@ pub const ImageView = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.ImageView.Desc,
-    ) Error!*Impl.ImageView {
+    ) Error!Impl.ImageView {
         const dev = Device.cast(device);
         const image = Image.cast(desc.image.impl);
 
@@ -322,14 +326,14 @@ pub const ImageView = struct {
         }, null, &img_view));
 
         ptr.* = .{ .handle = img_view };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        image_view: *Impl.ImageView,
+        image_view: Impl.ImageView,
     ) void {
         const dev = Device.cast(device);
         const img_view = cast(image_view);
@@ -338,11 +342,12 @@ pub const ImageView = struct {
     }
 };
 
+// TODO: Don't allocate this type on the heap
 pub const Sampler = struct {
     handle: c.VkSampler,
 
-    pub inline fn cast(impl: *Impl.Sampler) *Sampler {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.Sampler) *Sampler {
+        return impl.ptr(Sampler);
     }
 
     pub fn init(
@@ -350,7 +355,7 @@ pub const Sampler = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.Sampler.Desc,
-    ) Error!*Impl.Sampler {
+    ) Error!Impl.Sampler {
         const dev = Device.cast(device);
 
         var ptr = try allocator.create(Sampler);
@@ -389,14 +394,14 @@ pub const Sampler = struct {
         }, null, &splr));
 
         ptr.* = .{ .handle = splr };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        sampler: *Impl.Sampler,
+        sampler: Impl.Sampler,
     ) void {
         const dev = Device.cast(device);
         const splr = cast(sampler);
