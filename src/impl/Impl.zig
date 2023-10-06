@@ -10,7 +10,7 @@ vtable: *const VTable,
 /// It should be instantiated with a different `T` every time
 /// to guarantee type safety.
 fn Type(comptime T: type) type {
-    return packed struct {
+    return struct {
         val: u64,
 
         pub inline fn ptr(self: @This(), comptime Pointee: type) *Pointee {
