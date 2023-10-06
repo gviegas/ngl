@@ -55,7 +55,7 @@ pub const SyncScope = struct {
 };
 
 pub const Fence = struct {
-    impl: *Impl.Fence,
+    impl: Impl.Fence,
 
     pub const Status = enum {
         unsignaled,
@@ -96,7 +96,7 @@ pub const Fence = struct {
 };
 
 pub const Semaphore = struct {
-    impl: *Impl.Semaphore,
+    impl: Impl.Semaphore,
 
     pub const Desc = struct {};
 

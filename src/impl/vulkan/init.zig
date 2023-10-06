@@ -1113,7 +1113,7 @@ pub const Queue = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         queue: Impl.Queue,
-        fence: ?*Impl.Fence,
+        fence: ?Impl.Fence,
         submits: []const ngl.Queue.Submit,
     ) Error!void {
         var subm_info: [1]c.VkSubmitInfo = undefined;

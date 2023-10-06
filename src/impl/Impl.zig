@@ -28,8 +28,8 @@ pub const Queue = Type(ngl.Queue);
 pub const Memory = Type(ngl.Memory);
 pub const CommandPool = Type(ngl.CommandPool);
 pub const CommandBuffer = Type(ngl.CommandBuffer);
-pub const Fence = opaque {};
-pub const Semaphore = opaque {};
+pub const Fence = Type(ngl.Fence);
+pub const Semaphore = Type(ngl.Semaphore);
 pub const Buffer = opaque {};
 pub const BufferView = opaque {};
 pub const Image = opaque {};
@@ -111,7 +111,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         queue: Queue,
-        fence: ?*Fence,
+        fence: ?Fence,
         submits: []const ngl.Queue.Submit,
     ) Error!void,
 
@@ -195,7 +195,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.Fence.Desc,
-    ) Error!*Fence,
+    ) Error!Fence,
 
     resetFences: *const fn (
         ctx: *anyopaque,
@@ -215,14 +215,14 @@ pub const VTable = struct {
     getFenceStatus: *const fn (
         ctx: *anyopaque,
         device: Device,
-        fence: *Fence,
+        fence: Fence,
     ) Error!ngl.Fence.Status,
 
     deinitFence: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        fence: *Fence,
+        fence: Fence,
     ) void,
 
     // Semaphore -------------------------------------------
@@ -232,13 +232,13 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         desc: ngl.Semaphore.Desc,
-    ) Error!*Semaphore,
+    ) Error!Semaphore,
 
     deinitSemaphore: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        semaphore: *Semaphore,
+        semaphore: Semaphore,
     ) void,
 
     // Buffer ----------------------------------------------
@@ -586,7 +586,7 @@ pub fn submit(
     allocator: std.mem.Allocator,
     device: Device,
     queue: Queue,
-    fence: ?*Fence,
+    fence: ?Fence,
     submits: []const ngl.Queue.Submit,
 ) Error!void {
     return self.vtable.submit(self.ptr, allocator, device, queue, fence, submits);
@@ -683,7 +683,7 @@ pub fn initFence(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.Fence.Desc,
-) Error!*Fence {
+) Error!Fence {
     return self.vtable.initFence(self.ptr, allocator, device, desc);
 }
 
@@ -706,11 +706,11 @@ pub fn waitFences(
     return self.vtable.waitFences(self.ptr, allocator, device, timeout, fences);
 }
 
-pub fn getFenceStatus(self: *Self, device: Device, fence: *Fence) Error!ngl.Fence.Status {
+pub fn getFenceStatus(self: *Self, device: Device, fence: Fence) Error!ngl.Fence.Status {
     return self.vtable.getFenceStatus(self.ptr, device, fence);
 }
 
-pub fn deinitFence(self: *Self, allocator: std.mem.Allocator, device: Device, fence: *Fence) void {
+pub fn deinitFence(self: *Self, allocator: std.mem.Allocator, device: Device, fence: Fence) void {
     self.vtable.deinitFence(self.ptr, allocator, device, fence);
 }
 
@@ -719,7 +719,7 @@ pub fn initSemaphore(
     allocator: std.mem.Allocator,
     device: Device,
     desc: ngl.Semaphore.Desc,
-) Error!*Semaphore {
+) Error!Semaphore {
     return self.vtable.initSemaphore(self.ptr, allocator, device, desc);
 }
 
@@ -727,7 +727,7 @@ pub fn deinitSemaphore(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    semaphore: *Semaphore,
+    semaphore: Semaphore,
 ) void {
     self.vtable.deinitSemaphore(self.ptr, allocator, device, semaphore);
 }

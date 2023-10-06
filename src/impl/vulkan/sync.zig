@@ -7,11 +7,12 @@ const c = @import("../c.zig");
 const conv = @import("conv.zig");
 const Device = @import("init.zig").Device;
 
+// TODO: Don't allocate this type on the heap
 pub const Fence = struct {
     handle: c.VkFence,
 
-    pub inline fn cast(impl: *Impl.Fence) *Fence {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.Fence) *Fence {
+        return impl.ptr(Fence);
     }
 
     pub fn init(
@@ -19,7 +20,7 @@ pub const Fence = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.Fence.Desc,
-    ) Error!*Impl.Fence {
+    ) Error!Impl.Fence {
         const dev = Device.cast(device);
 
         var ptr = try allocator.create(Fence);
@@ -36,7 +37,7 @@ pub const Fence = struct {
         }, null, &fence));
 
         ptr.* = .{ .handle = fence };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn reset(
@@ -80,7 +81,7 @@ pub const Fence = struct {
     pub fn getStatus(
         _: *anyopaque,
         device: Impl.Device,
-        fence: *Impl.Fence,
+        fence: Impl.Fence,
     ) Error!ngl.Fence.Status {
         conv.check(Device.cast(device).vkGetFenceStatus(cast(fence).handle)) catch |err| {
             if (err == Error.NotReady) return .unsignaled;
@@ -93,7 +94,7 @@ pub const Fence = struct {
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        fence: *Impl.Fence,
+        fence: Impl.Fence,
     ) void {
         const dev = Device.cast(device);
         const fnc = cast(fence);
@@ -102,11 +103,12 @@ pub const Fence = struct {
     }
 };
 
+// TODO: Don't allocate this type on the heap
 pub const Semaphore = struct {
     handle: c.VkSemaphore,
 
-    pub inline fn cast(impl: *Impl.Semaphore) *Semaphore {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.Semaphore) *Semaphore {
+        return impl.ptr(Semaphore);
     }
 
     pub fn init(
@@ -114,7 +116,7 @@ pub const Semaphore = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         _: ngl.Semaphore.Desc,
-    ) Error!*Impl.Semaphore {
+    ) Error!Impl.Semaphore {
         const dev = Device.cast(device);
 
         var ptr = try allocator.create(Semaphore);
@@ -128,14 +130,14 @@ pub const Semaphore = struct {
         }, null, &sema));
 
         ptr.* = .{ .handle = sema };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        semaphore: *Impl.Semaphore,
+        semaphore: Impl.Semaphore,
     ) void {
         const dev = Device.cast(device);
         const sema = cast(semaphore);
