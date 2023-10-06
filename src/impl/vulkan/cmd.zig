@@ -50,8 +50,8 @@ pub const CommandPool = struct {
         const dev = Device.cast(device);
         const cmd_pool = cast(command_pool);
 
-        var cmd_bufs = try allocator.alloc(c.VkCommandBuffer, desc.count);
-        defer allocator.free(cmd_bufs);
+        var handles = try allocator.alloc(c.VkCommandBuffer, desc.count);
+        defer allocator.free(handles);
 
         const alloc_info = c.VkCommandBufferAllocateInfo{
             .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -64,17 +64,11 @@ pub const CommandPool = struct {
             .commandBufferCount = desc.count,
         };
 
-        try conv.check(dev.vkAllocateCommandBuffers(&alloc_info, cmd_bufs.ptr));
-        errdefer dev.vkFreeCommandBuffers(cmd_pool.handle, desc.count, cmd_bufs.ptr);
+        try conv.check(dev.vkAllocateCommandBuffers(&alloc_info, handles.ptr));
+        errdefer dev.vkFreeCommandBuffers(cmd_pool.handle, desc.count, handles.ptr);
 
-        for (cmd_bufs, 0..) |cb, i| {
-            var ptr = allocator.create(CommandBuffer) catch |err| {
-                for (0..i) |j| allocator.destroy(CommandBuffer.cast(command_buffers[j].impl));
-                return err;
-            };
-            ptr.* = .{ .handle = cb };
-            command_buffers[i].impl = @ptrCast(ptr);
-        }
+        for (command_buffers, handles) |*cmd_buf, handle|
+            cmd_buf.impl = @bitCast(CommandBuffer{ .handle = handle });
     }
 
     pub fn reset(_: *anyopaque, device: *Impl.Device, command_pool: *Impl.CommandPool) Error!void {
@@ -94,23 +88,18 @@ pub const CommandPool = struct {
         const cmd_pool = cast(command_pool);
         const n = command_buffers.len;
 
-        var cmd_bufs = allocator.alloc(c.VkCommandBuffer, n) catch {
-            for (command_buffers) |cb| {
-                var ptr = CommandBuffer.cast(cb.impl);
-                const h: *[1]c.VkCommandBuffer = &ptr.handle;
-                dev.vkFreeCommandBuffers(cmd_pool.handle, 1, h);
-                allocator.destroy(ptr);
+        var handles = allocator.alloc(c.VkCommandBuffer, n) catch {
+            for (command_buffers) |cmd_buf| {
+                const handle = [1]c.VkCommandBuffer{CommandBuffer.cast(cmd_buf.impl).handle};
+                dev.vkFreeCommandBuffers(cmd_pool.handle, 1, &handle);
             }
             return;
         };
-        defer allocator.free(cmd_bufs);
+        defer allocator.free(handles);
 
-        for (0..n) |i| {
-            var ptr = CommandBuffer.cast(command_buffers[i].impl);
-            cmd_bufs[i] = ptr.handle;
-            allocator.destroy(ptr);
-        }
-        dev.vkFreeCommandBuffers(cmd_pool.handle, @intCast(n), cmd_bufs.ptr);
+        for (handles, command_buffers) |*handle, cmd_buf|
+            handle.* = CommandBuffer.cast(cmd_buf.impl).handle;
+        dev.vkFreeCommandBuffers(cmd_pool.handle, @intCast(n), handles.ptr);
     }
 
     pub fn deinit(
@@ -126,10 +115,11 @@ pub const CommandPool = struct {
     }
 };
 
-pub const CommandBuffer = struct {
+// TODO: Add comptime checks to ensure that this has the expected layout
+pub const CommandBuffer = packed struct {
     handle: c.VkCommandBuffer,
 
-    pub inline fn cast(impl: *Impl.CommandBuffer) *CommandBuffer {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.CommandBuffer) CommandBuffer {
+        return @bitCast(impl.val);
     }
 };

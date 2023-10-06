@@ -61,7 +61,7 @@ pub const CommandPool = struct {
 };
 
 pub const CommandBuffer = struct {
-    impl: *Impl.CommandBuffer,
+    impl: Impl.CommandBuffer,
 
     pub const Level = enum {
         primary,
