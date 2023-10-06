@@ -226,8 +226,8 @@ pub const DescriptorPool = struct {
         for (set_layouts, desc.layouts) |*handle, layout|
             handle.* = DescriptorSetLayout.cast(layout.impl).handle;
 
-        var desc_sets = try allocator.alloc(c.VkDescriptorSet, desc.layouts.len);
-        defer allocator.free(desc_sets);
+        var handles = try allocator.alloc(c.VkDescriptorSet, desc.layouts.len);
+        defer allocator.free(handles);
 
         const alloc_info = c.VkDescriptorSetAllocateInfo{
             .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -237,25 +237,10 @@ pub const DescriptorPool = struct {
             .pSetLayouts = set_layouts.ptr,
         };
 
-        try conv.check(dev.vkAllocateDescriptorSets(&alloc_info, desc_sets.ptr));
-        // TODO: This call may fail
-        errdefer {
-            const r = dev.vkFreeDescriptorSets(
-                desc_pool.handle,
-                @intCast(desc_sets.len),
-                desc_sets.ptr,
-            );
-            if (r != c.VK_SUCCESS) log.warn("vkFreeDescriptorSets failed ({})", .{r});
-        }
+        try conv.check(dev.vkAllocateDescriptorSets(&alloc_info, handles.ptr));
 
-        for (desc_sets, 0..) |set, i| {
-            var ptr = allocator.create(DescriptorSet) catch |err| {
-                for (0..i) |j| allocator.destroy(DescriptorSet.cast(descriptor_sets[j].impl));
-                return err;
-            };
-            ptr.* = .{ .handle = set };
-            descriptor_sets[i].impl = @ptrCast(ptr);
-        }
+        for (descriptor_sets, handles) |*set, handle|
+            set.impl = .{ .val = @bitCast(DescriptorSet{ .handle = handle }) };
     }
 
     pub fn free(
@@ -269,24 +254,15 @@ pub const DescriptorPool = struct {
         const desc_pool = cast(descriptor_pool);
         const n = descriptor_sets.len;
 
-        var desc_sets = allocator.alloc(c.VkDescriptorSet, n) catch {
-            for (descriptor_sets) |set| {
-                var ptr = DescriptorSet.cast(set.impl);
-                const h: *[1]c.VkDescriptorSet = &ptr.handle;
-                const r = dev.vkFreeDescriptorSets(desc_pool.handle, 1, h);
-                allocator.destroy(ptr);
-                if (r != c.VK_SUCCESS) log.warn("vkFreeDescriptorSets failed ({})", .{r});
-            }
+        var handles = allocator.alloc(c.VkDescriptorSet, n) catch |err| {
+            log.warn("allocator.alloc failed ({}): cannot free descriptor sets", .{err});
             return;
         };
-        defer allocator.free(desc_sets);
+        defer allocator.free(handles);
 
-        for (0..n) |i| {
-            var ptr = DescriptorSet.cast(descriptor_sets[i].impl);
-            desc_sets[i] = ptr.handle;
-            allocator.destroy(ptr);
-        }
-        const r = dev.vkFreeDescriptorSets(desc_pool.handle, @intCast(n), desc_sets.ptr);
+        for (handles, descriptor_sets) |*handle, set|
+            handle.* = DescriptorSet.cast(set.impl).handle;
+        const r = dev.vkFreeDescriptorSets(desc_pool.handle, @intCast(n), handles.ptr);
         if (r != c.VK_SUCCESS) log.warn("vkFreeDescriptorSets failed ({})", .{r});
     }
 
@@ -303,10 +279,11 @@ pub const DescriptorPool = struct {
     }
 };
 
-pub const DescriptorSet = struct {
+// TODO: Add comptime checks to ensure that this has the expected layout
+pub const DescriptorSet = packed struct {
     handle: c.VkDescriptorSet,
 
-    pub inline fn cast(impl: *Impl.DescriptorSet) *DescriptorSet {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.DescriptorSet) DescriptorSet {
+        return @bitCast(impl.val);
     }
 };

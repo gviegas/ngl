@@ -40,7 +40,7 @@ pub const FrameBuffer = opaque {};
 pub const DescriptorSetLayout = opaque {};
 pub const PipelineLayout = opaque {};
 pub const DescriptorPool = opaque {};
-pub const DescriptorSet = opaque {};
+pub const DescriptorSet = Type(ngl.DescriptorSet);
 pub const Pipeline = opaque {};
 pub const PipelineCache = opaque {};
 

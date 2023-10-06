@@ -117,10 +117,7 @@ pub const DescriptorPool = struct {
         var desc_sets = try allocator.alloc(DescriptorSet, desc.layouts.len);
         errdefer allocator.free(desc_sets);
         // TODO: Update this when adding more fields to `DescriptorSet`
-        if (@typeInfo(DescriptorSet).Struct.fields.len > 1) @compileError(
-            \\Impl only sets the impl field
-            \\This function must initialize the others
-        );
+        if (@typeInfo(DescriptorSet).Struct.fields.len > 1) @compileError("Uninitialized field(s)");
         try Impl.get().allocDescriptorSets(allocator, device.impl, self.impl, desc, desc_sets);
         return desc_sets;
     }
@@ -142,7 +139,7 @@ pub const DescriptorPool = struct {
 };
 
 pub const DescriptorSet = struct {
-    impl: *Impl.DescriptorSet,
+    impl: Impl.DescriptorSet,
 
     pub const Desc = struct {
         // TODO: Layout plus count pairs
