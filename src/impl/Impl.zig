@@ -7,6 +7,21 @@ const Error = ngl.Error;
 ptr: *anyopaque,
 vtable: *const VTable,
 
+/// It should be instantiated with a different `T` every time
+/// to guarantee type safety.
+fn Type(comptime T: type) type {
+    return packed struct {
+        val: u64,
+
+        pub inline fn ptr(self: @This(), comptime Pointee: type) *Pointee {
+            const p: *anyopaque = @ptrFromInt(self.val);
+            return @ptrCast(@alignCast(p));
+        }
+
+        pub const ApiType = T;
+    };
+}
+
 pub const Instance = opaque {};
 pub const Device = opaque {};
 pub const Queue = opaque {};
