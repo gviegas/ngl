@@ -17,7 +17,7 @@ pub const Fence = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.Fence.Desc,
     ) Error!*Impl.Fence {
         const dev = Device.cast(device);
@@ -42,7 +42,7 @@ pub const Fence = struct {
     pub fn reset(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         fences: []const *ngl.Fence,
     ) Error!void {
         var fnc: [1]c.VkFence = undefined;
@@ -58,7 +58,7 @@ pub const Fence = struct {
     pub fn wait(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         timeout: u64,
         fences: []const *ngl.Fence,
     ) Error!void {
@@ -79,7 +79,7 @@ pub const Fence = struct {
 
     pub fn getStatus(
         _: *anyopaque,
-        device: *Impl.Device,
+        device: Impl.Device,
         fence: *Impl.Fence,
     ) Error!ngl.Fence.Status {
         conv.check(Device.cast(device).vkGetFenceStatus(cast(fence).handle)) catch |err| {
@@ -92,7 +92,7 @@ pub const Fence = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         fence: *Impl.Fence,
     ) void {
         const dev = Device.cast(device);
@@ -112,7 +112,7 @@ pub const Semaphore = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         _: ngl.Semaphore.Desc,
     ) Error!*Impl.Semaphore {
         const dev = Device.cast(device);
@@ -134,7 +134,7 @@ pub const Semaphore = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         semaphore: *Impl.Semaphore,
     ) void {
         const dev = Device.cast(device);

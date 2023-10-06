@@ -19,7 +19,7 @@ pub const RenderPass = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.RenderPass.Desc,
     ) Error!*Impl.RenderPass {
         const dev = Device.cast(device);
@@ -229,7 +229,7 @@ pub const RenderPass = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         render_pass: *Impl.RenderPass,
     ) void {
         const dev = Device.cast(device);
@@ -249,7 +249,7 @@ pub const FrameBuffer = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.FrameBuffer.Desc,
     ) Error!*Impl.FrameBuffer {
         const dev = Device.cast(device);
@@ -292,7 +292,7 @@ pub const FrameBuffer = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         frame_buffer: *Impl.FrameBuffer,
     ) void {
         const dev = Device.cast(device);

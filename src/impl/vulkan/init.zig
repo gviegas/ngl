@@ -129,8 +129,8 @@ pub const Instance = struct {
     createDevice: c.PFN_vkCreateDevice,
     enumerateDeviceExtensionProperties: c.PFN_vkEnumerateDeviceExtensionProperties,
 
-    pub inline fn cast(impl: *Impl.Instance) *Instance {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.Instance) *Instance {
+        return impl.ptr(Instance);
     }
 
     // The returned proc is guaranteed to be non-null.
@@ -143,7 +143,7 @@ pub const Instance = struct {
         _: *anyopaque,
         allocator: std.mem.Allocator,
         desc: ngl.Instance.Desc,
-    ) Error!*Impl.Instance {
+    ) Error!Impl.Instance {
         std.debug.assert(createInstance != null);
         std.debug.assert(enumerateInstanceLayerProperties != null);
         std.debug.assert(enumerateInstanceExtensionProperties != null);
@@ -181,19 +181,19 @@ pub const Instance = struct {
             .enumerateDeviceExtensionProperties = @ptrCast(try Instance.getProc(inst, "vkEnumerateDeviceExtensionProperties")),
         };
 
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     fn listDevices(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: *Impl.Instance,
+        instance: Impl.Instance,
     ) Error![]ngl.Device.Desc {
         const inst = cast(instance);
 
         var dev_n: u32 = undefined;
         try conv.check(inst.vkEnumeratePhysicalDevices(&dev_n, null));
-        if (dev_n == 0) return Error.NotSupported; // TODO: Need better error
+        if (dev_n == 0) return Error.NotSupported; // TODO: Need a better error for this
         var devs = try allocator.alloc(c.VkPhysicalDevice, dev_n);
         defer allocator.free(devs);
         try conv.check(inst.vkEnumeratePhysicalDevices(&dev_n, devs.ptr));
@@ -248,7 +248,7 @@ pub const Instance = struct {
         return descs;
     }
 
-    fn deinit(_: *anyopaque, allocator: std.mem.Allocator, instance: *Impl.Instance) void {
+    fn deinit(_: *anyopaque, allocator: std.mem.Allocator, instance: Impl.Instance) void {
         const inst = cast(instance);
         // TODO: Need to gate destruction until all devices
         // and instance-level objects have been destroyed
@@ -388,8 +388,8 @@ pub const Device = struct {
     createShaderModule: c.PFN_vkCreateShaderModule,
     destroyShaderModule: c.PFN_vkDestroyShaderModule,
 
-    pub fn cast(impl: *Impl.Device) *Device {
-        return @ptrCast(@alignCast(impl));
+    pub fn cast(impl: Impl.Device) *Device {
+        return impl.ptr(Device);
     }
 
     // The returned proc is guaranteed to be non-null.
@@ -405,11 +405,13 @@ pub const Device = struct {
     fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: *Impl.Instance,
+        instance: Impl.Instance,
         desc: ngl.Device.Desc,
-    ) Error!*Impl.Device {
+    ) Error!Impl.Device {
         const inst = Instance.cast(instance);
-        const phys_dev: c.VkPhysicalDevice = @ptrCast(desc.impl orelse return Error.InvalidArgument);
+        const phys_dev: c.VkPhysicalDevice = @ptrCast(@alignCast(
+            desc.impl orelse return Error.InvalidArgument,
+        ));
 
         var queue_infos: [ngl.Queue.max]c.VkDeviceQueueCreateInfo = undefined;
         var queue_prios: [ngl.Queue.max]f32 = undefined;
@@ -533,23 +535,23 @@ pub const Device = struct {
             }
         }
 
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     fn getQueues(
         _: *anyopaque,
-        allocation: *[ngl.Queue.max]*Impl.Queue,
-        device: *Impl.Device,
-    ) []*Impl.Queue {
+        allocation: *[ngl.Queue.max]Impl.Queue,
+        device: Impl.Device,
+    ) []Impl.Queue {
         const dev = cast(device);
-        for (0..dev.queue_n) |i| allocation[i] = @ptrCast(&dev.queues[i]);
+        for (0..dev.queue_n) |i| allocation[i] = .{ .val = @intFromPtr(&dev.queues[i]) };
         return allocation[0..dev.queue_n];
     }
 
     fn getMemoryTypes(
         _: *anyopaque,
         allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
-        device: *Impl.Device,
+        device: Impl.Device,
     ) []ngl.Memory.Type {
         const dev = cast(device);
 
@@ -586,9 +588,9 @@ pub const Device = struct {
     fn alloc(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.Memory.Desc,
-    ) Error!*Impl.Memory {
+    ) Error!Impl.Memory {
         const dev = cast(device);
 
         var ptr = try allocator.create(Memory);
@@ -603,14 +605,14 @@ pub const Device = struct {
         }, null, &mem));
 
         ptr.* = .{ .handle = mem };
-        return @ptrCast(ptr);
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     fn free(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
-        memory: *Impl.Memory,
+        device: Impl.Device,
+        memory: Impl.Memory,
     ) void {
         const dev = cast(device);
         const mem = Memory.cast(memory);
@@ -618,7 +620,7 @@ pub const Device = struct {
         allocator.destroy(mem);
     }
 
-    fn deinit(_: *anyopaque, allocator: std.mem.Allocator, device: *Impl.Device) void {
+    fn deinit(_: *anyopaque, allocator: std.mem.Allocator, device: Impl.Device) void {
         const dev = cast(device);
         // TODO: Need to gate destruction until all
         // device-level objects have been destroyed
@@ -1101,16 +1103,16 @@ pub const Queue = struct {
     family: u32,
     index: u32,
 
-    pub inline fn cast(impl: *Impl.Queue) *Queue {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.Queue) *Queue {
+        return impl.ptr(Queue);
     }
 
     // TODO: Don't allocate on every call
     pub fn submit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
-        queue: *Impl.Queue,
+        device: Impl.Device,
+        queue: Impl.Queue,
         fence: ?*Impl.Fence,
         submits: []const ngl.Queue.Submit,
     ) Error!void {
@@ -1214,19 +1216,18 @@ pub const Queue = struct {
     }
 };
 
-// TODO: Consider using the Vulkan handle directly
-// rather than storing it in this type
+// TODO: Don't allocate this type on the heap
 pub const Memory = struct {
     handle: c.VkDeviceMemory,
 
-    pub inline fn cast(impl: *Impl.Memory) *Memory {
-        return @ptrCast(@alignCast(impl));
+    pub inline fn cast(impl: Impl.Memory) *Memory {
+        return impl.ptr(Memory);
     }
 
     fn map(
         _: *anyopaque,
-        device: *Impl.Device,
-        memory: *Impl.Memory,
+        device: Impl.Device,
+        memory: Impl.Memory,
         offset: usize,
         size: ?usize,
     ) Error![*]u8 {
@@ -1241,7 +1242,7 @@ pub const Memory = struct {
         return @ptrCast(data);
     }
 
-    fn unmap(_: *anyopaque, device: *Impl.Device, memory: *Impl.Memory) void {
+    fn unmap(_: *anyopaque, device: Impl.Device, memory: Impl.Memory) void {
         Device.cast(device).vkUnmapMemory(cast(memory).handle);
     }
 
@@ -1249,8 +1250,8 @@ pub const Memory = struct {
     fn flushOrInvalidateMapped(
         comptime call: enum { flush, invalidate },
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
-        memory: *Impl.Memory,
+        device: Impl.Device,
+        memory: Impl.Memory,
         offsets: []const usize,
         sizes: ?[]const usize,
     ) Error!void {
@@ -1291,8 +1292,8 @@ pub const Memory = struct {
     fn flushMapped(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
-        memory: *Impl.Memory,
+        device: Impl.Device,
+        memory: Impl.Memory,
         offsets: []const usize,
         sizes: ?[]const usize,
     ) Error!void {
@@ -1302,8 +1303,8 @@ pub const Memory = struct {
     fn invalidateMapped(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
-        memory: *Impl.Memory,
+        device: Impl.Device,
+        memory: Impl.Memory,
         offsets: []const usize,
         sizes: ?[]const usize,
     ) Error!void {

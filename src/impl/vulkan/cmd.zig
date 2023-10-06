@@ -18,7 +18,7 @@ pub const CommandPool = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.CommandPool.Desc,
     ) Error!*Impl.CommandPool {
         const dev = Device.cast(device);
@@ -42,7 +42,7 @@ pub const CommandPool = struct {
     pub fn alloc(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         command_pool: *Impl.CommandPool,
         desc: ngl.CommandBuffer.Desc,
         command_buffers: []ngl.CommandBuffer,
@@ -71,7 +71,7 @@ pub const CommandPool = struct {
             cmd_buf.impl = .{ .val = @bitCast(CommandBuffer{ .handle = handle }) };
     }
 
-    pub fn reset(_: *anyopaque, device: *Impl.Device, command_pool: *Impl.CommandPool) Error!void {
+    pub fn reset(_: *anyopaque, device: Impl.Device, command_pool: *Impl.CommandPool) Error!void {
         // TODO: Maybe expose flags
         const flags: c.VkCommandPoolResetFlags = 0;
         return conv.check(Device.cast(device).vkResetCommandPool(cast(command_pool).handle, flags));
@@ -80,7 +80,7 @@ pub const CommandPool = struct {
     pub fn free(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         command_pool: *Impl.CommandPool,
         command_buffers: []const *ngl.CommandBuffer,
     ) void {
@@ -105,7 +105,7 @@ pub const CommandPool = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         command_pool: *Impl.CommandPool,
     ) void {
         const dev = Device.cast(device);

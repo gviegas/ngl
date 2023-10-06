@@ -19,7 +19,7 @@ pub const DescriptorSetLayout = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.DescriptorSetLayout.Desc,
     ) Error!*Impl.DescriptorSetLayout {
         const dev = Device.cast(device);
@@ -80,7 +80,7 @@ pub const DescriptorSetLayout = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         descriptor_set_layout: *Impl.DescriptorSetLayout,
     ) void {
         const dev = Device.cast(device);
@@ -100,7 +100,7 @@ pub const PipelineLayout = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.PipelineLayout.Desc,
     ) Error!*Impl.PipelineLayout {
         const dev = Device.cast(device);
@@ -150,7 +150,7 @@ pub const PipelineLayout = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         pipeline_layout: *Impl.PipelineLayout,
     ) void {
         const dev = Device.cast(device);
@@ -170,7 +170,7 @@ pub const DescriptorPool = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.DescriptorPool.Desc,
     ) Error!*Impl.DescriptorPool {
         const dev = Device.cast(device);
@@ -212,7 +212,7 @@ pub const DescriptorPool = struct {
     pub fn alloc(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         descriptor_pool: *Impl.DescriptorPool,
         desc: ngl.DescriptorSet.Desc,
         descriptor_sets: []ngl.DescriptorSet,
@@ -245,7 +245,7 @@ pub const DescriptorPool = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         descriptor_pool: *Impl.DescriptorPool,
     ) void {
         const dev = Device.cast(device);

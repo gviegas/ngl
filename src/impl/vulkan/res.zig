@@ -18,7 +18,7 @@ pub const Buffer = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.Buffer.Desc,
     ) Error!*Impl.Buffer {
         const dev = Device.cast(device);
@@ -58,7 +58,7 @@ pub const Buffer = struct {
 
     pub fn getMemoryRequirements(
         _: *anyopaque,
-        device: *Impl.Device,
+        device: Impl.Device,
         buffer: *Impl.Buffer,
     ) ngl.Memory.Requirements {
         var mem_req: c.VkMemoryRequirements = undefined;
@@ -72,9 +72,9 @@ pub const Buffer = struct {
 
     pub fn bindMemory(
         _: *anyopaque,
-        device: *Impl.Device,
+        device: Impl.Device,
         buffer: *Impl.Buffer,
-        memory: *Impl.Memory,
+        memory: Impl.Memory,
         memory_offset: usize,
     ) Error!void {
         try conv.check(Device.cast(device).vkBindBufferMemory(
@@ -87,7 +87,7 @@ pub const Buffer = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         buffer: *Impl.Buffer,
     ) void {
         const dev = Device.cast(device);
@@ -107,7 +107,7 @@ pub const BufferView = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.BufferView.Desc,
     ) Error!*Impl.BufferView {
         const dev = Device.cast(device);
@@ -134,7 +134,7 @@ pub const BufferView = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         buffer_view: *Impl.BufferView,
     ) void {
         const dev = Device.cast(device);
@@ -154,7 +154,7 @@ pub const Image = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.Image.Desc,
     ) Error!*Impl.Image {
         const dev = Device.cast(device);
@@ -227,7 +227,7 @@ pub const Image = struct {
 
     pub fn getMemoryRequirements(
         _: *anyopaque,
-        device: *Impl.Device,
+        device: Impl.Device,
         image: *Impl.Image,
     ) ngl.Memory.Requirements {
         var mem_req: c.VkMemoryRequirements = undefined;
@@ -241,9 +241,9 @@ pub const Image = struct {
 
     pub fn bindMemory(
         _: *anyopaque,
-        device: *Impl.Device,
+        device: Impl.Device,
         image: *Impl.Image,
-        memory: *Impl.Memory,
+        memory: Impl.Memory,
         memory_offset: usize,
     ) Error!void {
         try conv.check(Device.cast(device).vkBindImageMemory(
@@ -256,7 +256,7 @@ pub const Image = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         image: *Impl.Image,
     ) void {
         const dev = Device.cast(device);
@@ -276,7 +276,7 @@ pub const ImageView = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.ImageView.Desc,
     ) Error!*Impl.ImageView {
         const dev = Device.cast(device);
@@ -328,7 +328,7 @@ pub const ImageView = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         image_view: *Impl.ImageView,
     ) void {
         const dev = Device.cast(device);
@@ -348,7 +348,7 @@ pub const Sampler = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.Sampler.Desc,
     ) Error!*Impl.Sampler {
         const dev = Device.cast(device);
@@ -395,7 +395,7 @@ pub const Sampler = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         sampler: *Impl.Sampler,
     ) void {
         const dev = Device.cast(device);

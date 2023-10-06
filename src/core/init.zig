@@ -9,7 +9,7 @@ const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
 pub const Instance = struct {
-    impl: *Impl.Instance,
+    impl: Impl.Instance,
 
     // TODO
     pub const Desc = struct {};
@@ -32,7 +32,7 @@ pub const Instance = struct {
 };
 
 pub const Device = struct {
-    impl: *Impl.Device,
+    impl: Impl.Device,
     queues: [Queue.max]Queue,
     queue_n: u8,
     mem_types: [Memory.max_type]Memory.Type,
@@ -62,7 +62,7 @@ pub const Device = struct {
             .mem_types = undefined,
             .mem_type_n = 0,
         };
-        var queue_alloc: [Queue.max]*Impl.Queue = undefined;
+        var queue_alloc: [Queue.max]Impl.Queue = undefined;
         const queues = Impl.get().getQueues(&queue_alloc, self.impl);
         for (queues, 0..) |q, i| self.queues[i] = .{ .impl = q };
         self.queue_n = @intCast(queues.len);
@@ -86,7 +86,7 @@ pub const Device = struct {
 };
 
 pub const Queue = struct {
-    impl: *Impl.Queue,
+    impl: Impl.Queue,
 
     pub const Capabilities = packed struct {
         graphics: bool = false,
@@ -143,7 +143,7 @@ pub const Queue = struct {
 };
 
 pub const Memory = struct {
-    impl: *Impl.Memory,
+    impl: Impl.Memory,
 
     pub const Properties = packed struct {
         device_local: bool = false,

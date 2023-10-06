@@ -22,7 +22,7 @@ pub const Pipeline = struct {
     pub fn initGraphics(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.Pipeline.Desc(ngl.GraphicsState),
         pipelines: []ngl.Pipeline,
     ) Error!void {
@@ -500,7 +500,7 @@ pub const Pipeline = struct {
     pub fn initCompute(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.Pipeline.Desc(ngl.ComputeState),
         pipelines: []ngl.Pipeline,
     ) Error!void {
@@ -588,7 +588,7 @@ pub const Pipeline = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         pipeline: *Impl.Pipeline,
         _: ngl.Pipeline.Type,
     ) void {
@@ -611,7 +611,7 @@ pub const PipelineCache = struct {
     pub fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         desc: ngl.PipelineCache.Desc,
     ) Error!*Impl.PipelineCache {
         const dev = Device.cast(device);
@@ -635,7 +635,7 @@ pub const PipelineCache = struct {
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Impl.Device,
+        device: Impl.Device,
         pipeline_cache: *Impl.PipelineCache,
     ) void {
         const dev = Device.cast(device);

@@ -22,10 +22,10 @@ fn Type(comptime T: type) type {
     };
 }
 
-pub const Instance = opaque {};
-pub const Device = opaque {};
-pub const Queue = opaque {};
-pub const Memory = opaque {};
+pub const Instance = Type(ngl.Instance);
+pub const Device = Type(ngl.Device);
+pub const Queue = Type(ngl.Queue);
+pub const Memory = Type(ngl.Memory);
 pub const CommandPool = opaque {};
 pub const CommandBuffer = Type(ngl.CommandBuffer);
 pub const Fence = opaque {};
@@ -53,18 +53,18 @@ pub const VTable = struct {
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         desc: ngl.Instance.Desc,
-    ) Error!*Instance,
+    ) Error!Instance,
 
     listDevices: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: *Instance,
+        instance: Instance,
     ) Error![]ngl.Device.Desc,
 
     deinitInstance: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: *Instance,
+        instance: Instance,
     ) void,
 
     // Device ----------------------------------------------
@@ -72,45 +72,45 @@ pub const VTable = struct {
     initDevice: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: *Instance,
+        instance: Instance,
         desc: ngl.Device.Desc,
-    ) Error!*Device,
+    ) Error!Device,
 
     getQueues: *const fn (
         ctx: *anyopaque,
-        allocation: *[ngl.Queue.max]*Queue,
-        device: *Device,
-    ) []*Queue,
+        allocation: *[ngl.Queue.max]Queue,
+        device: Device,
+    ) []Queue,
 
     getMemoryTypes: *const fn (
         ctx: *anyopaque,
         allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
-        device: *Device,
+        device: Device,
     ) []ngl.Memory.Type,
 
     allocMemory: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.Memory.Desc,
-    ) Error!*Memory,
+    ) Error!Memory,
 
     freeMemory: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
-        memory: *Memory,
+        device: Device,
+        memory: Memory,
     ) void,
 
-    deinitDevice: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator, device: *Device) void,
+    deinitDevice: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator, device: Device) void,
 
     // Queue -----------------------------------------------
 
     submit: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
-        queue: *Queue,
+        device: Device,
+        queue: Queue,
         fence: ?*Fence,
         submits: []const ngl.Queue.Submit,
     ) Error!void,
@@ -119,19 +119,19 @@ pub const VTable = struct {
 
     mapMemory: *const fn (
         ctx: *anyopaque,
-        device: *Device,
-        memory: *Memory,
+        device: Device,
+        memory: Memory,
         offset: usize,
         size: ?usize,
     ) Error![*]u8,
 
-    unmapMemory: *const fn (ctx: *anyopaque, device: *Device, memory: *Memory) void,
+    unmapMemory: *const fn (ctx: *anyopaque, device: Device, memory: Memory) void,
 
     flushMappedMemory: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
-        memory: *Memory,
+        device: Device,
+        memory: Memory,
         offsets: []const usize,
         sizes: ?[]const usize,
     ) Error!void,
@@ -139,8 +139,8 @@ pub const VTable = struct {
     invalidateMappedMemory: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
-        memory: *Memory,
+        device: Device,
+        memory: Memory,
         offsets: []const usize,
         sizes: ?[]const usize,
     ) Error!void,
@@ -150,14 +150,14 @@ pub const VTable = struct {
     initCommandPool: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.CommandPool.Desc,
     ) Error!*CommandPool,
 
     allocCommandBuffers: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         command_pool: *CommandPool,
         desc: ngl.CommandBuffer.Desc,
         command_buffers: []ngl.CommandBuffer,
@@ -165,14 +165,14 @@ pub const VTable = struct {
 
     resetCommandPool: *const fn (
         ctx: *anyopaque,
-        device: *Device,
+        device: Device,
         command_pool: *CommandPool,
     ) Error!void,
 
     freeCommandBuffers: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         command_pool: *CommandPool,
         command_buffers: []const *ngl.CommandBuffer,
     ) void,
@@ -180,7 +180,7 @@ pub const VTable = struct {
     deinitCommandPool: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         command_pool: *CommandPool,
     ) void,
 
@@ -193,35 +193,35 @@ pub const VTable = struct {
     initFence: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.Fence.Desc,
     ) Error!*Fence,
 
     resetFences: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         fences: []const *ngl.Fence,
     ) Error!void,
 
     waitFences: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         timeout: u64,
         fences: []const *ngl.Fence,
     ) Error!void,
 
     getFenceStatus: *const fn (
         ctx: *anyopaque,
-        device: *Device,
+        device: Device,
         fence: *Fence,
     ) Error!ngl.Fence.Status,
 
     deinitFence: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         fence: *Fence,
     ) void,
 
@@ -230,14 +230,14 @@ pub const VTable = struct {
     initSemaphore: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.Semaphore.Desc,
     ) Error!*Semaphore,
 
     deinitSemaphore: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         semaphore: *Semaphore,
     ) void,
 
@@ -246,28 +246,28 @@ pub const VTable = struct {
     initBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.Buffer.Desc,
     ) Error!*Buffer,
 
     getMemoryRequirementsBuffer: *const fn (
         ctx: *anyopaque,
-        device: *Device,
+        device: Device,
         buffer: *Buffer,
     ) ngl.Memory.Requirements,
 
     bindMemoryBuffer: *const fn (
         ctx: *anyopaque,
-        device: *Device,
+        device: Device,
         buffer: *Buffer,
-        memory: *Memory,
+        memory: Memory,
         memory_offset: usize,
     ) Error!void,
 
     deinitBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         buffer: *Buffer,
     ) void,
 
@@ -276,14 +276,14 @@ pub const VTable = struct {
     initBufferView: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.BufferView.Desc,
     ) Error!*BufferView,
 
     deinitBufferView: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         buffer: *BufferView,
     ) void,
 
@@ -292,28 +292,28 @@ pub const VTable = struct {
     initImage: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.Image.Desc,
     ) Error!*Image,
 
     getMemoryRequirementsImage: *const fn (
         ctx: *anyopaque,
-        device: *Device,
+        device: Device,
         image: *Image,
     ) ngl.Memory.Requirements,
 
     bindMemoryImage: *const fn (
         ctx: *anyopaque,
-        device: *Device,
+        device: Device,
         image: *Image,
-        memory: *Memory,
+        memory: Memory,
         memory_offset: usize,
     ) Error!void,
 
     deinitImage: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         image: *Image,
     ) void,
 
@@ -322,14 +322,14 @@ pub const VTable = struct {
     initImageView: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.ImageView.Desc,
     ) Error!*ImageView,
 
     deinitImageView: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         image_view: *ImageView,
     ) void,
 
@@ -338,14 +338,14 @@ pub const VTable = struct {
     initSampler: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.Sampler.Desc,
     ) Error!*Sampler,
 
     deinitSampler: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         sampler: *Sampler,
     ) void,
 
@@ -354,14 +354,14 @@ pub const VTable = struct {
     initRenderPass: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.RenderPass.Desc,
     ) Error!*RenderPass,
 
     deinitRenderPass: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         render_pass: *RenderPass,
     ) void,
 
@@ -370,14 +370,14 @@ pub const VTable = struct {
     initFrameBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.FrameBuffer.Desc,
     ) Error!*FrameBuffer,
 
     deinitFrameBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         frame_buffer: *FrameBuffer,
     ) void,
 
@@ -386,14 +386,14 @@ pub const VTable = struct {
     initDescriptorSetLayout: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.DescriptorSetLayout.Desc,
     ) Error!*DescriptorSetLayout,
 
     deinitDescriptorSetLayout: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         descriptor_set_layout: *DescriptorSetLayout,
     ) void,
 
@@ -402,14 +402,14 @@ pub const VTable = struct {
     initPipelineLayout: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.PipelineLayout.Desc,
     ) Error!*PipelineLayout,
 
     deinitPipelineLayout: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         pipeline_layout: *PipelineLayout,
     ) void,
 
@@ -418,14 +418,14 @@ pub const VTable = struct {
     initDescriptorPool: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.DescriptorPool.Desc,
     ) Error!*DescriptorPool,
 
     allocDescriptorSets: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         descriptor_pool: *DescriptorPool,
         desc: ngl.DescriptorSet.Desc,
         descriptor_sets: []ngl.DescriptorSet,
@@ -434,7 +434,7 @@ pub const VTable = struct {
     deinitDescriptorPool: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         descriptor_pool: *DescriptorPool,
     ) void,
 
@@ -443,7 +443,7 @@ pub const VTable = struct {
     initPipelinesGraphics: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.Pipeline.Desc(ngl.GraphicsState),
         pipelines: []ngl.Pipeline,
     ) Error!void,
@@ -451,7 +451,7 @@ pub const VTable = struct {
     initPipelinesCompute: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.Pipeline.Desc(ngl.ComputeState),
         pipelines: []ngl.Pipeline,
     ) Error!void,
@@ -459,7 +459,7 @@ pub const VTable = struct {
     deinitPipeline: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         pipeline: *Pipeline,
         type: ngl.Pipeline.Type,
     ) void,
@@ -469,14 +469,14 @@ pub const VTable = struct {
     initPipelineCache: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         desc: ngl.PipelineCache.Desc,
     ) Error!*PipelineCache,
 
     deinitPipelineCache: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        device: *Device,
+        device: Device,
         pipeline_cache: *PipelineCache,
     ) void,
 };
@@ -522,39 +522,39 @@ pub fn initInstance(
     self: *Self,
     allocator: std.mem.Allocator,
     desc: ngl.Instance.Desc,
-) Error!*Instance {
+) Error!Instance {
     return self.vtable.initInstance(self.ptr, allocator, desc);
 }
 
 pub fn listDevices(
     self: *Self,
     allocator: std.mem.Allocator,
-    instance: *Instance,
+    instance: Instance,
 ) Error![]ngl.Device.Desc {
     return self.vtable.listDevices(self.ptr, allocator, instance);
 }
 
-pub fn deinitInstance(self: *Self, allocator: std.mem.Allocator, instance: *Instance) void {
+pub fn deinitInstance(self: *Self, allocator: std.mem.Allocator, instance: Instance) void {
     self.vtable.deinitInstance(self.ptr, allocator, instance);
 }
 
 pub fn initDevice(
     self: *Self,
     allocator: std.mem.Allocator,
-    instance: *Instance,
+    instance: Instance,
     desc: ngl.Device.Desc,
-) Error!*Device {
+) Error!Device {
     return self.vtable.initDevice(self.ptr, allocator, instance, desc);
 }
 
-pub fn getQueues(self: *Self, allocation: *[ngl.Queue.max]*Queue, device: *Device) []*Queue {
+pub fn getQueues(self: *Self, allocation: *[ngl.Queue.max]Queue, device: Device) []Queue {
     return self.vtable.getQueues(self.ptr, allocation, device);
 }
 
 pub fn getMemoryTypes(
     self: *Self,
     allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
-    device: *Device,
+    device: Device,
 ) []ngl.Memory.Type {
     return self.vtable.getMemoryTypes(self.ptr, allocation, device);
 }
@@ -562,30 +562,30 @@ pub fn getMemoryTypes(
 pub fn allocMemory(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.Memory.Desc,
-) Error!*Memory {
+) Error!Memory {
     return self.vtable.allocMemory(self.ptr, allocator, device, desc);
 }
 
 pub fn freeMemory(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
-    memory: *Memory,
+    device: Device,
+    memory: Memory,
 ) void {
     self.vtable.freeMemory(self.ptr, allocator, device, memory);
 }
 
-pub fn deinitDevice(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
+pub fn deinitDevice(self: *Self, allocator: std.mem.Allocator, device: Device) void {
     self.vtable.deinitDevice(self.ptr, allocator, device);
 }
 
 pub fn submit(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
-    queue: *Queue,
+    device: Device,
+    queue: Queue,
     fence: ?*Fence,
     submits: []const ngl.Queue.Submit,
 ) Error!void {
@@ -594,23 +594,23 @@ pub fn submit(
 
 pub fn mapMemory(
     self: *Self,
-    device: *Device,
-    memory: *Memory,
+    device: Device,
+    memory: Memory,
     offset: usize,
     size: ?usize,
 ) Error![*]u8 {
     return self.vtable.mapMemory(self.ptr, device, memory, offset, size);
 }
 
-pub fn unmapMemory(self: *Self, device: *Device, memory: *Memory) void {
+pub fn unmapMemory(self: *Self, device: Device, memory: Memory) void {
     self.vtable.unmapMemory(self.ptr, device, memory);
 }
 
 pub fn flushMappedMemory(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
-    memory: *Memory,
+    device: Device,
+    memory: Memory,
     offsets: []const usize,
     sizes: ?[]const usize,
 ) Error!void {
@@ -620,8 +620,8 @@ pub fn flushMappedMemory(
 pub fn invalidateMappedMemory(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
-    memory: *Memory,
+    device: Device,
+    memory: Memory,
     offsets: []const usize,
     sizes: ?[]const usize,
 ) Error!void {
@@ -631,7 +631,7 @@ pub fn invalidateMappedMemory(
 pub fn initCommandPool(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.CommandPool.Desc,
 ) Error!*CommandPool {
     return self.vtable.initCommandPool(self.ptr, allocator, device, desc);
@@ -640,7 +640,7 @@ pub fn initCommandPool(
 pub fn allocCommandBuffers(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     command_pool: *CommandPool,
     desc: ngl.CommandBuffer.Desc,
     command_buffers: []ngl.CommandBuffer,
@@ -655,14 +655,14 @@ pub fn allocCommandBuffers(
     );
 }
 
-pub fn resetCommandPool(self: *Self, device: *Device, command_pool: *CommandPool) Error!void {
+pub fn resetCommandPool(self: *Self, device: Device, command_pool: *CommandPool) Error!void {
     return self.vtable.resetCommandPool(self.ptr, device, command_pool);
 }
 
 pub fn freeCommandBuffers(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     command_pool: *CommandPool,
     command_buffers: []const *ngl.CommandBuffer,
 ) void {
@@ -672,7 +672,7 @@ pub fn freeCommandBuffers(
 pub fn deinitCommandPool(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     command_pool: *CommandPool,
 ) void {
     self.vtable.deinitCommandPool(self.ptr, allocator, device, command_pool);
@@ -681,7 +681,7 @@ pub fn deinitCommandPool(
 pub fn initFence(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.Fence.Desc,
 ) Error!*Fence {
     return self.vtable.initFence(self.ptr, allocator, device, desc);
@@ -690,7 +690,7 @@ pub fn initFence(
 pub fn resetFences(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     fences: []const *ngl.Fence,
 ) Error!void {
     return self.vtable.resetFences(self.ptr, allocator, device, fences);
@@ -699,25 +699,25 @@ pub fn resetFences(
 pub fn waitFences(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     timeout: u64,
     fences: []const *ngl.Fence,
 ) Error!void {
     return self.vtable.waitFences(self.ptr, allocator, device, timeout, fences);
 }
 
-pub fn getFenceStatus(self: *Self, device: *Device, fence: *Fence) Error!ngl.Fence.Status {
+pub fn getFenceStatus(self: *Self, device: Device, fence: *Fence) Error!ngl.Fence.Status {
     return self.vtable.getFenceStatus(self.ptr, device, fence);
 }
 
-pub fn deinitFence(self: *Self, allocator: std.mem.Allocator, device: *Device, fence: *Fence) void {
+pub fn deinitFence(self: *Self, allocator: std.mem.Allocator, device: Device, fence: *Fence) void {
     self.vtable.deinitFence(self.ptr, allocator, device, fence);
 }
 
 pub fn initSemaphore(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.Semaphore.Desc,
 ) Error!*Semaphore {
     return self.vtable.initSemaphore(self.ptr, allocator, device, desc);
@@ -726,7 +726,7 @@ pub fn initSemaphore(
 pub fn deinitSemaphore(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     semaphore: *Semaphore,
 ) void {
     self.vtable.deinitSemaphore(self.ptr, allocator, device, semaphore);
@@ -735,7 +735,7 @@ pub fn deinitSemaphore(
 pub fn initBuffer(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.Buffer.Desc,
 ) Error!*Buffer {
     return self.vtable.initBuffer(self.ptr, allocator, device, desc);
@@ -743,7 +743,7 @@ pub fn initBuffer(
 
 pub fn getMemoryRequirementsBuffer(
     self: *Self,
-    device: *Device,
+    device: Device,
     buffer: *Buffer,
 ) ngl.Memory.Requirements {
     return self.vtable.getMemoryRequirementsBuffer(self.ptr, device, buffer);
@@ -751,9 +751,9 @@ pub fn getMemoryRequirementsBuffer(
 
 pub fn bindMemoryBuffer(
     self: *Self,
-    device: *Device,
+    device: Device,
     buffer: *Buffer,
-    memory: *Memory,
+    memory: Memory,
     memory_offset: usize,
 ) Error!void {
     return self.vtable.bindMemoryBuffer(self.ptr, device, buffer, memory, memory_offset);
@@ -762,7 +762,7 @@ pub fn bindMemoryBuffer(
 pub fn deinitBuffer(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     buffer: *Buffer,
 ) void {
     self.vtable.deinitBuffer(self.ptr, allocator, device, buffer);
@@ -771,7 +771,7 @@ pub fn deinitBuffer(
 pub fn initBufferView(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.BufferView.Desc,
 ) Error!*BufferView {
     return self.vtable.initBufferView(self.ptr, allocator, device, desc);
@@ -780,7 +780,7 @@ pub fn initBufferView(
 pub fn deinitBufferView(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     buffer_view: *BufferView,
 ) void {
     self.vtable.deinitBufferView(self.ptr, allocator, device, buffer_view);
@@ -789,19 +789,19 @@ pub fn deinitBufferView(
 pub fn initImage(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.Image.Desc,
 ) Error!*Image {
     return self.vtable.initImage(self.ptr, allocator, device, desc);
 }
 
-pub fn deinitImage(self: *Self, allocator: std.mem.Allocator, device: *Device, image: *Image) void {
+pub fn deinitImage(self: *Self, allocator: std.mem.Allocator, device: Device, image: *Image) void {
     self.vtable.deinitImage(self.ptr, allocator, device, image);
 }
 
 pub fn getMemoryRequirementsImage(
     self: *Self,
-    device: *Device,
+    device: Device,
     image: *Image,
 ) ngl.Memory.Requirements {
     return self.vtable.getMemoryRequirementsImage(self.ptr, device, image);
@@ -809,9 +809,9 @@ pub fn getMemoryRequirementsImage(
 
 pub fn bindMemoryImage(
     self: *Self,
-    device: *Device,
+    device: Device,
     image: *Image,
-    memory: *Memory,
+    memory: Memory,
     memory_offset: usize,
 ) Error!void {
     return self.vtable.bindMemoryImage(self.ptr, device, image, memory, memory_offset);
@@ -820,7 +820,7 @@ pub fn bindMemoryImage(
 pub fn initImageView(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.ImageView.Desc,
 ) Error!*ImageView {
     return self.vtable.initImageView(self.ptr, allocator, device, desc);
@@ -829,7 +829,7 @@ pub fn initImageView(
 pub fn deinitImageView(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     image_view: *ImageView,
 ) void {
     self.vtable.deinitImageView(self.ptr, allocator, device, image_view);
@@ -838,7 +838,7 @@ pub fn deinitImageView(
 pub fn initSampler(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.Sampler.Desc,
 ) Error!*Sampler {
     return self.vtable.initSampler(self.ptr, allocator, device, desc);
@@ -847,7 +847,7 @@ pub fn initSampler(
 pub fn deinitSampler(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     sampler: *Sampler,
 ) void {
     self.vtable.deinitSampler(self.ptr, allocator, device, sampler);
@@ -856,7 +856,7 @@ pub fn deinitSampler(
 pub fn initRenderPass(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.RenderPass.Desc,
 ) Error!*RenderPass {
     return self.vtable.initRenderPass(self.ptr, allocator, device, desc);
@@ -865,7 +865,7 @@ pub fn initRenderPass(
 pub fn deinitRenderPass(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     render_pass: *RenderPass,
 ) void {
     self.vtable.deinitRenderPass(self.ptr, allocator, device, render_pass);
@@ -874,7 +874,7 @@ pub fn deinitRenderPass(
 pub fn initFrameBuffer(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.FrameBuffer.Desc,
 ) Error!*FrameBuffer {
     return self.vtable.initFrameBuffer(self.ptr, allocator, device, desc);
@@ -883,7 +883,7 @@ pub fn initFrameBuffer(
 pub fn deinitFrameBuffer(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     frame_buffer: *FrameBuffer,
 ) void {
     self.vtable.deinitFrameBuffer(self.ptr, allocator, device, frame_buffer);
@@ -892,7 +892,7 @@ pub fn deinitFrameBuffer(
 pub fn initDescriptorSetLayout(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.DescriptorSetLayout.Desc,
 ) Error!*DescriptorSetLayout {
     return self.vtable.initDescriptorSetLayout(self.ptr, allocator, device, desc);
@@ -901,7 +901,7 @@ pub fn initDescriptorSetLayout(
 pub fn deinitDescriptorSetLayout(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     descriptor_set_layout: *DescriptorSetLayout,
 ) void {
     self.vtable.deinitDescriptorSetLayout(self.ptr, allocator, device, descriptor_set_layout);
@@ -910,7 +910,7 @@ pub fn deinitDescriptorSetLayout(
 pub fn initPipelineLayout(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.PipelineLayout.Desc,
 ) Error!*PipelineLayout {
     return self.vtable.initPipelineLayout(self.ptr, allocator, device, desc);
@@ -919,7 +919,7 @@ pub fn initPipelineLayout(
 pub fn deinitPipelineLayout(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     pipeline_layout: *PipelineLayout,
 ) void {
     self.vtable.deinitPipelineLayout(self.ptr, allocator, device, pipeline_layout);
@@ -928,7 +928,7 @@ pub fn deinitPipelineLayout(
 pub fn initDescriptorPool(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.DescriptorPool.Desc,
 ) Error!*DescriptorPool {
     return self.vtable.initDescriptorPool(self.ptr, allocator, device, desc);
@@ -937,7 +937,7 @@ pub fn initDescriptorPool(
 pub fn allocDescriptorSets(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     descriptor_pool: *DescriptorPool,
     desc: ngl.DescriptorSet.Desc,
     descriptor_sets: []ngl.DescriptorSet,
@@ -955,7 +955,7 @@ pub fn allocDescriptorSets(
 pub fn deinitDescriptorPool(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     descriptor_pool: *DescriptorPool,
 ) void {
     self.vtable.deinitDescriptorPool(self.ptr, allocator, device, descriptor_pool);
@@ -964,7 +964,7 @@ pub fn deinitDescriptorPool(
 pub fn initPipelinesGraphics(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.Pipeline.Desc(ngl.GraphicsState),
     pipelines: []ngl.Pipeline,
 ) Error!void {
@@ -974,7 +974,7 @@ pub fn initPipelinesGraphics(
 pub fn initPipelinesCompute(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.Pipeline.Desc(ngl.ComputeState),
     pipelines: []ngl.Pipeline,
 ) Error!void {
@@ -984,7 +984,7 @@ pub fn initPipelinesCompute(
 pub fn deinitPipeline(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     pipeline: *Pipeline,
     @"type": ngl.Pipeline.Type,
 ) void {
@@ -994,7 +994,7 @@ pub fn deinitPipeline(
 pub fn initPipelineCache(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     desc: ngl.PipelineCache.Desc,
 ) Error!*PipelineCache {
     return self.vtable.initPipelineCache(self.ptr, allocator, device, desc);
@@ -1003,7 +1003,7 @@ pub fn initPipelineCache(
 pub fn deinitPipelineCache(
     self: *Self,
     allocator: std.mem.Allocator,
-    device: *Device,
+    device: Device,
     pipeline_cache: *PipelineCache,
 ) void {
     self.vtable.deinitPipelineCache(self.ptr, allocator, device, pipeline_cache);
