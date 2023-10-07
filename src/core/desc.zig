@@ -2,6 +2,10 @@ const std = @import("std");
 
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
+const Buffer = ngl.Buffer;
+const BufferView = ngl.BufferView;
+const Image = ngl.Image;
+const ImageView = ngl.ImageView;
 const Sampler = ngl.Sampler;
 const ShaderStage = ngl.ShaderStage;
 const Error = ngl.Error;
@@ -141,4 +145,45 @@ pub const DescriptorSet = struct {
         // TODO: Layout plus count pairs
         layouts: []const *const DescriptorSetLayout,
     };
+
+    pub const Write = struct {
+        descriptor_set: *Self,
+        binding: u32,
+        element: u32,
+        contents: union(DescriptorType) {
+            sampler: []const *Sampler,
+            combined_image_sampler: []const ImageSamplerWrite,
+            sampled_image: []const ImageWrite,
+            storage_image: []const ImageWrite,
+            uniform_texel_buffer: []const *BufferView,
+            storage_texel_buffer: []const *BufferView,
+            uniform_buffer: []const BufferWrite,
+            storage_buffer: []const BufferWrite,
+            input_attachment: []const ImageWrite,
+        },
+
+        pub const ImageSamplerWrite = struct {
+            view: *ImageView,
+            layout: Image.Layout,
+            // Must be provided if not using immutable samplers
+            sampler: ?*Sampler,
+        };
+
+        pub const ImageWrite = struct {
+            view: *ImageView,
+            layout: Image.Layout,
+        };
+
+        pub const BufferWrite = struct {
+            buffer: *Buffer,
+            offset: u64,
+            range: u64,
+        };
+    };
+
+    const Self = @This();
+
+    pub fn write(allocator: std.mem.Allocator, device: *Device, writes: []const Write) Error!void {
+        return Impl.get().writeDescriptorSets(allocator, device.impl, writes);
+    }
 };

@@ -232,8 +232,9 @@ test {
         .size = 1 << 20,
         .usage = .{
             .storage_texel_buffer = true,
+            .uniform_buffer = true,
             .transfer_source = true,
-            .transfer_dest = false,
+            .transfer_dest = true,
         },
     });
     defer buf.deinit(allocator, &ctx.device);
@@ -271,6 +272,8 @@ test {
         .tiling = .optimal,
         .usage = .{
             .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
             .transfer_source = false,
             .transfer_dest = true,
         },
@@ -475,6 +478,60 @@ test {
     defer allocator.free(desc_sets);
 
     try desc_pool.reset(&ctx.device);
+
+    var desc_sets_2 = try desc_pool.alloc(
+        allocator,
+        &ctx.device,
+        .{ .layouts = &.{ &set_layout_2, &set_layout_2 } },
+    );
+    defer allocator.free(desc_sets_2);
+
+    const set_writes: [3]DescriptorSet.Write = .{
+        .{
+            .descriptor_set = &desc_sets_2[0],
+            .binding = 1,
+            .element = 0,
+            .contents = .{ .combined_image_sampler = &.{
+                .{
+                    .view = &img_view,
+                    .layout = .shader_read_only_optimal,
+                    .sampler = null,
+                },
+                .{
+                    .view = &img_view,
+                    .layout = .shader_read_only_optimal,
+                    .sampler = null,
+                },
+            } },
+        },
+        .{
+            .descriptor_set = &desc_sets_2[1],
+            .binding = 0,
+            .element = 0,
+            .contents = .{ .storage_image = &.{.{
+                .view = &img_view,
+                .layout = .general,
+            }} },
+        },
+        .{
+            .descriptor_set = &desc_sets_2[1],
+            .binding = 2,
+            .element = 1,
+            .contents = .{ .uniform_buffer = &.{
+                .{
+                    .buffer = &buf,
+                    .offset = 0,
+                    .range = 256,
+                },
+                .{
+                    .buffer = &buf,
+                    .offset = 2048,
+                    .range = 1024,
+                },
+            } },
+        },
+    };
+    try DescriptorSet.write(allocator, &ctx.device, &set_writes);
 
     var pl_cache = try PipelineCache.init(allocator, &ctx.device, .{ .initial_data = null });
     defer pl_cache.deinit(allocator, &ctx.device);

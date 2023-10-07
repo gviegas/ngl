@@ -385,6 +385,7 @@ pub const Device = struct {
     destroyDescriptorPool: c.PFN_vkDestroyDescriptorPool,
     resetDescriptorPool: c.PFN_vkResetDescriptorPool,
     allocateDescriptorSets: c.PFN_vkAllocateDescriptorSets,
+    updateDescriptorSets: c.PFN_vkUpdateDescriptorSets,
     createGraphicsPipelines: c.PFN_vkCreateGraphicsPipelines,
     createComputePipelines: c.PFN_vkCreateComputePipelines,
     destroyPipeline: c.PFN_vkDestroyPipeline,
@@ -521,6 +522,7 @@ pub const Device = struct {
             .destroyDescriptorPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyDescriptorPool")),
             .resetDescriptorPool = @ptrCast(try Device.getProc(get, dev, "vkResetDescriptorPool")),
             .allocateDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkAllocateDescriptorSets")),
+            .updateDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkUpdateDescriptorSets")),
             .createGraphicsPipelines = @ptrCast(try Device.getProc(get, dev, "vkCreateGraphicsPipelines")),
             .createComputePipelines = @ptrCast(try Device.getProc(get, dev, "vkCreateComputePipelines")),
             .destroyPipeline = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipeline")),
@@ -1047,6 +1049,22 @@ pub const Device = struct {
         return self.allocateDescriptorSets.?(self.handle, allocate_info, descriptor_sets);
     }
 
+    pub inline fn vkUpdateDescriptorSets(
+        self: *Device,
+        descriptor_write_count: u32,
+        descriptor_writes: ?[*]const c.VkWriteDescriptorSet,
+        descriptor_copy_count: u32,
+        descriptor_copies: ?[*]const c.VkCopyDescriptorSet,
+    ) void {
+        self.updateDescriptorSets.?(
+            self.handle,
+            descriptor_write_count,
+            descriptor_writes,
+            descriptor_copy_count,
+            descriptor_copies,
+        );
+    }
+
     pub inline fn vkCreateGraphicsPipelines(
         self: *Device,
         pipeline_cache: c.VkPipelineCache,
@@ -1417,6 +1435,8 @@ const vtable = Impl.VTable{
     .allocDescriptorSets = @import("desc.zig").DescriptorPool.alloc,
     .resetDescriptorPool = @import("desc.zig").DescriptorPool.reset,
     .deinitDescriptorPool = @import("desc.zig").DescriptorPool.deinit,
+
+    .writeDescriptorSets = @import("desc.zig").DescriptorSet.write,
 
     .initPipelinesGraphics = @import("state.zig").Pipeline.initGraphics,
     .initPipelinesCompute = @import("state.zig").Pipeline.initCompute,

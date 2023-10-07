@@ -448,6 +448,15 @@ pub const VTable = struct {
         descriptor_pool: DescriptorPool,
     ) void,
 
+    // DescriptorSet ---------------------------------------
+
+    writeDescriptorSets: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        writes: []const ngl.DescriptorSet.Write,
+    ) Error!void,
+
     // Pipeline --------------------------------------------
 
     initPipelinesGraphics: *const fn (
@@ -985,6 +994,15 @@ pub fn deinitDescriptorPool(
     descriptor_pool: DescriptorPool,
 ) void {
     self.vtable.deinitDescriptorPool(self.ptr, allocator, device, descriptor_pool);
+}
+
+pub fn writeDescriptorSets(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    writes: []const ngl.DescriptorSet.Write,
+) Error!void {
+    return self.vtable.writeDescriptorSets(self.ptr, allocator, device, writes);
 }
 
 pub fn initPipelinesGraphics(

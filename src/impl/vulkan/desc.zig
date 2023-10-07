@@ -5,8 +5,12 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const null_handle = conv.null_handle;
 const check = conv.check;
 const Device = @import("init.zig").Device;
+const Buffer = @import("res.zig").Buffer;
+const BufferView = @import("res.zig").BufferView;
+const ImageView = @import("res.zig").ImageView;
 const Sampler = @import("res.zig").Sampler;
 
 // TODO: Don't allocate this type on the heap
@@ -276,5 +280,166 @@ pub const DescriptorSet = packed struct {
 
     pub inline fn cast(impl: Impl.DescriptorSet) DescriptorSet {
         return @bitCast(impl.val);
+    }
+
+    pub fn write(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        writes: []const ngl.DescriptorSet.Write,
+    ) Error!void {
+        var desc_set_writes = try allocator.alloc(c.VkWriteDescriptorSet, writes.len);
+        defer allocator.free(desc_set_writes);
+
+        var img_infos: ?[]c.VkDescriptorImageInfo = undefined;
+        var buf_infos: ?[]c.VkDescriptorBufferInfo = undefined;
+        var buf_views: ?[]c.VkBufferView = undefined;
+        {
+            var img_info_n: usize = 0;
+            var buf_info_n: usize = 0;
+            var buf_view_n: usize = 0;
+            for (writes) |w| {
+                switch (w.contents) {
+                    .sampler => |x| img_info_n += x.len,
+                    .combined_image_sampler => |x| img_info_n += x.len,
+                    .sampled_image,
+                    .storage_image,
+                    .input_attachment,
+                    => |x| img_info_n += x.len,
+
+                    .uniform_texel_buffer,
+                    .storage_texel_buffer,
+                    => |x| buf_view_n += x.len,
+
+                    .uniform_buffer,
+                    .storage_buffer,
+                    => |x| buf_info_n += x.len,
+                }
+            }
+
+            img_infos = if (img_info_n > 0) try allocator.alloc(
+                c.VkDescriptorImageInfo,
+                img_info_n,
+            ) else null;
+            errdefer if (img_infos) |x| allocator.free(x);
+
+            buf_infos = if (buf_info_n > 0) try allocator.alloc(
+                c.VkDescriptorBufferInfo,
+                buf_info_n,
+            ) else null;
+            errdefer if (buf_infos) |x| allocator.free(x);
+
+            buf_views = if (buf_view_n > 0) try allocator.alloc(
+                c.VkBufferView,
+                buf_view_n,
+            ) else null;
+        }
+        defer if (img_infos) |x| allocator.free(x);
+        defer if (buf_infos) |x| allocator.free(x);
+        defer if (buf_views) |x| allocator.free(x);
+
+        var img_infos_ptr = if (img_infos) |x| x.ptr else undefined;
+        var buf_infos_ptr = if (buf_infos) |x| x.ptr else undefined;
+        var buf_views_ptr = if (buf_views) |x| x.ptr else undefined;
+
+        for (desc_set_writes, writes) |*dsw, w| {
+            dsw.* = .{
+                .sType = c.VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext = null,
+                .dstSet = cast(w.descriptor_set.impl).handle,
+                .dstBinding = w.binding,
+                .dstArrayElement = w.element,
+                .descriptorCount = undefined, // Set below
+                .descriptorType = conv.toVkDescriptorType(w.contents),
+                .pImageInfo = undefined, // Set below
+                .pBufferInfo = undefined, // Set below
+                .pTexelBufferView = undefined, // Set below
+            };
+
+            switch (w.contents) {
+                .sampler => |x| {
+                    dsw.descriptorCount = @intCast(x.len);
+                    dsw.pImageInfo = img_infos_ptr;
+                    dsw.pBufferInfo = null;
+                    dsw.pTexelBufferView = null;
+                    for (img_infos_ptr, x) |*info, splr|
+                        info.* = .{
+                            .sampler = Sampler.cast(splr.impl).handle,
+                            .imageView = null_handle,
+                            .imageLayout = c.VK_IMAGE_LAYOUT_UNDEFINED,
+                        };
+                    img_infos_ptr += x.len;
+                },
+
+                .combined_image_sampler => |x| {
+                    dsw.descriptorCount = @intCast(x.len);
+                    dsw.pImageInfo = img_infos_ptr;
+                    dsw.pBufferInfo = null;
+                    dsw.pTexelBufferView = null;
+                    for (img_infos_ptr, x) |*info, img_splr|
+                        info.* = .{
+                            .sampler = if (img_splr.sampler) |s|
+                                Sampler.cast(s.impl).handle
+                            else
+                                null_handle,
+                            .imageView = ImageView.cast(img_splr.view.impl).handle,
+                            .imageLayout = conv.toVkImageLayout(img_splr.layout),
+                        };
+                    img_infos_ptr += x.len;
+                },
+
+                .sampled_image,
+                .storage_image,
+                .input_attachment,
+                => |x| {
+                    dsw.descriptorCount = @intCast(x.len);
+                    dsw.pImageInfo = img_infos_ptr;
+                    dsw.pBufferInfo = null;
+                    dsw.pTexelBufferView = null;
+                    for (img_infos_ptr, x) |*info, image|
+                        info.* = .{
+                            .sampler = null_handle,
+                            .imageView = ImageView.cast(image.view.impl).handle,
+                            .imageLayout = conv.toVkImageLayout(image.layout),
+                        };
+                    img_infos_ptr += x.len;
+                },
+
+                .uniform_texel_buffer,
+                .storage_texel_buffer,
+                => |x| {
+                    dsw.descriptorCount = @intCast(x.len);
+                    dsw.pImageInfo = null;
+                    dsw.pBufferInfo = null;
+                    dsw.pTexelBufferView = buf_views_ptr;
+                    for (buf_views_ptr, x) |*handle, view|
+                        handle.* = BufferView.cast(view.impl).handle;
+                    buf_views_ptr += x.len;
+                },
+
+                .uniform_buffer,
+                .storage_buffer,
+                => |x| {
+                    dsw.descriptorCount = @intCast(x.len);
+                    dsw.pImageInfo = null;
+                    dsw.pBufferInfo = buf_infos_ptr;
+                    dsw.pTexelBufferView = null;
+                    for (buf_infos_ptr, x) |*info, buf|
+                        info.* = .{
+                            .buffer = Buffer.cast(buf.buffer.impl).handle,
+                            .offset = buf.offset,
+                            .range = buf.range,
+                        };
+                    buf_infos_ptr += x.len;
+                },
+            }
+        }
+
+        Device.cast(device).vkUpdateDescriptorSets(
+            @intCast(desc_set_writes.len),
+            desc_set_writes.ptr,
+            0,
+            null,
+        );
     }
 };
