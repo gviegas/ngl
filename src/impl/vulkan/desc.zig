@@ -245,6 +245,19 @@ pub const DescriptorPool = struct {
             set.impl = .{ .val = @bitCast(DescriptorSet{ .handle = handle }) };
     }
 
+    pub fn reset(
+        _: *anyopaque,
+        device: Impl.Device,
+        descriptor_pool: Impl.DescriptorPool,
+    ) Error!void {
+        // Unused in v1.3
+        const flags: c.VkDescriptorPoolResetFlags = 0;
+        return conv.check(Device.cast(device).vkResetDescriptorPool(
+            cast(descriptor_pool).handle,
+            flags,
+        ));
+    }
+
     pub fn deinit(
         _: *anyopaque,
         allocator: std.mem.Allocator,

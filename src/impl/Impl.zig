@@ -431,6 +431,12 @@ pub const VTable = struct {
         descriptor_sets: []ngl.DescriptorSet,
     ) Error!void,
 
+    resetDescriptorPool: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        descriptor_pool: DescriptorPool,
+    ) Error!void,
+
     deinitDescriptorPool: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -950,6 +956,14 @@ pub fn allocDescriptorSets(
         desc,
         descriptor_sets,
     );
+}
+
+pub fn resetDescriptorPool(
+    self: *Self,
+    device: Device,
+    descriptor_pool: DescriptorPool,
+) Error!void {
+    return self.vtable.resetDescriptorPool(self.ptr, device, descriptor_pool);
 }
 
 pub fn deinitDescriptorPool(

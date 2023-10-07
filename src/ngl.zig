@@ -472,6 +472,8 @@ test {
     var desc_sets = try desc_pool.alloc(allocator, &ctx.device, .{ .layouts = &.{&set_layout} });
     defer allocator.free(desc_sets);
 
+    try desc_pool.reset(&ctx.device);
+
     var pl_cache = try PipelineCache.init(allocator, &ctx.device, .{ .initial_data = null });
     defer pl_cache.deinit(allocator, &ctx.device);
 

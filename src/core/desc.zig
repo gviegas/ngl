@@ -123,6 +123,11 @@ pub const DescriptorPool = struct {
         return desc_sets;
     }
 
+    /// Invalidates all descriptor sets allocated from the pool.
+    pub fn reset(self: *Self, device: *Device) Error!void {
+        return Impl.get().resetDescriptorPool(device.impl, self.impl);
+    }
+
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitDescriptorPool(allocator, device.impl, self.impl);
         self.* = undefined;
