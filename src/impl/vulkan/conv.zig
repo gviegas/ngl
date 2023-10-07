@@ -2,6 +2,26 @@ const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
 const c = @import("../c.zig");
 
+/// Non-dispatchable handles should check against this constant.
+pub const null_handle = switch (@typeInfo(@TypeOf(c.VK_NULL_HANDLE))) {
+    .Optional => null,
+    .Int => 0,
+    else => @compileError("Should never happen"),
+};
+
+/// Returns either a valid non-dispatchable handle or `null`.
+pub inline fn ndhOrNull(handle: anytype) switch (@typeInfo(@TypeOf(null_handle))) {
+    .Null => @TypeOf(handle),
+    .ComptimeInt => ?@TypeOf(handle),
+    else => @compileError("Should never happen"),
+} {
+    return switch (@typeInfo(@TypeOf(null_handle))) {
+        .Null => handle orelse null,
+        .ComptimeInt => if (handle != 0) handle else null,
+        else => @compileError("Should never happen"),
+    };
+}
+
 /// Anything other than `VK_SUCCESS` produces an `Error`.
 pub fn check(result: c.VkResult) Error!void {
     return switch (result) {
