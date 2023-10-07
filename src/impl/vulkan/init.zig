@@ -8,6 +8,7 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const null_handle = conv.null_handle;
 const CommandBuffer = @import("cmd.zig").CommandBuffer;
 const Fence = @import("sync.zig").Fence;
 const Semaphore = @import("sync.zig").Semaphore;
@@ -1221,7 +1222,7 @@ pub const Queue = struct {
             cast(queue).handle,
             @intCast(submits.len), // Note `submits`
             if (submits.len > 0) subm_infos.ptr else null,
-            if (fence) |x| Fence.cast(x).handle else null,
+            if (fence) |x| Fence.cast(x).handle else null_handle,
         ));
     }
 };

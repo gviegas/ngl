@@ -5,6 +5,8 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const null_handle = conv.null_handle;
+const ndhOrNull = conv.ndhOrNull;
 const Device = @import("init.zig").Device;
 const PipelineLayout = @import("desc.zig").PipelineLayout;
 const RenderPass = @import("pass.zig").RenderPass;
@@ -223,10 +225,13 @@ pub const Pipeline = struct {
                 .pDynamicState = &defaults.dynamic_state,
                 .layout = PipelineLayout.cast(state.layout.impl).handle,
                 // TODO: Disallow null render pass/subpass
-                .renderPass = if (state.render_pass) |x| RenderPass.cast(x.impl).handle else null,
+                .renderPass = if (state.render_pass) |x|
+                    RenderPass.cast(x.impl).handle
+                else
+                    null_handle,
                 .subpass = state.subpass orelse 0,
                 // TODO: Expose these
-                .basePipelineHandle = null,
+                .basePipelineHandle = null_handle,
                 .basePipelineIndex = -1,
             };
 
@@ -430,7 +435,7 @@ pub const Pipeline = struct {
         defer if (module_create_infos.len > 0) allocator.free(module_create_infos);
 
         errdefer for (stages) |s| {
-            if (s.module == null) break;
+            if (s.module == null_handle) break;
             dev.vkDestroyShaderModule(s.module, null);
         };
 
@@ -439,7 +444,7 @@ pub const Pipeline = struct {
             // TODO...
         } else {
             for (create_infos, desc.states) |*info, state| {
-                errdefer stages_ptr[0].module = null;
+                errdefer stages_ptr[0].module = null_handle;
 
                 info.*.pStages = stages.ptr;
 
@@ -471,7 +476,7 @@ pub const Pipeline = struct {
         defer allocator.free(handles);
 
         try conv.check(dev.vkCreateGraphicsPipelines(
-            if (desc.cache) |x| PipelineCache.cast(x.impl).handle else null,
+            if (desc.cache) |x| PipelineCache.cast(x.impl).handle else null_handle,
             @intCast(create_infos.len),
             create_infos.ptr,
             null,
@@ -489,7 +494,7 @@ pub const Pipeline = struct {
                 return err;
             };
             std.debug.assert(s.stages.len <= max_stage);
-            @memset(ptr.modules[s.stages.len..], null);
+            @memset(ptr.modules[s.stages.len..], null_handle);
             ptr.handle = h;
             for (0..s.stages.len) |j| ptr.modules[j] = stages_ptr[j].module;
             stages_ptr += s.stages.len;
@@ -517,7 +522,7 @@ pub const Pipeline = struct {
                 .stage = undefined, // Set below
                 .layout = PipelineLayout.cast(state.layout.impl).handle,
                 // TODO: Expose these
-                .basePipelineHandle = null,
+                .basePipelineHandle = null_handle,
                 .basePipelineIndex = -1,
             };
         }
@@ -528,7 +533,7 @@ pub const Pipeline = struct {
         var modules = try allocator.alloc(c.VkShaderModule, desc.states.len);
         defer allocator.free(modules);
         errdefer for (modules) |m| {
-            if (m == null) break;
+            if (m == null_handle) break;
             dev.vkDestroyShaderModule(m, null);
         };
 
@@ -537,7 +542,7 @@ pub const Pipeline = struct {
             // TODO...
         } else {
             for (desc.states, modules, create_infos) |state, *module, *info| {
-                errdefer module.* = null;
+                errdefer module.* = null_handle;
 
                 try conv.check(dev.vkCreateShaderModule(&.{
                     .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -563,7 +568,7 @@ pub const Pipeline = struct {
         defer allocator.free(handles);
 
         try conv.check(dev.vkCreateComputePipelines(
-            if (desc.cache) |x| PipelineCache.cast(x.impl).handle else null,
+            if (desc.cache) |x| PipelineCache.cast(x.impl).handle else null_handle,
             @intCast(create_infos.len),
             create_infos.ptr,
             null,
@@ -578,7 +583,7 @@ pub const Pipeline = struct {
                 }
                 return err;
             };
-            @memset(ptr.modules[1..], null);
+            @memset(ptr.modules[1..], null_handle);
             ptr.handle = h;
             ptr.modules[0] = modules[i];
             pl.impl = .{ .val = @intFromPtr(ptr) };
@@ -596,7 +601,7 @@ pub const Pipeline = struct {
         const pl = cast(pipeline);
         dev.vkDestroyPipeline(pl.handle, null);
         for (pl.modules) |module|
-            if (module) |m| dev.vkDestroyShaderModule(m, null) else break;
+            if (ndhOrNull(module)) |m| dev.vkDestroyShaderModule(m, null) else break;
         allocator.destroy(pl);
     }
 };

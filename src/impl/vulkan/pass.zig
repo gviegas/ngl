@@ -6,6 +6,7 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const null_handle = conv.null_handle;
 const log = @import("init.zig").log;
 const Device = @import("init.zig").Device;
 
@@ -261,12 +262,8 @@ pub const FrameBuffer = struct {
         var attachs: ?[]c.VkImageView = blk: {
             if (attach_n == 0) break :blk null;
             var handles = try allocator.alloc(c.VkImageView, attach_n);
-            for (handles, desc.attachments.?) |*handle, attach| {
-                handle.* = if (attach) |v|
-                    ImageView.cast(v.impl).handle
-                else
-                    @ptrCast(c.VK_NULL_HANDLE);
-            }
+            for (handles, desc.attachments.?) |*handle, attach|
+                handle.* = if (attach) |v| ImageView.cast(v.impl).handle else null_handle;
             break :blk handles;
         };
         defer if (attachs) |x| allocator.free(x);
