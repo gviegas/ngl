@@ -79,6 +79,10 @@ pub const Device = struct {
         memory.* = undefined;
     }
 
+    pub fn wait(self: *Self) Error!void {
+        return Impl.get().waitDevice(self.impl);
+    }
+
     pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
         Impl.get().deinitDevice(allocator, self.impl);
         self.* = undefined;

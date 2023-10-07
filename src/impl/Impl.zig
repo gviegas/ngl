@@ -102,6 +102,8 @@ pub const VTable = struct {
         memory: Memory,
     ) void,
 
+    waitDevice: *const fn (ctx: *anyopaque, device: Device) Error!void,
+
     deinitDevice: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator, device: Device) void,
 
     // Queue -----------------------------------------------
@@ -583,6 +585,10 @@ pub fn freeMemory(
     memory: Memory,
 ) void {
     self.vtable.freeMemory(self.ptr, allocator, device, memory);
+}
+
+pub fn waitDevice(self: *Self, device: Device) Error!void {
+    return self.vtable.waitDevice(self.ptr, device);
 }
 
 pub fn deinitDevice(self: *Self, allocator: std.mem.Allocator, device: Device) void {

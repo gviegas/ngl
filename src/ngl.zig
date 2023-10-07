@@ -565,6 +565,8 @@ test {
     });
     defer allocator.free(comp_pl);
     defer comp_pl[0].deinit(allocator, &ctx.device);
+
+    try ctx.device.wait();
 }
 
 const test_vert_spv align(4) = [1104]u8{

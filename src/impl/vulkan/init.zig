@@ -337,6 +337,7 @@ pub const Device = struct {
 
     // v1.0
     destroyDevice: c.PFN_vkDestroyDevice,
+    deviceWaitIdle: c.PFN_vkDeviceWaitIdle,
     getDeviceQueue: c.PFN_vkGetDeviceQueue,
     queueSubmit: c.PFN_vkQueueSubmit,
     queueWaitIdle: c.PFN_vkQueueWaitIdle,
@@ -472,6 +473,7 @@ pub const Device = struct {
             .queue_n = 0,
             .getDeviceProcAddr = get,
             .destroyDevice = @ptrCast(try Device.getProc(get, dev, "vkDestroyDevice")),
+            .deviceWaitIdle = @ptrCast(try Device.getProc(get, dev, "vkDeviceWaitIdle")),
             .getDeviceQueue = @ptrCast(try Device.getProc(get, dev, "vkGetDeviceQueue")),
             .queueSubmit = @ptrCast(try Device.getProc(get, dev, "vkQueueSubmit")),
             .queueWaitIdle = @ptrCast(try Device.getProc(get, dev, "vkQueueWaitIdle")),
@@ -626,10 +628,14 @@ pub const Device = struct {
         allocator.destroy(mem);
     }
 
+    fn wait(_: *anyopaque, device: Impl.Device) Error!void {
+        return check(cast(device).vkDeviceWaitIdle());
+    }
+
     fn deinit(_: *anyopaque, allocator: std.mem.Allocator, device: Impl.Device) void {
         const dev = cast(device);
-        // TODO: Need to gate destruction until all
-        // device-level objects have been destroyed
+        // NOTE: This assumes that all device-level objects
+        // have been destroyed
         dev.vkDestroyDevice(null);
         allocator.destroy(dev);
     }
@@ -641,6 +647,10 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.destroyDevice.?(self.handle, vk_allocator);
+    }
+
+    pub inline fn vkDeviceWaitIdle(self: *Device) c.VkResult {
+        return self.deviceWaitIdle.?(self.handle);
     }
 
     pub inline fn vkGetDeviceQueue(
@@ -1346,6 +1356,7 @@ const vtable = Impl.VTable{
     .getMemoryTypes = Device.getMemoryTypes,
     .allocMemory = Device.alloc,
     .freeMemory = Device.free,
+    .waitDevice = Device.wait,
     .deinitDevice = Device.deinit,
 
     .submit = Queue.submit,
