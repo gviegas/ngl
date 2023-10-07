@@ -339,6 +339,7 @@ pub const Device = struct {
     destroyDevice: c.PFN_vkDestroyDevice,
     getDeviceQueue: c.PFN_vkGetDeviceQueue,
     queueSubmit: c.PFN_vkQueueSubmit,
+    queueWaitIdle: c.PFN_vkQueueWaitIdle,
     allocateMemory: c.PFN_vkAllocateMemory,
     freeMemory: c.PFN_vkFreeMemory,
     mapMemory: c.PFN_vkMapMemory,
@@ -473,6 +474,7 @@ pub const Device = struct {
             .destroyDevice = @ptrCast(try Device.getProc(get, dev, "vkDestroyDevice")),
             .getDeviceQueue = @ptrCast(try Device.getProc(get, dev, "vkGetDeviceQueue")),
             .queueSubmit = @ptrCast(try Device.getProc(get, dev, "vkQueueSubmit")),
+            .queueWaitIdle = @ptrCast(try Device.getProc(get, dev, "vkQueueWaitIdle")),
             .allocateMemory = @ptrCast(try Device.getProc(get, dev, "vkAllocateMemory")),
             .freeMemory = @ptrCast(try Device.getProc(get, dev, "vkFreeMemory")),
             .mapMemory = @ptrCast(try Device.getProc(get, dev, "vkMapMemory")),
@@ -658,6 +660,10 @@ pub const Device = struct {
         fence: c.VkFence,
     ) c.VkResult {
         return self.queueSubmit.?(queue, submit_count, submits, fence);
+    }
+
+    pub inline fn vkQueueWaitIdle(self: *Device, queue: c.VkQueue) c.VkResult {
+        return self.queueWaitIdle.?(queue);
     }
 
     pub inline fn vkAllocateMemory(
@@ -1120,7 +1126,7 @@ pub const Queue = struct {
     }
 
     // TODO: Don't allocate on every call
-    pub fn submit(
+    fn submit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
@@ -1199,9 +1205,9 @@ pub const Queue = struct {
             if (subm.wait.len > 0) {
                 info.pWaitSemaphores = semas_ptr;
                 info.pWaitDstStageMask = stages_ptr;
-                for (semas_ptr, stages_ptr, subm.wait) |*handle, *mask, wait| {
-                    handle.* = Semaphore.cast(wait.semaphore.impl).handle;
-                    mask.* = conv.toVkPipelineStageFlags(wait.stage_mask);
+                for (semas_ptr, stages_ptr, subm.wait) |*handle, *mask, wsema| {
+                    handle.* = Semaphore.cast(wsema.semaphore.impl).handle;
+                    mask.* = conv.toVkPipelineStageFlags(wsema.stage_mask);
                 }
                 semas_ptr += subm.wait.len;
                 stages_ptr += subm.wait.len;
@@ -1212,9 +1218,9 @@ pub const Queue = struct {
 
             if (subm.signal.len > 0) {
                 info.pSignalSemaphores = semas_ptr;
-                for (semas_ptr, subm.signal) |*handle, signal|
+                for (semas_ptr, subm.signal) |*handle, ssema|
                     // No signal stage mask on vanilla submission
-                    handle.* = Semaphore.cast(signal.semaphore.impl).handle;
+                    handle.* = Semaphore.cast(ssema.semaphore.impl).handle;
                 semas_ptr += subm.signal.len;
             } else info.pSignalSemaphores = null;
         }
@@ -1225,6 +1231,10 @@ pub const Queue = struct {
             if (submits.len > 0) subm_infos.ptr else null,
             if (fence) |x| Fence.cast(x).handle else null_handle,
         ));
+    }
+
+    fn wait(_: *anyopaque, device: Impl.Device, queue: Impl.Queue) Error!void {
+        return check(Device.cast(device).vkQueueWaitIdle(cast(queue).handle));
     }
 };
 
@@ -1339,6 +1349,7 @@ const vtable = Impl.VTable{
     .deinitDevice = Device.deinit,
 
     .submit = Queue.submit,
+    .waitQueue = Queue.wait,
 
     .mapMemory = Memory.map,
     .unmapMemory = Memory.unmap,

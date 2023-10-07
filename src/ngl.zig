@@ -224,6 +224,8 @@ test {
             .wait = &.{},
             .signal = &.{},
         }});
+
+        try queue.wait(&ctx.device);
     }
 
     var buf = try Buffer.init(allocator, &ctx.device, .{

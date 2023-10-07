@@ -140,6 +140,10 @@ pub const Queue = struct {
             submits,
         );
     }
+
+    pub fn wait(self: *Self, device: *Device) Error!void {
+        return Impl.get().waitQueue(device.impl, self.impl);
+    }
 };
 
 pub const Memory = struct {

@@ -115,6 +115,8 @@ pub const VTable = struct {
         submits: []const ngl.Queue.Submit,
     ) Error!void,
 
+    waitQueue: *const fn (ctx: *anyopaque, device: Device, queue: Queue) Error!void,
+
     // Memory ----------------------------------------------
 
     mapMemory: *const fn (
@@ -596,6 +598,10 @@ pub fn submit(
     submits: []const ngl.Queue.Submit,
 ) Error!void {
     return self.vtable.submit(self.ptr, allocator, device, queue, fence, submits);
+}
+
+pub fn waitQueue(self: *Self, device: Device, queue: Queue) Error!void {
+    return self.vtable.waitQueue(self.ptr, device, queue);
 }
 
 pub fn mapMemory(
