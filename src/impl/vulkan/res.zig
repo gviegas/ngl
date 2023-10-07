@@ -5,6 +5,7 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const check = conv.check;
 const Device = @import("init.zig").Device;
 const Memory = @import("init.zig").Memory;
 
@@ -42,7 +43,7 @@ pub const Buffer = struct {
         };
 
         var buf: c.VkBuffer = undefined;
-        try conv.check(dev.vkCreateBuffer(&.{
+        try check(dev.vkCreateBuffer(&.{
             .sType = c.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -78,7 +79,7 @@ pub const Buffer = struct {
         memory: Impl.Memory,
         memory_offset: usize,
     ) Error!void {
-        try conv.check(Device.cast(device).vkBindBufferMemory(
+        try check(Device.cast(device).vkBindBufferMemory(
             cast(buffer).handle,
             Memory.cast(memory).handle,
             memory_offset,
@@ -119,7 +120,7 @@ pub const BufferView = struct {
         errdefer allocator.destroy(ptr);
 
         var buf_view: c.VkBufferView = undefined;
-        try conv.check(dev.vkCreateBufferView(&.{
+        try check(dev.vkCreateBufferView(&.{
             .sType = c.VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -206,7 +207,7 @@ pub const Image = struct {
         };
 
         var image: c.VkImage = undefined;
-        try conv.check(dev.vkCreateImage(&.{
+        try check(dev.vkCreateImage(&.{
             .sType = c.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .pNext = null,
             .flags = flags,
@@ -249,7 +250,7 @@ pub const Image = struct {
         memory: Impl.Memory,
         memory_offset: usize,
     ) Error!void {
-        try conv.check(Device.cast(device).vkBindImageMemory(
+        try check(Device.cast(device).vkBindImageMemory(
             cast(image).handle,
             Memory.cast(memory).handle,
             memory_offset,
@@ -314,7 +315,7 @@ pub const ImageView = struct {
         };
 
         var img_view: c.VkImageView = undefined;
-        try conv.check(dev.vkCreateImageView(&.{
+        try check(dev.vkCreateImageView(&.{
             .sType = c.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -372,7 +373,7 @@ pub const Sampler = struct {
         }
 
         var splr: c.VkSampler = undefined;
-        try conv.check(dev.vkCreateSampler(&.{
+        try check(dev.vkCreateSampler(&.{
             .sType = c.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
             .pNext = null,
             .flags = 0,

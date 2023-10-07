@@ -5,7 +5,7 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
-const log = @import("init.zig").log;
+const check = conv.check;
 const Device = @import("init.zig").Device;
 const Sampler = @import("res.zig").Sampler;
 
@@ -66,7 +66,7 @@ pub const DescriptorSetLayout = struct {
         errdefer allocator.destroy(ptr);
 
         var set_layout: c.VkDescriptorSetLayout = undefined;
-        try conv.check(dev.vkCreateDescriptorSetLayout(&.{
+        try check(dev.vkCreateDescriptorSetLayout(&.{
             .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -135,7 +135,7 @@ pub const PipelineLayout = struct {
         errdefer allocator.destroy(ptr);
 
         var pl_layout: c.VkPipelineLayout = undefined;
-        try conv.check(dev.vkCreatePipelineLayout(&.{
+        try check(dev.vkCreatePipelineLayout(&.{
             .sType = c.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -199,7 +199,7 @@ pub const DescriptorPool = struct {
         errdefer allocator.destroy(ptr);
 
         var desc_pool: c.VkDescriptorPool = undefined;
-        try conv.check(dev.vkCreateDescriptorPool(&.{
+        try check(dev.vkCreateDescriptorPool(&.{
             .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -239,7 +239,7 @@ pub const DescriptorPool = struct {
             .pSetLayouts = set_layouts.ptr,
         };
 
-        try conv.check(dev.vkAllocateDescriptorSets(&alloc_info, handles.ptr));
+        try check(dev.vkAllocateDescriptorSets(&alloc_info, handles.ptr));
 
         for (descriptor_sets, handles) |*set, handle|
             set.impl = .{ .val = @bitCast(DescriptorSet{ .handle = handle }) };
@@ -252,7 +252,7 @@ pub const DescriptorPool = struct {
     ) Error!void {
         // Unused in v1.3
         const flags: c.VkDescriptorPoolResetFlags = 0;
-        return conv.check(Device.cast(device).vkResetDescriptorPool(
+        return check(Device.cast(device).vkResetDescriptorPool(
             cast(descriptor_pool).handle,
             flags,
         ));

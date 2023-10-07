@@ -5,6 +5,7 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const check = conv.check;
 const Device = @import("init.zig").Device;
 const Queue = @import("init.zig").Queue;
 
@@ -28,7 +29,7 @@ pub const CommandPool = struct {
         errdefer allocator.destroy(ptr);
 
         var cmd_pool: c.VkCommandPool = undefined;
-        try conv.check(dev.vkCreateCommandPool(&.{
+        try check(dev.vkCreateCommandPool(&.{
             .sType = c.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext = null,
             .flags = 0, // TODO: Maybe expose this
@@ -64,7 +65,7 @@ pub const CommandPool = struct {
             .commandBufferCount = desc.count,
         };
 
-        try conv.check(dev.vkAllocateCommandBuffers(&alloc_info, handles.ptr));
+        try check(dev.vkAllocateCommandBuffers(&alloc_info, handles.ptr));
         errdefer dev.vkFreeCommandBuffers(cmd_pool.handle, desc.count, handles.ptr);
 
         for (command_buffers, handles) |*cmd_buf, handle|
@@ -74,7 +75,7 @@ pub const CommandPool = struct {
     pub fn reset(_: *anyopaque, device: Impl.Device, command_pool: Impl.CommandPool) Error!void {
         // TODO: Maybe expose flags
         const flags: c.VkCommandPoolResetFlags = 0;
-        return conv.check(Device.cast(device).vkResetCommandPool(cast(command_pool).handle, flags));
+        return check(Device.cast(device).vkResetCommandPool(cast(command_pool).handle, flags));
     }
 
     pub fn free(

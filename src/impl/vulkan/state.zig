@@ -7,6 +7,7 @@ const c = @import("../c.zig");
 const conv = @import("conv.zig");
 const null_handle = conv.null_handle;
 const ndhOrNull = conv.ndhOrNull;
+const check = conv.check;
 const Device = @import("init.zig").Device;
 const PipelineLayout = @import("desc.zig").PipelineLayout;
 const RenderPass = @import("pass.zig").RenderPass;
@@ -459,7 +460,7 @@ pub const Pipeline = struct {
                         .pSpecializationInfo = null, // TODO
                     };
 
-                    try conv.check(dev.vkCreateShaderModule(&.{
+                    try check(dev.vkCreateShaderModule(&.{
                         .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
                         .pNext = null,
                         .flags = 0,
@@ -475,7 +476,7 @@ pub const Pipeline = struct {
         var handles = try allocator.alloc(c.VkPipeline, create_infos.len);
         defer allocator.free(handles);
 
-        try conv.check(dev.vkCreateGraphicsPipelines(
+        try check(dev.vkCreateGraphicsPipelines(
             if (desc.cache) |x| PipelineCache.cast(x.impl).handle else null_handle,
             @intCast(create_infos.len),
             create_infos.ptr,
@@ -544,7 +545,7 @@ pub const Pipeline = struct {
             for (desc.states, modules, create_infos) |state, *module, *info| {
                 errdefer module.* = null_handle;
 
-                try conv.check(dev.vkCreateShaderModule(&.{
+                try check(dev.vkCreateShaderModule(&.{
                     .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
                     .pNext = null,
                     .flags = 0,
@@ -567,7 +568,7 @@ pub const Pipeline = struct {
         var handles = try allocator.alloc(c.VkPipeline, create_infos.len);
         defer allocator.free(handles);
 
-        try conv.check(dev.vkCreateComputePipelines(
+        try check(dev.vkCreateComputePipelines(
             if (desc.cache) |x| PipelineCache.cast(x.impl).handle else null_handle,
             @intCast(create_infos.len),
             create_infos.ptr,
@@ -626,7 +627,7 @@ pub const PipelineCache = struct {
         errdefer allocator.destroy(ptr);
 
         var pl_cache: c.VkPipelineCache = undefined;
-        try conv.check(dev.vkCreatePipelineCache(&.{
+        try check(dev.vkCreatePipelineCache(&.{
             .sType = c.VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
             .pNext = null,
             .flags = 0,

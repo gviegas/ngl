@@ -9,6 +9,7 @@ const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
 const null_handle = conv.null_handle;
+const check = conv.check;
 const CommandBuffer = @import("cmd.zig").CommandBuffer;
 const Fence = @import("sync.zig").Fence;
 const Semaphore = @import("sync.zig").Semaphore;
@@ -164,7 +165,7 @@ pub const Instance = struct {
             .ppEnabledExtensionNames = null,
         };
         var inst: c.VkInstance = undefined;
-        try conv.check(vkCreateInstance(&create_info, null, &inst));
+        try check(vkCreateInstance(&create_info, null, &inst));
 
         // TODO: Destroy inst on failure
 
@@ -193,11 +194,11 @@ pub const Instance = struct {
         const inst = cast(instance);
 
         var dev_n: u32 = undefined;
-        try conv.check(inst.vkEnumeratePhysicalDevices(&dev_n, null));
+        try check(inst.vkEnumeratePhysicalDevices(&dev_n, null));
         if (dev_n == 0) return Error.NotSupported; // TODO: Need a better error for this
         var devs = try allocator.alloc(c.VkPhysicalDevice, dev_n);
         defer allocator.free(devs);
-        try conv.check(inst.vkEnumeratePhysicalDevices(&dev_n, devs.ptr));
+        try check(inst.vkEnumeratePhysicalDevices(&dev_n, devs.ptr));
 
         var descs = try allocator.alloc(ngl.Device.Desc, dev_n);
         errdefer allocator.free(descs);
@@ -450,7 +451,7 @@ pub const Device = struct {
             .pEnabledFeatures = null, // TODO
         };
         var dev: c.VkDevice = undefined;
-        try conv.check(inst.vkCreateDevice(phys_dev, &create_info, null, &dev));
+        try check(inst.vkCreateDevice(phys_dev, &create_info, null, &dev));
 
         // TODO: Destroy dev on failure
 
@@ -600,7 +601,7 @@ pub const Device = struct {
         errdefer allocator.destroy(ptr);
 
         var mem: c.VkDeviceMemory = undefined;
-        try conv.check(dev.vkAllocateMemory(&.{
+        try check(dev.vkAllocateMemory(&.{
             .sType = c.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             .pNext = null,
             .allocationSize = desc.size,
@@ -1218,7 +1219,7 @@ pub const Queue = struct {
             } else info.pSignalSemaphores = null;
         }
 
-        try conv.check(Device.cast(device).vkQueueSubmit(
+        try check(Device.cast(device).vkQueueSubmit(
             cast(queue).handle,
             @intCast(submits.len), // Note `submits`
             if (submits.len > 0) subm_infos.ptr else null,
@@ -1243,7 +1244,7 @@ pub const Memory = struct {
         size: ?usize,
     ) Error![*]u8 {
         var data: ?*anyopaque = undefined;
-        try conv.check(Device.cast(device).vkMapMemory(
+        try check(Device.cast(device).vkMapMemory(
             cast(memory).handle,
             offset,
             size orelse c.VK_WHOLE_SIZE,
@@ -1297,7 +1298,7 @@ pub const Memory = struct {
             .flush => Device.vkFlushMappedMemoryRanges,
             .invalidate => Device.vkInvalidateMappedMemoryRanges,
         };
-        try conv.check(callable(dev, @intCast(mapped_ranges.len), mapped_ranges.ptr));
+        try check(callable(dev, @intCast(mapped_ranges.len), mapped_ranges.ptr));
     }
 
     fn flushMapped(

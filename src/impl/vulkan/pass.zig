@@ -7,6 +7,7 @@ const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
 const null_handle = conv.null_handle;
+const check = conv.check;
 const log = @import("init.zig").log;
 const Device = @import("init.zig").Device;
 
@@ -222,7 +223,7 @@ pub const RenderPass = struct {
         var ptr = try allocator.create(RenderPass);
         errdefer allocator.destroy(ptr);
         var rp: c.VkRenderPass = undefined;
-        try conv.check(dev.vkCreateRenderPass(&create_info, null, &rp));
+        try check(dev.vkCreateRenderPass(&create_info, null, &rp));
 
         ptr.* = .{ .handle = rp };
         return .{ .val = @intFromPtr(ptr) };
@@ -272,7 +273,7 @@ pub const FrameBuffer = struct {
         errdefer allocator.destroy(ptr);
 
         var fb: c.VkFramebuffer = undefined;
-        try conv.check(dev.vkCreateFramebuffer(&.{
+        try check(dev.vkCreateFramebuffer(&.{
             .sType = c.VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             .pNext = null,
             .flags = 0,

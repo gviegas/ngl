@@ -5,6 +5,7 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const check = conv.check;
 const Device = @import("init.zig").Device;
 
 // TODO: Don't allocate this type on the heap
@@ -27,7 +28,7 @@ pub const Fence = struct {
         errdefer allocator.destroy(ptr);
 
         var fence: c.VkFence = undefined;
-        try conv.check(dev.vkCreateFence(&.{
+        try check(dev.vkCreateFence(&.{
             .sType = c.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .pNext = null,
             .flags = switch (desc.initial_status) {
@@ -53,7 +54,7 @@ pub const Fence = struct {
         for (fncs, fences) |*handle, fence|
             handle.* = cast(fence.impl).handle;
 
-        return conv.check(Device.cast(device).vkResetFences(@intCast(fncs.len), fncs.ptr));
+        return check(Device.cast(device).vkResetFences(@intCast(fncs.len), fncs.ptr));
     }
 
     pub fn wait(
@@ -70,7 +71,7 @@ pub const Fence = struct {
         for (fncs, fences) |*handle, fence|
             handle.* = cast(fence.impl).handle;
 
-        return conv.check(Device.cast(device).vkWaitForFences(
+        return check(Device.cast(device).vkWaitForFences(
             @intCast(fncs.len),
             fncs.ptr,
             c.VK_TRUE, // TODO: Maybe expose this
@@ -83,7 +84,7 @@ pub const Fence = struct {
         device: Impl.Device,
         fence: Impl.Fence,
     ) Error!ngl.Fence.Status {
-        conv.check(Device.cast(device).vkGetFenceStatus(cast(fence).handle)) catch |err| {
+        check(Device.cast(device).vkGetFenceStatus(cast(fence).handle)) catch |err| {
             if (err == Error.NotReady) return .unsignaled;
             return err;
         };
@@ -123,7 +124,7 @@ pub const Semaphore = struct {
         errdefer allocator.destroy(ptr);
 
         var sema: c.VkSemaphore = undefined;
-        try conv.check(dev.vkCreateSemaphore(&.{
+        try check(dev.vkCreateSemaphore(&.{
             .sType = c.VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
             .pNext = null,
             .flags = 0,
