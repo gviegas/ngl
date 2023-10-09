@@ -190,7 +190,20 @@ pub const VTable = struct {
 
     // CommandBuffer ---------------------------------------
 
-    // TODO
+    beginCommandBuffer: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        desc: ngl.CommandBuffer.Cmd.Desc,
+    ) Error!void,
+
+    endCommandBuffer: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+    ) Error!void,
 
     // Fence -----------------------------------------------
 
@@ -703,6 +716,25 @@ pub fn deinitCommandPool(
     command_pool: CommandPool,
 ) void {
     self.vtable.deinitCommandPool(self.ptr, allocator, device, command_pool);
+}
+
+pub fn beginCommandBuffer(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    desc: ngl.CommandBuffer.Cmd.Desc,
+) Error!void {
+    return self.vtable.beginCommandBuffer(self.ptr, allocator, device, command_buffer, desc);
+}
+
+pub fn endCommandBuffer(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+) Error!void {
+    return self.vtable.endCommandBuffer(self.ptr, allocator, device, command_buffer);
 }
 
 pub fn initFence(

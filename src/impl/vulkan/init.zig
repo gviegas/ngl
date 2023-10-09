@@ -352,6 +352,8 @@ pub const Device = struct {
     resetCommandPool: c.PFN_vkResetCommandPool,
     allocateCommandBuffers: c.PFN_vkAllocateCommandBuffers,
     freeCommandBuffers: c.PFN_vkFreeCommandBuffers,
+    beginCommandBuffer: c.PFN_vkBeginCommandBuffer,
+    endCommandBuffer: c.PFN_vkEndCommandBuffer,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
     getFenceStatus: c.PFN_vkGetFenceStatus,
@@ -489,6 +491,8 @@ pub const Device = struct {
             .resetCommandPool = @ptrCast(try Device.getProc(get, dev, "vkResetCommandPool")),
             .allocateCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkAllocateCommandBuffers")),
             .freeCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkFreeCommandBuffers")),
+            .beginCommandBuffer = @ptrCast(try Device.getProc(get, dev, "vkBeginCommandBuffer")),
+            .endCommandBuffer = @ptrCast(try Device.getProc(get, dev, "vkEndCommandBuffer")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
             .getFenceStatus = @ptrCast(try Device.getProc(get, dev, "vkGetFenceStatus")),
@@ -766,6 +770,18 @@ pub const Device = struct {
         command_buffers: [*]const c.VkCommandBuffer,
     ) void {
         self.freeCommandBuffers.?(self.handle, command_pool, command_buffer_count, command_buffers);
+    }
+
+    pub inline fn vkBeginCommandBuffer(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        begin_info: *const c.VkCommandBufferBeginInfo,
+    ) c.VkResult {
+        return self.beginCommandBuffer.?(command_buffer, begin_info);
+    }
+
+    pub inline fn vkEndCommandBuffer(self: *Device, command_buffer: c.VkCommandBuffer) c.VkResult {
+        return self.endCommandBuffer.?(command_buffer);
     }
 
     pub inline fn vkCreateFence(
@@ -1390,6 +1406,9 @@ const vtable = Impl.VTable{
     .resetCommandPool = @import("cmd.zig").CommandPool.reset,
     .freeCommandBuffers = @import("cmd.zig").CommandPool.free,
     .deinitCommandPool = @import("cmd.zig").CommandPool.deinit,
+
+    .beginCommandBuffer = @import("cmd.zig").CommandBuffer.begin,
+    .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 
     .initFence = @import("sync.zig").Fence.init,
     .resetFences = @import("sync.zig").Fence.reset,

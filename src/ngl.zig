@@ -623,6 +623,27 @@ test {
     defer allocator.free(comp_pl);
     defer comp_pl[0].deinit(allocator, &ctx.device);
 
+    {
+        const cb_sec = try cmd_pool.alloc(allocator, &ctx.device, .{
+            .level = .secondary,
+            .count = 1,
+        });
+        defer allocator.free(cb_sec);
+        try cmd_pool.reset(&ctx.device);
+
+        var cmd = try cmd_bufs[0].begin(allocator, &ctx.device, .{
+            .one_time_submit = true,
+            .secondary = .{
+                .render_pass_continue = true,
+                .render_pass = &rp,
+                .subpass = 0,
+                .frame_buffer = &fb,
+            },
+        });
+
+        try cmd.end();
+    }
+
     try ctx.device.wait();
 }
 

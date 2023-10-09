@@ -3,6 +3,8 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
 const Queue = ngl.Queue;
+const RenderPass = ngl.RenderPass;
+const FrameBuffer = ngl.FrameBuffer;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
@@ -69,4 +71,45 @@ pub const CommandBuffer = struct {
     };
 
     const Self = @This();
+
+    /// It must be paired with `Cmd.end`.
+    pub fn begin(
+        self: *Self,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        desc: Cmd.Desc,
+    ) Error!Cmd {
+        try Impl.get().beginCommandBuffer(allocator, device.impl, self.impl, desc);
+        return .{
+            .command_buffer = self,
+            .device = device,
+            .allocator = allocator,
+        };
+    }
+
+    pub const Cmd = struct {
+        command_buffer: *Self,
+        device: *Device,
+        allocator: std.mem.Allocator,
+
+        pub const Desc = struct {
+            one_time_submit: bool,
+            secondary: ?struct {
+                render_pass_continue: bool,
+                render_pass: *const RenderPass,
+                subpass: RenderPass.Index,
+                frame_buffer: *const FrameBuffer,
+            },
+        };
+
+        /// Invalidates `self`.
+        pub fn end(self: *Cmd) Error!void {
+            defer self.* = undefined;
+            return Impl.get().endCommandBuffer(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+            );
+        }
+    };
 };

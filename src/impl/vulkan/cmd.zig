@@ -8,6 +8,8 @@ const conv = @import("conv.zig");
 const check = conv.check;
 const Device = @import("init.zig").Device;
 const Queue = @import("init.zig").Queue;
+const RenderPass = @import("pass.zig").RenderPass;
+const FrameBuffer = @import("pass.zig").FrameBuffer;
 
 pub const CommandPool = struct {
     handle: c.VkCommandPool,
@@ -121,5 +123,51 @@ pub const CommandBuffer = packed struct {
 
     pub inline fn cast(impl: Impl.CommandBuffer) CommandBuffer {
         return @bitCast(impl.val);
+    }
+
+    pub fn begin(
+        _: *anyopaque,
+        _: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        desc: ngl.CommandBuffer.Cmd.Desc,
+    ) Error!void {
+        const flags = blk: {
+            var flags: c.VkCommandBufferUsageFlags = 0;
+            if (desc.one_time_submit)
+                flags |= c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+            if (desc.secondary != null and desc.secondary.?.render_pass_continue)
+                flags |= c.VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+            // Disallow simultaneous use
+            break :blk flags;
+        };
+
+        const inher_info = if (desc.secondary) |x| &c.VkCommandBufferInheritanceInfo{
+            .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+            .pNext = null,
+            .renderPass = RenderPass.cast(x.render_pass.impl).handle,
+            .subpass = x.subpass,
+            .framebuffer = FrameBuffer.cast(x.frame_buffer.impl).handle,
+            // TODO: Expose these
+            .occlusionQueryEnable = c.VK_FALSE,
+            .queryFlags = 0,
+            .pipelineStatistics = 0,
+        } else null;
+
+        return check(Device.cast(device).vkBeginCommandBuffer(cast(command_buffer).handle, &.{
+            .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .pNext = null,
+            .flags = flags,
+            .pInheritanceInfo = inher_info,
+        }));
+    }
+
+    pub fn end(
+        _: *anyopaque,
+        _: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+    ) Error!void {
+        return check(Device.cast(device).vkEndCommandBuffer(cast(command_buffer).handle));
     }
 };
