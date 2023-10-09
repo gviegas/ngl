@@ -10,6 +10,7 @@ const Device = @import("init.zig").Device;
 const Queue = @import("init.zig").Queue;
 const RenderPass = @import("pass.zig").RenderPass;
 const FrameBuffer = @import("pass.zig").FrameBuffer;
+const Pipeline = @import("state.zig").Pipeline;
 
 pub const CommandPool = struct {
     handle: c.VkCommandPool,
@@ -160,6 +161,20 @@ pub const CommandBuffer = packed struct {
             .flags = flags,
             .pInheritanceInfo = inher_info,
         }));
+    }
+
+    pub fn setPipeline(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        @"type": ngl.Pipeline.Type,
+        pipeline: Impl.Pipeline,
+    ) void {
+        return Device.cast(device).vkCmdBindPipeline(
+            cast(command_buffer).handle,
+            conv.toVkPipelineBindPoint(@"type"),
+            Pipeline.cast(pipeline).handle,
+        );
     }
 
     pub fn end(

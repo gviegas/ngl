@@ -354,6 +354,7 @@ pub const Device = struct {
     freeCommandBuffers: c.PFN_vkFreeCommandBuffers,
     beginCommandBuffer: c.PFN_vkBeginCommandBuffer,
     endCommandBuffer: c.PFN_vkEndCommandBuffer,
+    cmdBindPipeline: c.PFN_vkCmdBindPipeline,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
     getFenceStatus: c.PFN_vkGetFenceStatus,
@@ -493,6 +494,7 @@ pub const Device = struct {
             .freeCommandBuffers = @ptrCast(try Device.getProc(get, dev, "vkFreeCommandBuffers")),
             .beginCommandBuffer = @ptrCast(try Device.getProc(get, dev, "vkBeginCommandBuffer")),
             .endCommandBuffer = @ptrCast(try Device.getProc(get, dev, "vkEndCommandBuffer")),
+            .cmdBindPipeline = @ptrCast(try Device.getProc(get, dev, "vkCmdBindPipeline")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
             .getFenceStatus = @ptrCast(try Device.getProc(get, dev, "vkGetFenceStatus")),
@@ -782,6 +784,15 @@ pub const Device = struct {
 
     pub inline fn vkEndCommandBuffer(self: *Device, command_buffer: c.VkCommandBuffer) c.VkResult {
         return self.endCommandBuffer.?(command_buffer);
+    }
+
+    pub inline fn vkCmdBindPipeline(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        pipeline_bind_point: c.VkPipelineBindPoint,
+        pipeline: c.VkPipeline,
+    ) void {
+        self.cmdBindPipeline.?(command_buffer, pipeline_bind_point, pipeline);
     }
 
     pub inline fn vkCreateFence(
@@ -1408,6 +1419,7 @@ const vtable = Impl.VTable{
     .deinitCommandPool = @import("cmd.zig").CommandPool.deinit,
 
     .beginCommandBuffer = @import("cmd.zig").CommandBuffer.begin,
+    .setPipeline = @import("cmd.zig").CommandBuffer.setPipeline,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 
     .initFence = @import("sync.zig").Fence.init,

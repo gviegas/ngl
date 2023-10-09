@@ -198,6 +198,14 @@ pub const VTable = struct {
         desc: ngl.CommandBuffer.Cmd.Desc,
     ) Error!void,
 
+    setPipeline: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        type: ngl.Pipeline.Type,
+        pipeline: Pipeline,
+    ) void,
+
     endCommandBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -726,6 +734,16 @@ pub fn beginCommandBuffer(
     desc: ngl.CommandBuffer.Cmd.Desc,
 ) Error!void {
     return self.vtable.beginCommandBuffer(self.ptr, allocator, device, command_buffer, desc);
+}
+
+pub fn setPipeline(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    @"type": ngl.Pipeline.Type,
+    pipeline: Pipeline,
+) void {
+    self.vtable.setPipeline(self.ptr, device, command_buffer, @"type", pipeline);
 }
 
 pub fn endCommandBuffer(

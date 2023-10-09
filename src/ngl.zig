@@ -641,6 +641,8 @@ test {
             },
         });
 
+        cmd.setPipeline(&graph_pl[0]);
+
         try cmd.end();
     }
 

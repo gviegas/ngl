@@ -5,6 +5,7 @@ const Device = ngl.Device;
 const Queue = ngl.Queue;
 const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
+const Pipeline = ngl.Pipeline;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
@@ -101,6 +102,16 @@ pub const CommandBuffer = struct {
                 frame_buffer: *const FrameBuffer,
             },
         };
+
+        /// Pipelines of different `Pipeline.Type`s can coexist.
+        pub fn setPipeline(self: *Cmd, pipeline: *Pipeline) void {
+            Impl.get().setPipeline(
+                self.device.impl,
+                self.command_buffer.impl,
+                pipeline.type,
+                pipeline.impl,
+            );
+        }
 
         /// Invalidates `self`.
         pub fn end(self: *Cmd) Error!void {
