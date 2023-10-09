@@ -5,6 +5,8 @@ const Device = ngl.Device;
 const Queue = ngl.Queue;
 const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
+const PipelineLayout = ngl.PipelineLayout;
+const DescriptorSet = ngl.DescriptorSet;
 const Pipeline = ngl.Pipeline;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
@@ -110,6 +112,24 @@ pub const CommandBuffer = struct {
                 self.command_buffer.impl,
                 pipeline.type,
                 pipeline.impl,
+            );
+        }
+
+        pub fn setDescriptors(
+            self: *Cmd,
+            pipeline_type: Pipeline.Type,
+            pipeline_layout: *PipelineLayout,
+            first_set: u32,
+            descriptor_sets: []const *DescriptorSet,
+        ) void {
+            return Impl.get().setDescriptors(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                pipeline_type,
+                pipeline_layout.impl,
+                first_set,
+                descriptor_sets,
             );
         }
 

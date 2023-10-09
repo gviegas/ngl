@@ -10,6 +10,8 @@ const Device = @import("init.zig").Device;
 const Queue = @import("init.zig").Queue;
 const RenderPass = @import("pass.zig").RenderPass;
 const FrameBuffer = @import("pass.zig").FrameBuffer;
+const PipelineLayout = @import("desc.zig").PipelineLayout;
+const DescriptorSet = @import("desc.zig").DescriptorSet;
 const Pipeline = @import("state.zig").Pipeline;
 
 pub const CommandPool = struct {
@@ -174,6 +176,50 @@ pub const CommandBuffer = packed struct {
             cast(command_buffer).handle,
             conv.toVkPipelineBindPoint(@"type"),
             Pipeline.cast(pipeline).handle,
+        );
+    }
+
+    pub fn setDescriptors(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        pipeline_type: ngl.Pipeline.Type,
+        pipeline_layout: Impl.PipelineLayout,
+        first_set: u32,
+        descriptor_sets: []const *ngl.DescriptorSet,
+    ) void {
+        var desc_set: [1]c.VkDescriptorSet = undefined;
+        var desc_sets = if (descriptor_sets.len > 1) allocator.alloc(
+            c.VkDescriptorSet,
+            descriptor_sets.len,
+        ) catch {
+            for (0..descriptor_sets.len) |i|
+                setDescriptors(
+                    undefined,
+                    allocator,
+                    device,
+                    command_buffer,
+                    pipeline_type,
+                    pipeline_layout,
+                    @intCast(first_set + i),
+                    descriptor_sets[i .. i + 1],
+                );
+            return;
+        } else &desc_set;
+
+        for (desc_sets, descriptor_sets) |*handle, set|
+            handle.* = DescriptorSet.cast(set.impl).handle;
+
+        Device.cast(device).vkCmdBindDescriptorSets(
+            cast(command_buffer).handle,
+            conv.toVkPipelineBindPoint(pipeline_type),
+            PipelineLayout.cast(pipeline_layout).handle,
+            first_set,
+            @intCast(desc_sets.len),
+            desc_sets.ptr,
+            0,
+            null,
         );
     }
 

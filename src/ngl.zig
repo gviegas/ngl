@@ -643,6 +643,8 @@ test {
 
         cmd.setPipeline(&graph_pl[0]);
 
+        cmd.setDescriptors(.graphics, &pl_layout, 0, &.{&desc_sets[0]});
+
         try cmd.end();
     }
 

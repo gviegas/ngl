@@ -355,6 +355,7 @@ pub const Device = struct {
     beginCommandBuffer: c.PFN_vkBeginCommandBuffer,
     endCommandBuffer: c.PFN_vkEndCommandBuffer,
     cmdBindPipeline: c.PFN_vkCmdBindPipeline,
+    cmdBindDescriptorSets: c.PFN_vkCmdBindDescriptorSets,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
     getFenceStatus: c.PFN_vkGetFenceStatus,
@@ -495,6 +496,7 @@ pub const Device = struct {
             .beginCommandBuffer = @ptrCast(try Device.getProc(get, dev, "vkBeginCommandBuffer")),
             .endCommandBuffer = @ptrCast(try Device.getProc(get, dev, "vkEndCommandBuffer")),
             .cmdBindPipeline = @ptrCast(try Device.getProc(get, dev, "vkCmdBindPipeline")),
+            .cmdBindDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkCmdBindDescriptorSets")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
             .getFenceStatus = @ptrCast(try Device.getProc(get, dev, "vkGetFenceStatus")),
@@ -793,6 +795,29 @@ pub const Device = struct {
         pipeline: c.VkPipeline,
     ) void {
         self.cmdBindPipeline.?(command_buffer, pipeline_bind_point, pipeline);
+    }
+
+    pub inline fn vkCmdBindDescriptorSets(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        pipeline_bind_point: c.VkPipelineBindPoint,
+        pipeline_layout: c.VkPipelineLayout,
+        first_set: u32,
+        descriptor_set_count: u32,
+        descriptor_sets: [*]const c.VkDescriptorSet,
+        dynamic_offset_count: u32,
+        dynamic_offsets: ?[*]const u32,
+    ) void {
+        self.cmdBindDescriptorSets.?(
+            command_buffer,
+            pipeline_bind_point,
+            pipeline_layout,
+            first_set,
+            descriptor_set_count,
+            descriptor_sets,
+            dynamic_offset_count,
+            dynamic_offsets,
+        );
     }
 
     pub inline fn vkCreateFence(
@@ -1420,6 +1445,7 @@ const vtable = Impl.VTable{
 
     .beginCommandBuffer = @import("cmd.zig").CommandBuffer.begin,
     .setPipeline = @import("cmd.zig").CommandBuffer.setPipeline,
+    .setDescriptors = @import("cmd.zig").CommandBuffer.setDescriptors,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 
     .initFence = @import("sync.zig").Fence.init,

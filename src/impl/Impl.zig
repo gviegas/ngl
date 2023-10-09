@@ -206,6 +206,17 @@ pub const VTable = struct {
         pipeline: Pipeline,
     ) void,
 
+    setDescriptors: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        pipeline_type: ngl.Pipeline.Type,
+        pipeline_layout: PipelineLayout,
+        first_set: u32,
+        descriptor_sets: []const *ngl.DescriptorSet,
+    ) void,
+
     endCommandBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -744,6 +755,28 @@ pub fn setPipeline(
     pipeline: Pipeline,
 ) void {
     self.vtable.setPipeline(self.ptr, device, command_buffer, @"type", pipeline);
+}
+
+pub fn setDescriptors(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    pipeline_type: ngl.Pipeline.Type,
+    pipeline_layout: PipelineLayout,
+    first_set: u32,
+    descriptor_sets: []const *ngl.DescriptorSet,
+) void {
+    self.vtable.setDescriptors(
+        self.ptr,
+        allocator,
+        device,
+        command_buffer,
+        pipeline_type,
+        pipeline_layout,
+        first_set,
+        descriptor_sets,
+    );
 }
 
 pub fn endCommandBuffer(
