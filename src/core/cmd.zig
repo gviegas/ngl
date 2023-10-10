@@ -199,6 +199,22 @@ pub const CommandBuffer = struct {
             Impl.get().setViewport(self.device.impl, self.command_buffer.impl, viewport);
         }
 
+        pub const StencilFace = enum {
+            front,
+            back,
+            front_and_back,
+        };
+
+        /// Only valid for pipelines with unspecified stencil reference.
+        pub fn setStencilReference(self: *Cmd, stencil_face: StencilFace, reference: u32) void {
+            Impl.get().setStencilReference(
+                self.device.impl,
+                self.command_buffer.impl,
+                stencil_face,
+                reference,
+            );
+        }
+
         /// Invalidates `self`.
         pub fn end(self: *Cmd) Error!void {
             defer self.* = undefined;

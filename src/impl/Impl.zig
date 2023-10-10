@@ -255,6 +255,14 @@ pub const VTable = struct {
         viewport: ngl.Viewport,
     ) void,
 
+    setStencilReference: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        stencil_face: ngl.CommandBuffer.Cmd.StencilFace,
+        reference: u32,
+    ) void,
+
     endCommandBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -872,6 +880,16 @@ pub fn setViewport(
     viewport: ngl.Viewport,
 ) void {
     self.vtable.setViewport(self.ptr, device, command_buffer, viewport);
+}
+
+pub fn setStencilReference(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    stencil_face: ngl.CommandBuffer.Cmd.StencilFace,
+    reference: u32,
+) void {
+    self.vtable.setStencilReference(self.ptr, device, command_buffer, stencil_face, reference);
 }
 
 pub fn endCommandBuffer(

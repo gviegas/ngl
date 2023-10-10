@@ -673,6 +673,8 @@ test {
             .far = 0,
         });
 
+        cmd.setStencilReference(.back, 0x80);
+
         try cmd.end();
     }
 

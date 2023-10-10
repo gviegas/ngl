@@ -361,6 +361,7 @@ pub const Device = struct {
     cmdBindVertexBuffers: c.PFN_vkCmdBindVertexBuffers,
     cmdSetViewport: c.PFN_vkCmdSetViewport,
     cmdSetScissor: c.PFN_vkCmdSetScissor,
+    cmdSetStencilReference: c.PFN_vkCmdSetStencilReference,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
     getFenceStatus: c.PFN_vkGetFenceStatus,
@@ -507,6 +508,7 @@ pub const Device = struct {
             .cmdBindVertexBuffers = @ptrCast(try Device.getProc(get, dev, "vkCmdBindVertexBuffers")),
             .cmdSetViewport = @ptrCast(try Device.getProc(get, dev, "vkCmdSetViewport")),
             .cmdSetScissor = @ptrCast(try Device.getProc(get, dev, "vkCmdSetScissor")),
+            .cmdSetStencilReference = @ptrCast(try Device.getProc(get, dev, "vkCmdSetStencilReference")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
             .getFenceStatus = @ptrCast(try Device.getProc(get, dev, "vkGetFenceStatus")),
@@ -881,6 +883,15 @@ pub const Device = struct {
         scissors: [*]const c.VkRect2D,
     ) void {
         self.cmdSetScissor.?(command_buffer, first_scissor, scissor_count, scissors);
+    }
+
+    pub inline fn vkCmdSetStencilReference(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        face_mask: c.VkStencilFaceFlags,
+        reference: u32,
+    ) void {
+        self.cmdSetStencilReference.?(command_buffer, face_mask, reference);
     }
 
     pub inline fn vkCreateFence(
@@ -1513,6 +1524,7 @@ const vtable = Impl.VTable{
     .setIndexBuffer = @import("cmd.zig").CommandBuffer.setIndexBuffer,
     .setVertexBuffers = @import("cmd.zig").CommandBuffer.setVertexBuffers,
     .setViewport = @import("cmd.zig").CommandBuffer.setViewport,
+    .setStencilReference = @import("cmd.zig").CommandBuffer.setStencilReference,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 
     .initFence = @import("sync.zig").Fence.init,

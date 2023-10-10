@@ -346,6 +346,20 @@ pub const CommandBuffer = packed struct {
         dev.vkCmdSetScissor(cmd_buf.handle, 0, 1, &sciss);
     }
 
+    pub fn setStencilReference(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        stencil_face: ngl.CommandBuffer.Cmd.StencilFace,
+        reference: u32,
+    ) void {
+        Device.cast(device).vkCmdSetStencilReference(
+            cast(command_buffer).handle,
+            conv.toVkStencilFaceFlags(stencil_face),
+            reference,
+        );
+    }
+
     pub fn end(
         _: *anyopaque,
         _: std.mem.Allocator,

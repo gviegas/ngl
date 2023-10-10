@@ -600,3 +600,11 @@ pub fn toVkIndexType(index_type: ngl.CommandBuffer.Cmd.IndexType) c.VkIndexType 
         .u32 => c.VK_INDEX_TYPE_UINT32,
     };
 }
+
+pub fn toVkStencilFaceFlags(stencil_face: ngl.CommandBuffer.Cmd.StencilFace) c.VkStencilFaceFlags {
+    return switch (stencil_face) {
+        .front => c.VK_STENCIL_FACE_FRONT_BIT,
+        .back => c.VK_STENCIL_FACE_BACK_BIT,
+        .front_and_back => c.VK_STENCIL_FACE_FRONT_AND_BACK,
+    };
+}
