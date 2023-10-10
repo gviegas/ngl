@@ -208,6 +208,7 @@ pub const CommandBuffer = packed struct {
                 );
             return;
         } else &desc_set;
+        defer if (desc_sets.len > 1) allocator.free(desc_sets);
 
         for (desc_sets, descriptor_sets) |*handle, set|
             handle.* = DescriptorSet.cast(set.impl).handle;
