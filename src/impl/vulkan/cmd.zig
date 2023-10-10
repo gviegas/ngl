@@ -260,6 +260,49 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn setVertexBuffers(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        first_binding: u32,
+        buffers: []const *ngl.Buffer,
+        offsets: []const u64,
+        _: []const u64, // Requires newer command
+    ) void {
+        const n = 16;
+        var stk_bufs: [n]c.VkBuffer = undefined;
+        var bufs = if (buffers.len > n) allocator.alloc(c.VkBuffer, buffers.len) catch {
+            var i: usize = 0;
+            while (i < n) : (i += n) {
+                const j = @min(i + n, buffers.len);
+                setVertexBuffers(
+                    undefined,
+                    allocator,
+                    device,
+                    command_buffer,
+                    @intCast(first_binding + i),
+                    buffers[i..j],
+                    offsets[i..j],
+                    undefined,
+                );
+            }
+            return;
+        } else stk_bufs[0..buffers.len];
+        defer if (bufs.len > n) allocator.free(bufs);
+
+        for (bufs, buffers) |*handle, buf|
+            handle.* = Buffer.cast(buf.impl).handle;
+
+        Device.cast(device).vkCmdBindVertexBuffers(
+            cast(command_buffer).handle,
+            first_binding,
+            @intCast(buffers.len),
+            bufs.ptr,
+            offsets.ptr,
+        );
+    }
+
     pub fn end(
         _: *anyopaque,
         _: std.mem.Allocator,

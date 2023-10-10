@@ -657,6 +657,8 @@ test {
 
         cmd.setIndexBuffer(.u16, &buf, 8192, 6);
 
+        cmd.setVertexBuffers(0, &.{&buf}, &.{4096}, &.{84});
+
         try cmd.end();
     }
 

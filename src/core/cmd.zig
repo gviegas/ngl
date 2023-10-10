@@ -174,6 +174,25 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// The slices must have the same length.
+        pub fn setVertexBuffers(
+            self: *Cmd,
+            first_binding: u32,
+            buffers: []const *Buffer,
+            offsets: []const u64,
+            sizes: []const u64,
+        ) void {
+            Impl.get().setVertexBuffers(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                first_binding,
+                buffers,
+                offsets,
+                sizes,
+            );
+        }
+
         /// Invalidates `self`.
         pub fn end(self: *Cmd) Error!void {
             defer self.* = undefined;

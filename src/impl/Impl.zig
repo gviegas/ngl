@@ -237,6 +237,17 @@ pub const VTable = struct {
         size: u64,
     ) void,
 
+    setVertexBuffers: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        first_binding: u32,
+        buffers: []const *ngl.Buffer,
+        offsets: []const u64,
+        sizes: []const u64,
+    ) void,
+
     endCommandBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -829,6 +840,28 @@ pub fn setIndexBuffer(
     size: u64,
 ) void {
     self.vtable.setIndexBuffer(self.ptr, device, command_buffer, index_type, buffer, offset, size);
+}
+
+pub fn setVertexBuffers(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    first_binding: u32,
+    buffers: []const *ngl.Buffer,
+    offsets: []const u64,
+    sizes: []const u64,
+) void {
+    self.vtable.setVertexBuffers(
+        self.ptr,
+        allocator,
+        device,
+        command_buffer,
+        first_binding,
+        buffers,
+        offsets,
+        sizes,
+    );
 }
 
 pub fn endCommandBuffer(
