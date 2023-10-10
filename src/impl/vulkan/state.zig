@@ -391,24 +391,16 @@ pub const Pipeline = struct {
                 .logicOp = c.VK_LOGIC_OP_CLEAR,
                 .attachmentCount = @intCast(s.attachments.len),
                 .pAttachments = blk: {
-                    // TODO: Untie write mask from blending
-                    for (blend_attachs_ptr, s.attachments) |*p, a|
-                        p.* = if (a) |x| .{
+                    for (blend_attachs_ptr, s.attachments) |*p, a| {
+                        p.* = if (a.blend) |b| .{
                             .blendEnable = c.VK_TRUE,
-                            .srcColorBlendFactor = conv.toVkBlendFactor(x.color_source_factor),
-                            .dstColorBlendFactor = conv.toVkBlendFactor(x.color_dest_factor),
-                            .colorBlendOp = conv.toVkBlendOp(x.color_blend_op),
-                            .srcAlphaBlendFactor = conv.toVkBlendFactor(x.alpha_source_factor),
-                            .dstAlphaBlendFactor = conv.toVkBlendFactor(x.alpha_dest_factor),
-                            .alphaBlendOp = conv.toVkBlendOp(x.alpha_blend_op),
-                            .colorWriteMask = blk2: {
-                                var flags: c.VkColorComponentFlags = 0;
-                                if (x.write_mask.r) flags |= c.VK_COLOR_COMPONENT_R_BIT;
-                                if (x.write_mask.g) flags |= c.VK_COLOR_COMPONENT_G_BIT;
-                                if (x.write_mask.b) flags |= c.VK_COLOR_COMPONENT_B_BIT;
-                                if (x.write_mask.a) flags |= c.VK_COLOR_COMPONENT_A_BIT;
-                                break :blk2 flags;
-                            },
+                            .srcColorBlendFactor = conv.toVkBlendFactor(b.color_source_factor),
+                            .dstColorBlendFactor = conv.toVkBlendFactor(b.color_dest_factor),
+                            .colorBlendOp = conv.toVkBlendOp(b.color_op),
+                            .srcAlphaBlendFactor = conv.toVkBlendFactor(b.alpha_source_factor),
+                            .dstAlphaBlendFactor = conv.toVkBlendFactor(b.alpha_dest_factor),
+                            .alphaBlendOp = conv.toVkBlendOp(b.alpha_op),
+                            .colorWriteMask = undefined,
                         } else .{
                             .blendEnable = c.VK_FALSE,
                             .srcColorBlendFactor = c.VK_BLEND_FACTOR_ZERO,
@@ -417,11 +409,21 @@ pub const Pipeline = struct {
                             .srcAlphaBlendFactor = c.VK_BLEND_FACTOR_ZERO,
                             .dstAlphaBlendFactor = c.VK_BLEND_FACTOR_ZERO,
                             .alphaBlendOp = c.VK_BLEND_OP_ADD,
-                            .colorWriteMask = c.VK_COLOR_COMPONENT_R_BIT |
-                                c.VK_COLOR_COMPONENT_G_BIT |
-                                c.VK_COLOR_COMPONENT_B_BIT |
-                                c.VK_COLOR_COMPONENT_A_BIT,
+                            .colorWriteMask = undefined,
                         };
+                        p.colorWriteMask = switch (a.write) {
+                            .all => c.VK_COLOR_COMPONENT_R_BIT | c.VK_COLOR_COMPONENT_G_BIT |
+                                c.VK_COLOR_COMPONENT_B_BIT | c.VK_COLOR_COMPONENT_A_BIT,
+                            .mask => |x| blk2: {
+                                var flags: c.VkColorComponentFlags = 0;
+                                if (x.r) flags |= c.VK_COLOR_COMPONENT_R_BIT;
+                                if (x.g) flags |= c.VK_COLOR_COMPONENT_G_BIT;
+                                if (x.b) flags |= c.VK_COLOR_COMPONENT_B_BIT;
+                                if (x.a) flags |= c.VK_COLOR_COMPONENT_A_BIT;
+                                break :blk2 flags;
+                            },
+                        };
+                    }
                     defer blend_attachs_ptr += s.attachments.len;
                     break :blk blend_attachs_ptr;
                 },

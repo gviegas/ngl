@@ -175,22 +175,29 @@ pub const DepthStencil = struct {
 };
 
 pub const ColorBlend = struct {
-    attachments: []const ?Attachment,
+    attachments: []const Attachment,
     constants: ?[4]f32,
 
     pub const Attachment = struct {
+        blend: ?BlendEquation,
+        write: union(enum) {
+            all,
+            mask: packed struct {
+                r: bool,
+                g: bool,
+                b: bool,
+                a: bool,
+            },
+        },
+    };
+
+    pub const BlendEquation = struct {
         color_source_factor: BlendFactor,
         color_dest_factor: BlendFactor,
-        color_blend_op: BlendOp,
+        color_op: BlendOp,
         alpha_source_factor: BlendFactor,
         alpha_dest_factor: BlendFactor,
-        alpha_blend_op: BlendOp,
-        write_mask: packed struct {
-            r: bool = true,
-            g: bool = true,
-            b: bool = true,
-            a: bool = true,
-        } = .{},
+        alpha_op: BlendOp,
     };
 
     pub const BlendFactor = enum {

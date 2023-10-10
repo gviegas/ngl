@@ -592,12 +592,15 @@ test {
         },
         .color_blend = &.{
             .attachments = &.{.{
-                .color_source_factor = .source_alpha,
-                .color_dest_factor = .one_minus_source_alpha,
-                .color_blend_op = .add,
-                .alpha_source_factor = .one,
-                .alpha_dest_factor = .zero,
-                .alpha_blend_op = .add,
+                .blend = .{
+                    .color_source_factor = .source_alpha,
+                    .color_dest_factor = .one_minus_source_alpha,
+                    .color_op = .add,
+                    .alpha_source_factor = .one,
+                    .alpha_dest_factor = .zero,
+                    .alpha_op = .add,
+                },
+                .write = .all,
             }},
             .constants = null,
         },
