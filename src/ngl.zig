@@ -570,14 +570,15 @@ test {
             },
             .topology = .triangle_list,
         },
-        .viewport = &.{
-            .x = 0,
-            .y = 0,
-            .width = 512,
-            .height = 512,
-            .near = 1,
-            .far = 0,
-        },
+        .viewport = null,
+        //.viewport = &.{
+        //    .x = 0,
+        //    .y = 0,
+        //    .width = 512,
+        //    .height = 512,
+        //    .near = 1,
+        //    .far = 0,
+        //},
         .rasterization = &.{
             .polygon_mode = .fill,
             .cull_mode = .back,
@@ -662,6 +663,15 @@ test {
         cmd.setIndexBuffer(.u16, &buf, 8192, 6);
 
         cmd.setVertexBuffers(0, &.{&buf}, &.{4096}, &.{84});
+
+        cmd.setViewport(.{
+            .x = 0,
+            .y = 0,
+            .width = 512,
+            .height = 512,
+            .near = 1,
+            .far = 0,
+        });
 
         try cmd.end();
     }

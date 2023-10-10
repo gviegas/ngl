@@ -248,6 +248,13 @@ pub const VTable = struct {
         sizes: []const u64,
     ) void,
 
+    setViewport: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        viewport: ngl.Viewport,
+    ) void,
+
     endCommandBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -856,6 +863,15 @@ pub fn setVertexBuffers(
         offsets,
         sizes,
     );
+}
+
+pub fn setViewport(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    viewport: ngl.Viewport,
+) void {
+    self.vtable.setViewport(self.ptr, device, command_buffer, viewport);
 }
 
 pub fn endCommandBuffer(

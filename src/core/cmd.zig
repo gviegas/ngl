@@ -9,6 +9,7 @@ const FrameBuffer = ngl.FrameBuffer;
 const PipelineLayout = ngl.PipelineLayout;
 const DescriptorSet = ngl.DescriptorSet;
 const ShaderStage = ngl.ShaderStage;
+const Viewport = ngl.Viewport;
 const Pipeline = ngl.Pipeline;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
@@ -191,6 +192,11 @@ pub const CommandBuffer = struct {
                 offsets,
                 sizes,
             );
+        }
+
+        /// Only valid for pipelines with unspecified viewport state.
+        pub fn setViewport(self: *Cmd, viewport: Viewport) void {
+            Impl.get().setViewport(self.device.impl, self.command_buffer.impl, viewport);
         }
 
         /// Invalidates `self`.

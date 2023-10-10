@@ -359,6 +359,8 @@ pub const Device = struct {
     cmdPushConstants: c.PFN_vkCmdPushConstants,
     cmdBindIndexBuffer: c.PFN_vkCmdBindIndexBuffer,
     cmdBindVertexBuffers: c.PFN_vkCmdBindVertexBuffers,
+    cmdSetViewport: c.PFN_vkCmdSetViewport,
+    cmdSetScissor: c.PFN_vkCmdSetScissor,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
     getFenceStatus: c.PFN_vkGetFenceStatus,
@@ -503,6 +505,8 @@ pub const Device = struct {
             .cmdPushConstants = @ptrCast(try Device.getProc(get, dev, "vkCmdPushConstants")),
             .cmdBindIndexBuffer = @ptrCast(try Device.getProc(get, dev, "vkCmdBindIndexBuffer")),
             .cmdBindVertexBuffers = @ptrCast(try Device.getProc(get, dev, "vkCmdBindVertexBuffers")),
+            .cmdSetViewport = @ptrCast(try Device.getProc(get, dev, "vkCmdSetViewport")),
+            .cmdSetScissor = @ptrCast(try Device.getProc(get, dev, "vkCmdSetScissor")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
             .getFenceStatus = @ptrCast(try Device.getProc(get, dev, "vkGetFenceStatus")),
@@ -857,6 +861,26 @@ pub const Device = struct {
         offsets: [*]const c.VkDeviceSize,
     ) void {
         self.cmdBindVertexBuffers.?(command_buffer, first_binding, binding_count, buffers, offsets);
+    }
+
+    pub inline fn vkCmdSetViewport(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        first_viewport: u32,
+        viewport_count: u32,
+        viewports: [*]const c.VkViewport,
+    ) void {
+        self.cmdSetViewport.?(command_buffer, first_viewport, viewport_count, viewports);
+    }
+
+    pub inline fn vkCmdSetScissor(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        first_scissor: u32,
+        scissor_count: u32,
+        scissors: [*]const c.VkRect2D,
+    ) void {
+        self.cmdSetScissor.?(command_buffer, first_scissor, scissor_count, scissors);
     }
 
     pub inline fn vkCreateFence(
@@ -1488,6 +1512,7 @@ const vtable = Impl.VTable{
     .setPushConstants = @import("cmd.zig").CommandBuffer.setPushConstants,
     .setIndexBuffer = @import("cmd.zig").CommandBuffer.setIndexBuffer,
     .setVertexBuffers = @import("cmd.zig").CommandBuffer.setVertexBuffers,
+    .setViewport = @import("cmd.zig").CommandBuffer.setViewport,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 
     .initFence = @import("sync.zig").Fence.init,

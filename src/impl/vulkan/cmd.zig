@@ -304,6 +304,48 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn setViewport(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        viewport: ngl.Viewport,
+    ) void {
+        const dev = Device.cast(device);
+        const cmd_buf = cast(command_buffer);
+
+        const vport: [1]c.VkViewport = .{.{
+            .x = viewport.x,
+            .y = viewport.y,
+            .width = viewport.width,
+            .height = viewport.height,
+            .minDepth = viewport.near,
+            .maxDepth = viewport.far,
+        }};
+
+        const sciss: [1]c.VkRect2D = .{if (viewport.scissor) |x| .{
+            .offset = .{
+                .x = @min(x.x, std.math.maxInt(i32)),
+                .y = @min(x.y, std.math.maxInt(i32)),
+            },
+            .extent = .{
+                .width = x.width,
+                .height = x.height,
+            },
+        } else .{
+            .offset = .{
+                .x = @intFromFloat(@min(@fabs(viewport.x), std.math.maxInt(i32))),
+                .y = @intFromFloat(@min(@fabs(viewport.y), std.math.maxInt(i32))),
+            },
+            .extent = .{
+                .width = @intFromFloat(@min(@fabs(viewport.width), std.math.maxInt(u32))),
+                .height = @intFromFloat(@min(@fabs(viewport.height), std.math.maxInt(u32))),
+            },
+        }};
+
+        dev.vkCmdSetViewport(cmd_buf.handle, 0, 1, &vport);
+        dev.vkCmdSetScissor(cmd_buf.handle, 0, 1, &sciss);
+    }
+
     pub fn end(
         _: *anyopaque,
         _: std.mem.Allocator,
