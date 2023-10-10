@@ -360,6 +360,15 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn setBlendConstants(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        constants: [4]f32,
+    ) void {
+        Device.cast(device).vkCmdSetBlendConstants(cast(command_buffer).handle, &constants);
+    }
+
     pub fn end(
         _: *anyopaque,
         _: std.mem.Allocator,

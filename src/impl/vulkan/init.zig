@@ -362,6 +362,7 @@ pub const Device = struct {
     cmdSetViewport: c.PFN_vkCmdSetViewport,
     cmdSetScissor: c.PFN_vkCmdSetScissor,
     cmdSetStencilReference: c.PFN_vkCmdSetStencilReference,
+    cmdSetBlendConstants: c.PFN_vkCmdSetBlendConstants,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
     getFenceStatus: c.PFN_vkGetFenceStatus,
@@ -509,6 +510,7 @@ pub const Device = struct {
             .cmdSetViewport = @ptrCast(try Device.getProc(get, dev, "vkCmdSetViewport")),
             .cmdSetScissor = @ptrCast(try Device.getProc(get, dev, "vkCmdSetScissor")),
             .cmdSetStencilReference = @ptrCast(try Device.getProc(get, dev, "vkCmdSetStencilReference")),
+            .cmdSetBlendConstants = @ptrCast(try Device.getProc(get, dev, "vkCmdSetBlendConstants")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
             .getFenceStatus = @ptrCast(try Device.getProc(get, dev, "vkGetFenceStatus")),
@@ -892,6 +894,14 @@ pub const Device = struct {
         reference: u32,
     ) void {
         self.cmdSetStencilReference.?(command_buffer, face_mask, reference);
+    }
+
+    pub inline fn vkCmdSetBlendConstants(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        constants: [*]const f32,
+    ) void {
+        self.cmdSetBlendConstants.?(command_buffer, constants);
     }
 
     pub inline fn vkCreateFence(
@@ -1525,6 +1535,7 @@ const vtable = Impl.VTable{
     .setVertexBuffers = @import("cmd.zig").CommandBuffer.setVertexBuffers,
     .setViewport = @import("cmd.zig").CommandBuffer.setViewport,
     .setStencilReference = @import("cmd.zig").CommandBuffer.setStencilReference,
+    .setBlendConstants = @import("cmd.zig").CommandBuffer.setBlendConstants,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 
     .initFence = @import("sync.zig").Fence.init,

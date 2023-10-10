@@ -215,6 +215,11 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// Only valid for pipelines with unspecified blend constants.
+        pub fn setBlendConstants(self: *Cmd, constants: [4]f32) void {
+            Impl.get().setBlendConstants(self.device.impl, self.command_buffer.impl, constants);
+        }
+
         /// Invalidates `self`.
         pub fn end(self: *Cmd) Error!void {
             defer self.* = undefined;

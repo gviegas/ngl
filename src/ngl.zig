@@ -675,6 +675,8 @@ test {
 
         cmd.setStencilReference(.back, 0x80);
 
+        cmd.setBlendConstants(.{ 0.1, 0.2, 0.3, 0.4 });
+
         try cmd.end();
     }
 

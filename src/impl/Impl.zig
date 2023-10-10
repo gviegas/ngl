@@ -263,6 +263,13 @@ pub const VTable = struct {
         reference: u32,
     ) void,
 
+    setBlendConstants: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        constants: [4]f32,
+    ) void,
+
     endCommandBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -890,6 +897,15 @@ pub fn setStencilReference(
     reference: u32,
 ) void {
     self.vtable.setStencilReference(self.ptr, device, command_buffer, stencil_face, reference);
+}
+
+pub fn setBlendConstants(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    constants: [4]f32,
+) void {
+    self.vtable.setBlendConstants(self.ptr, device, command_buffer, constants);
 }
 
 pub fn endCommandBuffer(
