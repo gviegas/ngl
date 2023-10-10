@@ -159,7 +159,7 @@ pub const DepthStencil = struct {
         compare: CompareOp,
         read_mask: u32,
         write_mask: u32,
-        reference: u32,
+        reference: ?u32,
     };
 
     pub const StencilOp = enum {
@@ -176,7 +176,7 @@ pub const DepthStencil = struct {
 
 pub const ColorBlend = struct {
     attachments: []const ?Attachment,
-    constants: [4]f32 = [_]f32{0} ** 4,
+    constants: ?[4]f32,
 
     pub const Attachment = struct {
         color_source_factor: BlendFactor,

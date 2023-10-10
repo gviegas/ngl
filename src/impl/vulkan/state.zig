@@ -46,6 +46,8 @@ pub const Pipeline = struct {
                 multisample_state_sample_mask: [2]u32,
                 depth_stencil_state: c.VkPipelineDepthStencilStateCreateInfo,
                 color_blend_state: c.VkPipelineColorBlendStateCreateInfo,
+                dynamic_state: c.VkPipelineDynamicStateCreateInfo,
+                dynamic_state_dynamic_states: [4]c.VkDynamicState,
             },
             desc.states.len,
         );
@@ -198,13 +200,8 @@ pub const Pipeline = struct {
                 .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
                 .pNext = null,
                 .flags = 0,
-                .dynamicStateCount = 4,
-                .pDynamicStates = &[4]c.VkDynamicState{
-                    c.VK_DYNAMIC_STATE_VIEWPORT,
-                    c.VK_DYNAMIC_STATE_SCISSOR,
-                    c.VK_DYNAMIC_STATE_BLEND_CONSTANTS,
-                    c.VK_DYNAMIC_STATE_STENCIL_REFERENCE,
-                },
+                .dynamicStateCount = 0,
+                .pDynamicStates = null,
             },
         } = .{};
 
@@ -223,7 +220,7 @@ pub const Pipeline = struct {
                 .pMultisampleState = &inner.multisample_state,
                 .pDepthStencilState = &inner.depth_stencil_state,
                 .pColorBlendState = &inner.color_blend_state,
-                .pDynamicState = &defaults.dynamic_state,
+                .pDynamicState = &inner.dynamic_state,
                 .layout = PipelineLayout.cast(state.layout.impl).handle,
                 // TODO: Disallow null render pass/subpass
                 .renderPass = if (state.render_pass) |x|
@@ -371,7 +368,7 @@ pub const Pipeline = struct {
                     .compareOp = conv.toVkCompareOp(t.compare),
                     .compareMask = t.read_mask,
                     .writeMask = t.write_mask,
-                    .reference = t.reference,
+                    .reference = t.reference orelse 0,
                 } else defaults.depth_stencil_state.front,
                 .back = if (s.stencil_back) |t| .{
                     .failOp = conv.toVkStencilOp(t.fail_op),
@@ -380,7 +377,7 @@ pub const Pipeline = struct {
                     .compareOp = conv.toVkCompareOp(t.compare),
                     .compareMask = t.read_mask,
                     .writeMask = t.write_mask,
-                    .reference = t.reference,
+                    .reference = t.reference orelse 0,
                 } else defaults.depth_stencil_state.back,
                 .minDepthBounds = 0,
                 .maxDepthBounds = 0,
@@ -428,8 +425,39 @@ pub const Pipeline = struct {
                     defer blend_attachs_ptr += s.attachments.len;
                     break :blk blend_attachs_ptr;
                 },
-                .blendConstants = s.constants,
+                .blendConstants = s.constants orelse .{ 0, 0, 0, 0 },
             } else defaults.color_blend_state;
+
+            inner.dynamic_state = blk: {
+                var dyns: []c.VkDynamicState = &inner.dynamic_state_dynamic_states;
+                if (state.viewport == null) {
+                    dyns[0] = c.VK_DYNAMIC_STATE_VIEWPORT;
+                    dyns[1] = c.VK_DYNAMIC_STATE_SCISSOR;
+                    dyns = dyns[2..];
+                }
+                if (state.depth_stencil) |x| {
+                    if ((x.stencil_front != null and x.stencil_front.?.reference == null) or
+                        (x.stencil_back != null and x.stencil_back.?.reference == null))
+                    {
+                        dyns[0] = c.VK_DYNAMIC_STATE_STENCIL_REFERENCE;
+                        dyns = dyns[1..];
+                    }
+                }
+                if (state.color_blend) |x| {
+                    if (x.constants == null) {
+                        dyns[0] = c.VK_DYNAMIC_STATE_BLEND_CONSTANTS;
+                        dyns = dyns[1..];
+                    }
+                }
+                const dyn_n = inner.dynamic_state_dynamic_states.len - dyns.len;
+                break :blk if (dyn_n > 0) .{
+                    .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+                    .pNext = null,
+                    .flags = 0,
+                    .dynamicStateCount = @intCast(dyn_n),
+                    .pDynamicStates = &inner.dynamic_state_dynamic_states,
+                } else defaults.dynamic_state;
+            };
         }
 
         var module_create_infos: []c.VkShaderModuleCreateInfo = &.{};

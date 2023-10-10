@@ -599,6 +599,7 @@ test {
                 .alpha_dest_factor = .zero,
                 .alpha_blend_op = .add,
             }},
+            .constants = null,
         },
         .render_pass = &rp,
         .subpass = 0,
