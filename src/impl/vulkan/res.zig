@@ -77,7 +77,7 @@ pub const Buffer = struct {
         device: Impl.Device,
         buffer: Impl.Buffer,
         memory: Impl.Memory,
-        memory_offset: usize,
+        memory_offset: u64,
     ) Error!void {
         try check(Device.cast(device).vkBindBufferMemory(
             cast(buffer).handle,
@@ -248,7 +248,7 @@ pub const Image = struct {
         device: Impl.Device,
         image: Impl.Image,
         memory: Impl.Memory,
-        memory_offset: usize,
+        memory_offset: u64,
     ) Error!void {
         try check(Device.cast(device).vkBindImageMemory(
             cast(image).handle,

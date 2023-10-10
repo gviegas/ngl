@@ -1369,8 +1369,8 @@ pub const Memory = struct {
         _: *anyopaque,
         device: Impl.Device,
         memory: Impl.Memory,
-        offset: usize,
-        size: ?usize,
+        offset: u64,
+        size: ?u64,
     ) Error![*]u8 {
         var data: ?*anyopaque = undefined;
         try check(Device.cast(device).vkMapMemory(
@@ -1393,8 +1393,8 @@ pub const Memory = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         memory: Impl.Memory,
-        offsets: []const usize,
-        sizes: ?[]const usize,
+        offsets: []const u64,
+        sizes: ?[]const u64,
     ) Error!void {
         const dev = Device.cast(device);
         const mem = cast(memory);
@@ -1435,8 +1435,8 @@ pub const Memory = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         memory: Impl.Memory,
-        offsets: []const usize,
-        sizes: ?[]const usize,
+        offsets: []const u64,
+        sizes: ?[]const u64,
     ) Error!void {
         return flushOrInvalidateMapped(.flush, allocator, device, memory, offsets, sizes);
     }
@@ -1446,8 +1446,8 @@ pub const Memory = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         memory: Impl.Memory,
-        offsets: []const usize,
-        sizes: ?[]const usize,
+        offsets: []const u64,
+        sizes: ?[]const u64,
     ) Error!void {
         return flushOrInvalidateMapped(.invalidate, allocator, device, memory, offsets, sizes);
     }

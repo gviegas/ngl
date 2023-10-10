@@ -167,8 +167,8 @@ pub const Memory = struct {
     };
 
     pub const Requirements = struct {
-        size: usize,
-        alignment: usize,
+        size: u64,
+        alignment: u64,
         mem_type_bits: u32,
 
         pub inline fn supportsMemoryType(self: Requirements, memory_type_index: u5) bool {
@@ -177,7 +177,7 @@ pub const Memory = struct {
     };
 
     pub const Desc = struct {
-        size: usize,
+        size: u64,
         mem_type_index: u5,
     };
 
@@ -188,7 +188,7 @@ pub const Memory = struct {
 
     // TODO: Consider storing the size of the memory allocation
     // so this method can return a slice
-    pub fn map(self: *Self, device: *Device, offset: usize, size: ?usize) Error![*]u8 {
+    pub fn map(self: *Self, device: *Device, offset: u64, size: ?u64) Error![*]u8 {
         return try Impl.get().mapMemory(device.impl, self.impl, offset, size);
     }
 
@@ -201,8 +201,8 @@ pub const Memory = struct {
         self: *Self,
         allocator: std.mem.Allocator,
         device: *Device,
-        offsets: []const usize,
-        sizes: ?[]const usize,
+        offsets: []const u64,
+        sizes: ?[]const u64,
     ) Error!void {
         return Impl.get().flushMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
     }
@@ -211,8 +211,8 @@ pub const Memory = struct {
         self: *Self,
         allocator: std.mem.Allocator,
         device: *Device,
-        offsets: []const usize,
-        sizes: ?[]const usize,
+        offsets: []const u64,
+        sizes: ?[]const u64,
     ) Error!void {
         return Impl.get().invalidateMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
     }

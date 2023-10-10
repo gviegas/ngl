@@ -125,8 +125,8 @@ pub const VTable = struct {
         ctx: *anyopaque,
         device: Device,
         memory: Memory,
-        offset: usize,
-        size: ?usize,
+        offset: u64,
+        size: ?u64,
     ) Error![*]u8,
 
     unmapMemory: *const fn (ctx: *anyopaque, device: Device, memory: Memory) void,
@@ -136,8 +136,8 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         memory: Memory,
-        offsets: []const usize,
-        sizes: ?[]const usize,
+        offsets: []const u64,
+        sizes: ?[]const u64,
     ) Error!void,
 
     invalidateMappedMemory: *const fn (
@@ -145,8 +145,8 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         memory: Memory,
-        offsets: []const usize,
-        sizes: ?[]const usize,
+        offsets: []const u64,
+        sizes: ?[]const u64,
     ) Error!void,
 
     // CommandPool -----------------------------------------
@@ -328,7 +328,7 @@ pub const VTable = struct {
         device: Device,
         buffer: Buffer,
         memory: Memory,
-        memory_offset: usize,
+        memory_offset: u64,
     ) Error!void,
 
     deinitBuffer: *const fn (
@@ -374,7 +374,7 @@ pub const VTable = struct {
         device: Device,
         image: Image,
         memory: Memory,
-        memory_offset: usize,
+        memory_offset: u64,
     ) Error!void,
 
     deinitImage: *const fn (
@@ -682,13 +682,7 @@ pub fn waitQueue(self: *Self, device: Device, queue: Queue) Error!void {
     return self.vtable.waitQueue(self.ptr, device, queue);
 }
 
-pub fn mapMemory(
-    self: *Self,
-    device: Device,
-    memory: Memory,
-    offset: usize,
-    size: ?usize,
-) Error![*]u8 {
+pub fn mapMemory(self: *Self, device: Device, memory: Memory, offset: u64, size: ?u64) Error![*]u8 {
     return self.vtable.mapMemory(self.ptr, device, memory, offset, size);
 }
 
@@ -701,8 +695,8 @@ pub fn flushMappedMemory(
     allocator: std.mem.Allocator,
     device: Device,
     memory: Memory,
-    offsets: []const usize,
-    sizes: ?[]const usize,
+    offsets: []const u64,
+    sizes: ?[]const u64,
 ) Error!void {
     return self.vtable.flushMappedMemory(self.ptr, allocator, device, memory, offsets, sizes);
 }
@@ -712,8 +706,8 @@ pub fn invalidateMappedMemory(
     allocator: std.mem.Allocator,
     device: Device,
     memory: Memory,
-    offsets: []const usize,
-    sizes: ?[]const usize,
+    offsets: []const u64,
+    sizes: ?[]const u64,
 ) Error!void {
     return self.vtable.invalidateMappedMemory(self.ptr, allocator, device, memory, offsets, sizes);
 }
@@ -949,7 +943,7 @@ pub fn bindMemoryBuffer(
     device: Device,
     buffer: Buffer,
     memory: Memory,
-    memory_offset: usize,
+    memory_offset: u64,
 ) Error!void {
     return self.vtable.bindMemoryBuffer(self.ptr, device, buffer, memory, memory_offset);
 }
@@ -1007,7 +1001,7 @@ pub fn bindMemoryImage(
     device: Device,
     image: Image,
     memory: Memory,
-    memory_offset: usize,
+    memory_offset: u64,
 ) Error!void {
     return self.vtable.bindMemoryImage(self.ptr, device, image, memory, memory_offset);
 }

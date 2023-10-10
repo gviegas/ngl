@@ -163,7 +163,7 @@ pub const Buffer = struct {
         self: *Self,
         device: *Device,
         memory: *Memory,
-        memory_offset: usize,
+        memory_offset: u64,
     ) Error!void {
         return Impl.get().bindMemoryBuffer(device.impl, self.impl, memory.impl, memory_offset);
     }
@@ -299,7 +299,7 @@ pub const Image = struct {
         self: *Self,
         device: *Device,
         memory: *Memory,
-        memory_offset: usize,
+        memory_offset: u64,
     ) Error!void {
         return Impl.get().bindMemoryImage(device.impl, self.impl, memory.impl, memory_offset);
     }
