@@ -3,6 +3,7 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
 const Queue = ngl.Queue;
+const Buffer = ngl.Buffer;
 const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
 const PipelineLayout = ngl.PipelineLayout;
@@ -148,6 +149,28 @@ pub const CommandBuffer = struct {
                 stage_mask,
                 offset,
                 constants,
+            );
+        }
+
+        pub const IndexType = enum {
+            u16,
+            u32,
+        };
+
+        pub fn setIndexBuffer(
+            self: *Cmd,
+            index_type: IndexType,
+            buffer: *Buffer,
+            offset: u64,
+            size: u64,
+        ) void {
+            Impl.get().setIndexBuffer(
+                self.device.impl,
+                self.command_buffer.impl,
+                index_type,
+                buffer.impl,
+                offset,
+                size,
             );
         }
 

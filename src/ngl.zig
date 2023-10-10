@@ -233,6 +233,8 @@ test {
         .usage = .{
             .storage_texel_buffer = true,
             .uniform_buffer = true,
+            .index_buffer = true,
+            .vertex_buffer = true,
             .transfer_source = true,
             .transfer_dest = true,
         },
@@ -652,6 +654,8 @@ test {
             0,
             @as([*]align(4) const u8, @ptrCast(&push_consts))[0..16],
         );
+
+        cmd.setIndexBuffer(.u16, &buf, 8192, 6);
 
         try cmd.end();
     }

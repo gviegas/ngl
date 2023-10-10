@@ -227,6 +227,16 @@ pub const VTable = struct {
         constants: []align(4) const u8,
     ) void,
 
+    setIndexBuffer: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        index_type: ngl.CommandBuffer.Cmd.IndexType,
+        buffer: Buffer,
+        offset: u64,
+        size: u64,
+    ) void,
+
     endCommandBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -807,6 +817,18 @@ pub fn setPushConstants(
         offset,
         constants,
     );
+}
+
+pub fn setIndexBuffer(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    index_type: ngl.CommandBuffer.Cmd.IndexType,
+    buffer: Buffer,
+    offset: u64,
+    size: u64,
+) void {
+    self.vtable.setIndexBuffer(self.ptr, device, command_buffer, index_type, buffer, offset, size);
 }
 
 pub fn endCommandBuffer(

@@ -8,6 +8,7 @@ const conv = @import("conv.zig");
 const check = conv.check;
 const Device = @import("init.zig").Device;
 const Queue = @import("init.zig").Queue;
+const Buffer = @import("res.zig").Buffer;
 const RenderPass = @import("pass.zig").RenderPass;
 const FrameBuffer = @import("pass.zig").FrameBuffer;
 const PipelineLayout = @import("desc.zig").PipelineLayout;
@@ -239,6 +240,23 @@ pub const CommandBuffer = packed struct {
             offset,
             @intCast(constants.len),
             constants.ptr,
+        );
+    }
+
+    pub fn setIndexBuffer(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        index_type: ngl.CommandBuffer.Cmd.IndexType,
+        buffer: Impl.Buffer,
+        offset: u64,
+        _: u64, // Requires newer command
+    ) void {
+        Device.cast(device).vkCmdBindIndexBuffer(
+            cast(command_buffer).handle,
+            Buffer.cast(buffer).handle,
+            offset,
+            conv.toVkIndexType(index_type),
         );
     }
 

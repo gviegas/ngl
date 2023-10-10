@@ -593,3 +593,10 @@ pub fn toVkBlendOp(blend_op: ngl.ColorBlend.BlendOp) c.VkBlendOp {
         .max => c.VK_BLEND_OP_MAX,
     };
 }
+
+pub fn toVkIndexType(index_type: ngl.CommandBuffer.Cmd.IndexType) c.VkIndexType {
+    return switch (index_type) {
+        .u16 => c.VK_INDEX_TYPE_UINT16,
+        .u32 => c.VK_INDEX_TYPE_UINT32,
+    };
+}
