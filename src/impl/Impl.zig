@@ -217,6 +217,16 @@ pub const VTable = struct {
         descriptor_sets: []const *ngl.DescriptorSet,
     ) void,
 
+    setPushConstants: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        pipeline_layout: PipelineLayout,
+        stage_mask: ngl.ShaderStage.Flags,
+        offset: u16,
+        constants: []align(4) const u8,
+    ) void,
+
     endCommandBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -776,6 +786,26 @@ pub fn setDescriptors(
         pipeline_layout,
         first_set,
         descriptor_sets,
+    );
+}
+
+pub fn setPushConstants(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    pipeline_layout: PipelineLayout,
+    stage_mask: ngl.ShaderStage.Flags,
+    offset: u16,
+    constants: []align(4) const u8,
+) void {
+    self.vtable.setPushConstants(
+        self.ptr,
+        device,
+        command_buffer,
+        pipeline_layout,
+        stage_mask,
+        offset,
+        constants,
     );
 }
 

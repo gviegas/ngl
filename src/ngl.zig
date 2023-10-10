@@ -645,6 +645,14 @@ test {
 
         cmd.setDescriptors(.graphics, &pl_layout, 0, &.{&desc_sets[0]});
 
+        const push_consts: [4]f32 = .{ 0.25, 0.5, 0.75, 1 };
+        cmd.setPushConstants(
+            &pl_layout_2,
+            .{ .compute = true },
+            0,
+            @as([*]align(4) const u8, @ptrCast(&push_consts))[0..16],
+        );
+
         try cmd.end();
     }
 

@@ -223,6 +223,25 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn setPushConstants(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        pipeline_layout: Impl.PipelineLayout,
+        stage_mask: ngl.ShaderStage.Flags,
+        offset: u16,
+        constants: []align(4) const u8,
+    ) void {
+        Device.cast(device).vkCmdPushConstants(
+            cast(command_buffer).handle,
+            PipelineLayout.cast(pipeline_layout).handle,
+            conv.toVkShaderStageFlags(stage_mask),
+            offset,
+            @intCast(constants.len),
+            constants.ptr,
+        );
+    }
+
     pub fn end(
         _: *anyopaque,
         _: std.mem.Allocator,

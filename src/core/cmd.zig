@@ -7,6 +7,7 @@ const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
 const PipelineLayout = ngl.PipelineLayout;
 const DescriptorSet = ngl.DescriptorSet;
+const ShaderStage = ngl.ShaderStage;
 const Pipeline = ngl.Pipeline;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
@@ -130,6 +131,23 @@ pub const CommandBuffer = struct {
                 pipeline_layout.impl,
                 first_set,
                 descriptor_sets,
+            );
+        }
+
+        pub fn setPushConstants(
+            self: *Cmd,
+            pipeline_layout: *PipelineLayout,
+            stage_mask: ShaderStage.Flags,
+            offset: u16,
+            constants: []align(4) const u8,
+        ) void {
+            Impl.get().setPushConstants(
+                self.device.impl,
+                self.command_buffer.impl,
+                pipeline_layout.impl,
+                stage_mask,
+                offset,
+                constants,
             );
         }
 

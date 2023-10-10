@@ -356,6 +356,7 @@ pub const Device = struct {
     endCommandBuffer: c.PFN_vkEndCommandBuffer,
     cmdBindPipeline: c.PFN_vkCmdBindPipeline,
     cmdBindDescriptorSets: c.PFN_vkCmdBindDescriptorSets,
+    cmdPushConstants: c.PFN_vkCmdPushConstants,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
     getFenceStatus: c.PFN_vkGetFenceStatus,
@@ -497,6 +498,7 @@ pub const Device = struct {
             .endCommandBuffer = @ptrCast(try Device.getProc(get, dev, "vkEndCommandBuffer")),
             .cmdBindPipeline = @ptrCast(try Device.getProc(get, dev, "vkCmdBindPipeline")),
             .cmdBindDescriptorSets = @ptrCast(try Device.getProc(get, dev, "vkCmdBindDescriptorSets")),
+            .cmdPushConstants = @ptrCast(try Device.getProc(get, dev, "vkCmdPushConstants")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
             .getFenceStatus = @ptrCast(try Device.getProc(get, dev, "vkGetFenceStatus")),
@@ -818,6 +820,18 @@ pub const Device = struct {
             dynamic_offset_count,
             dynamic_offsets,
         );
+    }
+
+    pub inline fn vkCmdPushConstants(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        pipeline_layout: c.VkPipelineLayout,
+        stage_flags: c.VkShaderStageFlags,
+        offset: u32,
+        size: u32,
+        values: *const anyopaque,
+    ) void {
+        self.cmdPushConstants.?(command_buffer, pipeline_layout, stage_flags, offset, size, values);
     }
 
     pub inline fn vkCreateFence(
@@ -1446,6 +1460,7 @@ const vtable = Impl.VTable{
     .beginCommandBuffer = @import("cmd.zig").CommandBuffer.begin,
     .setPipeline = @import("cmd.zig").CommandBuffer.setPipeline,
     .setDescriptors = @import("cmd.zig").CommandBuffer.setDescriptors,
+    .setPushConstants = @import("cmd.zig").CommandBuffer.setPushConstants,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 
     .initFence = @import("sync.zig").Fence.init,
