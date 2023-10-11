@@ -220,6 +220,69 @@ pub const CommandBuffer = struct {
             Impl.get().setBlendConstants(self.device.impl, self.command_buffer.impl, constants);
         }
 
+        pub const ClearValue = union(enum) {
+            color_f32: [4]f32,
+            color_i32: [4]i32,
+            color_u32: [4]u32,
+            depth_stencil: struct { f32, u32 },
+        };
+
+        pub const RenderPassBegin = struct {
+            render_pass: *RenderPass,
+            frame_buffer: *FrameBuffer,
+            render_area: struct {
+                x: u32,
+                y: u32,
+                width: u32,
+                height: u32,
+            },
+            // One clear value per attachment
+            clear_values: []const ?ClearValue,
+        };
+
+        pub const SubpassContents = enum {
+            inline_only,
+            secondary_command_buffers_only,
+        };
+
+        pub const SubpassBegin = struct {
+            contents: SubpassContents,
+        };
+
+        pub const SubpassEnd = struct {};
+
+        /// It must not be called from within another render pass
+        /// and it must be paired with `endRenderPass`.
+        pub fn beginRenderPass(
+            self: *Cmd,
+            render_pass_begin: RenderPassBegin,
+            subpass_begin: SubpassBegin,
+        ) void {
+            Impl.get().beginRenderPass(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                render_pass_begin,
+                subpass_begin,
+            );
+        }
+
+        /// Not used on render passes that have a single subpass.
+        pub fn nextSubpass(self: *Cmd, next_begin: SubpassBegin, current_end: SubpassEnd) void {
+            Impl.get().nextSubpass(
+                self.device.impl,
+                self.command_buffer.impl,
+                next_begin,
+                current_end,
+            );
+        }
+
+        /// It must only be called from within the last subpass of
+        /// a render pass.
+        pub fn endRenderPass(self: *Cmd, subpass_end: SubpassEnd) void {
+            Impl.get().endRenderPass(self.device.impl, self.command_buffer.impl, subpass_end);
+        }
+
         /// Invalidates `self`.
         pub fn end(self: *Cmd) Error!void {
             defer self.* = undefined;

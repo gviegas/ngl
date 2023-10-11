@@ -270,6 +270,30 @@ pub const VTable = struct {
         constants: [4]f32,
     ) void,
 
+    beginRenderPass: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        render_pass_begin: ngl.CommandBuffer.Cmd.RenderPassBegin,
+        subpass_begin: ngl.CommandBuffer.Cmd.SubpassBegin,
+    ) void,
+
+    nextSubpass: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        next_begin: ngl.CommandBuffer.Cmd.SubpassBegin,
+        current_end: ngl.CommandBuffer.Cmd.SubpassEnd,
+    ) void,
+
+    endRenderPass: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        subpass_end: ngl.CommandBuffer.Cmd.SubpassEnd,
+    ) void,
+
     endCommandBuffer: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -906,6 +930,43 @@ pub fn setBlendConstants(
     constants: [4]f32,
 ) void {
     self.vtable.setBlendConstants(self.ptr, device, command_buffer, constants);
+}
+
+pub fn beginRenderPass(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    render_pass_begin: ngl.CommandBuffer.Cmd.RenderPassBegin,
+    subpass_begin: ngl.CommandBuffer.Cmd.SubpassBegin,
+) void {
+    self.vtable.beginRenderPass(
+        self.ptr,
+        allocator,
+        device,
+        command_buffer,
+        render_pass_begin,
+        subpass_begin,
+    );
+}
+
+pub fn nextSubpass(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    next_begin: ngl.CommandBuffer.Cmd.SubpassBegin,
+    current_end: ngl.CommandBuffer.Cmd.SubpassEnd,
+) void {
+    self.vtable.nextSubpass(self.ptr, device, command_buffer, next_begin, current_end);
+}
+
+pub fn endRenderPass(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    subpass_end: ngl.CommandBuffer.Cmd.SubpassEnd,
+) void {
+    self.vtable.endRenderPass(self.ptr, device, command_buffer, subpass_end);
 }
 
 pub fn endCommandBuffer(

@@ -608,3 +608,21 @@ pub fn toVkStencilFaceFlags(stencil_face: ngl.CommandBuffer.Cmd.StencilFace) c.V
         .front_and_back => c.VK_STENCIL_FACE_FRONT_AND_BACK,
     };
 }
+
+pub fn toVkSubpassContents(
+    subpass_contents: ngl.CommandBuffer.Cmd.SubpassContents,
+) c.VkSubpassContents {
+    return switch (subpass_contents) {
+        .inline_only => c.VK_SUBPASS_CONTENTS_INLINE,
+        .secondary_command_buffers_only => c.VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS,
+    };
+}
+
+pub fn toVkClearValue(clear_value: ngl.CommandBuffer.Cmd.ClearValue) c.VkClearValue {
+    return switch (clear_value) {
+        .color_f32 => |x| .{ .color = .{ .float32 = x } },
+        .color_i32 => |x| .{ .color = .{ .int32 = x } },
+        .color_u32 => |x| .{ .color = .{ .uint32 = x } },
+        .depth_stencil => |x| .{ .depthStencil = .{ .depth = x.@"0", .stencil = x.@"1" } },
+    };
+}

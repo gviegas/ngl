@@ -363,6 +363,9 @@ pub const Device = struct {
     cmdSetScissor: c.PFN_vkCmdSetScissor,
     cmdSetStencilReference: c.PFN_vkCmdSetStencilReference,
     cmdSetBlendConstants: c.PFN_vkCmdSetBlendConstants,
+    cmdBeginRenderPass: c.PFN_vkCmdBeginRenderPass,
+    cmdNextSubpass: c.PFN_vkCmdNextSubpass,
+    cmdEndRenderPass: c.PFN_vkCmdEndRenderPass,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
     getFenceStatus: c.PFN_vkGetFenceStatus,
@@ -511,6 +514,9 @@ pub const Device = struct {
             .cmdSetScissor = @ptrCast(try Device.getProc(get, dev, "vkCmdSetScissor")),
             .cmdSetStencilReference = @ptrCast(try Device.getProc(get, dev, "vkCmdSetStencilReference")),
             .cmdSetBlendConstants = @ptrCast(try Device.getProc(get, dev, "vkCmdSetBlendConstants")),
+            .cmdBeginRenderPass = @ptrCast(try Device.getProc(get, dev, "vkCmdBeginRenderPass")),
+            .cmdNextSubpass = @ptrCast(try Device.getProc(get, dev, "vkCmdNextSubpass")),
+            .cmdEndRenderPass = @ptrCast(try Device.getProc(get, dev, "vkCmdEndRenderPass")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
             .getFenceStatus = @ptrCast(try Device.getProc(get, dev, "vkGetFenceStatus")),
@@ -902,6 +908,27 @@ pub const Device = struct {
         constants: [*]const f32,
     ) void {
         self.cmdSetBlendConstants.?(command_buffer, constants);
+    }
+
+    pub inline fn vkCmdBeginRenderPass(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        render_pass_begin: *const c.VkRenderPassBeginInfo,
+        contents: c.VkSubpassContents,
+    ) void {
+        self.cmdBeginRenderPass.?(command_buffer, render_pass_begin, contents);
+    }
+
+    pub inline fn vkCmdNextSubpass(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        contents: c.VkSubpassContents,
+    ) void {
+        self.cmdNextSubpass.?(command_buffer, contents);
+    }
+
+    pub inline fn vkCmdEndRenderPass(self: *Device, command_buffer: c.VkCommandBuffer) void {
+        self.cmdEndRenderPass.?(command_buffer);
     }
 
     pub inline fn vkCreateFence(
@@ -1536,6 +1563,9 @@ const vtable = Impl.VTable{
     .setViewport = @import("cmd.zig").CommandBuffer.setViewport,
     .setStencilReference = @import("cmd.zig").CommandBuffer.setStencilReference,
     .setBlendConstants = @import("cmd.zig").CommandBuffer.setBlendConstants,
+    .beginRenderPass = @import("cmd.zig").CommandBuffer.beginRenderPass,
+    .nextSubpass = @import("cmd.zig").CommandBuffer.nextSubpass,
+    .endRenderPass = @import("cmd.zig").CommandBuffer.endRenderPass,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 
     .initFence = @import("sync.zig").Fence.init,

@@ -677,6 +677,22 @@ test {
 
         cmd.setBlendConstants(.{ 0.1, 0.2, 0.3, 0.4 });
 
+        cmd.beginRenderPass(.{
+            .render_pass = &rp,
+            .frame_buffer = &fb,
+            .render_area = .{
+                .x = 0,
+                .y = 0,
+                .width = 512,
+                .height = 512,
+            },
+            .clear_values = &.{.{ .color_f32 = .{ 1, 1, 1, 1 } }},
+        }, .{ .contents = .inline_only });
+
+        //cmd.nextSubpass(.{ .contents = .secondary_command_buffers_only }, .{});
+
+        cmd.endRenderPass(.{});
+
         try cmd.end();
     }
 
