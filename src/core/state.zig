@@ -24,7 +24,7 @@ pub const Pipeline = struct {
             @compileError("T must be a pipeline state type");
         return struct {
             states: []const T,
-            cache: ?*const PipelineCache,
+            cache: ?*PipelineCache,
         };
     }
 
@@ -229,19 +229,19 @@ pub const ColorBlend = struct {
 
 pub const GraphicsState = struct {
     stages: []const ShaderStage.Desc,
-    layout: *const PipelineLayout,
+    layout: *PipelineLayout,
     vertex_input: ?*const VertexInput,
     viewport: ?*const Viewport,
     rasterization: ?*const Rasterization,
     depth_stencil: ?*const DepthStencil,
     color_blend: ?*const ColorBlend,
-    render_pass: ?*const RenderPass,
+    render_pass: ?*RenderPass,
     subpass: ?RenderPass.Index,
 };
 
 pub const ComputeState = struct {
     stage: ShaderStage.Desc,
-    layout: *const PipelineLayout,
+    layout: *PipelineLayout,
 };
 
 pub const PipelineCache = struct {

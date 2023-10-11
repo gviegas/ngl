@@ -178,7 +178,7 @@ pub const BufferView = struct {
     impl: Impl.BufferView,
 
     pub const Desc = struct {
-        buffer: *const Buffer,
+        buffer: *Buffer,
         format: Format,
         offset: u64,
         range: ?u64,
@@ -324,7 +324,7 @@ pub const ImageView = struct {
     };
 
     pub const Desc = struct {
-        image: *const Image,
+        image: *Image,
         type: Type,
         format: Format,
         range: Image.Range,

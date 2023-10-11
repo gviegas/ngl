@@ -118,11 +118,11 @@ pub const Queue = struct {
         signal: []const SemaphoreSubmit,
 
         pub const CommandBufferSubmit = struct {
-            command_buffer: *const CommandBuffer,
+            command_buffer: *CommandBuffer,
         };
 
         pub const SemaphoreSubmit = struct {
-            semaphore: *const Semaphore,
+            semaphore: *Semaphore,
             stage_mask: PipelineStage.Flags,
         };
     };

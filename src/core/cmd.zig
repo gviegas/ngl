@@ -18,7 +18,7 @@ pub const CommandPool = struct {
     impl: Impl.CommandPool,
 
     pub const Desc = struct {
-        queue: *const Queue,
+        queue: *Queue,
     };
 
     const Self = @This();
@@ -102,9 +102,9 @@ pub const CommandBuffer = struct {
             one_time_submit: bool,
             secondary: ?struct {
                 render_pass_continue: bool,
-                render_pass: *const RenderPass,
+                render_pass: *RenderPass,
                 subpass: RenderPass.Index,
-                frame_buffer: *const FrameBuffer,
+                frame_buffer: *FrameBuffer,
             },
         };
 

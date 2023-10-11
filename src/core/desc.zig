@@ -31,7 +31,7 @@ pub const DescriptorSetLayout = struct {
         type: DescriptorType,
         count: u32,
         stage_mask: ShaderStage.Flags,
-        immutable_samplers: ?[]const *const Sampler,
+        immutable_samplers: ?[]const *Sampler,
     };
 
     pub const Desc = struct {
@@ -60,7 +60,7 @@ pub const PipelineLayout = struct {
     impl: Impl.PipelineLayout,
 
     pub const Desc = struct {
-        descriptor_set_layouts: ?[]const *const DescriptorSetLayout,
+        descriptor_set_layouts: ?[]const *DescriptorSetLayout,
         push_constant_ranges: ?[]const PushConstantRange,
     };
 
@@ -143,7 +143,7 @@ pub const DescriptorSet = struct {
 
     pub const Desc = struct {
         // TODO: Layout plus count pairs
-        layouts: []const *const DescriptorSetLayout,
+        layouts: []const *DescriptorSetLayout,
     };
 
     pub const Write = struct {
