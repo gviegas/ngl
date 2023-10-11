@@ -335,6 +335,23 @@ pub const VTable = struct {
         stride: u32,
     ) void,
 
+    dispatch: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        group_count_x: u32,
+        group_count_y: u32,
+        group_count_z: u32,
+    ) void,
+
+    dispatchIndirect: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        buffer: Buffer,
+        offset: u64,
+    ) void,
+
     executeCommands: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1090,6 +1107,34 @@ pub fn drawIndexedIndirect(
         draw_count,
         stride,
     );
+}
+
+pub fn dispatch(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    group_count_x: u32,
+    group_count_y: u32,
+    group_count_z: u32,
+) void {
+    self.vtable.dispatch(
+        self.ptr,
+        device,
+        command_buffer,
+        group_count_x,
+        group_count_y,
+        group_count_z,
+    );
+}
+
+pub fn dispatchIndirect(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    buffer: Buffer,
+    offset: u64,
+) void {
+    self.vtable.dispatchIndirect(self.ptr, device, command_buffer, buffer, offset);
 }
 
 pub fn executeCommands(

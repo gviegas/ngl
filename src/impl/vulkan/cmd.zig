@@ -510,6 +510,36 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn dispatch(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        group_count_x: u32,
+        group_count_y: u32,
+        group_count_z: u32,
+    ) void {
+        Device.cast(device).vkCmdDispatch(
+            cast(command_buffer).handle,
+            group_count_x,
+            group_count_y,
+            group_count_z,
+        );
+    }
+
+    pub fn dispatchIndirect(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        buffer: Impl.Buffer,
+        offset: u64,
+    ) void {
+        Device.cast(device).vkCmdDispatchIndirect(
+            cast(command_buffer).handle,
+            Buffer.cast(buffer).handle,
+            offset,
+        );
+    }
+
     pub fn executeCommands(
         _: *anyopaque,
         allocator: std.mem.Allocator,

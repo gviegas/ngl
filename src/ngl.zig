@@ -705,6 +705,20 @@ test {
         //cmd.executeCommands(&.{&cmd_bufs[1]});
 
         try cmd.end();
+
+        cmd = try cmd_bufs[0].begin(allocator, &ctx.device, .{
+            .one_time_submit = true,
+            .secondary = null,
+        });
+
+        cmd.setPipeline(&comp_pl[0]);
+
+        cmd.setDescriptors(.compute, &pl_layout_2, 0, &.{&desc_sets_2[0]});
+
+        cmd.dispatch(16, 16, 1);
+        cmd.dispatchIndirect(&buf, 768);
+
+        try cmd.end();
     }
 
     try ctx.device.wait();

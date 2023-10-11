@@ -368,6 +368,36 @@ pub const CommandBuffer = struct {
             );
         }
 
+        pub fn dispatch(
+            self: *Cmd,
+            group_count_x: u32,
+            group_count_y: u32,
+            group_count_z: u32,
+        ) void {
+            Impl.get().dispatch(
+                self.device.impl,
+                self.command_buffer.impl,
+                group_count_x,
+                group_count_y,
+                group_count_z,
+            );
+        }
+
+        pub const DispatchIndirect = packed struct {
+            group_count_x: u32,
+            group_count_y: u32,
+            group_count_z: u32,
+        };
+
+        pub fn dispatchIndirect(self: *Cmd, buffer: *Buffer, offset: u64) void {
+            Impl.get().dispatchIndirect(
+                self.device.impl,
+                self.command_buffer.impl,
+                buffer.impl,
+                offset,
+            );
+        }
+
         /// It must only be called on a primary command buffer.
         /// The secondary command buffers must not be reused until
         /// `self.command_buffer` itself completes execution or is

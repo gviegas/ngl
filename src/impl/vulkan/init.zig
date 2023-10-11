@@ -370,6 +370,8 @@ pub const Device = struct {
     cmdDrawIndexed: c.PFN_vkCmdDrawIndexed,
     cmdDrawIndirect: c.PFN_vkCmdDrawIndirect,
     cmdDrawIndexedIndirect: c.PFN_vkCmdDrawIndexedIndirect,
+    cmdDispatch: c.PFN_vkCmdDispatch,
+    cmdDispatchIndirect: c.PFN_vkCmdDispatchIndirect,
     cmdExecuteCommands: c.PFN_vkCmdExecuteCommands,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
@@ -526,6 +528,8 @@ pub const Device = struct {
             .cmdDrawIndexed = @ptrCast(try Device.getProc(get, dev, "vkCmdDrawIndexed")),
             .cmdDrawIndirect = @ptrCast(try Device.getProc(get, dev, "vkCmdDrawIndirect")),
             .cmdDrawIndexedIndirect = @ptrCast(try Device.getProc(get, dev, "vkCmdDrawIndexedIndirect")),
+            .cmdDispatch = @ptrCast(try Device.getProc(get, dev, "vkCmdDispatch")),
+            .cmdDispatchIndirect = @ptrCast(try Device.getProc(get, dev, "vkCmdDispatchIndirect")),
             .cmdExecuteCommands = @ptrCast(try Device.getProc(get, dev, "vkCmdExecuteCommands")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
@@ -991,6 +995,25 @@ pub const Device = struct {
         stride: u32,
     ) void {
         self.cmdDrawIndexedIndirect.?(command_buffer, buffer, offset, draw_count, stride);
+    }
+
+    pub inline fn vkCmdDispatch(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        group_count_x: u32,
+        group_count_y: u32,
+        group_count_z: u32,
+    ) void {
+        self.cmdDispatch.?(command_buffer, group_count_x, group_count_y, group_count_z);
+    }
+
+    pub inline fn vkCmdDispatchIndirect(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        buffer: c.VkBuffer,
+        offset: u64,
+    ) void {
+        self.cmdDispatchIndirect.?(command_buffer, buffer, offset);
     }
 
     pub inline fn vkCmdExecuteCommands(
@@ -1645,6 +1668,8 @@ const vtable = Impl.VTable{
     .drawIndexed = @import("cmd.zig").CommandBuffer.drawIndexed,
     .drawIndirect = @import("cmd.zig").CommandBuffer.drawIndirect,
     .drawIndexedIndirect = @import("cmd.zig").CommandBuffer.drawIndexedIndirect,
+    .dispatch = @import("cmd.zig").CommandBuffer.dispatch,
+    .dispatchIndirect = @import("cmd.zig").CommandBuffer.dispatchIndirect,
     .executeCommands = @import("cmd.zig").CommandBuffer.executeCommands,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 
