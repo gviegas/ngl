@@ -436,6 +436,80 @@ pub const CommandBuffer = packed struct {
         Device.cast(device).vkCmdEndRenderPass(cast(command_buffer).handle);
     }
 
+    pub fn draw(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        vertex_count: u32,
+        instance_count: u32,
+        first_vertex: u32,
+        first_instance: u32,
+    ) void {
+        Device.cast(device).vkCmdDraw(
+            cast(command_buffer).handle,
+            vertex_count,
+            instance_count,
+            first_vertex,
+            first_instance,
+        );
+    }
+
+    pub fn drawIndexed(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        index_count: u32,
+        instance_count: u32,
+        first_index: u32,
+        vertex_offset: i32,
+        first_instance: u32,
+    ) void {
+        Device.cast(device).vkCmdDrawIndexed(
+            cast(command_buffer).handle,
+            index_count,
+            instance_count,
+            first_index,
+            vertex_offset,
+            first_instance,
+        );
+    }
+
+    pub fn drawIndirect(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        buffer: Impl.Buffer,
+        offset: u64,
+        draw_count: u32,
+        stride: u32,
+    ) void {
+        Device.cast(device).vkCmdDrawIndirect(
+            cast(command_buffer).handle,
+            Buffer.cast(buffer).handle,
+            offset,
+            draw_count,
+            stride,
+        );
+    }
+
+    pub fn drawIndexedIndirect(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        buffer: Impl.Buffer,
+        offset: u64,
+        draw_count: u32,
+        stride: u32,
+    ) void {
+        Device.cast(device).vkCmdDrawIndexedIndirect(
+            cast(command_buffer).handle,
+            Buffer.cast(buffer).handle,
+            offset,
+            draw_count,
+            stride,
+        );
+    }
+
     pub fn executeCommands(
         _: *anyopaque,
         allocator: std.mem.Allocator,

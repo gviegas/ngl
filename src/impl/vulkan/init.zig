@@ -366,6 +366,10 @@ pub const Device = struct {
     cmdBeginRenderPass: c.PFN_vkCmdBeginRenderPass,
     cmdNextSubpass: c.PFN_vkCmdNextSubpass,
     cmdEndRenderPass: c.PFN_vkCmdEndRenderPass,
+    cmdDraw: c.PFN_vkCmdDraw,
+    cmdDrawIndexed: c.PFN_vkCmdDrawIndexed,
+    cmdDrawIndirect: c.PFN_vkCmdDrawIndirect,
+    cmdDrawIndexedIndirect: c.PFN_vkCmdDrawIndexedIndirect,
     cmdExecuteCommands: c.PFN_vkCmdExecuteCommands,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
@@ -518,6 +522,10 @@ pub const Device = struct {
             .cmdBeginRenderPass = @ptrCast(try Device.getProc(get, dev, "vkCmdBeginRenderPass")),
             .cmdNextSubpass = @ptrCast(try Device.getProc(get, dev, "vkCmdNextSubpass")),
             .cmdEndRenderPass = @ptrCast(try Device.getProc(get, dev, "vkCmdEndRenderPass")),
+            .cmdDraw = @ptrCast(try Device.getProc(get, dev, "vkCmdDraw")),
+            .cmdDrawIndexed = @ptrCast(try Device.getProc(get, dev, "vkCmdDrawIndexed")),
+            .cmdDrawIndirect = @ptrCast(try Device.getProc(get, dev, "vkCmdDrawIndirect")),
+            .cmdDrawIndexedIndirect = @ptrCast(try Device.getProc(get, dev, "vkCmdDrawIndexedIndirect")),
             .cmdExecuteCommands = @ptrCast(try Device.getProc(get, dev, "vkCmdExecuteCommands")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
@@ -931,6 +939,58 @@ pub const Device = struct {
 
     pub inline fn vkCmdEndRenderPass(self: *Device, command_buffer: c.VkCommandBuffer) void {
         self.cmdEndRenderPass.?(command_buffer);
+    }
+
+    pub inline fn vkCmdDraw(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        vertex_count: u32,
+        instance_count: u32,
+        first_vertex: u32,
+        first_instance: u32,
+    ) void {
+        self.cmdDraw.?(command_buffer, vertex_count, instance_count, first_vertex, first_instance);
+    }
+
+    pub inline fn vkCmdDrawIndexed(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        index_count: u32,
+        instance_count: u32,
+        first_index: u32,
+        vertex_offset: i32,
+        first_instance: u32,
+    ) void {
+        self.cmdDrawIndexed.?(
+            command_buffer,
+            index_count,
+            instance_count,
+            first_index,
+            vertex_offset,
+            first_instance,
+        );
+    }
+
+    pub inline fn vkCmdDrawIndirect(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        buffer: c.VkBuffer,
+        offset: u64,
+        draw_count: u32,
+        stride: u32,
+    ) void {
+        self.cmdDrawIndirect.?(command_buffer, buffer, offset, draw_count, stride);
+    }
+
+    pub inline fn vkCmdDrawIndexedIndirect(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        buffer: c.VkBuffer,
+        offset: u64,
+        draw_count: u32,
+        stride: u32,
+    ) void {
+        self.cmdDrawIndexedIndirect.?(command_buffer, buffer, offset, draw_count, stride);
     }
 
     pub inline fn vkCmdExecuteCommands(
@@ -1581,6 +1641,10 @@ const vtable = Impl.VTable{
     .beginRenderPass = @import("cmd.zig").CommandBuffer.beginRenderPass,
     .nextSubpass = @import("cmd.zig").CommandBuffer.nextSubpass,
     .endRenderPass = @import("cmd.zig").CommandBuffer.endRenderPass,
+    .draw = @import("cmd.zig").CommandBuffer.draw,
+    .drawIndexed = @import("cmd.zig").CommandBuffer.drawIndexed,
+    .drawIndirect = @import("cmd.zig").CommandBuffer.drawIndirect,
+    .drawIndexedIndirect = @import("cmd.zig").CommandBuffer.drawIndexedIndirect,
     .executeCommands = @import("cmd.zig").CommandBuffer.executeCommands,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 

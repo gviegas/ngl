@@ -294,6 +294,47 @@ pub const VTable = struct {
         subpass_end: ngl.CommandBuffer.Cmd.SubpassEnd,
     ) void,
 
+    draw: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        vertex_count: u32,
+        instance_count: u32,
+        first_vertex: u32,
+        first_instance: u32,
+    ) void,
+
+    drawIndexed: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        index_count: u32,
+        instance_count: u32,
+        first_index: u32,
+        vertex_offset: i32,
+        first_instance: u32,
+    ) void,
+
+    drawIndirect: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        buffer: Buffer,
+        offset: u64,
+        draw_count: u32,
+        stride: u32,
+    ) void,
+
+    drawIndexedIndirect: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        buffer: Buffer,
+        offset: u64,
+        draw_count: u32,
+        stride: u32,
+    ) void,
+
     executeCommands: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -975,6 +1016,80 @@ pub fn endRenderPass(
     subpass_end: ngl.CommandBuffer.Cmd.SubpassEnd,
 ) void {
     self.vtable.endRenderPass(self.ptr, device, command_buffer, subpass_end);
+}
+
+pub fn draw(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    vertex_count: u32,
+    instance_count: u32,
+    first_vertex: u32,
+    first_instance: u32,
+) void {
+    self.vtable.draw(
+        self.ptr,
+        device,
+        command_buffer,
+        vertex_count,
+        instance_count,
+        first_vertex,
+        first_instance,
+    );
+}
+
+pub fn drawIndexed(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    index_count: u32,
+    instance_count: u32,
+    first_index: u32,
+    vertex_offset: i32,
+    first_instance: u32,
+) void {
+    self.vtable.drawIndexed(
+        self.ptr,
+        device,
+        command_buffer,
+        index_count,
+        instance_count,
+        first_index,
+        vertex_offset,
+        first_instance,
+    );
+}
+
+pub fn drawIndirect(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    buffer: Buffer,
+    offset: u64,
+    draw_count: u32,
+    stride: u32,
+) void {
+    self.vtable.drawIndirect(self.ptr, device, command_buffer, buffer, offset, draw_count, stride);
+}
+
+pub fn drawIndexedIndirect(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    buffer: Buffer,
+    offset: u64,
+    draw_count: u32,
+    stride: u32,
+) void {
+    self.vtable.drawIndexedIndirect(
+        self.ptr,
+        device,
+        command_buffer,
+        buffer,
+        offset,
+        draw_count,
+        stride,
+    );
 }
 
 pub fn executeCommands(

@@ -283,7 +283,92 @@ pub const CommandBuffer = struct {
             Impl.get().endRenderPass(self.device.impl, self.command_buffer.impl, subpass_end);
         }
 
-        /// Must only be called on primary command buffers.
+        pub fn draw(
+            self: *Cmd,
+            vertex_count: u32,
+            instance_count: u32,
+            first_vertex: u32,
+            first_instance: u32,
+        ) void {
+            Impl.get().draw(
+                self.device.impl,
+                self.command_buffer.impl,
+                vertex_count,
+                instance_count,
+                first_vertex,
+                first_instance,
+            );
+        }
+
+        pub fn drawIndexed(
+            self: *Cmd,
+            index_count: u32,
+            instance_count: u32,
+            first_index: u32,
+            vertex_offset: i32,
+            first_instance: u32,
+        ) void {
+            Impl.get().drawIndexed(
+                self.device.impl,
+                self.command_buffer.impl,
+                index_count,
+                instance_count,
+                first_index,
+                vertex_offset,
+                first_instance,
+            );
+        }
+
+        pub const DrawIndirect = packed struct {
+            vertex_count: u32,
+            instance_count: u32,
+            first_vertex: u32,
+            first_instance: u32,
+        };
+
+        pub fn drawIndirect(
+            self: *Cmd,
+            buffer: *Buffer,
+            offset: u64,
+            draw_count: u32,
+            stride: u32,
+        ) void {
+            Impl.get().drawIndirect(
+                self.device.impl,
+                self.command_buffer.impl,
+                buffer.impl,
+                offset,
+                draw_count,
+                stride,
+            );
+        }
+
+        pub const DrawIndexedIndirect = packed struct {
+            index_count: u32,
+            instance_count: u32,
+            first_index: u32,
+            vertex_offset: i32,
+            first_instance: u32,
+        };
+
+        pub fn drawIndexedIndirect(
+            self: *Cmd,
+            buffer: *Buffer,
+            offset: u64,
+            draw_count: u32,
+            stride: u32,
+        ) void {
+            Impl.get().drawIndexedIndirect(
+                self.device.impl,
+                self.command_buffer.impl,
+                buffer.impl,
+                offset,
+                draw_count,
+                stride,
+            );
+        }
+
+        /// It must only be called on a primary command buffer.
         /// The secondary command buffers must not be reused until
         /// `self.command_buffer` itself completes execution or is
         /// invalidated by `CommandPool.reset`.

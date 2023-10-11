@@ -235,6 +235,7 @@ test {
             .uniform_buffer = true,
             .index_buffer = true,
             .vertex_buffer = true,
+            .indirect_buffer = true,
             .transfer_source = true,
             .transfer_dest = true,
         },
@@ -631,14 +632,17 @@ test {
     defer comp_pl[0].deinit(allocator, &ctx.device);
 
     {
-        const cb_sec = try cmd_pool.alloc(allocator, &ctx.device, .{
-            .level = .secondary,
-            .count = 1,
-        });
-        defer allocator.free(cb_sec);
+        var cb_sec = blk: {
+            var slice = try cmd_pool.alloc(allocator, &ctx.device, .{
+                .level = .secondary,
+                .count = 1,
+            });
+            defer allocator.free(slice);
+            break :blk slice[0];
+        };
         try cmd_pool.reset(&ctx.device);
 
-        var cmd = try cmd_bufs[0].begin(allocator, &ctx.device, .{
+        var cmd = try cb_sec.begin(allocator, &ctx.device, .{
             .one_time_submit = true,
             .secondary = .{
                 .render_pass_continue = true,
@@ -690,6 +694,11 @@ test {
         }, .{ .contents = .inline_only });
 
         //cmd.nextSubpass(.{ .contents = .secondary_command_buffers_only }, .{});
+
+        cmd.draw(3, 1, 0, 0);
+        cmd.drawIndexed(6, 1, 0, 0, 0);
+        cmd.drawIndirect(&buf, 16384, 1, 0);
+        cmd.drawIndexedIndirect(&buf, 32768, 1, 0);
 
         cmd.endRenderPass(.{});
 
