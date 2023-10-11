@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
@@ -275,7 +276,7 @@ pub const CommandBuffer = packed struct {
         var stk_bufs: [n]c.VkBuffer = undefined;
         var bufs = if (buffers.len > n) allocator.alloc(c.VkBuffer, buffers.len) catch {
             var i: usize = 0;
-            while (i < n) : (i += n) {
+            while (i < buffers.len) : (i += n) {
                 const j = @min(i + n, buffers.len);
                 setVertexBuffers(
                     undefined,
@@ -433,6 +434,46 @@ pub const CommandBuffer = packed struct {
         _: ngl.CommandBuffer.Cmd.SubpassEnd,
     ) void {
         Device.cast(device).vkCmdEndRenderPass(cast(command_buffer).handle);
+    }
+
+    pub fn executeCommands(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        secondary_command_buffers: []const *ngl.CommandBuffer,
+    ) void {
+        // Ideally, this would be the number of available cores,
+        // but such value isn't known at compile time
+        const n = if (builtin.single_threaded) 1 else 16;
+        var stk_cmd_bufs: [n]c.VkCommandBuffer = undefined;
+        var cmd_bufs = if (secondary_command_buffers.len > n) allocator.alloc(
+            c.VkCommandBuffer,
+            secondary_command_buffers.len,
+        ) catch {
+            var i: usize = 0;
+            while (i < secondary_command_buffers.len) : (i += n) {
+                const j = @min(i + n, secondary_command_buffers.len);
+                executeCommands(
+                    undefined,
+                    allocator,
+                    device,
+                    command_buffer,
+                    secondary_command_buffers[i..j],
+                );
+            }
+            return;
+        } else stk_cmd_bufs[0..secondary_command_buffers.len];
+        defer if (cmd_bufs.len > n) allocator.free(cmd_bufs);
+
+        for (cmd_bufs, secondary_command_buffers) |*handle, cmd_buf|
+            handle.* = cast(cmd_buf.impl).handle;
+
+        Device.cast(device).vkCmdExecuteCommands(
+            cast(command_buffer).handle,
+            @intCast(cmd_bufs.len),
+            cmd_bufs.ptr,
+        );
     }
 
     pub fn end(

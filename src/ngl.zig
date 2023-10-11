@@ -693,6 +693,8 @@ test {
 
         cmd.endRenderPass(.{});
 
+        //cmd.executeCommands(&.{&cmd_bufs[1]});
+
         try cmd.end();
     }
 

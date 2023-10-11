@@ -283,6 +283,19 @@ pub const CommandBuffer = struct {
             Impl.get().endRenderPass(self.device.impl, self.command_buffer.impl, subpass_end);
         }
 
+        /// Must only be called on primary command buffers.
+        /// The secondary command buffers must not be reused until
+        /// `self.command_buffer` itself completes execution or is
+        /// invalidated by `CommandPool.reset`.
+        pub fn executeCommands(self: *Cmd, secondary_command_buffers: []const *CommandBuffer) void {
+            Impl.get().executeCommands(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                secondary_command_buffers,
+            );
+        }
+
         /// Invalidates `self`.
         pub fn end(self: *Cmd) Error!void {
             defer self.* = undefined;
