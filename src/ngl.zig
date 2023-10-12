@@ -644,7 +644,7 @@ test {
 
         var cmd = try cb_sec.begin(allocator, &ctx.device, .{
             .one_time_submit = true,
-            .secondary = .{
+            .inheritance = .{
                 .render_pass_continue = true,
                 .render_pass = &rp,
                 .subpass = 0,
@@ -708,7 +708,7 @@ test {
 
         cmd = try cmd_bufs[0].begin(allocator, &ctx.device, .{
             .one_time_submit = true,
-            .secondary = null,
+            .inheritance = null,
         });
 
         cmd.setPipeline(&comp_pl[0]);

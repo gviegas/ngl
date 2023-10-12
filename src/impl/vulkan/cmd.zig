@@ -6,6 +6,7 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const null_handle = conv.null_handle;
 const check = conv.check;
 const Device = @import("init.zig").Device;
 const Queue = @import("init.zig").Queue;
@@ -141,18 +142,18 @@ pub const CommandBuffer = packed struct {
             var flags: c.VkCommandBufferUsageFlags = 0;
             if (desc.one_time_submit)
                 flags |= c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            if (desc.secondary != null and desc.secondary.?.render_pass_continue)
+            if (desc.inheritance != null and desc.inheritance.?.render_pass_continue)
                 flags |= c.VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
             // Disallow simultaneous use
             break :blk flags;
         };
 
-        const inher_info = if (desc.secondary) |x| &c.VkCommandBufferInheritanceInfo{
+        const inher_info = if (desc.inheritance) |x| &c.VkCommandBufferInheritanceInfo{
             .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
             .pNext = null,
-            .renderPass = RenderPass.cast(x.render_pass.impl).handle,
+            .renderPass = if (x.render_pass) |p| RenderPass.cast(p.impl).handle else null_handle,
             .subpass = x.subpass,
-            .framebuffer = FrameBuffer.cast(x.frame_buffer.impl).handle,
+            .framebuffer = if (x.frame_buffer) |f| FrameBuffer.cast(f.impl).handle else null_handle,
             // TODO: Expose these
             .occlusionQueryEnable = c.VK_FALSE,
             .queryFlags = 0,

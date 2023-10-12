@@ -100,11 +100,13 @@ pub const CommandBuffer = struct {
 
         pub const Desc = struct {
             one_time_submit: bool,
-            secondary: ?struct {
+            // This field only applies to secondary
+            // command buffers
+            inheritance: ?struct {
                 render_pass_continue: bool,
-                render_pass: *RenderPass,
+                render_pass: ?*RenderPass,
                 subpass: RenderPass.Index,
-                frame_buffer: *FrameBuffer,
+                frame_buffer: ?*FrameBuffer,
             },
         };
 
