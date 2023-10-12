@@ -373,6 +373,10 @@ pub const Device = struct {
     cmdDispatch: c.PFN_vkCmdDispatch,
     cmdDispatchIndirect: c.PFN_vkCmdDispatchIndirect,
     cmdFillBuffer: c.PFN_vkCmdFillBuffer,
+    cmdCopyBuffer: c.PFN_vkCmdCopyBuffer,
+    cmdCopyImage: c.PFN_vkCmdCopyImage,
+    cmdCopyBufferToImage: c.PFN_vkCmdCopyBufferToImage,
+    cmdCopyImageToBuffer: c.PFN_vkCmdCopyImageToBuffer,
     cmdExecuteCommands: c.PFN_vkCmdExecuteCommands,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
@@ -532,6 +536,10 @@ pub const Device = struct {
             .cmdDispatch = @ptrCast(try Device.getProc(get, dev, "vkCmdDispatch")),
             .cmdDispatchIndirect = @ptrCast(try Device.getProc(get, dev, "vkCmdDispatchIndirect")),
             .cmdFillBuffer = @ptrCast(try Device.getProc(get, dev, "vkCmdFillBuffer")),
+            .cmdCopyBuffer = @ptrCast(try Device.getProc(get, dev, "vkCmdCopyBuffer")),
+            .cmdCopyImage = @ptrCast(try Device.getProc(get, dev, "vkCmdCopyImage")),
+            .cmdCopyBufferToImage = @ptrCast(try Device.getProc(get, dev, "vkCmdCopyBufferToImage")),
+            .cmdCopyImageToBuffer = @ptrCast(try Device.getProc(get, dev, "vkCmdCopyImageToBuffer")),
             .cmdExecuteCommands = @ptrCast(try Device.getProc(get, dev, "vkCmdExecuteCommands")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
@@ -1027,6 +1035,76 @@ pub const Device = struct {
         value: u32,
     ) void {
         self.cmdFillBuffer.?(command_buffer, buffer, offset, size, value);
+    }
+
+    pub inline fn vkCmdCopyBuffer(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        source_buffer: c.VkBuffer,
+        dest_buffer: c.VkBuffer,
+        region_count: u32,
+        regions: [*]const c.VkBufferCopy,
+    ) void {
+        self.cmdCopyBuffer.?(command_buffer, source_buffer, dest_buffer, region_count, regions);
+    }
+
+    pub inline fn vkCmdCopyImage(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        source_image: c.VkImage,
+        source_image_layout: c.VkImageLayout,
+        dest_image: c.VkImage,
+        dest_image_layout: c.VkImageLayout,
+        region_count: u32,
+        regions: [*]const c.VkImageCopy,
+    ) void {
+        self.cmdCopyImage.?(
+            command_buffer,
+            source_image,
+            source_image_layout,
+            dest_image,
+            dest_image_layout,
+            region_count,
+            regions,
+        );
+    }
+
+    pub inline fn vkCmdCopyBufferToImage(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        source_buffer: c.VkBuffer,
+        dest_image: c.VkImage,
+        dest_image_layout: c.VkImageLayout,
+        region_count: u32,
+        regions: [*]const c.VkBufferImageCopy,
+    ) void {
+        self.cmdCopyBufferToImage.?(
+            command_buffer,
+            source_buffer,
+            dest_image,
+            dest_image_layout,
+            region_count,
+            regions,
+        );
+    }
+
+    pub inline fn vkCmdCopyImageToBuffer(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        source_image: c.VkImage,
+        source_image_layout: c.VkImageLayout,
+        dest_buffer: c.VkBuffer,
+        region_count: u32,
+        regions: [*]const c.VkBufferImageCopy,
+    ) void {
+        self.cmdCopyImageToBuffer.?(
+            command_buffer,
+            source_image,
+            source_image_layout,
+            dest_buffer,
+            region_count,
+            regions,
+        );
     }
 
     pub inline fn vkCmdExecuteCommands(
@@ -1684,6 +1762,10 @@ const vtable = Impl.VTable{
     .dispatch = @import("cmd.zig").CommandBuffer.dispatch,
     .dispatchIndirect = @import("cmd.zig").CommandBuffer.dispatchIndirect,
     .fillBuffer = @import("cmd.zig").CommandBuffer.fillBuffer,
+    .copyBuffer = @import("cmd.zig").CommandBuffer.copyBuffer,
+    .copyImage = @import("cmd.zig").CommandBuffer.copyImage,
+    .copyBufferToImage = @import("cmd.zig").CommandBuffer.copyBufferToImage,
+    .copyImageToBuffer = @import("cmd.zig").CommandBuffer.copyImageToBuffer,
     .executeCommands = @import("cmd.zig").CommandBuffer.executeCommands,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 

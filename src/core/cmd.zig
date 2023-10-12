@@ -4,6 +4,7 @@ const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
 const Queue = ngl.Queue;
 const Buffer = ngl.Buffer;
+const Image = ngl.Image;
 const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
 const PipelineLayout = ngl.PipelineLayout;
@@ -321,7 +322,7 @@ pub const CommandBuffer = struct {
             );
         }
 
-        pub const DrawIndirect = packed struct {
+        pub const DrawIndirectCommand = packed struct {
             vertex_count: u32,
             instance_count: u32,
             first_vertex: u32,
@@ -345,7 +346,7 @@ pub const CommandBuffer = struct {
             );
         }
 
-        pub const DrawIndexedIndirect = packed struct {
+        pub const DrawIndexedIndirectCommand = packed struct {
             index_count: u32,
             instance_count: u32,
             first_index: u32,
@@ -385,7 +386,7 @@ pub const CommandBuffer = struct {
             );
         }
 
-        pub const DispatchIndirect = packed struct {
+        pub const DispatchIndirectCommand = packed struct {
             group_count_x: u32,
             group_count_y: u32,
             group_count_z: u32,
@@ -409,6 +410,102 @@ pub const CommandBuffer = struct {
                 offset,
                 size,
                 value,
+            );
+        }
+
+        pub const BufferCopy = struct {
+            source: *Buffer,
+            dest: *Buffer,
+            regions: []const Region,
+
+            pub const Region = struct {
+                source_offset: u64,
+                dest_offset: u64,
+                size: u64,
+            };
+        };
+
+        pub fn copyBuffer(self: *Cmd, copies: []const BufferCopy) void {
+            Impl.get().copyBuffer(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                copies,
+            );
+        }
+
+        pub const ImageCopy = struct {
+            source: *Image,
+            source_layout: Image.Layout,
+            dest: *Image,
+            dest_layout: Image.Layout,
+            // TODO: Consider adding a `type` field to `Image`
+            type: Image.Type,
+            regions: []const Region,
+
+            pub const Region = struct {
+                source_aspect: Image.Aspect,
+                source_level: u32,
+                source_x: u32,
+                source_y: u32,
+                source_z_or_layer: u32,
+                dest_aspect: Image.Aspect,
+                dest_level: u32,
+                dest_x: u32,
+                dest_y: u32,
+                dest_z_or_layer: u32,
+                width: u32,
+                height: u32,
+                depth_or_layers: u32,
+            };
+        };
+
+        pub fn copyImage(self: *Cmd, copies: []const ImageCopy) void {
+            Impl.get().copyImage(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                copies,
+            );
+        }
+
+        pub const BufferImageCopy = struct {
+            buffer: *Buffer,
+            image: *Image,
+            image_layout: Image.Layout,
+            image_type: Image.Type,
+            regions: []const Region,
+
+            pub const Region = struct {
+                buffer_offset: u64,
+                buffer_row_length: u32,
+                buffer_image_height: u32,
+                image_aspect: Image.Aspect,
+                image_level: u32,
+                image_x: u32,
+                image_y: u32,
+                image_z_or_layer: u32,
+                image_width: u32,
+                image_height: u32,
+                image_depth_or_layers: u32,
+            };
+        };
+
+        pub fn copyBufferToImage(self: *Cmd, copies: []const BufferImageCopy) void {
+            Impl.get().copyBufferToImage(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                copies,
+            );
+        }
+
+        pub fn copyImageToBuffer(self: *Cmd, copies: []const BufferImageCopy) void {
+            Impl.get().copyImageToBuffer(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                copies,
             );
         }
 

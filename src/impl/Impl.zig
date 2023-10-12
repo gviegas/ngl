@@ -362,6 +362,38 @@ pub const VTable = struct {
         value: u8,
     ) void,
 
+    copyBuffer: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        copies: []const ngl.CommandBuffer.Cmd.BufferCopy,
+    ) void,
+
+    copyImage: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        copies: []const ngl.CommandBuffer.Cmd.ImageCopy,
+    ) void,
+
+    copyBufferToImage: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+    ) void,
+
+    copyImageToBuffer: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+    ) void,
+
     executeCommands: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1157,6 +1189,46 @@ pub fn fillBuffer(
     value: u8,
 ) void {
     self.vtable.fillBuffer(self.ptr, device, command_buffer, buffer, offset, size, value);
+}
+
+pub fn copyBuffer(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    copies: []const ngl.CommandBuffer.Cmd.BufferCopy,
+) void {
+    self.vtable.copyBuffer(self.ptr, allocator, device, command_buffer, copies);
+}
+
+pub fn copyImage(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    copies: []const ngl.CommandBuffer.Cmd.ImageCopy,
+) void {
+    self.vtable.copyImage(self.ptr, allocator, device, command_buffer, copies);
+}
+
+pub fn copyBufferToImage(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+) void {
+    self.vtable.copyBufferToImage(self.ptr, allocator, device, command_buffer, copies);
+}
+
+pub fn copyImageToBuffer(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+) void {
+    self.vtable.copyImageToBuffer(self.ptr, allocator, device, command_buffer, copies);
 }
 
 pub fn executeCommands(

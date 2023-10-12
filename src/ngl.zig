@@ -269,7 +269,7 @@ test {
         .format = .rgba8_unorm,
         .width = 1024,
         .height = 1024,
-        .depth_or_layers = 1,
+        .depth_or_layers = 4,
         .levels = 1,
         .samples = .@"1",
         .tiling = .optimal,
@@ -277,7 +277,7 @@ test {
             .sampled_image = true,
             .storage_image = true,
             .color_attachment = true,
-            .transfer_source = false,
+            .transfer_source = true,
             .transfer_dest = true,
         },
         .misc = .{
@@ -712,6 +712,42 @@ test {
         });
 
         cmd.fillBuffer(&buf, 0, 512, 0xd1);
+
+        cmd.copyBuffer(&.{.{
+            .source = &buf,
+            .dest = &buf,
+            .regions = &.{.{
+                .source_offset = 3072,
+                .dest_offset = 2048,
+                .size = 1024,
+            }},
+        }});
+
+        cmd.copyImage(&.{.{
+            .source = &image,
+            .source_layout = .general,
+            .dest = &image,
+            .dest_layout = .general,
+            .type = .@"2d",
+            .regions = &.{.{
+                .source_aspect = .color,
+                .source_level = 0,
+                .source_x = 0,
+                .source_y = 0,
+                .source_z_or_layer = 0,
+                .dest_aspect = .color,
+                .dest_level = 0,
+                .dest_x = 0,
+                .dest_y = 0,
+                .dest_z_or_layer = 1,
+                .width = 512,
+                .height = 256,
+                .depth_or_layers = 1,
+            }},
+        }});
+
+        cmd.copyBufferToImage(&.{});
+        cmd.copyImageToBuffer(&.{});
 
         cmd.setPipeline(&comp_pl[0]);
 
