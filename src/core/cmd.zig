@@ -400,6 +400,18 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// Filled range must be 4-byte aligned.
+        pub fn fillBuffer(self: *Cmd, buffer: *Buffer, offset: u64, size: ?u64, value: u8) void {
+            Impl.get().fillBuffer(
+                self.device.impl,
+                self.command_buffer.impl,
+                buffer.impl,
+                offset,
+                size,
+                value,
+            );
+        }
+
         /// It must only be called on a primary command buffer.
         /// The secondary command buffers must not be reused until
         /// `self.command_buffer` itself completes execution or is

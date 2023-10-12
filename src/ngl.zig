@@ -711,6 +711,8 @@ test {
             .inheritance = null,
         });
 
+        cmd.fillBuffer(&buf, 0, 512, 0xd1);
+
         cmd.setPipeline(&comp_pl[0]);
 
         cmd.setDescriptors(.compute, &pl_layout_2, 0, &.{&desc_sets_2[0]});

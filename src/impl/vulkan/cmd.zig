@@ -541,6 +541,30 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn fillBuffer(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        buffer: Impl.Buffer,
+        offset: u64,
+        size: ?u64,
+        value: u8,
+    ) void {
+        const val32 =
+            @as(u32, value) |
+            @as(u32, value) << 8 |
+            @as(u32, value) << 16 |
+            @as(u32, value) << 24;
+
+        Device.cast(device).vkCmdFillBuffer(
+            cast(command_buffer).handle,
+            Buffer.cast(buffer).handle,
+            offset,
+            size orelse c.VK_WHOLE_SIZE,
+            val32,
+        );
+    }
+
     pub fn executeCommands(
         _: *anyopaque,
         allocator: std.mem.Allocator,

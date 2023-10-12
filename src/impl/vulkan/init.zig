@@ -372,6 +372,7 @@ pub const Device = struct {
     cmdDrawIndexedIndirect: c.PFN_vkCmdDrawIndexedIndirect,
     cmdDispatch: c.PFN_vkCmdDispatch,
     cmdDispatchIndirect: c.PFN_vkCmdDispatchIndirect,
+    cmdFillBuffer: c.PFN_vkCmdFillBuffer,
     cmdExecuteCommands: c.PFN_vkCmdExecuteCommands,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
@@ -530,6 +531,7 @@ pub const Device = struct {
             .cmdDrawIndexedIndirect = @ptrCast(try Device.getProc(get, dev, "vkCmdDrawIndexedIndirect")),
             .cmdDispatch = @ptrCast(try Device.getProc(get, dev, "vkCmdDispatch")),
             .cmdDispatchIndirect = @ptrCast(try Device.getProc(get, dev, "vkCmdDispatchIndirect")),
+            .cmdFillBuffer = @ptrCast(try Device.getProc(get, dev, "vkCmdFillBuffer")),
             .cmdExecuteCommands = @ptrCast(try Device.getProc(get, dev, "vkCmdExecuteCommands")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
@@ -979,7 +981,7 @@ pub const Device = struct {
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         buffer: c.VkBuffer,
-        offset: u64,
+        offset: c.VkDeviceSize,
         draw_count: u32,
         stride: u32,
     ) void {
@@ -990,7 +992,7 @@ pub const Device = struct {
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         buffer: c.VkBuffer,
-        offset: u64,
+        offset: c.VkDeviceSize,
         draw_count: u32,
         stride: u32,
     ) void {
@@ -1011,9 +1013,20 @@ pub const Device = struct {
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         buffer: c.VkBuffer,
-        offset: u64,
+        offset: c.VkDeviceSize,
     ) void {
         self.cmdDispatchIndirect.?(command_buffer, buffer, offset);
+    }
+
+    pub inline fn vkCmdFillBuffer(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        buffer: c.VkBuffer,
+        offset: c.VkDeviceSize,
+        size: c.VkDeviceSize,
+        value: u32,
+    ) void {
+        self.cmdFillBuffer.?(command_buffer, buffer, offset, size, value);
     }
 
     pub inline fn vkCmdExecuteCommands(
@@ -1670,6 +1683,7 @@ const vtable = Impl.VTable{
     .drawIndexedIndirect = @import("cmd.zig").CommandBuffer.drawIndexedIndirect,
     .dispatch = @import("cmd.zig").CommandBuffer.dispatch,
     .dispatchIndirect = @import("cmd.zig").CommandBuffer.dispatchIndirect,
+    .fillBuffer = @import("cmd.zig").CommandBuffer.fillBuffer,
     .executeCommands = @import("cmd.zig").CommandBuffer.executeCommands,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 

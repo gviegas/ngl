@@ -352,6 +352,16 @@ pub const VTable = struct {
         offset: u64,
     ) void,
 
+    fillBuffer: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        buffer: Buffer,
+        offset: u64,
+        size: ?u64,
+        value: u8,
+    ) void,
+
     executeCommands: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1135,6 +1145,18 @@ pub fn dispatchIndirect(
     offset: u64,
 ) void {
     self.vtable.dispatchIndirect(self.ptr, device, command_buffer, buffer, offset);
+}
+
+pub fn fillBuffer(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    buffer: Buffer,
+    offset: u64,
+    size: ?u64,
+    value: u8,
+) void {
+    self.vtable.fillBuffer(self.ptr, device, command_buffer, buffer, offset, size, value);
 }
 
 pub fn executeCommands(
