@@ -236,7 +236,7 @@ pub const GraphicsState = struct {
     depth_stencil: ?*const DepthStencil,
     color_blend: ?*const ColorBlend,
     render_pass: ?*RenderPass,
-    subpass: ?RenderPass.Index,
+    subpass: RenderPass.Index,
 };
 
 pub const ComputeState = struct {

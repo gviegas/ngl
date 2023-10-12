@@ -222,12 +222,11 @@ pub const Pipeline = struct {
                 .pColorBlendState = &inner.color_blend_state,
                 .pDynamicState = &inner.dynamic_state,
                 .layout = PipelineLayout.cast(state.layout.impl).handle,
-                // TODO: Disallow null render pass/subpass
                 .renderPass = if (state.render_pass) |x|
                     RenderPass.cast(x.impl).handle
                 else
                     null_handle,
-                .subpass = state.subpass orelse 0,
+                .subpass = state.subpass,
                 // TODO: Expose these
                 .basePipelineHandle = null_handle,
                 .basePipelineIndex = -1,
