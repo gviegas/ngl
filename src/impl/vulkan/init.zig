@@ -377,6 +377,7 @@ pub const Device = struct {
     cmdCopyImage: c.PFN_vkCmdCopyImage,
     cmdCopyBufferToImage: c.PFN_vkCmdCopyBufferToImage,
     cmdCopyImageToBuffer: c.PFN_vkCmdCopyImageToBuffer,
+    cmdPipelineBarrier: c.PFN_vkCmdPipelineBarrier,
     cmdExecuteCommands: c.PFN_vkCmdExecuteCommands,
     createFence: c.PFN_vkCreateFence,
     destroyFence: c.PFN_vkDestroyFence,
@@ -540,6 +541,7 @@ pub const Device = struct {
             .cmdCopyImage = @ptrCast(try Device.getProc(get, dev, "vkCmdCopyImage")),
             .cmdCopyBufferToImage = @ptrCast(try Device.getProc(get, dev, "vkCmdCopyBufferToImage")),
             .cmdCopyImageToBuffer = @ptrCast(try Device.getProc(get, dev, "vkCmdCopyImageToBuffer")),
+            .cmdPipelineBarrier = @ptrCast(try Device.getProc(get, dev, "vkCmdPipelineBarrier")),
             .cmdExecuteCommands = @ptrCast(try Device.getProc(get, dev, "vkCmdExecuteCommands")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
             .destroyFence = @ptrCast(try Device.getProc(get, dev, "vkDestroyFence")),
@@ -1104,6 +1106,33 @@ pub const Device = struct {
             dest_buffer,
             region_count,
             regions,
+        );
+    }
+
+    pub inline fn vkCmdPipelineBarrier(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        source_stage_mask: c.VkPipelineStageFlags,
+        dest_stage_mask: c.VkPipelineStageFlags,
+        dependency_flags: c.VkDependencyFlags,
+        memory_barrier_count: u32,
+        memory_barriers: ?[*]const c.VkMemoryBarrier,
+        buffer_memory_barrier_count: u32,
+        buffer_memory_barriers: ?[*]const c.VkBufferMemoryBarrier,
+        image_memory_barrier_count: u32,
+        image_memory_barriers: ?[*]const c.VkImageMemoryBarrier,
+    ) void {
+        self.cmdPipelineBarrier.?(
+            command_buffer,
+            source_stage_mask,
+            dest_stage_mask,
+            dependency_flags,
+            memory_barrier_count,
+            memory_barriers,
+            buffer_memory_barrier_count,
+            buffer_memory_barriers,
+            image_memory_barrier_count,
+            image_memory_barriers,
         );
     }
 
@@ -1766,6 +1795,7 @@ const vtable = Impl.VTable{
     .copyImage = @import("cmd.zig").CommandBuffer.copyImage,
     .copyBufferToImage = @import("cmd.zig").CommandBuffer.copyBufferToImage,
     .copyImageToBuffer = @import("cmd.zig").CommandBuffer.copyImageToBuffer,
+    .pipelineBarrier = @import("cmd.zig").CommandBuffer.pipelineBarrier,
     .executeCommands = @import("cmd.zig").CommandBuffer.executeCommands,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,
 

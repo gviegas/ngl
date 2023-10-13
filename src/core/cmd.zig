@@ -5,6 +5,7 @@ const Device = ngl.Device;
 const Queue = ngl.Queue;
 const Buffer = ngl.Buffer;
 const Image = ngl.Image;
+const SyncScope = ngl.SyncScope;
 const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
 const PipelineLayout = ngl.PipelineLayout;
@@ -506,6 +507,52 @@ pub const CommandBuffer = struct {
                 self.device.impl,
                 self.command_buffer.impl,
                 copies,
+            );
+        }
+
+        pub const Dependency = struct {
+            global_dependencies: ?[]const GlobalDependency,
+            buffer_dependencies: ?[]const BufferDependency,
+            image_dependencies: ?[]const ImageDependency,
+            by_region: bool,
+
+            pub const GlobalDependency = struct {
+                first_scope: SyncScope,
+                second_scope: SyncScope,
+            };
+
+            pub const BufferDependency = struct {
+                first_scope: SyncScope,
+                second_scope: SyncScope,
+                queue_transfer: ?struct {
+                    source: *Queue,
+                    dest: *Queue,
+                },
+                buffer: *Buffer,
+                offset: u64,
+                size: ?u64,
+            };
+
+            pub const ImageDependency = struct {
+                first_scope: SyncScope,
+                second_scope: SyncScope,
+                queue_transfer: ?struct {
+                    source: *Queue,
+                    dest: *Queue,
+                },
+                old_layout: Image.Layout,
+                new_layout: Image.Layout,
+                image: *Image,
+                range: Image.Range,
+            };
+        };
+
+        pub fn pipelineBarrier(self: *Cmd, dependencies: []const Dependency) void {
+            Impl.get().pipelineBarrier(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                dependencies,
             );
         }
 

@@ -786,6 +786,67 @@ test {
             }},
         }});
 
+        cmd.pipelineBarrier(&.{.{
+            .global_dependencies = &.{
+                .{
+                    .first_scope = .{
+                        .stage_mask = .{ .color_attachment_output = true },
+                        .access_mask = .{ .memory_write = true },
+                    },
+                    .second_scope = .{
+                        .stage_mask = .{ .fragment_shader = true },
+                        .access_mask = .{ .memory_read = true },
+                    },
+                },
+                .{
+                    .first_scope = .{
+                        .stage_mask = .{ .compute_shader = true },
+                        .access_mask = .{ .memory_write = true },
+                    },
+                    .second_scope = .{
+                        .stage_mask = .{ .vertex_shader = true },
+                        .access_mask = .{ .memory_read = true, .memory_write = true },
+                    },
+                },
+            },
+            .buffer_dependencies = &.{.{
+                .first_scope = .{
+                    .stage_mask = .{ .clear = true, .copy = true },
+                    .access_mask = .{ .memory_write = true },
+                },
+                .second_scope = .{
+                    .stage_mask = .{ .compute_shader = true },
+                    .access_mask = .{ .memory_read = true },
+                },
+                .queue_transfer = null,
+                .buffer = &buf,
+                .offset = 0,
+                .size = null,
+            }},
+            .image_dependencies = &.{.{
+                .first_scope = .{
+                    .stage_mask = .{ .clear = true, .copy = true },
+                    .access_mask = .{ .memory_write = true },
+                },
+                .second_scope = .{
+                    .stage_mask = .{ .all_graphics = true, .compute_shader = true },
+                    .access_mask = .{ .memory_read = true, .memory_write = true },
+                },
+                .queue_transfer = null,
+                .old_layout = .undefined,
+                .new_layout = .general,
+                .image = &image,
+                .range = .{
+                    .aspect_mask = .{ .color = true },
+                    .base_level = 0,
+                    .levels = 1,
+                    .base_layer = 0,
+                    .layers = 1,
+                },
+            }},
+            .by_region = false,
+        }});
+
         cmd.setPipeline(&comp_pl[0]);
 
         cmd.setDescriptors(.compute, &pl_layout_2, 0, &.{&desc_sets_2[0]});

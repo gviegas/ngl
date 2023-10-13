@@ -394,6 +394,14 @@ pub const VTable = struct {
         copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
     ) void,
 
+    pipelineBarrier: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        dependencies: []const ngl.CommandBuffer.Cmd.Dependency,
+    ) void,
+
     executeCommands: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1229,6 +1237,16 @@ pub fn copyImageToBuffer(
     copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
 ) void {
     self.vtable.copyImageToBuffer(self.ptr, allocator, device, command_buffer, copies);
+}
+
+pub fn pipelineBarrier(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    dependencies: []const ngl.CommandBuffer.Cmd.Dependency,
+) void {
+    self.vtable.pipelineBarrier(self.ptr, allocator, device, command_buffer, dependencies);
 }
 
 pub fn executeCommands(
