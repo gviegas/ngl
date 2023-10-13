@@ -746,8 +746,45 @@ test {
             }},
         }});
 
-        cmd.copyBufferToImage(&.{});
-        cmd.copyImageToBuffer(&.{});
+        cmd.copyBufferToImage(&.{.{
+            .buffer = &buf,
+            .image = &image,
+            .image_layout = .general,
+            .image_type = .@"3d",
+            .regions = &.{.{
+                .buffer_offset = 0,
+                .buffer_row_length = 256,
+                .buffer_image_height = 0,
+                .image_aspect = .color,
+                .image_level = 0,
+                .image_x = 0,
+                .image_y = 0,
+                .image_z_or_layer = 0,
+                .image_width = 16,
+                .image_height = 32,
+                .image_depth_or_layers = 1,
+            }},
+        }});
+
+        cmd.copyImageToBuffer(&.{.{
+            .buffer = &buf,
+            .image = &image,
+            .image_layout = .general,
+            .image_type = .@"3d",
+            .regions = &.{.{
+                .buffer_offset = 0,
+                .buffer_row_length = 256,
+                .buffer_image_height = 0,
+                .image_aspect = .color,
+                .image_level = 0,
+                .image_x = 0,
+                .image_y = 0,
+                .image_z_or_layer = 0,
+                .image_width = 16,
+                .image_height = 32,
+                .image_depth_or_layers = 1,
+            }},
+        }});
 
         cmd.setPipeline(&comp_pl[0]);
 

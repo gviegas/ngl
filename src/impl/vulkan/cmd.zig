@@ -600,8 +600,8 @@ pub const CommandBuffer = packed struct {
             while (i < n) : (i += max) {
                 for (0..@min(n - i, max)) |j|
                     regions[j] = .{
-                        .srcOffset = x.regions[i].source_offset,
-                        .dstOffset = x.regions[i].dest_offset,
+                        .srcOffset = x.regions[i + j].source_offset,
+                        .dstOffset = x.regions[i + j].dest_offset,
                         .size = x.regions[i].size,
                     };
                 Device.cast(device).vkCmdCopyBuffer(
@@ -645,45 +645,41 @@ pub const CommandBuffer = packed struct {
             // We can copy this many regions per call
             const max = regions.len;
 
+            // TODO: Check that the compiler is generating a
+            // separate path for 3D images
+            const is3d = x.type == .@"3d";
+
             var i: usize = 0;
             while (i < n) : (i += max) {
-                // TODO: Check that the compiler is generating a
-                // separate path for 3D images
                 for (0..@min(n - i, max)) |j| {
-                    const r = &x.regions[i];
+                    const r = &x.regions[i + j];
                     regions[j] = .{
                         .srcSubresource = .{
                             .aspectMask = conv.toVkImageAspect(r.source_aspect),
                             .mipLevel = r.source_level,
-                            .baseArrayLayer = if (x.type == .@"3d") 0 else r.source_z_or_layer,
-                            .layerCount = if (x.type == .@"3d") 1 else r.depth_or_layers,
+                            .baseArrayLayer = if (is3d) 0 else r.source_z_or_layer,
+                            .layerCount = if (is3d) 1 else r.depth_or_layers,
                         },
                         .srcOffset = .{
                             .x = @min(r.source_x, std.math.maxInt(i32)),
                             .y = @min(r.source_y, std.math.maxInt(i32)),
-                            .z = if (x.type == .@"3d") @min(
-                                r.source_z_or_layer,
-                                std.math.maxInt(i32),
-                            ) else 0,
+                            .z = if (is3d) @min(r.source_z_or_layer, std.math.maxInt(i32)) else 0,
                         },
                         .dstSubresource = .{
                             .aspectMask = conv.toVkImageAspect(r.dest_aspect),
                             .mipLevel = r.dest_level,
-                            .baseArrayLayer = if (x.type == .@"3d") 0 else r.dest_z_or_layer,
-                            .layerCount = if (x.type == .@"3d") 1 else r.depth_or_layers,
+                            .baseArrayLayer = if (is3d) 0 else r.dest_z_or_layer,
+                            .layerCount = if (is3d) 1 else r.depth_or_layers,
                         },
                         .dstOffset = .{
                             .x = @min(r.dest_x, std.math.maxInt(i32)),
                             .y = @min(r.dest_y, std.math.maxInt(i32)),
-                            .z = if (x.type == .@"3d") @min(
-                                r.dest_z_or_layer,
-                                std.math.maxInt(i32),
-                            ) else 0,
+                            .z = if (is3d) @min(r.dest_z_or_layer, std.math.maxInt(i32)) else 0,
                         },
                         .extent = .{
                             .width = r.width,
                             .height = r.height,
-                            .depth = if (x.type == .@"3d") r.depth_or_layers else 1,
+                            .depth = if (is3d) r.depth_or_layers else 1,
                         },
                     };
                 }
@@ -700,6 +696,88 @@ pub const CommandBuffer = packed struct {
         }
     }
 
+    fn copyBufferToImageOrImageToBuffer(
+        comptime call: enum { bufferToImage, imageToBuffer },
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+    ) void {
+        var region: [1]c.VkBufferImageCopy = undefined;
+        var regions: []c.VkBufferImageCopy = &region;
+        defer if (regions.len > 1) allocator.free(regions);
+
+        for (copies) |x| {
+            // We need to copy this many regions
+            const n = x.regions.len;
+
+            if (n > regions.len) {
+                if (regions.len == 1) {
+                    if (allocator.alloc(c.VkBufferImageCopy, n)) |new| {
+                        regions = new;
+                    } else |_| {}
+                } else {
+                    if (allocator.realloc(regions, n)) |new| {
+                        regions = new;
+                    } else |_| {}
+                }
+            }
+
+            // We can copy this many regions per call
+            const max = regions.len;
+
+            // TODO: Check that the compiler is generating a
+            // separate path for 3D images
+            const is3d = x.image_type == .@"3d";
+
+            var i: usize = 0;
+            while (i < n) : (i += max) {
+                for (0..@min(n - i, max)) |j| {
+                    const r = &x.regions[i + j];
+                    regions[j] = .{
+                        .bufferOffset = r.buffer_offset,
+                        .bufferRowLength = r.buffer_row_length,
+                        .bufferImageHeight = r.buffer_image_height,
+                        .imageSubresource = .{
+                            .aspectMask = conv.toVkImageAspect(r.image_aspect),
+                            .mipLevel = r.image_level,
+                            .baseArrayLayer = if (is3d) 0 else r.image_z_or_layer,
+                            .layerCount = if (is3d) 1 else r.image_depth_or_layers,
+                        },
+                        .imageOffset = .{
+                            .x = @min(r.image_x, std.math.maxInt(i32)),
+                            .y = @min(r.image_y, std.math.maxInt(i32)),
+                            .z = if (is3d) @min(r.image_z_or_layer, std.math.maxInt(i32)) else 0,
+                        },
+                        .imageExtent = .{
+                            .width = r.image_width,
+                            .height = r.image_height,
+                            .depth = if (is3d) r.image_depth_or_layers else 1,
+                        },
+                    };
+                }
+                switch (call) {
+                    .bufferToImage => Device.cast(device).vkCmdCopyBufferToImage(
+                        cast(command_buffer).handle,
+                        Buffer.cast(x.buffer.impl).handle,
+                        Image.cast(x.image.impl).handle,
+                        conv.toVkImageLayout(x.image_layout),
+                        @intCast(@min(n - i, max)),
+                        regions.ptr,
+                    ),
+                    .imageToBuffer => Device.cast(device).vkCmdCopyImageToBuffer(
+                        cast(command_buffer).handle,
+                        Image.cast(x.image.impl).handle,
+                        conv.toVkImageLayout(x.image_layout),
+                        Buffer.cast(x.buffer.impl).handle,
+                        @intCast(@min(n - i, max)),
+                        regions.ptr,
+                    ),
+                }
+            }
+        }
+    }
+
     pub fn copyBufferToImage(
         _: *anyopaque,
         allocator: std.mem.Allocator,
@@ -707,12 +785,7 @@ pub const CommandBuffer = packed struct {
         command_buffer: Impl.CommandBuffer,
         copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
     ) void {
-        // TODO
-        std.debug.print("TODO: copyBufferToImage (Vulkan)\n", .{});
-        _ = allocator;
-        _ = device;
-        _ = command_buffer;
-        _ = copies;
+        copyBufferToImageOrImageToBuffer(.bufferToImage, allocator, device, command_buffer, copies);
     }
 
     pub fn copyImageToBuffer(
@@ -722,12 +795,7 @@ pub const CommandBuffer = packed struct {
         command_buffer: Impl.CommandBuffer,
         copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
     ) void {
-        // TODO
-        std.debug.print("TODO: copyImageToBuffer (Vulkan)\n", .{});
-        _ = allocator;
-        _ = device;
-        _ = command_buffer;
-        _ = copies;
+        copyBufferToImageOrImageToBuffer(.imageToBuffer, allocator, device, command_buffer, copies);
     }
 
     pub fn executeCommands(
