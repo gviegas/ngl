@@ -1,6 +1,8 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
+const log = std.log.scoped(.@"ngl/impl");
+
 const ngl = @import("../ngl.zig");
 const Error = ngl.Error;
 
@@ -756,6 +758,10 @@ pub fn init(allocator: std.mem.Allocator) Error!void {
 pub fn deinit(self: *Self) void {
     lock.lock();
     defer lock.unlock();
+    if (impl == null) {
+        log.warn("Multiple calls to Impl.deinit", .{});
+        return;
+    }
     self.vtable.deinit(self.ptr, gpa.?);
     self.* = undefined;
     impl = null;
