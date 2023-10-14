@@ -301,12 +301,12 @@ pub const Pipeline = struct {
                         },
                     } else .{
                         .offset = .{
-                            .x = @intFromFloat(@min(@fabs(s.x), std.math.maxInt(i32))),
-                            .y = @intFromFloat(@min(@fabs(s.y), std.math.maxInt(i32))),
+                            .x = @intFromFloat(@min(@abs(s.x), std.math.maxInt(i32))),
+                            .y = @intFromFloat(@min(@abs(s.y), std.math.maxInt(i32))),
                         },
                         .extent = .{
-                            .width = @intFromFloat(@min(@fabs(s.width), std.math.maxInt(u32))),
-                            .height = @intFromFloat(@min(@fabs(s.height), std.math.maxInt(u32))),
+                            .width = @intFromFloat(@min(@abs(s.width), std.math.maxInt(u32))),
+                            .height = @intFromFloat(@min(@abs(s.height), std.math.maxInt(u32))),
                         },
                     };
                     break :blk &inner.viewport_state_scissor;

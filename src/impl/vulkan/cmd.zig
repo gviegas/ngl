@@ -336,12 +336,12 @@ pub const CommandBuffer = packed struct {
             },
         } else .{
             .offset = .{
-                .x = @intFromFloat(@min(@fabs(viewport.x), std.math.maxInt(i32))),
-                .y = @intFromFloat(@min(@fabs(viewport.y), std.math.maxInt(i32))),
+                .x = @intFromFloat(@min(@abs(viewport.x), std.math.maxInt(i32))),
+                .y = @intFromFloat(@min(@abs(viewport.y), std.math.maxInt(i32))),
             },
             .extent = .{
-                .width = @intFromFloat(@min(@fabs(viewport.width), std.math.maxInt(u32))),
-                .height = @intFromFloat(@min(@fabs(viewport.height), std.math.maxInt(u32))),
+                .width = @intFromFloat(@min(@abs(viewport.width), std.math.maxInt(u32))),
+                .height = @intFromFloat(@min(@abs(viewport.height), std.math.maxInt(u32))),
             },
         }};
 
