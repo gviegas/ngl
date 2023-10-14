@@ -359,42 +359,39 @@ test {
             //    .may_alias = false,
             //},
         },
-        .subpasses = &.{
-            .{
-                .input_attachments = null,
-                .color_attachments = &.{
-                    .{
-                        .index = 0,
-                        .layout = .color_attachment_optimal,
-                        .aspect_mask = .{ .color = true },
-                        .resolve = null,
-                    },
+        .subpasses = &.{.{
+            .pipeline_type = .graphics,
+            .input_attachments = null,
+            .color_attachments = &.{
+                .{
+                    .index = 0,
+                    .layout = .color_attachment_optimal,
+                    .aspect_mask = .{ .color = true },
+                    .resolve = null,
                 },
-                //.depth_stencil_attachment = .{
-                //    .index = 1,
-                //    .layout = .depth_stencil_attachment_optimal,
-                //    .aspect_mask = .{ .depth = true, .stencil = true },
-                //    .resolve = null,
-                //},
-                .depth_stencil_attachment = null,
-                .preserve_attachments = null,
             },
-        },
-        .dependencies = &.{
-            .{
-                .source_subpass = .external,
-                .dest_subpass = .{ .index = 0 },
-                .first_scope = .{
-                    .stage_mask = .{ .color_attachment_output = true },
-                    .access_mask = .{ .memory_read = true, .memory_write = true },
-                },
-                .second_scope = .{
-                    .stage_mask = .{ .color_attachment_output = true },
-                    .access_mask = .{ .memory_write = true },
-                },
-                .by_region = true,
+            //.depth_stencil_attachment = .{
+            //    .index = 1,
+            //    .layout = .depth_stencil_attachment_optimal,
+            //    .aspect_mask = .{ .depth = true, .stencil = true },
+            //    .resolve = null,
+            //},
+            .depth_stencil_attachment = null,
+            .preserve_attachments = null,
+        }},
+        .dependencies = &.{.{
+            .source_subpass = .external,
+            .dest_subpass = .{ .index = 0 },
+            .first_scope = .{
+                .stage_mask = .{ .color_attachment_output = true },
+                .access_mask = .{ .memory_read = true, .memory_write = true },
             },
-        },
+            .second_scope = .{
+                .stage_mask = .{ .color_attachment_output = true },
+                .access_mask = .{ .memory_write = true },
+            },
+            .by_region = true,
+        }},
     });
     defer rp.deinit(allocator, &ctx.device);
 

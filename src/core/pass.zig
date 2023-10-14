@@ -7,6 +7,7 @@ const ImageView = ngl.ImageView;
 const SampleCount = ngl.SampleCount;
 const Image = ngl.Image;
 const SyncScope = ngl.SyncScope;
+const Pipeline = ngl.Pipeline;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
@@ -65,8 +66,8 @@ pub const RenderPass = struct {
         };
     };
 
-    // TODO: Pipeline identification
     pub const Subpass = struct {
+        pipeline_type: Pipeline.Type,
         input_attachments: ?[]const ?Attachment.Ref,
         color_attachments: ?[]const ?Attachment.Ref,
         depth_stencil_attachment: ?Attachment.Ref,

@@ -110,7 +110,7 @@ pub const RenderPass = struct {
             for (subp_descs, desc.subpasses) |*subp_desc, subp| {
                 subp_desc.* = .{
                     .flags = 0,
-                    .pipelineBindPoint = c.VK_PIPELINE_BIND_POINT_GRAPHICS, // TODO
+                    .pipelineBindPoint = conv.toVkPipelineBindPoint(subp.pipeline_type),
                     .inputAttachmentCount = undefined,
                     .pInputAttachments = undefined,
                     .colorAttachmentCount = undefined,
