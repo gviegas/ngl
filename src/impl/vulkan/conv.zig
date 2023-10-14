@@ -33,6 +33,7 @@ pub fn check(result: c.VkResult) Error!void {
 
         c.VK_ERROR_OUT_OF_HOST_MEMORY,
         c.VK_ERROR_OUT_OF_DEVICE_MEMORY,
+        c.VK_ERROR_OUT_OF_POOL_MEMORY, // v1.1
         => Error.OutOfMemory,
 
         c.VK_ERROR_INITIALIZATION_FAILED => Error.InitializationFailed,
@@ -47,6 +48,10 @@ pub fn check(result: c.VkResult) Error!void {
         c.VK_ERROR_EXTENSION_NOT_PRESENT,
         c.VK_ERROR_FEATURE_NOT_PRESENT,
         => Error.NotPresent,
+
+        c.VK_ERROR_FRAGMENTED_POOL,
+        c.VK_ERROR_FRAGMENTATION, // v1.2
+        => Error.Fragmentation,
 
         else => Error.Other,
     };
