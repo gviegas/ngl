@@ -1,13 +1,8 @@
 const std = @import("std");
 const testing = std.testing;
-pub const allocator = testing.allocator;
+pub const gpa = testing.allocator;
 
 const ngl = @import("../ngl.zig");
-
-test {
-    // TODO
-    context().deinit(allocator);
-}
 
 pub fn context() *ngl.Context {
     const Static = struct {
@@ -15,10 +10,14 @@ pub fn context() *ngl.Context {
         var once = std.once(init);
 
         fn init() void {
-            ctx = ngl.Context.initDefault(allocator) catch |err| @panic(@errorName(err));
+            ctx = ngl.Context.initDefault(gpa) catch |err| @panic(@errorName(err));
         }
     };
 
     Static.once.call();
     return &Static.ctx;
+}
+
+test {
+    _ = @import("inst.zig");
 }
