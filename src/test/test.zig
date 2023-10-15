@@ -10,7 +10,9 @@ pub fn context() *ngl.Context {
         var once = std.once(init);
 
         fn init() void {
-            ctx = ngl.Context.initDefault(gpa) catch |err| @panic(@errorName(err));
+            // Let it leak
+            const allocator = std.heap.page_allocator;
+            ctx = ngl.Context.initDefault(allocator) catch |err| @panic(@errorName(err));
         }
     };
 
@@ -21,4 +23,5 @@ pub fn context() *ngl.Context {
 test {
     _ = @import("inst.zig");
     _ = @import("dev.zig");
+    _ = @import("fence.zig");
 }
