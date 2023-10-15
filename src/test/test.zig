@@ -20,4 +20,5 @@ pub fn context() *ngl.Context {
 
 test {
     _ = @import("inst.zig");
+    _ = @import("dev.zig");
 }
