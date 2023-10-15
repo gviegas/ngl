@@ -24,4 +24,5 @@ test {
     _ = @import("inst.zig");
     _ = @import("dev.zig");
     _ = @import("fence.zig");
+    _ = @import("sema.zig");
 }
