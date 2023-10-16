@@ -28,4 +28,5 @@ test {
     _ = @import("splr.zig");
     _ = @import("image.zig");
     _ = @import("buf.zig");
+    _ = @import("layt.zig");
 }
