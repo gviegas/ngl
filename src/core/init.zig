@@ -21,6 +21,7 @@ pub const Instance = struct {
         return .{ .impl = try Impl.get().initInstance(allocator, desc) };
     }
 
+    /// Caller is responsible for freeing the returned slice.
     pub fn listDevices(self: *Self, allocator: std.mem.Allocator) Error![]Device.Desc {
         return Impl.get().listDevices(allocator, self.impl);
     }
@@ -92,6 +93,8 @@ pub const Device = struct {
 pub const Queue = struct {
     impl: Impl.Queue,
 
+    pub const max = 4;
+
     pub const Capabilities = packed struct {
         graphics: bool = false,
         compute: bool = false,
@@ -109,8 +112,6 @@ pub const Queue = struct {
         priority: Priority = .default,
         impl: ?*anyopaque = null,
     };
-
-    pub const max = 4;
 
     pub const Submit = struct {
         commands: []const CommandBufferSubmit,
@@ -153,6 +154,12 @@ pub const Queue = struct {
 pub const Memory = struct {
     impl: Impl.Memory,
 
+    pub const TypeIndex = u5;
+    pub const max_type = 32;
+
+    pub const HeapIndex = u4;
+    pub const max_heap = 16;
+
     pub const Properties = packed struct {
         device_local: bool = false,
         host_visible: bool = false,
@@ -163,7 +170,7 @@ pub const Memory = struct {
 
     pub const Type = struct {
         properties: Properties,
-        heap_index: u4,
+        heap_index: HeapIndex,
     };
 
     pub const Requirements = struct {
@@ -171,18 +178,15 @@ pub const Memory = struct {
         alignment: u64,
         mem_type_bits: u32,
 
-        pub inline fn supportsMemoryType(self: Requirements, memory_type_index: u5) bool {
-            return self.mem_type_bits & (@as(u32, 1) << memory_type_index) != 0;
+        pub inline fn supportsMemoryType(self: Requirements, mem_type_index: TypeIndex) bool {
+            return self.mem_type_bits & (@as(u32, 1) << mem_type_index) != 0;
         }
     };
 
     pub const Desc = struct {
         size: u64,
-        mem_type_index: u5,
+        mem_type_index: TypeIndex,
     };
-
-    pub const max_type = 32;
-    pub const max_heap = 16;
 
     const Self = @This();
 

@@ -98,7 +98,7 @@ test "Image allocation" {
     }
 
     const mem_idx = for (0..dev.mem_type_n) |i| {
-        const idx: u5 = @intCast(i);
+        const idx: ngl.Memory.TypeIndex = @intCast(i);
         if (mem_reqs.supportsMemoryType(idx)) break idx;
     } else unreachable;
 
@@ -146,7 +146,7 @@ test "ImageView.init/deinit" {
         var mem = try dev.alloc(gpa, .{
             .size = mem_reqs.size,
             .mem_type_index = for (0..dev.mem_type_n) |i| {
-                const idx: u5 = @intCast(i);
+                const idx: ngl.Memory.TypeIndex = @intCast(i);
                 if (mem_reqs.supportsMemoryType(idx)) break idx;
             } else unreachable,
         });
@@ -213,7 +213,7 @@ test "ImageView.init/deinit" {
         var mem = try dev.alloc(gpa, .{
             .size = mem_reqs.size,
             .mem_type_index = for (0..dev.mem_type_n) |i| {
-                const idx: u5 = @intCast(i);
+                const idx: ngl.Memory.TypeIndex = @intCast(i);
                 if (mem_reqs.supportsMemoryType(idx)) break idx;
             } else unreachable,
         });

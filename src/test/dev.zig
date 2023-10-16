@@ -141,7 +141,7 @@ test "Device.alloc/free" {
     var mems_ptr = mems.ptr;
 
     for (0..dev.mem_type_n) |i| {
-        const m: u5 = @intCast(i);
+        const m: ngl.Memory.TypeIndex = @intCast(i);
         var a = try dev.alloc(gpa, .{ .size = sizes[0], .mem_type_index = m });
         dev.free(gpa, &a);
         var b = try dev.alloc(gpa, .{ .size = sizes[1], .mem_type_index = m });
