@@ -27,4 +27,5 @@ test {
     _ = @import("sema.zig");
     _ = @import("splr.zig");
     _ = @import("image.zig");
+    _ = @import("buf.zig");
 }
