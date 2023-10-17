@@ -30,4 +30,5 @@ test {
     _ = @import("buf.zig");
     _ = @import("layt.zig");
     _ = @import("desc_pool.zig");
+    _ = @import("desc_set.zig");
 }
