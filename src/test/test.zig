@@ -29,4 +29,5 @@ test {
     _ = @import("image.zig");
     _ = @import("buf.zig");
     _ = @import("layt.zig");
+    _ = @import("desc_pool.zig");
 }
