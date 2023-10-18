@@ -33,4 +33,5 @@ test {
     _ = @import("desc_set.zig");
     _ = @import("rp.zig");
     _ = @import("fb.zig");
+    _ = @import("pl_cache.zig");
 }
