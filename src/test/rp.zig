@@ -336,4 +336,49 @@ test "RenderPass.init/deinit" {
         });
         rp.deinit(gpa, dev);
     }
+
+    {
+        const subp = ngl.RenderPass.Subpass{
+            .pipeline_type = .graphics,
+            .input_attachments = null,
+            .color_attachments = null,
+            .depth_stencil_attachment = null,
+            .preserve_attachments = null,
+        };
+
+        const depend = ngl.RenderPass.Dependency{
+            .source_subpass = .external,
+            .dest_subpass = .{ .index = 0 },
+            .first_scope = .{
+                .stage_mask = .{ .all_commands = true },
+                .access_mask = .{ .memory_read = true, .memory_write = true },
+            },
+            .second_scope = .{
+                .stage_mask = .{ .fragment_shader = true },
+                .access_mask = .{ .memory_read = true, .memory_write = true },
+            },
+            .by_region = false,
+        };
+
+        const depend_2 = ngl.RenderPass.Dependency{
+            .source_subpass = .{ .index = 0 },
+            .dest_subpass = .external,
+            .first_scope = .{
+                .stage_mask = .{ .fragment_shader = true },
+                .access_mask = .{ .memory_read = true, .memory_write = true },
+            },
+            .second_scope = .{
+                .stage_mask = .{ .all_commands = true },
+                .access_mask = .{ .memory_read = true, .memory_write = true },
+            },
+            .by_region = false,
+        };
+
+        var rp = try ngl.RenderPass.init(gpa, dev, .{
+            .attachments = null,
+            .subpasses = &.{subp},
+            .dependencies = &.{ depend, depend_2 },
+        });
+        rp.deinit(gpa, dev);
+    }
 }

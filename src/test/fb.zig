@@ -118,6 +118,31 @@ test "FrameBuffer.init/deinit" {
     });
     defer rp_3.deinit(gpa, dev);
 
+    var rp_4 = try ngl.RenderPass.init(gpa, dev, .{
+        .attachments = null,
+        .subpasses = &.{.{
+            .pipeline_type = .graphics,
+            .input_attachments = null,
+            .color_attachments = null,
+            .depth_stencil_attachment = null,
+            .preserve_attachments = null,
+        }},
+        .dependencies = &.{.{
+            .source_subpass = .{ .index = 0 },
+            .dest_subpass = .external,
+            .first_scope = .{
+                .stage_mask = .{ .vertex_shader = true },
+                .access_mask = .{ .memory_write = true },
+            },
+            .second_scope = .{
+                .stage_mask = .{ .vertex_attribute_input = true },
+                .access_mask = .{ .memory_read = true },
+            },
+            .by_region = false,
+        }},
+    });
+    defer rp_4.deinit(gpa, dev);
+
     const w = 480;
     const h = 270;
 
@@ -258,5 +283,14 @@ test "FrameBuffer.init/deinit" {
         .height = h,
         .layers = 1,
     });
-    fb_3.deinit(gpa, dev);
+    defer fb_3.deinit(gpa, dev);
+
+    var fb_4 = try ngl.FrameBuffer.init(gpa, dev, .{
+        .render_pass = &rp_4,
+        .attachments = null,
+        .width = w,
+        .height = h,
+        .layers = 1,
+    });
+    fb_4.deinit(gpa, dev);
 }
