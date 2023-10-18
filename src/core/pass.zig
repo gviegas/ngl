@@ -110,7 +110,7 @@ pub const FrameBuffer = struct {
 
     pub const Desc = struct {
         render_pass: *RenderPass,
-        attachments: ?[]const ?*ImageView,
+        attachments: ?[]const *ImageView,
         width: u32,
         height: u32,
         layers: u32,

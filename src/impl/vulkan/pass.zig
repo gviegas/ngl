@@ -264,7 +264,7 @@ pub const FrameBuffer = struct {
             if (attach_n == 0) break :blk null;
             var handles = try allocator.alloc(c.VkImageView, attach_n);
             for (handles, desc.attachments.?) |*handle, attach|
-                handle.* = if (attach) |v| ImageView.cast(v.impl).handle else null_handle;
+                handle.* = ImageView.cast(attach.impl).handle;
             break :blk handles;
         };
         defer if (attachs) |x| allocator.free(x);
