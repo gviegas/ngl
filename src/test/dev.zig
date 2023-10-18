@@ -1,5 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
+const builtin = @import("builtin");
 
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
@@ -158,4 +159,36 @@ test "Device.alloc/free" {
     }
 
     for (mems) |*m| dev.free(gpa, m);
+}
+
+test "Device.wait" {
+    var inst = try ngl.Instance.init(gpa, .{});
+    defer inst.deinit(gpa);
+
+    var dev_descs = try inst.listDevices(gpa);
+    defer gpa.free(dev_descs);
+
+    var dev = try ngl.Device.init(gpa, &inst, dev_descs[0]);
+    defer dev.deinit(gpa);
+
+    try dev.wait();
+
+    var dev_2 = try ngl.Device.init(gpa, &inst, dev_descs[dev_descs.len - 1]);
+    defer dev_2.deinit(gpa);
+
+    try dev_2.wait();
+    try dev.wait();
+
+    if (!builtin.single_threaded) {
+        const f = struct {
+            fn f(device: *ngl.Device) ngl.Error!void {
+                std.time.sleep(std.time.ns_per_ms);
+                try device.wait();
+            }
+        }.f;
+        var thrd = try std.Thread.spawn(.{ .allocator = gpa }, f, .{&dev});
+        var thrd_2 = try std.Thread.spawn(.{ .allocator = gpa }, f, .{&dev_2});
+        thrd.join();
+        thrd_2.join();
+    }
 }
