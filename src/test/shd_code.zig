@@ -1,3 +1,5 @@
+const ngl = @import("../ngl.zig");
+
 // #version 460 core
 //
 // layout(set = 0, binding = 0) uniform UniformBuffer {
@@ -128,13 +130,42 @@ pub const color_frag_spv align(4) = [404]u8{
     0x38, 0x0, 0x1,  0x0,
 };
 
+pub const color_desc_bindings = [_]ngl.DescriptorSetLayout.Binding{.{
+    .binding = 0,
+    .type = .uniform_buffer,
+    .count = 1,
+    .stage_mask = .{ .vertex = true },
+    .immutable_samplers = null,
+}};
+
+pub const color_input_bindings = [_]ngl.VertexInput.Binding{.{
+    .binding = 0,
+    .stride = (3 + 4) * 4,
+    .per_instance = false,
+}};
+
+pub const color_input_attributes = [_]ngl.VertexInput.Attribute{
+    .{
+        .location = 1,
+        .binding = 0,
+        .format = .rgba32_sfloat,
+        .offset = 3 * 4,
+    },
+    .{
+        .location = 0,
+        .binding = 0,
+        .format = .rgb32_sfloat,
+        .offset = 0,
+    },
+};
+
 // #version 460 core
 //
 // layout(local_size_x = 16, local_size_y = 16) in;
 //
 // layout(set = 0, binding = 0, rgba8) writeonly uniform image2D storage;
 //
-// const vec4 color[2] = {vec4(0.0, 0.0, 0.0, 1.0), vec4(1.0)};
+// const vec4 color[2] = { vec4(0.0, 0.0, 0.0, 1.0), vec4(1.0) };
 //
 // void main() {
 //     uvec2 nm = gl_WorkGroupID.xy & uvec2(1, 1);
@@ -227,3 +258,11 @@ pub const checker_comp_spv align(4) = [1272]u8{
     0x63, 0x0, 0x4,  0x0,  0x35, 0x0,  0x0,  0x0,  0x36, 0x0,  0x0,  0x0,  0x37, 0x0,  0x0,  0x0,
     0xfd, 0x0, 0x1,  0x0,  0x38, 0x0,  0x1,  0x0,
 };
+
+pub const checker_desc_bindings = [_]ngl.DescriptorSetLayout.Binding{.{
+    .binding = 0,
+    .type = .storage_image,
+    .count = 1,
+    .stage_mask = .{ .compute = true },
+    .immutable_samplers = null,
+}};

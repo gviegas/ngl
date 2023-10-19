@@ -30,6 +30,7 @@ pub const Pipeline = struct {
 
     const Self = @This();
 
+    /// Caller is responsible for freeing the returned slice.
     pub fn initGraphics(
         allocator: std.mem.Allocator,
         device: *Device,
@@ -37,11 +38,13 @@ pub const Pipeline = struct {
     ) Error![]Pipeline {
         var pipelines = try allocator.alloc(Pipeline, desc.states.len);
         errdefer allocator.free(pipelines);
+        if (@typeInfo(Self).Struct.fields.len > 2) @compileError("Initialize the new field(s)");
         for (pipelines) |*pl| pl.type = .graphics;
         try Impl.get().initPipelinesGraphics(allocator, device.impl, desc, pipelines);
         return pipelines;
     }
 
+    /// Caller is responsible for freeing the returned slice.
     pub fn initCompute(
         allocator: std.mem.Allocator,
         device: *Device,
@@ -49,6 +52,7 @@ pub const Pipeline = struct {
     ) Error![]Pipeline {
         var pipelines = try allocator.alloc(Pipeline, desc.states.len);
         errdefer allocator.free(pipelines);
+        if (@typeInfo(Self).Struct.fields.len > 2) @compileError("Initialize the new field(s)");
         for (pipelines) |*pl| pl.type = .compute;
         try Impl.get().initPipelinesCompute(allocator, device.impl, desc, pipelines);
         return pipelines;
