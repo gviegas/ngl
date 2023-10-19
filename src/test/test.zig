@@ -35,4 +35,5 @@ test {
     _ = @import("fb.zig");
     _ = @import("pl_cache.zig");
     _ = @import("pl.zig");
+    _ = @import("mem.zig");
 }
