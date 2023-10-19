@@ -63,9 +63,22 @@ pub const Device = struct {
             .mem_types = undefined,
             .mem_type_n = 0,
         };
+        // Track the current element in `desc.queues` since it
+        // might be interspersed with `null`s
+        var queue_i: usize = 0;
         var queue_alloc: [Queue.max]Impl.Queue = undefined;
         const queues = Impl.get().getQueues(&queue_alloc, self.impl);
-        for (queues, 0..) |q, i| self.queues[i] = .{ .impl = q };
+        for (self.queues[0..queues.len], queues) |*queue, impl| {
+            // This assumes that implementations won't reorder
+            // the queues - the order must match `desc`'s
+            while (desc.queues[queue_i] == null) : (queue_i += 1) {}
+            queue.* = .{
+                .impl = impl,
+                .capabilities = desc.queues[queue_i].?.capabilities,
+                .priority = desc.queues[queue_i].?.priority,
+            };
+            queue_i += 1;
+        }
         self.queue_n = @intCast(queues.len);
         self.mem_type_n = @intCast(Impl.get().getMemoryTypes(&self.mem_types, self.impl).len);
         return self;
@@ -92,6 +105,8 @@ pub const Device = struct {
 
 pub const Queue = struct {
     impl: Impl.Queue,
+    capabilities: Capabilities,
+    priority: Priority,
 
     pub const max = 4;
 
