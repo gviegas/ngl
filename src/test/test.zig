@@ -20,6 +20,8 @@ pub fn context() *ngl.Context {
     return &Static.ctx;
 }
 
+pub var queue_locks = [_]std.Thread.Mutex{.{}} ** ngl.Queue.max;
+
 test {
     _ = @import("inst.zig");
     _ = @import("dev.zig");
@@ -38,4 +40,5 @@ test {
     _ = @import("mem.zig");
     _ = @import("cmd_pool.zig");
     _ = @import("cmd_buf.zig");
+    _ = @import("queue.zig");
 }
