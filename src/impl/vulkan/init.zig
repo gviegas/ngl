@@ -1582,7 +1582,7 @@ pub const Queue = struct {
                 stage_n,
             ) else &stage;
         }
-        defer if (cmd_buf.len > 1) allocator.free(cmd_bufs);
+        defer if (cmd_bufs.len > 1) allocator.free(cmd_bufs);
         defer if (semas.len > 1) allocator.free(semas);
         defer if (stages.len > 1) allocator.free(stages);
 
