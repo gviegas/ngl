@@ -50,7 +50,7 @@ pub const Device = struct {
     pub const Desc = struct {
         type: Type = .discrete_gpu,
         queues: [Queue.max]?Queue.Desc = [_]?Queue.Desc{null} ** Queue.max,
-        impl: ?*anyopaque = null,
+        impl: ?u64 = null,
     };
 
     const Self = @This();
@@ -125,7 +125,7 @@ pub const Queue = struct {
     pub const Desc = struct {
         capabilities: Capabilities,
         priority: Priority = .default,
-        impl: ?*anyopaque = null,
+        impl: ?u64 = null,
     };
 
     pub const Submit = struct {

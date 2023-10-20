@@ -227,7 +227,7 @@ pub const Instance = struct {
                             .transfer = true,
                         },
                         .priority = .default,
-                        .impl = @ptrFromInt(fam), // XXX
+                        .impl = fam,
                     };
                     break;
                 }
@@ -243,7 +243,7 @@ pub const Instance = struct {
                     else => .other,
                 },
                 .queues = .{ main_queue, null, null, null },
-                .impl = dev,
+                .impl = @intFromPtr(dev),
             };
         }
 
@@ -442,9 +442,8 @@ pub const Device = struct {
         desc: ngl.Device.Desc,
     ) Error!Impl.Device {
         const inst = Instance.cast(instance);
-        const phys_dev: c.VkPhysicalDevice = @ptrCast(@alignCast(
-            desc.impl orelse return Error.InvalidArgument,
-        ));
+        const phys_dev: c.VkPhysicalDevice =
+            @ptrFromInt(desc.impl orelse return Error.InvalidArgument);
 
         var queue_infos: [ngl.Queue.max]c.VkDeviceQueueCreateInfo = undefined;
         var queue_prios: [ngl.Queue.max]f32 = undefined;
@@ -458,7 +457,7 @@ pub const Device = struct {
                     .sType = c.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                     .pNext = null,
                     .flags = 0,
-                    .queueFamilyIndex = @intCast(@intFromPtr(q.impl)), // XXX
+                    .queueFamilyIndex = @intCast(q.impl orelse return Error.InvalidArgument),
                     .queueCount = 1,
                     .pQueuePriorities = &queue_prios[n],
                 };
