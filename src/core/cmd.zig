@@ -102,8 +102,9 @@ pub const CommandBuffer = struct {
 
         pub const Desc = struct {
             one_time_submit: bool,
-            // This field only applies to secondary
-            // command buffers
+            // This field applies to secondary command
+            // buffers only - it must be `null` when
+            // beginning a primary command buffer
             inheritance: ?struct {
                 render_pass_continue: bool,
                 render_pass: ?*RenderPass,

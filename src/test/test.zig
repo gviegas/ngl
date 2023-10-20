@@ -37,4 +37,5 @@ test {
     _ = @import("pl.zig");
     _ = @import("mem.zig");
     _ = @import("cmd_pool.zig");
+    _ = @import("cmd_buf.zig");
 }
