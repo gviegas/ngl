@@ -1590,7 +1590,7 @@ pub const Queue = struct {
         var semas_ptr = semas.ptr;
         var stages_ptr = stages.ptr;
 
-        for (subm_infos, submits) |*info, subm| {
+        for (subm_infos[0..submits.len], submits) |*info, subm| {
             info.* = .{
                 .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
                 .pNext = null,
