@@ -602,7 +602,7 @@ pub const CommandBuffer = packed struct {
                     regions[j] = .{
                         .srcOffset = x.regions[i + j].source_offset,
                         .dstOffset = x.regions[i + j].dest_offset,
-                        .size = x.regions[i].size,
+                        .size = x.regions[i + j].size,
                     };
                 Device.cast(device).vkCmdCopyBuffer(
                     cast(command_buffer).handle,
