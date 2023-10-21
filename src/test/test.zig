@@ -41,4 +41,5 @@ test {
     _ = @import("cmd_pool.zig");
     _ = @import("cmd_buf.zig");
     _ = @import("queue.zig");
+    _ = @import("fill_buf.zig");
 }
