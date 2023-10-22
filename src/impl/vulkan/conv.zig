@@ -291,9 +291,19 @@ pub fn toVkSamplerMipmapMode(sampler_mipmap_mode: ngl.Sampler.MipmapMode) c.VkSa
 }
 
 // TODO: `toVkPipelineStage2`
-pub fn toVkPipelineStage(pipeline_stage: ngl.PipelineStage) c.VkPipelineStageFlagBits {
+pub fn toVkPipelineStage(
+    comptime scope: enum { source, dest },
+    pipeline_stage: ngl.PipelineStage,
+) c.VkPipelineStageFlagBits {
     return switch (pipeline_stage) {
-        .none => c.VK_PIPELINE_STAGE_NONE,
+        // `VK_PIPELINE_STAGE_NONE` (i.e. 0) is generally not allowed
+        // on vanilla commands unless synchronization2 is enabled,
+        // so we resort to the top of pipe and bottom of pipe stages
+        .none => switch (scope) {
+            .source => c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .dest => c.VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        },
+
         .all_commands => c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
         .all_graphics => c.VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
         .draw_indirect => c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
@@ -319,10 +329,14 @@ pub fn toVkPipelineStage(pipeline_stage: ngl.PipelineStage) c.VkPipelineStageFla
 
 // TODO: `toVkPipelineStageFlags2`
 pub fn toVkPipelineStageFlags(
+    comptime scope: enum { source, dest },
     pipeline_stage_flags: ngl.PipelineStage.Flags,
 ) c.VkPipelineStageFlags {
     if (pipeline_stage_flags.none or ngl.noFlagsSet(pipeline_stage_flags))
-        return 0; // c.VK_PIPELINE_STAGE_NONE
+        return switch (scope) {
+            .source => c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .dest => c.VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        };
 
     var flags: c.VkPipelineStageFlags = 0;
 

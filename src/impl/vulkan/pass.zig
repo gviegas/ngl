@@ -202,11 +202,20 @@ pub const RenderPass = struct {
                             .index => |idx| idx,
                             .external => c.VK_SUBPASS_EXTERNAL,
                         },
-                        .srcStageMask = conv.toVkPipelineStageFlags(depend.first_scope.stage_mask),
-                        .dstStageMask = conv.toVkPipelineStageFlags(depend.second_scope.stage_mask),
+                        .srcStageMask = conv.toVkPipelineStageFlags(
+                            .source,
+                            depend.first_scope.stage_mask,
+                        ),
+                        .dstStageMask = conv.toVkPipelineStageFlags(
+                            .dest,
+                            depend.second_scope.stage_mask,
+                        ),
                         .srcAccessMask = conv.toVkAccessFlags(depend.first_scope.access_mask),
                         .dstAccessMask = conv.toVkAccessFlags(depend.second_scope.access_mask),
-                        .dependencyFlags = if (depend.by_region) c.VK_DEPENDENCY_BY_REGION_BIT else 0,
+                        .dependencyFlags = if (depend.by_region)
+                            c.VK_DEPENDENCY_BY_REGION_BIT
+                        else
+                            0,
                     };
                 }
                 create_info.dependencyCount = @intCast(depends.len);

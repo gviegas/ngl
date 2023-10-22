@@ -1615,7 +1615,7 @@ pub const Queue = struct {
                 info.pWaitDstStageMask = stages_ptr;
                 for (semas_ptr, stages_ptr, subm.wait) |*handle, *mask, wsema| {
                     handle.* = Semaphore.cast(wsema.semaphore.impl).handle;
-                    mask.* = conv.toVkPipelineStageFlags(wsema.stage_mask);
+                    mask.* = conv.toVkPipelineStageFlags(.dest, wsema.stage_mask);
                 }
                 semas_ptr += subm.wait.len;
                 stages_ptr += subm.wait.len;

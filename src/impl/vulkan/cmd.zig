@@ -819,8 +819,8 @@ pub const CommandBuffer = packed struct {
                     for (depends) |d|
                         dev.vkCmdPipelineBarrier(
                             cmd_buf.handle,
-                            conv.toVkPipelineStageFlags(d.first_scope.stage_mask),
-                            conv.toVkPipelineStageFlags(d.second_scope.stage_mask),
+                            conv.toVkPipelineStageFlags(.source, d.first_scope.stage_mask),
+                            conv.toVkPipelineStageFlags(.dest, d.second_scope.stage_mask),
                             depend_flags,
                             1,
                             &[1]c.VkMemoryBarrier{.{
@@ -839,8 +839,8 @@ pub const CommandBuffer = packed struct {
                     for (depends) |d|
                         dev.vkCmdPipelineBarrier(
                             cmd_buf.handle,
-                            conv.toVkPipelineStageFlags(d.first_scope.stage_mask),
-                            conv.toVkPipelineStageFlags(d.second_scope.stage_mask),
+                            conv.toVkPipelineStageFlags(.source, d.first_scope.stage_mask),
+                            conv.toVkPipelineStageFlags(.dest, d.second_scope.stage_mask),
                             depend_flags,
                             0,
                             null,
@@ -870,8 +870,8 @@ pub const CommandBuffer = packed struct {
                     for (depends) |d|
                         dev.vkCmdPipelineBarrier(
                             cmd_buf.handle,
-                            conv.toVkPipelineStageFlags(d.first_scope.stage_mask),
-                            conv.toVkPipelineStageFlags(d.second_scope.stage_mask),
+                            conv.toVkPipelineStageFlags(.source, d.first_scope.stage_mask),
+                            conv.toVkPipelineStageFlags(.dest, d.second_scope.stage_mask),
                             depend_flags,
                             0,
                             null,
