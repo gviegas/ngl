@@ -129,14 +129,10 @@ test "RenderPass.init/deinit" {
         const depend = ngl.RenderPass.Dependency{
             .source_subpass = .{ .index = 0 },
             .dest_subpass = .{ .index = 1 },
-            .first_scope = .{
-                .stage_mask = .{ .color_attachment_output = true },
-                .access_mask = .{ .memory_write = true },
-            },
-            .second_scope = .{
-                .stage_mask = .{ .fragment_shader = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
+            .source_stage_mask = .{ .color_attachment_output = true },
+            .source_access_mask = .{ .memory_write = true },
+            .dest_stage_mask = .{ .fragment_shader = true },
+            .dest_access_mask = .{ .memory_read = true, .memory_write = true },
             .by_region = true,
         };
 
@@ -197,14 +193,10 @@ test "RenderPass.init/deinit" {
         const depend = ngl.RenderPass.Dependency{
             .source_subpass = .{ .index = 0 },
             .dest_subpass = .external,
-            .first_scope = .{
-                .stage_mask = .{ .early_fragment_tests = true, .late_fragment_tests = true },
-                .access_mask = .{ .memory_write = true },
-            },
-            .second_scope = .{
-                .stage_mask = .{ .fragment_shader = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
+            .source_stage_mask = .{ .early_fragment_tests = true, .late_fragment_tests = true },
+            .source_access_mask = .{ .memory_write = true },
+            .dest_stage_mask = .{ .fragment_shader = true },
+            .dest_access_mask = .{ .memory_read = true, .memory_write = true },
             .by_region = true,
         };
 
@@ -278,42 +270,30 @@ test "RenderPass.init/deinit" {
         const depend = ngl.RenderPass.Dependency{
             .source_subpass = .{ .index = 0 },
             .dest_subpass = .{ .index = 1 },
-            .first_scope = .{
-                .stage_mask = .{ .all_graphics = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
-            .second_scope = .{
-                .stage_mask = .{ .vertex_shader = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
+            .source_stage_mask = .{ .all_graphics = true },
+            .source_access_mask = .{ .memory_read = true, .memory_write = true },
+            .dest_stage_mask = .{ .vertex_shader = true },
+            .dest_access_mask = .{ .memory_read = true, .memory_write = true },
             .by_region = true,
         };
 
         const depend_2 = ngl.RenderPass.Dependency{
             .source_subpass = .{ .index = 1 },
             .dest_subpass = .{ .index = 2 },
-            .first_scope = .{
-                .stage_mask = .{ .color_attachment_output = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
-            .second_scope = .{
-                .stage_mask = .{ .fragment_shader = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
+            .source_stage_mask = .{ .color_attachment_output = true },
+            .source_access_mask = .{ .memory_read = true, .memory_write = true },
+            .dest_stage_mask = .{ .fragment_shader = true },
+            .dest_access_mask = .{ .memory_read = true, .memory_write = true },
             .by_region = true,
         };
 
         const depend_3 = ngl.RenderPass.Dependency{
             .source_subpass = .external,
             .dest_subpass = .{ .index = 1 },
-            .first_scope = .{
-                .stage_mask = .{ .color_attachment_output = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
-            .second_scope = .{
-                .stage_mask = .{ .vertex_shader = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
+            .source_stage_mask = .{ .color_attachment_output = true },
+            .source_access_mask = .{ .memory_read = true, .memory_write = true },
+            .dest_stage_mask = .{ .vertex_shader = true },
+            .dest_access_mask = .{ .memory_read = true, .memory_write = true },
             .by_region = true,
         };
 
@@ -349,28 +329,20 @@ test "RenderPass.init/deinit" {
         const depend = ngl.RenderPass.Dependency{
             .source_subpass = .external,
             .dest_subpass = .{ .index = 0 },
-            .first_scope = .{
-                .stage_mask = .{ .all_commands = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
-            .second_scope = .{
-                .stage_mask = .{ .fragment_shader = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
+            .source_stage_mask = .{ .all_commands = true },
+            .source_access_mask = .{ .memory_read = true, .memory_write = true },
+            .dest_stage_mask = .{ .fragment_shader = true },
+            .dest_access_mask = .{ .memory_read = true, .memory_write = true },
             .by_region = false,
         };
 
         const depend_2 = ngl.RenderPass.Dependency{
             .source_subpass = .{ .index = 0 },
             .dest_subpass = .external,
-            .first_scope = .{
-                .stage_mask = .{ .fragment_shader = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
-            .second_scope = .{
-                .stage_mask = .{ .all_commands = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
+            .source_stage_mask = .{ .fragment_shader = true },
+            .source_access_mask = .{ .memory_read = true, .memory_write = true },
+            .dest_stage_mask = .{ .all_commands = true },
+            .dest_access_mask = .{ .memory_read = true, .memory_write = true },
             .by_region = false,
         };
 

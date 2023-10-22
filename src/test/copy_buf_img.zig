@@ -121,25 +121,20 @@ test "copy between resources" {
     cmd.pipelineBarrier(&.{.{
         .global_dependencies = &.{},
         .buffer_dependencies = &.{.{
-            .first_scope = .{
-                .stage_mask = .{ .clear = true },
-                .access_mask = .{ .memory_write = true },
-            },
-            .second_scope = .{
-                .stage_mask = .{ .copy = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
+            .source_stage_mask = .{ .clear = true },
+            .source_access_mask = .{ .memory_write = true },
+            .dest_stage_mask = .{ .copy = true },
+            .dest_access_mask = .{ .memory_read = true, .memory_write = true },
             .queue_transfer = null,
             .buffer = &bufs[0],
             .offset = 0,
             .size = size,
         }},
         .image_dependencies = &.{.{
-            .first_scope = .{ .stage_mask = .{}, .access_mask = .{} },
-            .second_scope = .{
-                .stage_mask = .{ .copy = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
+            .source_stage_mask = .{},
+            .source_access_mask = .{},
+            .dest_stage_mask = .{ .copy = true },
+            .dest_access_mask = .{ .memory_read = true, .memory_write = true },
             .queue_transfer = null,
             .old_layout = .undefined,
             .new_layout = .transfer_dest_optimal,
@@ -196,14 +191,10 @@ test "copy between resources" {
         .buffer_dependencies = null,
         .image_dependencies = &.{
             .{
-                .first_scope = .{
-                    .stage_mask = .{ .copy = true },
-                    .access_mask = .{ .memory_write = true },
-                },
-                .second_scope = .{
-                    .stage_mask = .{ .copy = true },
-                    .access_mask = .{ .memory_read = true, .memory_write = true },
-                },
+                .source_stage_mask = .{ .copy = true },
+                .source_access_mask = .{ .memory_write = true },
+                .dest_stage_mask = .{ .copy = true },
+                .dest_access_mask = .{ .memory_read = true, .memory_write = true },
                 .queue_transfer = null,
                 .old_layout = .transfer_dest_optimal,
                 .new_layout = .transfer_source_optimal,
@@ -217,11 +208,10 @@ test "copy between resources" {
                 },
             },
             .{
-                .first_scope = .{ .stage_mask = .{}, .access_mask = .{} },
-                .second_scope = .{
-                    .stage_mask = .{ .copy = true },
-                    .access_mask = .{ .memory_read = true, .memory_write = true },
-                },
+                .source_stage_mask = .{},
+                .source_access_mask = .{},
+                .dest_stage_mask = .{ .copy = true },
+                .dest_access_mask = .{ .memory_read = true, .memory_write = true },
                 .queue_transfer = null,
                 .old_layout = .undefined,
                 .new_layout = .transfer_dest_optimal,
@@ -299,14 +289,10 @@ test "copy between resources" {
         .global_dependencies = null,
         .buffer_dependencies = null,
         .image_dependencies = &.{.{
-            .first_scope = .{
-                .stage_mask = .{ .copy = true },
-                .access_mask = .{ .memory_write = true },
-            },
-            .second_scope = .{
-                .stage_mask = .{ .copy = true },
-                .access_mask = .{ .memory_read = true, .memory_write = true },
-            },
+            .source_stage_mask = .{ .copy = true },
+            .source_access_mask = .{ .memory_write = true },
+            .dest_stage_mask = .{ .copy = true },
+            .dest_access_mask = .{ .memory_read = true, .memory_write = true },
             .queue_transfer = null,
             .old_layout = .transfer_dest_optimal,
             .new_layout = .transfer_source_optimal,

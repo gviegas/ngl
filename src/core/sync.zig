@@ -49,11 +49,6 @@ pub const Access = enum {
     pub const Flags = ngl.Flags(Access);
 };
 
-pub const SyncScope = struct {
-    stage_mask: PipelineStage.Flags,
-    access_mask: Access.Flags,
-};
-
 pub const Fence = struct {
     impl: Impl.Fence,
 

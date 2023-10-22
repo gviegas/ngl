@@ -130,14 +130,10 @@ test "FrameBuffer.init/deinit" {
         .dependencies = &.{.{
             .source_subpass = .{ .index = 0 },
             .dest_subpass = .external,
-            .first_scope = .{
-                .stage_mask = .{ .vertex_shader = true },
-                .access_mask = .{ .memory_write = true },
-            },
-            .second_scope = .{
-                .stage_mask = .{ .vertex_attribute_input = true },
-                .access_mask = .{ .memory_read = true },
-            },
+            .source_stage_mask = .{ .vertex_shader = true },
+            .source_access_mask = .{ .memory_write = true },
+            .dest_stage_mask = .{ .vertex_attribute_input = true },
+            .dest_access_mask = .{ .memory_read = true },
             .by_region = false,
         }},
     });

@@ -819,15 +819,15 @@ pub const CommandBuffer = packed struct {
                     for (depends) |d|
                         dev.vkCmdPipelineBarrier(
                             cmd_buf.handle,
-                            conv.toVkPipelineStageFlags(.source, d.first_scope.stage_mask),
-                            conv.toVkPipelineStageFlags(.dest, d.second_scope.stage_mask),
+                            conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
+                            conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
                             depend_flags,
                             1,
                             &[1]c.VkMemoryBarrier{.{
                                 .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
                                 .pNext = null,
-                                .srcAccessMask = conv.toVkAccessFlags(d.first_scope.access_mask),
-                                .dstAccessMask = conv.toVkAccessFlags(d.second_scope.access_mask),
+                                .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
+                                .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
                             }},
                             0,
                             null,
@@ -839,8 +839,8 @@ pub const CommandBuffer = packed struct {
                     for (depends) |d|
                         dev.vkCmdPipelineBarrier(
                             cmd_buf.handle,
-                            conv.toVkPipelineStageFlags(.source, d.first_scope.stage_mask),
-                            conv.toVkPipelineStageFlags(.dest, d.second_scope.stage_mask),
+                            conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
+                            conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
                             depend_flags,
                             0,
                             null,
@@ -848,8 +848,8 @@ pub const CommandBuffer = packed struct {
                             &[1]c.VkBufferMemoryBarrier{.{
                                 .sType = c.VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
                                 .pNext = null,
-                                .srcAccessMask = conv.toVkAccessFlags(d.first_scope.access_mask),
-                                .dstAccessMask = conv.toVkAccessFlags(d.second_scope.access_mask),
+                                .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
+                                .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
                                 .srcQueueFamilyIndex = if (d.queue_transfer) |t|
                                     Queue.cast(t.source.impl).family
                                 else
@@ -870,8 +870,8 @@ pub const CommandBuffer = packed struct {
                     for (depends) |d|
                         dev.vkCmdPipelineBarrier(
                             cmd_buf.handle,
-                            conv.toVkPipelineStageFlags(.source, d.first_scope.stage_mask),
-                            conv.toVkPipelineStageFlags(.dest, d.second_scope.stage_mask),
+                            conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
+                            conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
                             depend_flags,
                             0,
                             null,
@@ -881,8 +881,8 @@ pub const CommandBuffer = packed struct {
                             &[1]c.VkImageMemoryBarrier{.{
                                 .sType = c.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                                 .pNext = null,
-                                .srcAccessMask = conv.toVkAccessFlags(d.first_scope.access_mask),
-                                .dstAccessMask = conv.toVkAccessFlags(d.second_scope.access_mask),
+                                .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
+                                .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
                                 .oldLayout = conv.toVkImageLayout(d.old_layout),
                                 .newLayout = conv.toVkImageLayout(d.new_layout),
                                 .srcQueueFamilyIndex = if (d.queue_transfer) |t|

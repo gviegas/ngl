@@ -6,7 +6,8 @@ const Format = ngl.Format;
 const ImageView = ngl.ImageView;
 const SampleCount = ngl.SampleCount;
 const Image = ngl.Image;
-const SyncScope = ngl.SyncScope;
+const PipelineStage = ngl.PipelineStage;
+const Access = ngl.Access;
 const Pipeline = ngl.Pipeline;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
@@ -82,8 +83,10 @@ pub const RenderPass = struct {
     pub const Dependency = struct {
         source_subpass: Subpass.Ref,
         dest_subpass: Subpass.Ref,
-        first_scope: SyncScope,
-        second_scope: SyncScope,
+        source_stage_mask: PipelineStage.Flags,
+        source_access_mask: Access.Flags,
+        dest_stage_mask: PipelineStage.Flags,
+        dest_access_mask: Access.Flags,
         by_region: bool,
     };
 

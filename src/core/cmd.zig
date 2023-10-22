@@ -5,7 +5,8 @@ const Device = ngl.Device;
 const Queue = ngl.Queue;
 const Buffer = ngl.Buffer;
 const Image = ngl.Image;
-const SyncScope = ngl.SyncScope;
+const PipelineStage = ngl.PipelineStage;
+const Access = ngl.Access;
 const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
 const PipelineLayout = ngl.PipelineLayout;
@@ -518,13 +519,17 @@ pub const CommandBuffer = struct {
             by_region: bool,
 
             pub const GlobalDependency = struct {
-                first_scope: SyncScope,
-                second_scope: SyncScope,
+                source_stage_mask: PipelineStage.Flags,
+                source_access_mask: Access.Flags,
+                dest_stage_mask: PipelineStage.Flags,
+                dest_access_mask: Access.Flags,
             };
 
             pub const BufferDependency = struct {
-                first_scope: SyncScope,
-                second_scope: SyncScope,
+                source_stage_mask: PipelineStage.Flags,
+                source_access_mask: Access.Flags,
+                dest_stage_mask: PipelineStage.Flags,
+                dest_access_mask: Access.Flags,
                 queue_transfer: ?struct {
                     source: *Queue,
                     dest: *Queue,
@@ -535,8 +540,10 @@ pub const CommandBuffer = struct {
             };
 
             pub const ImageDependency = struct {
-                first_scope: SyncScope,
-                second_scope: SyncScope,
+                source_stage_mask: PipelineStage.Flags,
+                source_access_mask: Access.Flags,
+                dest_stage_mask: PipelineStage.Flags,
+                dest_access_mask: Access.Flags,
                 queue_transfer: ?struct {
                     source: *Queue,
                     dest: *Queue,
