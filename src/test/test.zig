@@ -43,4 +43,5 @@ test {
     _ = @import("queue.zig");
     _ = @import("fill_buf.zig");
     _ = @import("copy_buf.zig");
+    _ = @import("copy_buf_img.zig");
 }
