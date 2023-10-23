@@ -44,4 +44,5 @@ test {
     _ = @import("fill_buf.zig");
     _ = @import("copy_buf.zig");
     _ = @import("copy_buf_img.zig");
+    _ = @import("disp.zig");
 }
