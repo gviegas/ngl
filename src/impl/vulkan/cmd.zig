@@ -647,7 +647,7 @@ pub const CommandBuffer = packed struct {
 
             // TODO: Check that the compiler is generating a
             // separate path for 3D images
-            const is3d = x.type == .@"3d";
+            const is_3d = x.type == .@"3d";
 
             var i: usize = 0;
             while (i < n) : (i += max) {
@@ -657,29 +657,29 @@ pub const CommandBuffer = packed struct {
                         .srcSubresource = .{
                             .aspectMask = conv.toVkImageAspect(r.source_aspect),
                             .mipLevel = r.source_level,
-                            .baseArrayLayer = if (is3d) 0 else r.source_z_or_layer,
-                            .layerCount = if (is3d) 1 else r.depth_or_layers,
+                            .baseArrayLayer = if (is_3d) 0 else r.source_z_or_layer,
+                            .layerCount = if (is_3d) 1 else r.depth_or_layers,
                         },
                         .srcOffset = .{
                             .x = @min(r.source_x, std.math.maxInt(i32)),
                             .y = @min(r.source_y, std.math.maxInt(i32)),
-                            .z = if (is3d) @min(r.source_z_or_layer, std.math.maxInt(i32)) else 0,
+                            .z = if (is_3d) @min(r.source_z_or_layer, std.math.maxInt(i32)) else 0,
                         },
                         .dstSubresource = .{
                             .aspectMask = conv.toVkImageAspect(r.dest_aspect),
                             .mipLevel = r.dest_level,
-                            .baseArrayLayer = if (is3d) 0 else r.dest_z_or_layer,
-                            .layerCount = if (is3d) 1 else r.depth_or_layers,
+                            .baseArrayLayer = if (is_3d) 0 else r.dest_z_or_layer,
+                            .layerCount = if (is_3d) 1 else r.depth_or_layers,
                         },
                         .dstOffset = .{
                             .x = @min(r.dest_x, std.math.maxInt(i32)),
                             .y = @min(r.dest_y, std.math.maxInt(i32)),
-                            .z = if (is3d) @min(r.dest_z_or_layer, std.math.maxInt(i32)) else 0,
+                            .z = if (is_3d) @min(r.dest_z_or_layer, std.math.maxInt(i32)) else 0,
                         },
                         .extent = .{
                             .width = r.width,
                             .height = r.height,
-                            .depth = if (is3d) r.depth_or_layers else 1,
+                            .depth = if (is_3d) r.depth_or_layers else 1,
                         },
                     };
                 }
@@ -728,7 +728,7 @@ pub const CommandBuffer = packed struct {
 
             // TODO: Check that the compiler is generating a
             // separate path for 3D images
-            const is3d = x.image_type == .@"3d";
+            const is_3d = x.image_type == .@"3d";
 
             var i: usize = 0;
             while (i < n) : (i += max) {
@@ -741,18 +741,18 @@ pub const CommandBuffer = packed struct {
                         .imageSubresource = .{
                             .aspectMask = conv.toVkImageAspect(r.image_aspect),
                             .mipLevel = r.image_level,
-                            .baseArrayLayer = if (is3d) 0 else r.image_z_or_layer,
-                            .layerCount = if (is3d) 1 else r.image_depth_or_layers,
+                            .baseArrayLayer = if (is_3d) 0 else r.image_z_or_layer,
+                            .layerCount = if (is_3d) 1 else r.image_depth_or_layers,
                         },
                         .imageOffset = .{
                             .x = @min(r.image_x, std.math.maxInt(i32)),
                             .y = @min(r.image_y, std.math.maxInt(i32)),
-                            .z = if (is3d) @min(r.image_z_or_layer, std.math.maxInt(i32)) else 0,
+                            .z = if (is_3d) @min(r.image_z_or_layer, std.math.maxInt(i32)) else 0,
                         },
                         .imageExtent = .{
                             .width = r.image_width,
                             .height = r.image_height,
-                            .depth = if (is3d) r.image_depth_or_layers else 1,
+                            .depth = if (is_3d) r.image_depth_or_layers else 1,
                         },
                     };
                 }
@@ -815,95 +815,89 @@ pub const CommandBuffer = packed struct {
                     c.VK_DEPENDENCY_BY_REGION_BIT
                 else
                     0;
-                if (x.global_dependencies) |depends| {
-                    for (depends) |d|
-                        dev.vkCmdPipelineBarrier(
-                            cmd_buf.handle,
-                            conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
-                            conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
-                            depend_flags,
-                            1,
-                            &[1]c.VkMemoryBarrier{.{
-                                .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-                                .pNext = null,
-                                .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
-                                .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
-                            }},
-                            0,
-                            null,
-                            0,
-                            null,
-                        );
-                }
-                if (x.buffer_dependencies) |depends| {
-                    for (depends) |d|
-                        dev.vkCmdPipelineBarrier(
-                            cmd_buf.handle,
-                            conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
-                            conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
-                            depend_flags,
-                            0,
-                            null,
-                            1,
-                            &[1]c.VkBufferMemoryBarrier{.{
-                                .sType = c.VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                                .pNext = null,
-                                .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
-                                .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
-                                .srcQueueFamilyIndex = if (d.queue_transfer) |t|
-                                    Queue.cast(t.source.impl).family
-                                else
-                                    c.VK_QUEUE_FAMILY_IGNORED,
-                                .dstQueueFamilyIndex = if (d.queue_transfer) |t|
-                                    Queue.cast(t.dest.impl).family
-                                else
-                                    c.VK_QUEUE_FAMILY_IGNORED,
-                                .buffer = Buffer.cast(d.buffer.impl).handle,
-                                .offset = d.offset,
-                                .size = d.size orelse c.VK_WHOLE_SIZE,
-                            }},
-                            0,
-                            null,
-                        );
-                }
-                if (x.image_dependencies) |depends| {
-                    for (depends) |d|
-                        dev.vkCmdPipelineBarrier(
-                            cmd_buf.handle,
-                            conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
-                            conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
-                            depend_flags,
-                            0,
-                            null,
-                            0,
-                            null,
-                            1,
-                            &[1]c.VkImageMemoryBarrier{.{
-                                .sType = c.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                .pNext = null,
-                                .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
-                                .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
-                                .oldLayout = conv.toVkImageLayout(d.old_layout),
-                                .newLayout = conv.toVkImageLayout(d.new_layout),
-                                .srcQueueFamilyIndex = if (d.queue_transfer) |t|
-                                    Queue.cast(t.source.impl).family
-                                else
-                                    c.VK_QUEUE_FAMILY_IGNORED,
-                                .dstQueueFamilyIndex = if (d.queue_transfer) |t|
-                                    Queue.cast(t.dest.impl).family
-                                else
-                                    c.VK_QUEUE_FAMILY_IGNORED,
-                                .image = Image.cast(d.image.impl).handle,
-                                .subresourceRange = .{
-                                    .aspectMask = conv.toVkImageAspectFlags(d.range.aspect_mask),
-                                    .baseMipLevel = d.range.base_level,
-                                    .levelCount = d.range.levels orelse c.VK_REMAINING_MIP_LEVELS,
-                                    .baseArrayLayer = d.range.base_layer,
-                                    .layerCount = d.range.layers orelse c.VK_REMAINING_ARRAY_LAYERS,
-                                },
-                            }},
-                        );
-                }
+                for (x.global_dependencies) |d|
+                    dev.vkCmdPipelineBarrier(
+                        cmd_buf.handle,
+                        conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
+                        conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
+                        depend_flags,
+                        1,
+                        &[1]c.VkMemoryBarrier{.{
+                            .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+                            .pNext = null,
+                            .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
+                            .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
+                        }},
+                        0,
+                        null,
+                        0,
+                        null,
+                    );
+                for (x.buffer_dependencies) |d|
+                    dev.vkCmdPipelineBarrier(
+                        cmd_buf.handle,
+                        conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
+                        conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
+                        depend_flags,
+                        0,
+                        null,
+                        1,
+                        &[1]c.VkBufferMemoryBarrier{.{
+                            .sType = c.VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                            .pNext = null,
+                            .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
+                            .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
+                            .srcQueueFamilyIndex = if (d.queue_transfer) |t|
+                                Queue.cast(t.source.impl).family
+                            else
+                                c.VK_QUEUE_FAMILY_IGNORED,
+                            .dstQueueFamilyIndex = if (d.queue_transfer) |t|
+                                Queue.cast(t.dest.impl).family
+                            else
+                                c.VK_QUEUE_FAMILY_IGNORED,
+                            .buffer = Buffer.cast(d.buffer.impl).handle,
+                            .offset = d.offset,
+                            .size = d.size orelse c.VK_WHOLE_SIZE,
+                        }},
+                        0,
+                        null,
+                    );
+                for (x.image_dependencies) |d|
+                    dev.vkCmdPipelineBarrier(
+                        cmd_buf.handle,
+                        conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
+                        conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
+                        depend_flags,
+                        0,
+                        null,
+                        0,
+                        null,
+                        1,
+                        &[1]c.VkImageMemoryBarrier{.{
+                            .sType = c.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                            .pNext = null,
+                            .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
+                            .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
+                            .oldLayout = conv.toVkImageLayout(d.old_layout),
+                            .newLayout = conv.toVkImageLayout(d.new_layout),
+                            .srcQueueFamilyIndex = if (d.queue_transfer) |t|
+                                Queue.cast(t.source.impl).family
+                            else
+                                c.VK_QUEUE_FAMILY_IGNORED,
+                            .dstQueueFamilyIndex = if (d.queue_transfer) |t|
+                                Queue.cast(t.dest.impl).family
+                            else
+                                c.VK_QUEUE_FAMILY_IGNORED,
+                            .image = Image.cast(d.image.impl).handle,
+                            .subresourceRange = .{
+                                .aspectMask = conv.toVkImageAspectFlags(d.range.aspect_mask),
+                                .baseMipLevel = d.range.base_level,
+                                .levelCount = d.range.levels orelse c.VK_REMAINING_MIP_LEVELS,
+                                .baseArrayLayer = d.range.base_layer,
+                                .layerCount = d.range.layers orelse c.VK_REMAINING_ARRAY_LAYERS,
+                            },
+                        }},
+                    );
             }
         } else {
             var mem_barrier: [1]c.VkMemoryBarrier2 = undefined;
@@ -919,9 +913,9 @@ pub const CommandBuffer = packed struct {
             }
 
             for (dependencies) |x| {
-                const mem_n = if (x.global_dependencies) |d| d.len else 0;
-                const buf_n = if (x.buffer_dependencies) |d| d.len else 0;
-                const img_n = if (x.image_dependencies) |d| d.len else 0;
+                const mem_n = x.global_dependencies.len;
+                const buf_n = x.buffer_dependencies.len;
+                const img_n = x.image_dependencies.len;
 
                 if (mem_n > mem_barriers.len) {
                     if (mem_barriers.len == 1) {
@@ -966,17 +960,17 @@ pub const CommandBuffer = packed struct {
                 var img_i: usize = 0;
                 while (mem_i < mem_n or buf_i < buf_n or img_i < img_n) {
                     for (0..@min(mem_n -| mem_i, mem_max)) |j| {
-                        const d = &x.global_dependencies.?[mem_i + j];
+                        const d = &x.global_dependencies[mem_i + j];
                         // TODO
                         _ = d;
                     }
                     for (0..@min(buf_n -| buf_i, buf_max)) |j| {
-                        const d = &x.buffer_dependencies.?[buf_i + j];
+                        const d = &x.buffer_dependencies[buf_i + j];
                         // TODO
                         _ = d;
                     }
                     for (0..@min(img_n -| img_i, img_max)) |j| {
-                        const d = &x.image_dependencies.?[img_i + j];
+                        const d = &x.image_dependencies[img_i + j];
                         // TODO
                         _ = d;
                     }

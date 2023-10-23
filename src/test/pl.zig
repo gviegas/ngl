@@ -22,13 +22,13 @@ test "Pipeline.initGraphics/deinit" {
         },
     };
 
-    var desc_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
+    var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
         .bindings = &shd_code.color_desc_bindings,
     });
-    defer desc_layt.deinit(gpa, dev);
+    defer set_layt.deinit(gpa, dev);
 
     var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = &.{&desc_layt},
+        .descriptor_set_layouts = &.{&set_layt},
         .push_constant_ranges = null,
     });
     defer pl_layt.deinit(gpa, dev);
@@ -158,13 +158,13 @@ test "Pipeline.initGraphics/deinit" {
 test "Pipeline.initCompute/deinit" {
     const dev = &context().device;
 
-    var desc_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
+    var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
         .bindings = &shd_code.checker_desc_bindings,
     });
-    defer desc_layt.deinit(gpa, dev);
+    defer set_layt.deinit(gpa, dev);
 
     var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = &.{&desc_layt},
+        .descriptor_set_layouts = &.{&set_layt},
         .push_constant_ranges = null,
     });
     defer pl_layt.deinit(gpa, dev);

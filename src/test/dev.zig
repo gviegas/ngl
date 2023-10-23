@@ -38,7 +38,7 @@ test "Device.init/deinit" {
     } else try testing.expect(false);
 }
 
-test "Multiple Device instances" {
+test "multiple Device instances" {
     var inst = try ngl.Instance.init(gpa, .{});
     defer inst.deinit(gpa);
 
@@ -76,7 +76,7 @@ test "Multiple Device instances" {
     }
 }
 
-test "Aliasing Device instances" {
+test "aliasing Device instances" {
     var inst = try ngl.Instance.init(gpa, .{});
     defer inst.deinit(gpa);
 

@@ -442,7 +442,6 @@ pub const CommandBuffer = struct {
             source_layout: Image.Layout,
             dest: *Image,
             dest_layout: Image.Layout,
-            // TODO: Consider adding a `type` field to `Image`
             type: Image.Type,
             regions: []const Region,
 
@@ -512,10 +511,12 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// At least one of `global_dependencies`, `buffer_dependencies`
+        /// or `image_dependencies` must be provided.
         pub const Dependency = struct {
-            global_dependencies: ?[]const GlobalDependency,
-            buffer_dependencies: ?[]const BufferDependency,
-            image_dependencies: ?[]const ImageDependency,
+            global_dependencies: []const GlobalDependency = &.{},
+            buffer_dependencies: []const BufferDependency = &.{},
+            image_dependencies: []const ImageDependency = &.{},
             by_region: bool,
 
             pub const GlobalDependency = struct {

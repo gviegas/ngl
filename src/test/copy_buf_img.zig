@@ -119,7 +119,6 @@ test "copy between resources" {
     cmd.fillBuffer(&bufs[0], size / 2, size / 2, 0xfa);
 
     cmd.pipelineBarrier(&.{.{
-        .global_dependencies = &.{},
         .buffer_dependencies = &.{.{
             .source_stage_mask = .{ .clear = true },
             .source_access_mask = .{ .memory_write = true },
@@ -187,8 +186,6 @@ test "copy between resources" {
     }});
 
     cmd.pipelineBarrier(&.{.{
-        .global_dependencies = null,
-        .buffer_dependencies = null,
         .image_dependencies = &.{
             .{
                 .source_stage_mask = .{ .copy = true },
@@ -286,8 +283,6 @@ test "copy between resources" {
     }});
 
     cmd.pipelineBarrier(&.{.{
-        .global_dependencies = null,
-        .buffer_dependencies = null,
         .image_dependencies = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .memory_write = true },

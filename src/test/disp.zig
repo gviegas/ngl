@@ -102,13 +102,13 @@ test "compute dispatch" {
         dev.free(gpa, &buf_mem);
     }
 
-    var desc_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
+    var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
         .bindings = &shd_code.checker_desc_bindings,
     });
-    defer desc_layt.deinit(gpa, dev);
+    defer set_layt.deinit(gpa, dev);
 
     var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = &.{&desc_layt},
+        .descriptor_set_layouts = &.{&set_layt},
         .push_constant_ranges = null,
     });
     defer pl_layt.deinit(gpa, dev);
@@ -136,7 +136,7 @@ test "compute dispatch" {
     });
     defer desc_pool.deinit(gpa, dev);
     var desc_set = blk: {
-        var s = try desc_pool.alloc(gpa, dev, .{ .layouts = &.{&desc_layt} });
+        var s = try desc_pool.alloc(gpa, dev, .{ .layouts = &.{&set_layt} });
         defer gpa.free(s);
         break :blk s[0];
     };
@@ -163,8 +163,6 @@ test "compute dispatch" {
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
     cmd.pipelineBarrier(&.{.{
-        .global_dependencies = null,
-        .buffer_dependencies = null,
         .image_dependencies = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
@@ -197,8 +195,6 @@ test "compute dispatch" {
             .dest_stage_mask = .{ .copy = true },
             .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
         }},
-        .buffer_dependencies = null,
-        .image_dependencies = null,
         .by_region = false,
     }});
 
