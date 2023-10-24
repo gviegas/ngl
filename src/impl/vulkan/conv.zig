@@ -565,8 +565,8 @@ pub fn toVkPolygonMode(polygon_mode: ngl.Rasterization.PolygonMode) c.VkPolygonM
 pub fn toVkCullModeFlags(cull_mode: ngl.Rasterization.CullMode) c.VkCullModeFlags {
     return switch (cull_mode) {
         .none => c.VK_CULL_MODE_NONE,
-        .front => c.VK_CULL_MODE_BACK_BIT,
-        .back => c.VK_CULL_MODE_FRONT_BIT,
+        .front => c.VK_CULL_MODE_FRONT_BIT,
+        .back => c.VK_CULL_MODE_BACK_BIT,
     };
 }
 
