@@ -126,7 +126,7 @@ pub const Viewport = struct {
 pub const Rasterization = struct {
     polygon_mode: PolygonMode,
     cull_mode: CullMode,
-    clockwise: bool = false,
+    clockwise: bool,
     depth_clamp: bool = false,
     depth_bias: ?struct {
         value: f32,
