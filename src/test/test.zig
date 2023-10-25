@@ -45,4 +45,5 @@ test {
     _ = @import("copy_buf.zig");
     _ = @import("copy_buf_img.zig");
     _ = @import("disp.zig");
+    _ = @import("draw.zig");
 }

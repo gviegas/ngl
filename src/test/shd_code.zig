@@ -140,7 +140,7 @@ pub const color_desc_bindings = [_]ngl.DescriptorSetLayout.Binding{.{
 
 pub const color_input_bindings = [_]ngl.VertexInput.Binding{.{
     .binding = 0,
-    .stride = (3 + 4) * 4,
+    .stride = (3 + (1) + 4) * 4,
     .per_instance = false,
 }};
 
