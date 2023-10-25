@@ -241,7 +241,7 @@ test "compute dispatch" {
             const cell = [2]usize{ x / local[0], y / local[1] };
             const data = bw[(cell[0] & 1) ^ (cell[1] & 1)];
             const i = (x + w * y) * 4;
-            const p: *u32 = @ptrCast(@alignCast(&s[i]));
+            const p: *const u32 = @ptrCast(@alignCast(&s[i]));
             try testing.expectEqual(p.*, data);
         }
     }
@@ -249,13 +249,12 @@ test "compute dispatch" {
     if (false) {
         var str = std.ArrayList(u8).init(gpa);
         defer str.deinit();
-        try str.append('\n');
         for (0..size / 4) |k| {
             const i = k * 4;
-            const p = @as(*u32, @ptrCast(@alignCast(&s[i])));
+            const p = @as(*const u32, @ptrCast(@alignCast(&s[i])));
             try str.appendSlice(switch (p.*) {
-                0xff_00_00_00, 0x00_00_00_ff => " #",
-                0xff_ff_ff_ff => " -",
+                0xff_00_00_00, 0x00_00_00_ff => " ♥",
+                0xff_ff_ff_ff => " ♢",
                 else => unreachable,
             });
             if ((k + 1) % w == 0) try str.append('\n');
