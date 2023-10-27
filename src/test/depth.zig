@@ -35,8 +35,9 @@ test "depth-only rendering" {
     };
     const unif_size = blk: {
         const sz = @sizeOf(@TypeOf(unif_data));
-        break :blk (sz + 255) & ~@as(u64, 255);
+        break :blk 2 * ((sz / 2 + 255) & ~@as(u64, 255));
     };
+    const unif_off = [2]u64{ 0, unif_size / 2 };
 
     const idx_data = [6]u16{
         0, 1, 2,
@@ -316,7 +317,7 @@ test "depth-only rendering" {
             .element = 0,
             .contents = .{ .uniform_buffer = &.{.{
                 .buffer = &unif_buf,
-                .offset = 0,
+                .offset = unif_off[0],
                 .range = @sizeOf(@TypeOf(unif_data[0])),
             }} },
         },
@@ -324,10 +325,9 @@ test "depth-only rendering" {
             .descriptor_set = &desc_sets[1],
             .binding = 0,
             .element = 0,
-            // TODO: Check offset requirement
             .contents = .{ .uniform_buffer = &.{.{
                 .buffer = &unif_buf,
-                .offset = @sizeOf(@TypeOf(unif_data[0])),
+                .offset = unif_off[1],
                 .range = @sizeOf(@TypeOf(unif_data[1])),
             }} },
         },
@@ -345,9 +345,15 @@ test "depth-only rendering" {
     // Keep mapped
     var p = try stg_buf_mem.map(dev, 0, null);
     {
-        const len = @sizeOf(@TypeOf(unif_data));
-        const source = @as([*]const u8, @ptrCast(&unif_data))[0..len];
-        const dest = p[0..len];
+        const len = @sizeOf(@TypeOf(unif_data[0]));
+        const source = @as([*]const u8, @ptrCast(&unif_data[0]))[0..len];
+        const dest = p[unif_off[0] .. unif_off[0] + len];
+        @memcpy(dest, source);
+    }
+    {
+        const len = @sizeOf(@TypeOf(unif_data[1]));
+        const source = @as([*]const u8, @ptrCast(&unif_data[1]))[0..len];
+        const dest = p[unif_off[1] .. unif_off[1] + len];
         @memcpy(dest, source);
     }
     {
@@ -381,11 +387,18 @@ test "depth-only rendering" {
         .{
             .source = &stg_buf,
             .dest = &unif_buf,
-            .regions = &.{.{
-                .source_offset = 0,
-                .dest_offset = 0,
-                .size = @sizeOf(@TypeOf(unif_data)),
-            }},
+            .regions = &.{
+                .{
+                    .source_offset = unif_off[0],
+                    .dest_offset = unif_off[0],
+                    .size = @sizeOf(@TypeOf(unif_data[0])),
+                },
+                .{
+                    .source_offset = unif_off[1],
+                    .dest_offset = unif_off[1],
+                    .size = @sizeOf(@TypeOf(unif_data[1])),
+                },
+            },
         },
         .{
             .source = &stg_buf,
@@ -490,9 +503,10 @@ test "depth-only rendering" {
     try testing.expect(clear_dep > vert_dep_n[0] + vert_dep_n[1]);
     try testing.expect(clear_dep_n / (vert_dep_n[0] + vert_dep_n[1]) < 2);
 
-    // We transformed the geometry such that the drawn rectangles
-    // intersect each other, and where they intersect, the depth
-    // value must be zero
+    // The drawn rectangles were transformed in such a way that they
+    // partially intersect one another in the XY plane, and where
+    // they intersect, the depth value must be zero (i.e., the depth
+    // value from the first draw)
     try testing.expectApproxEqAbs(
         @as(f64, @floatFromInt(vert_dep_n[0])) / @as(f64, @floatFromInt(vert_dep_n[1])),
         4.0 / 3.0,
