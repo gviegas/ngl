@@ -16,7 +16,7 @@ test "Memory.map/unmap (coherent)" {
 
     const size = 1024;
 
-    var mem = try dev.alloc(gpa, .{ .size = size, .mem_type_index = type_idx });
+    var mem = try dev.alloc(gpa, .{ .size = size, .type_index = type_idx });
     defer dev.free(gpa, &mem);
 
     {
@@ -74,7 +74,7 @@ test "Memory.map/unmap (coherent)" {
 
     const size_2 = std.mem.page_size + 513;
 
-    var mem_2 = try dev.alloc(gpa, .{ .size = size_2, .mem_type_index = type_idx });
+    var mem_2 = try dev.alloc(gpa, .{ .size = size_2, .type_index = type_idx });
     defer dev.free(gpa, &mem_2);
 
     {

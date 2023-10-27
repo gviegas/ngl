@@ -44,7 +44,7 @@ test "copy between resources" {
                     break idx;
                 }
             } else unreachable;
-            var mem = try dev.alloc(gpa, .{ .size = reqs.size, .mem_type_index = idx });
+            var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
             errdefer dev.free(gpa, &mem);
             try bufs[i].bindMemory(dev, &mem, 0);
             break :blk mem;
@@ -90,7 +90,7 @@ test "copy between resources" {
                     break idx;
                 }
             } else unreachable;
-            var mem = try dev.alloc(gpa, .{ .size = reqs.size, .mem_type_index = idx });
+            var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
             errdefer dev.free(gpa, &mem);
             try images[i].bindMemory(dev, &mem, 0);
             break :blk mem;

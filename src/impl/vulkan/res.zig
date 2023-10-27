@@ -68,7 +68,7 @@ pub const Buffer = struct {
         return .{
             .size = mem_req.size,
             .alignment = mem_req.alignment,
-            .mem_type_bits = mem_req.memoryTypeBits,
+            .type_bits = mem_req.memoryTypeBits,
         };
     }
 
@@ -239,7 +239,7 @@ pub const Image = struct {
         return .{
             .size = mem_req.size,
             .alignment = mem_req.alignment,
-            .mem_type_bits = mem_req.memoryTypeBits,
+            .type_bits = mem_req.memoryTypeBits,
         };
     }
 

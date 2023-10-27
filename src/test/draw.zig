@@ -82,7 +82,7 @@ test "draw primitive" {
             if (dev.mem_types[idx].properties.device_local and reqs.supportsMemoryType(idx))
                 break idx;
         } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .mem_type_index = idx });
+        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
         errdefer dev.free(gpa, &mem);
         try image.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -121,7 +121,7 @@ test "draw primitive" {
             if (dev.mem_types[idx].properties.device_local and reqs.supportsMemoryType(idx))
                 break idx;
         } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .mem_type_index = idx });
+        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
         errdefer dev.free(gpa, &mem);
         try unif_buf.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -147,7 +147,7 @@ test "draw primitive" {
             if (dev.mem_types[idx].properties.device_local and reqs.supportsMemoryType(idx))
                 break idx;
         } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .mem_type_index = idx });
+        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
         errdefer dev.free(gpa, &mem);
         try vert_buf.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -173,7 +173,7 @@ test "draw primitive" {
                 break idx;
             }
         } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .mem_type_index = idx });
+        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
         errdefer dev.free(gpa, &mem);
         try stg_buf.bindMemory(dev, &mem, 0);
         break :blk mem;

@@ -167,7 +167,7 @@ test "FrameBuffer.init/deinit" {
             const idx: ngl.Memory.TypeIndex = @intCast(i);
             if (reqs.supportsMemoryType(idx)) break idx;
         } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .mem_type_index = idx });
+        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
         errdefer dev.free(gpa, &mem);
         try col_img.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -227,7 +227,7 @@ test "FrameBuffer.init/deinit" {
             const idx: ngl.Memory.TypeIndex = @intCast(i);
             if (reqs.supportsMemoryType(idx)) break idx;
         } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .mem_type_index = idx });
+        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
         errdefer dev.free(gpa, &mem);
         try dep_img.bindMemory(dev, &mem, 0);
         break :blk mem;

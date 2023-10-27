@@ -664,7 +664,7 @@ pub const Device = struct {
             .sType = c.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             .pNext = null,
             .allocationSize = desc.size,
-            .memoryTypeIndex = desc.mem_type_index,
+            .memoryTypeIndex = desc.type_index,
         }, null, &mem));
 
         ptr.* = .{ .handle = mem };

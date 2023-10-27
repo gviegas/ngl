@@ -94,7 +94,7 @@ test "Image allocation" {
     {
         errdefer image.deinit(gpa, dev);
         try testing.expect(mem_reqs.size >= 4 * 512 * 512 * 4);
-        try testing.expect(mem_reqs.mem_type_bits != 0);
+        try testing.expect(mem_reqs.type_bits != 0);
     }
 
     const mem_idx = for (0..dev.mem_type_n) |i| {
@@ -104,7 +104,7 @@ test "Image allocation" {
 
     var mem = blk: {
         errdefer image.deinit(gpa, dev);
-        var mem = try dev.alloc(gpa, .{ .size = mem_reqs.size, .mem_type_index = mem_idx });
+        var mem = try dev.alloc(gpa, .{ .size = mem_reqs.size, .type_index = mem_idx });
         errdefer dev.free(gpa, &mem);
         try image.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -145,7 +145,7 @@ test "ImageView.init/deinit" {
         const mem_reqs = rt.getMemoryRequirements(dev);
         var mem = try dev.alloc(gpa, .{
             .size = mem_reqs.size,
-            .mem_type_index = for (0..dev.mem_type_n) |i| {
+            .type_index = for (0..dev.mem_type_n) |i| {
                 const idx: ngl.Memory.TypeIndex = @intCast(i);
                 if (mem_reqs.supportsMemoryType(idx)) break idx;
             } else unreachable,
@@ -212,7 +212,7 @@ test "ImageView.init/deinit" {
         const mem_reqs = spld.getMemoryRequirements(dev);
         var mem = try dev.alloc(gpa, .{
             .size = mem_reqs.size,
-            .mem_type_index = for (0..dev.mem_type_n) |i| {
+            .type_index = for (0..dev.mem_type_n) |i| {
                 const idx: ngl.Memory.TypeIndex = @intCast(i);
                 if (mem_reqs.supportsMemoryType(idx)) break idx;
             } else unreachable,

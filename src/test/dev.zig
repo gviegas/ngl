@@ -143,14 +143,14 @@ test "Device.alloc/free" {
 
     for (0..dev.mem_type_n) |i| {
         const m: ngl.Memory.TypeIndex = @intCast(i);
-        var a = try dev.alloc(gpa, .{ .size = sizes[0], .mem_type_index = m });
+        var a = try dev.alloc(gpa, .{ .size = sizes[0], .type_index = m });
         dev.free(gpa, &a);
-        var b = try dev.alloc(gpa, .{ .size = sizes[1], .mem_type_index = m });
+        var b = try dev.alloc(gpa, .{ .size = sizes[1], .type_index = m });
         defer dev.free(gpa, &b);
-        var c = try dev.alloc(gpa, .{ .size = sizes[2], .mem_type_index = m });
+        var c = try dev.alloc(gpa, .{ .size = sizes[2], .type_index = m });
         dev.free(gpa, &c);
         for (sizes) |sz| {
-            mems_ptr[0] = dev.alloc(gpa, .{ .size = sz, .mem_type_index = m }) catch |err| {
+            mems_ptr[0] = dev.alloc(gpa, .{ .size = sz, .type_index = m }) catch |err| {
                 while (mems_ptr != mems.ptr) : (mems_ptr -= 1) dev.free(gpa, &(mems_ptr - 1)[0]);
                 return err;
             };

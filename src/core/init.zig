@@ -191,16 +191,16 @@ pub const Memory = struct {
     pub const Requirements = struct {
         size: u64,
         alignment: u64,
-        mem_type_bits: u32,
+        type_bits: u32,
 
-        pub inline fn supportsMemoryType(self: Requirements, mem_type_index: TypeIndex) bool {
-            return self.mem_type_bits & (@as(u32, 1) << mem_type_index) != 0;
+        pub inline fn supportsMemoryType(self: Requirements, type_index: TypeIndex) bool {
+            return self.type_bits & (@as(u32, 1) << type_index) != 0;
         }
     };
 
     pub const Desc = struct {
         size: u64,
-        mem_type_index: TypeIndex,
+        type_index: TypeIndex,
     };
 
     const Self = @This();
