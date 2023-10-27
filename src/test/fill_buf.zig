@@ -29,7 +29,7 @@ test "fillBuffer command" {
             const idx: ngl.Memory.TypeIndex = @intCast(i);
             if (dev.mem_types[idx].properties.host_visible and
                 dev.mem_types[idx].properties.host_coherent and
-                reqs.supportsMemoryType(idx))
+                reqs.supportsType(idx))
             {
                 break idx;
             }

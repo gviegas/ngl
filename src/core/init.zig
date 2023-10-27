@@ -193,7 +193,7 @@ pub const Memory = struct {
         alignment: u64,
         type_bits: u32,
 
-        pub inline fn supportsMemoryType(self: Requirements, type_index: TypeIndex) bool {
+        pub inline fn supportsType(self: Requirements, type_index: TypeIndex) bool {
             return self.type_bits & (@as(u32, 1) << type_index) != 0;
         }
     };

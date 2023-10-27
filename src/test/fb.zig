@@ -165,7 +165,7 @@ test "FrameBuffer.init/deinit" {
         const reqs = col_img.getMemoryRequirements(dev);
         const idx = for (0..dev.mem_type_n) |i| {
             const idx: ngl.Memory.TypeIndex = @intCast(i);
-            if (reqs.supportsMemoryType(idx)) break idx;
+            if (reqs.supportsType(idx)) break idx;
         } else unreachable;
         var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
         errdefer dev.free(gpa, &mem);
@@ -225,7 +225,7 @@ test "FrameBuffer.init/deinit" {
         const reqs = dep_img.getMemoryRequirements(dev);
         const idx = for (0..dev.mem_type_n) |i| {
             const idx: ngl.Memory.TypeIndex = @intCast(i);
-            if (reqs.supportsMemoryType(idx)) break idx;
+            if (reqs.supportsType(idx)) break idx;
         } else unreachable;
         var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
         errdefer dev.free(gpa, &mem);

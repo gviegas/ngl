@@ -38,7 +38,7 @@ test "copyBuffer command" {
                 const idx: ngl.Memory.TypeIndex = @intCast(j);
                 if (dev.mem_types[idx].properties.host_visible and
                     dev.mem_types[idx].properties.host_coherent and
-                    reqs.supportsMemoryType(idx))
+                    reqs.supportsType(idx))
                 {
                     break idx;
                 }

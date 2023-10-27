@@ -47,11 +47,8 @@ test "compute dispatch" {
         const reqs = image.getMemoryRequirements(dev);
         const idx = for (0..dev.mem_type_n) |i| {
             const idx: ngl.Memory.TypeIndex = @intCast(i);
-            if (dev.mem_types[idx].properties.device_local and
-                reqs.supportsMemoryType(idx))
-            {
+            if (dev.mem_types[idx].properties.device_local and reqs.supportsType(idx))
                 break idx;
-            }
         } else unreachable;
         var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
         errdefer dev.free(gpa, &mem);
@@ -87,7 +84,7 @@ test "compute dispatch" {
             const idx: ngl.Memory.TypeIndex = @intCast(i);
             if (dev.mem_types[idx].properties.host_visible and
                 dev.mem_types[idx].properties.host_coherent and
-                reqs.supportsMemoryType(idx))
+                reqs.supportsType(idx))
             {
                 break idx;
             }
