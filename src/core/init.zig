@@ -197,24 +197,51 @@ pub const Memory = struct {
             return self.type_bits & (@as(u32, 1) << type_index) != 0;
         }
 
+        /// It'll select the first memory type whose properties are a
+        /// superset of what is being requested.
         pub fn findType(
             self: Requirements,
             device: Device,
             properties: Properties,
             heap_index: ?HeapIndex,
         ) ?TypeIndex {
+            return self.findTypeOp(.mask, device, properties, heap_index);
+        }
+
+        /// It'll select the first memory type whose properties are
+        /// identical to what is being requested.
+        pub fn findTypeExact(
+            self: Requirements,
+            device: Device,
+            properties: Properties,
+            heap_index: ?HeapIndex,
+        ) ?TypeIndex {
+            return self.findTypeOp(.cmp, device, properties, heap_index);
+        }
+
+        fn findTypeOp(
+            self: Requirements,
+            comptime op: enum { mask, cmp },
+            device: Device,
+            properties: Properties,
+            heap_index: ?HeapIndex,
+        ) ?TypeIndex {
+            const U = @typeInfo(Properties).Struct.backing_integer.?;
             for (0..device.mem_type_n) |i| {
                 const idx: TypeIndex = @intCast(i);
                 const typ: Type = device.mem_types[idx];
 
                 if (!self.supportsType(idx)) continue;
-                if (heap_index) |x| if (x != typ.heap_index) continue;
+                if (heap_index) |x|
+                    if (x != typ.heap_index) continue;
 
-                const U = @typeInfo(Properties).Struct.backing_integer.?;
                 const mask: U = @bitCast(typ.properties);
-                const props: U = @bitCast(properties);
+                const bits: U = @bitCast(properties);
 
-                if (props & mask == props) return idx;
+                switch (op) {
+                    .mask => if (bits & mask == bits) return idx,
+                    .cmp => if (bits == mask) return idx,
+                }
             }
             return null;
         }
@@ -233,7 +260,7 @@ pub const Memory = struct {
         return try Impl.get().mapMemory(device.impl, self.impl, offset, size);
     }
 
-    // TODO: Track memory state
+    // TODO: Consider tracking memory state
     pub fn unmap(self: *Self, device: *Device) void {
         Impl.get().unmapMemory(device.impl, self.impl);
     }

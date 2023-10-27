@@ -119,3 +119,143 @@ test "Memory.map/unmap (coherent)" {
 test "Memory.flushMapped/invalidateMapped (non-coherent)" {
     // TODO: Need a device that exposes such memory
 }
+
+test "Memory.Requirements.findType/findTypeExact" {
+    var dev: ngl.Device = undefined;
+    dev.mem_type_n = 3;
+    dev.mem_types[0] = .{
+        .properties = .{ .device_local = true },
+        .heap_index = 0,
+    };
+    dev.mem_types[1] = .{
+        .properties = .{ .host_visible = true, .host_coherent = true },
+        .heap_index = 0,
+    };
+    dev.mem_types[2] = .{
+        .properties = .{ .host_visible = true },
+        .heap_index = 1,
+    };
+
+    var mem_reqs: ngl.Memory.Requirements = undefined;
+    var mem_props: ngl.Memory.Properties = undefined;
+
+    mem_reqs.type_bits = 0b111;
+
+    mem_props = .{ .device_local = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), 0);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), 0);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), 0);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), 0);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+
+    mem_props = .{ .host_visible = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), 1);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), 1);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), 2);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), 2);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), 2);
+
+    mem_props = .{ .host_coherent = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), 1);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), 1);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+
+    mem_props = .{ .host_coherent = true, .host_visible = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), 1);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), 1);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), 1);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), 1);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+
+    mem_props = .{ .device_local = true, .host_coherent = true, .host_visible = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+
+    mem_props = .{};
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), 0);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), 0);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), 2);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+
+    mem_reqs.type_bits = 0b101;
+
+    mem_props = .{ .device_local = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), 0);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), 0);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), 0);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), 0);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+
+    mem_props = .{ .host_visible = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), 2);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), 2);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), 2);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), 2);
+
+    mem_props = .{ .host_coherent = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+
+    mem_props = .{ .host_coherent = true, .host_visible = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+
+    mem_reqs.type_bits = 0b010;
+
+    mem_props = .{ .device_local = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+
+    mem_props = .{ .host_visible = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), 1);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), 1);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+
+    mem_reqs.type_bits = 0;
+
+    mem_props = .{ .host_visible = true };
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+
+    mem_props = .{};
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findType(dev, mem_props, 1), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, null), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 0), null);
+    try testing.expectEqual(mem_reqs.findTypeExact(dev, mem_props, 1), null);
+}
