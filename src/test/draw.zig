@@ -159,7 +159,7 @@ test "draw primitive" {
 
     var stg_buf = try ngl.Buffer.init(gpa, dev, .{
         .size = size,
-        .usage = .{ .transfer_source = false, .transfer_dest = true },
+        .usage = .{ .transfer_source = true, .transfer_dest = true },
     });
     var stg_buf_mem = blk: {
         errdefer stg_buf.deinit(gpa, dev);
