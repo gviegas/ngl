@@ -97,14 +97,12 @@ test "Image allocation" {
         try testing.expect(mem_reqs.type_bits != 0);
     }
 
-    const mem_idx = for (0..dev.mem_type_n) |i| {
-        const idx: ngl.Memory.TypeIndex = @intCast(i);
-        if (mem_reqs.supportsType(idx)) break idx;
-    } else unreachable;
-
     var mem = blk: {
         errdefer image.deinit(gpa, dev);
-        var mem = try dev.alloc(gpa, .{ .size = mem_reqs.size, .type_index = mem_idx });
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{}, null).?,
+        });
         errdefer dev.free(gpa, &mem);
         try image.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -145,10 +143,7 @@ test "ImageView.init/deinit" {
         const mem_reqs = rt.getMemoryRequirements(dev);
         var mem = try dev.alloc(gpa, .{
             .size = mem_reqs.size,
-            .type_index = for (0..dev.mem_type_n) |i| {
-                const idx: ngl.Memory.TypeIndex = @intCast(i);
-                if (mem_reqs.supportsType(idx)) break idx;
-            } else unreachable,
+            .type_index = mem_reqs.findType(dev.*, .{}, null).?,
         });
         errdefer dev.free(gpa, &mem);
         try rt.bindMemory(dev, &mem, 0);
@@ -212,10 +207,7 @@ test "ImageView.init/deinit" {
         const mem_reqs = spld.getMemoryRequirements(dev);
         var mem = try dev.alloc(gpa, .{
             .size = mem_reqs.size,
-            .type_index = for (0..dev.mem_type_n) |i| {
-                const idx: ngl.Memory.TypeIndex = @intCast(i);
-                if (mem_reqs.supportsType(idx)) break idx;
-            } else unreachable,
+            .type_index = mem_reqs.findType(dev.*, .{}, null).?,
         });
         errdefer dev.free(gpa, &mem);
         try spld.bindMemory(dev, &mem, 0);

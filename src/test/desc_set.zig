@@ -49,12 +49,11 @@ test "DescriptorSet.write" {
     });
     var img_mem = blk: {
         errdefer image.deinit(gpa, dev);
-        const reqs = image.getMemoryRequirements(dev);
-        const idx = for (0..dev.mem_type_n) |i| {
-            const idx: ngl.Memory.TypeIndex = @intCast(i);
-            if (reqs.supportsType(idx)) break idx;
-        } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
+        const mem_reqs = image.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{}, null).?,
+        });
         errdefer dev.free(gpa, &mem);
         try image.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -101,12 +100,11 @@ test "DescriptorSet.write" {
     });
     var buf_mem = blk: {
         errdefer buf.deinit(gpa, dev);
-        const reqs = buf.getMemoryRequirements(dev);
-        const idx = for (0..dev.mem_type_n) |i| {
-            const idx: ngl.Memory.TypeIndex = @intCast(i);
-            if (reqs.supportsType(idx)) break idx;
-        } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
+        const mem_reqs = buf.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{}, null).?,
+        });
         errdefer dev.free(gpa, &mem);
         try buf.bindMemory(dev, &mem, 0);
         break :blk mem;

@@ -33,17 +33,14 @@ test "copyBuffer command" {
         });
         mems[i] = blk: {
             errdefer bufs[i].deinit(gpa, dev);
-            const reqs = bufs[i].getMemoryRequirements(dev);
-            const idx = for (0..dev.mem_type_n) |j| {
-                const idx: ngl.Memory.TypeIndex = @intCast(j);
-                if (dev.mem_types[idx].properties.host_visible and
-                    dev.mem_types[idx].properties.host_coherent and
-                    reqs.supportsType(idx))
-                {
-                    break idx;
-                }
-            } else unreachable;
-            var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
+            const mem_reqs = bufs[i].getMemoryRequirements(dev);
+            var mem = try dev.alloc(gpa, .{
+                .size = mem_reqs.size,
+                .type_index = mem_reqs.findType(dev.*, .{
+                    .host_visible = true,
+                    .host_coherent = true,
+                }, null).?,
+            });
             errdefer dev.free(gpa, &mem);
             try bufs[i].bindMemory(dev, &mem, 0);
             break :blk mem;

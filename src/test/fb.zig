@@ -162,12 +162,11 @@ test "FrameBuffer.init/deinit" {
     });
     var col_mem = blk: {
         errdefer col_img.deinit(gpa, dev);
-        const reqs = col_img.getMemoryRequirements(dev);
-        const idx = for (0..dev.mem_type_n) |i| {
-            const idx: ngl.Memory.TypeIndex = @intCast(i);
-            if (reqs.supportsType(idx)) break idx;
-        } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
+        const mem_reqs = col_img.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{}, null).?,
+        });
         errdefer dev.free(gpa, &mem);
         try col_img.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -222,12 +221,11 @@ test "FrameBuffer.init/deinit" {
     });
     var dep_mem = blk: {
         errdefer dep_img.deinit(gpa, dev);
-        const reqs = dep_img.getMemoryRequirements(dev);
-        const idx = for (0..dev.mem_type_n) |i| {
-            const idx: ngl.Memory.TypeIndex = @intCast(i);
-            if (reqs.supportsType(idx)) break idx;
-        } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
+        const mem_reqs = dep_img.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{}, null).?,
+        });
         errdefer dev.free(gpa, &mem);
         try dep_img.bindMemory(dev, &mem, 0);
         break :blk mem;

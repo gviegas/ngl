@@ -196,6 +196,28 @@ pub const Memory = struct {
         pub inline fn supportsType(self: Requirements, type_index: TypeIndex) bool {
             return self.type_bits & (@as(u32, 1) << type_index) != 0;
         }
+
+        pub fn findType(
+            self: Requirements,
+            device: Device,
+            properties: Properties,
+            heap_index: ?HeapIndex,
+        ) ?TypeIndex {
+            for (0..device.mem_type_n) |i| {
+                const idx: TypeIndex = @intCast(i);
+                const typ: Type = device.mem_types[idx];
+
+                if (!self.supportsType(idx)) continue;
+                if (heap_index) |x| if (x != typ.heap_index) continue;
+
+                const U = @typeInfo(Properties).Struct.backing_integer.?;
+                const mask: U = @bitCast(typ.properties);
+                const props: U = @bitCast(properties);
+
+                if (props & mask == props) return idx;
+            }
+            return null;
+        }
     };
 
     pub const Desc = struct {

@@ -61,14 +61,12 @@ test "Buffer allocation" {
         try testing.expect(mem_reqs.type_bits != 0);
     }
 
-    const mem_idx = for (0..dev.mem_type_n) |i| {
-        const idx: ngl.Memory.TypeIndex = @intCast(i);
-        if (mem_reqs.supportsType(idx)) break idx;
-    } else unreachable;
-
     var mem = blk: {
         errdefer buf.deinit(gpa, dev);
-        var mem = try dev.alloc(gpa, .{ .size = mem_reqs.size, .type_index = mem_idx });
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{}, null).?,
+        });
         errdefer dev.free(gpa, &mem);
         try buf.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -100,10 +98,7 @@ test "BufferView.init/deinit" {
         const mem_reqs = tb.getMemoryRequirements(dev);
         var mem = try dev.alloc(gpa, .{
             .size = mem_reqs.size,
-            .type_index = for (0..dev.mem_type_n) |i| {
-                const idx: ngl.Memory.TypeIndex = @intCast(i);
-                if (mem_reqs.supportsType(idx)) break idx;
-            } else unreachable,
+            .type_index = mem_reqs.findType(dev.*, .{}, null).?,
         });
         errdefer dev.free(gpa, &mem);
         try tb.bindMemory(dev, &mem, 0);

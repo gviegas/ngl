@@ -76,13 +76,11 @@ test "draw primitive" {
     });
     var img_mem = blk: {
         errdefer image.deinit(gpa, dev);
-        const reqs = image.getMemoryRequirements(dev);
-        const idx = for (0..dev.mem_type_n) |i| {
-            const idx: ngl.Memory.TypeIndex = @intCast(i);
-            if (dev.mem_types[idx].properties.device_local and reqs.supportsType(idx))
-                break idx;
-        } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
+        const mem_reqs = image.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
+        });
         errdefer dev.free(gpa, &mem);
         try image.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -115,13 +113,11 @@ test "draw primitive" {
     });
     var unif_buf_mem = blk: {
         errdefer unif_buf.deinit(gpa, dev);
-        const reqs = unif_buf.getMemoryRequirements(dev);
-        const idx = for (0..dev.mem_type_n) |i| {
-            const idx: ngl.Memory.TypeIndex = @intCast(i);
-            if (dev.mem_types[idx].properties.device_local and reqs.supportsType(idx))
-                break idx;
-        } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
+        const mem_reqs = unif_buf.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
+        });
         errdefer dev.free(gpa, &mem);
         try unif_buf.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -141,13 +137,11 @@ test "draw primitive" {
     });
     var vert_buf_mem = blk: {
         errdefer vert_buf.deinit(gpa, dev);
-        const reqs = vert_buf.getMemoryRequirements(dev);
-        const idx = for (0..dev.mem_type_n) |i| {
-            const idx: ngl.Memory.TypeIndex = @intCast(i);
-            if (dev.mem_types[idx].properties.device_local and reqs.supportsType(idx))
-                break idx;
-        } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
+        const mem_reqs = vert_buf.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
+        });
         errdefer dev.free(gpa, &mem);
         try vert_buf.bindMemory(dev, &mem, 0);
         break :blk mem;
@@ -163,17 +157,14 @@ test "draw primitive" {
     });
     var stg_buf_mem = blk: {
         errdefer stg_buf.deinit(gpa, dev);
-        const reqs = stg_buf.getMemoryRequirements(dev);
-        const idx = for (0..dev.mem_type_n) |i| {
-            const idx: ngl.Memory.TypeIndex = @intCast(i);
-            if (dev.mem_types[idx].properties.host_visible and
-                dev.mem_types[idx].properties.host_coherent and
-                reqs.supportsType(idx))
-            {
-                break idx;
-            }
-        } else unreachable;
-        var mem = try dev.alloc(gpa, .{ .size = reqs.size, .type_index = idx });
+        const mem_reqs = stg_buf.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{
+                .host_visible = true,
+                .host_coherent = true,
+            }, null).?,
+        });
         errdefer dev.free(gpa, &mem);
         try stg_buf.bindMemory(dev, &mem, 0);
         break :blk mem;
