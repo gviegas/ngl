@@ -227,8 +227,16 @@ test "depth-only rendering" {
                 .dest_subpass = .{ .index = 0 },
                 .source_stage_mask = .{ .copy = true },
                 .source_access_mask = .{ .transfer_write = true },
-                .dest_stage_mask = .{ .vertex_attribute_input = true, .vertex_shader = true },
-                .dest_access_mask = .{ .vertex_attribute_read = true, .uniform_read = true },
+                .dest_stage_mask = .{
+                    .index_input = true,
+                    .vertex_attribute_input = true,
+                    .vertex_shader = true,
+                },
+                .dest_access_mask = .{
+                    .index_read = true,
+                    .vertex_attribute_read = true,
+                    .uniform_read = true,
+                },
                 .by_region = false,
             },
         },
