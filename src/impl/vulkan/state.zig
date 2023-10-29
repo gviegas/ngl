@@ -333,7 +333,7 @@ pub const Pipeline = struct {
             } else defaults.rasterization_state;
 
             inner.multisample_state = if (state.rasterization) |s| .{
-                .sType = defaults.rasterization_state.sType,
+                .sType = defaults.multisample_state.sType,
                 .pNext = null,
                 .flags = 0,
                 .rasterizationSamples = conv.toVkSampleCount(s.samples),
@@ -452,7 +452,7 @@ pub const Pipeline = struct {
                 }
                 const dyn_n = inner.dynamic_state_dynamic_states.len - dyns.len;
                 break :blk if (dyn_n > 0) .{
-                    .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+                    .sType = defaults.dynamic_state.sType,
                     .pNext = null,
                     .flags = 0,
                     .dynamicStateCount = @intCast(dyn_n),
