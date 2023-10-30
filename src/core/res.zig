@@ -7,7 +7,7 @@ const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
 pub const Format = enum {
-    undefined,
+    unknown,
 
     r8_unorm,
     r8_srgb,

@@ -61,7 +61,7 @@ pub fn check(result: c.VkResult) Error!void {
 /// match in Vulkan.
 pub fn toVkFormat(format: ngl.Format) Error!c.VkFormat {
     return switch (format) {
-        .undefined => c.VK_FORMAT_UNDEFINED,
+        .unknown => c.VK_FORMAT_UNDEFINED,
 
         .r8_unorm => c.VK_FORMAT_R8_UNORM,
         .r8_srgb => c.VK_FORMAT_R8_SRGB,
