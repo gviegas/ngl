@@ -476,7 +476,7 @@ pub const Pipeline = struct {
             for (create_infos, desc.states) |*info, state| {
                 errdefer stages_ptr[0].module = null_handle;
 
-                info.*.pStages = stages.ptr;
+                info.*.pStages = stages_ptr;
 
                 for (state.stages) |stage| {
                     stages_ptr[0] = .{
