@@ -180,7 +180,11 @@ pub const DepthStencil = struct {
 
 pub const ColorBlend = struct {
     attachments: []const Attachment,
-    constants: ?[4]f32,
+    constants: union(enum) {
+        unused,
+        dynamic,
+        static: [4]f32,
+    },
 
     pub const Attachment = struct {
         blend: ?BlendEquation,

@@ -426,7 +426,10 @@ pub const Pipeline = struct {
                     defer blend_attachs_ptr += s.attachments.len;
                     break :blk blend_attachs_ptr;
                 },
-                .blendConstants = s.constants orelse .{ 0, 0, 0, 0 },
+                .blendConstants = switch (s.constants) {
+                    .static => |x| x,
+                    else => .{ 0, 0, 0, 0 },
+                },
             } else defaults.color_blend_state;
 
             inner.dynamic_state = blk: {
@@ -445,7 +448,7 @@ pub const Pipeline = struct {
                     }
                 }
                 if (state.color_blend) |x| {
-                    if (x.constants == null) {
+                    if (x.constants == .dynamic) {
                         dyns[0] = c.VK_DYNAMIC_STATE_BLEND_CONSTANTS;
                         dyns = dyns[1..];
                     }

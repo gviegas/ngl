@@ -271,7 +271,7 @@ test "draw primitive" {
 
     const col_blend = ngl.ColorBlend{
         .attachments = &.{.{ .blend = null, .write = .all }},
-        .constants = null,
+        .constants = .unused,
     };
 
     var pl = blk: {
