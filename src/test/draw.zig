@@ -68,7 +68,7 @@ test "draw primitive" {
         .tiling = .optimal,
         .usage = .{ .color_attachment = true, .transfer_source = true },
         .misc = .{},
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
     });
     var img_mem = blk: {
         errdefer image.deinit(gpa, dev);
@@ -179,7 +179,7 @@ test "draw primitive" {
             .samples = .@"1",
             .load_op = .clear,
             .store_op = .store,
-            .initial_layout = .undefined,
+            .initial_layout = .unknown,
             .final_layout = .transfer_source_optimal,
             .resolve_mode = null,
             .combined = null,

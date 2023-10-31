@@ -224,7 +224,7 @@ pub fn toVkImageAspectFlags(image_aspect_flags: ngl.Image.Aspect.Flags) c.VkImag
 
 pub fn toVkImageLayout(image_layout: ngl.Image.Layout) c.VkImageLayout {
     return switch (image_layout) {
-        .undefined => c.VK_IMAGE_LAYOUT_UNDEFINED,
+        .unknown => c.VK_IMAGE_LAYOUT_UNDEFINED,
         .preinitialized => c.VK_IMAGE_LAYOUT_PREINITIALIZED,
         .general => c.VK_IMAGE_LAYOUT_GENERAL,
         .color_attachment_optimal => c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,

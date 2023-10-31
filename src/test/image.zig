@@ -19,7 +19,7 @@ test "Image.init/deinit" {
         .tiling = .optimal,
         .usage = .{ .sampled_image = true, .transfer_dest = true },
         .misc = .{},
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
     });
     @"1d".deinit(gpa, dev);
 
@@ -34,7 +34,7 @@ test "Image.init/deinit" {
         .tiling = .optimal,
         .usage = .{ .sampled_image = true, .transfer_dest = true },
         .misc = .{},
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
     });
     defer @"2d".deinit(gpa, dev);
 
@@ -49,7 +49,7 @@ test "Image.init/deinit" {
         .tiling = .optimal,
         .usage = .{ .sampled_image = true, .transfer_dest = true },
         .misc = .{},
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
     });
     @"3d".deinit(gpa, dev);
 }
@@ -68,7 +68,7 @@ test "Image allocation" {
         .tiling = .optimal,
         .usage = .{ .sampled_image = true, .storage_image = true },
         .misc = .{},
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
     };
 
     var image = try ngl.Image.init(gpa, dev, img_desc);

@@ -74,7 +74,7 @@ test "copy between resources" {
                 .transfer_dest = true,
             },
             .misc = .{},
-            .initial_layout = .undefined,
+            .initial_layout = .unknown,
         });
         img_mems[i] = blk: {
             errdefer images[i].deinit(gpa, dev);
@@ -127,7 +127,7 @@ test "copy between resources" {
             .dest_stage_mask = .{ .copy = true },
             .dest_access_mask = .{ .memory_read = true, .memory_write = true },
             .queue_transfer = null,
-            .old_layout = .undefined,
+            .old_layout = .unknown,
             .new_layout = .transfer_dest_optimal,
             .image = &images[0],
             .range = .{
@@ -202,7 +202,7 @@ test "copy between resources" {
                 .dest_stage_mask = .{ .copy = true },
                 .dest_access_mask = .{ .memory_read = true, .memory_write = true },
                 .queue_transfer = null,
-                .old_layout = .undefined,
+                .old_layout = .unknown,
                 .new_layout = .transfer_dest_optimal,
                 .image = &images[1],
                 .range = .{

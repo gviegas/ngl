@@ -226,7 +226,7 @@ pub const Image = struct {
     };
 
     pub const Layout = enum {
-        undefined,
+        unknown,
         preinitialized,
         general,
         color_attachment_optimal,

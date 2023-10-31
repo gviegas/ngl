@@ -13,7 +13,7 @@ test "FrameBuffer.init/deinit" {
         .samples = .@"1",
         .load_op = .load,
         .store_op = .store,
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
         .final_layout = .general,
         .resolve_mode = null,
         .combined = null,
@@ -25,7 +25,7 @@ test "FrameBuffer.init/deinit" {
         .samples = .@"1",
         .load_op = .clear,
         .store_op = .store,
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
         .final_layout = .general,
         .resolve_mode = null,
         .combined = null,
@@ -37,7 +37,7 @@ test "FrameBuffer.init/deinit" {
         .samples = .@"1",
         .load_op = .clear,
         .store_op = .store,
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
         .final_layout = .general,
         .resolve_mode = null,
         .combined = null,
@@ -153,7 +153,7 @@ test "FrameBuffer.init/deinit" {
         .tiling = .optimal,
         .usage = .{ .color_attachment = true, .input_attachment = true },
         .misc = .{},
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
     });
     var col_mem = blk: {
         errdefer col_img.deinit(gpa, dev);
@@ -208,7 +208,7 @@ test "FrameBuffer.init/deinit" {
         .tiling = .optimal,
         .usage = .{ .depth_stencil_attachment = true },
         .misc = .{},
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
     });
     var dep_mem = blk: {
         errdefer dep_img.deinit(gpa, dev);

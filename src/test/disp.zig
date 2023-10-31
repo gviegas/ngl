@@ -36,7 +36,7 @@ test "compute dispatch" {
         .tiling = .optimal,
         .usage = .{ .storage_image = true, .transfer_source = true },
         .misc = .{},
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
     });
     var img_mem = blk: {
         errdefer image.deinit(gpa, dev);
@@ -157,7 +157,7 @@ test "compute dispatch" {
             .dest_stage_mask = .{ .compute_shader = true },
             .dest_access_mask = .{ .shader_storage_write = true },
             .queue_transfer = null,
-            .old_layout = .undefined,
+            .old_layout = .unknown,
             .new_layout = .general,
             .image = &image,
             .range = .{

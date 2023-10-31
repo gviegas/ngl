@@ -88,7 +88,7 @@ test "subpass input" {
             .transient_attachment = true,
         },
         .misc = .{},
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
     });
     var inp_mem = blk: {
         errdefer inp_img.deinit(gpa, dev);
@@ -131,7 +131,7 @@ test "subpass input" {
         .tiling = .optimal,
         .usage = .{ .color_attachment = true, .transfer_source = true },
         .misc = .{},
-        .initial_layout = .undefined,
+        .initial_layout = .unknown,
     });
     var col_mem = blk: {
         errdefer col_img.deinit(gpa, dev);
@@ -269,7 +269,7 @@ test "subpass input" {
                 .samples = .@"1",
                 .load_op = .clear,
                 .store_op = .dont_care,
-                .initial_layout = .undefined,
+                .initial_layout = .unknown,
                 .final_layout = .shader_read_only_optimal,
                 .resolve_mode = null,
                 .combined = null,
@@ -281,7 +281,7 @@ test "subpass input" {
                 .samples = .@"1",
                 .load_op = .dont_care,
                 .store_op = .store,
-                .initial_layout = .undefined,
+                .initial_layout = .unknown,
                 .final_layout = .transfer_source_optimal,
                 .resolve_mode = null,
                 .combined = null,
