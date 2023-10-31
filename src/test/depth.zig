@@ -68,11 +68,7 @@ test "depth-only rendering" {
         .levels = 1,
         .samples = .@"1",
         .tiling = .optimal,
-        .usage = .{
-            .depth_stencil_attachment = true,
-            .transfer_source = true,
-            .transfer_dest = false,
-        },
+        .usage = .{ .depth_stencil_attachment = true, .transfer_source = true },
         .misc = .{},
         .initial_layout = .undefined,
     });
@@ -107,11 +103,7 @@ test "depth-only rendering" {
 
     var unif_buf = try ngl.Buffer.init(gpa, dev, .{
         .size = unif_size,
-        .usage = .{
-            .uniform_buffer = true,
-            .transfer_source = false,
-            .transfer_dest = true,
-        },
+        .usage = .{ .uniform_buffer = true, .transfer_dest = true },
     });
     var unif_buf_mem = blk: {
         errdefer unif_buf.deinit(gpa, dev);
@@ -134,7 +126,6 @@ test "depth-only rendering" {
         .usage = .{
             .index_buffer = true,
             .vertex_buffer = true,
-            .transfer_source = false,
             .transfer_dest = true,
         },
     });

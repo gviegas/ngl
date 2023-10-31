@@ -26,10 +26,7 @@ test "copyBuffer command" {
         };
         bufs[i] = try ngl.Buffer.init(gpa, dev, .{
             .size = sizes[i],
-            .usage = .{
-                .transfer_source = true,
-                .transfer_dest = true,
-            },
+            .usage = .{ .transfer_source = true, .transfer_dest = true },
         });
         mems[i] = blk: {
             errdefer bufs[i].deinit(gpa, dev);

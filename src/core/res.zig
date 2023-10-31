@@ -129,7 +129,6 @@ pub const Format = enum {
 
 pub const Buffer = struct {
     impl: Impl.Buffer,
-    //memory: ?Impl.Memory,
 
     pub const Usage = packed struct {
         uniform_texel_buffer: bool = false,
@@ -139,9 +138,8 @@ pub const Buffer = struct {
         index_buffer: bool = false,
         vertex_buffer: bool = false,
         indirect_buffer: bool = false,
-        // Be explicit about these
-        transfer_source: bool,
-        transfer_dest: bool,
+        transfer_source: bool = false,
+        transfer_dest: bool = false,
     };
 
     pub const Desc = struct {
@@ -210,7 +208,6 @@ pub const SampleCount = enum {
 
 pub const Image = struct {
     impl: Impl.Image,
-    //memory: ?Impl.Memory,
 
     pub const Range = struct {
         aspect_mask: Aspect.Flags,
@@ -261,9 +258,8 @@ pub const Image = struct {
         depth_stencil_attachment: bool = false,
         transient_attachment: bool = false,
         input_attachment: bool = false,
-        // Be explicit about these
-        transfer_source: bool,
-        transfer_dest: bool,
+        transfer_source: bool = false,
+        transfer_dest: bool = false,
     };
 
     pub const Misc = struct {

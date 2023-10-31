@@ -39,11 +39,7 @@ test "DescriptorSet.write" {
         .levels = 1,
         .samples = .@"1",
         .tiling = .optimal,
-        .usage = .{
-            .sampled_image = true,
-            .transfer_source = false,
-            .transfer_dest = true,
-        },
+        .usage = .{ .sampled_image = true, .transfer_dest = true },
         .misc = .{},
         .initial_layout = .undefined,
     });
@@ -91,12 +87,7 @@ test "DescriptorSet.write" {
 
     var buf = try ngl.Buffer.init(gpa, dev, .{
         .size = 163840,
-        .usage = .{
-            .storage_texel_buffer = true,
-            .uniform_buffer = true,
-            .transfer_source = false,
-            .transfer_dest = false,
-        },
+        .usage = .{ .storage_texel_buffer = true, .uniform_buffer = true },
     });
     var buf_mem = blk: {
         errdefer buf.deinit(gpa, dev);

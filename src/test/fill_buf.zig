@@ -20,7 +20,7 @@ test "fillBuffer command" {
 
     var buf = try ngl.Buffer.init(gpa, dev, .{
         .size = size,
-        .usage = .{ .transfer_source = false, .transfer_dest = true },
+        .usage = .{ .transfer_dest = true },
     });
     var mem = blk: {
         errdefer buf.deinit(gpa, dev);

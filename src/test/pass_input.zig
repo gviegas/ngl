@@ -86,8 +86,6 @@ test "subpass input" {
             .color_attachment = true,
             .input_attachment = true,
             .transient_attachment = true,
-            .transfer_source = false,
-            .transfer_dest = false,
         },
         .misc = .{},
         .initial_layout = .undefined,
@@ -131,11 +129,7 @@ test "subpass input" {
         .levels = 1,
         .samples = .@"1",
         .tiling = .optimal,
-        .usage = .{
-            .color_attachment = true,
-            .transfer_source = true,
-            .transfer_dest = false,
-        },
+        .usage = .{ .color_attachment = true, .transfer_source = true },
         .misc = .{},
         .initial_layout = .undefined,
     });
@@ -193,11 +187,7 @@ test "subpass input" {
 
     var idx_buf = try ngl.Buffer.init(gpa, dev, .{
         .size = idx_size,
-        .usage = .{
-            .index_buffer = true,
-            .transfer_source = false,
-            .transfer_dest = true,
-        },
+        .usage = .{ .index_buffer = true, .transfer_dest = true },
     });
     var idx_mem = blk: {
         errdefer idx_buf.deinit(gpa, dev);
@@ -217,11 +207,7 @@ test "subpass input" {
 
     var vert_buf = try ngl.Buffer.init(gpa, dev, .{
         .size = vert_size,
-        .usage = .{
-            .vertex_buffer = true,
-            .transfer_source = false,
-            .transfer_dest = true,
-        },
+        .usage = .{ .vertex_buffer = true, .transfer_dest = true },
     });
     var vert_mem = blk: {
         errdefer vert_buf.deinit(gpa, dev);
@@ -241,11 +227,7 @@ test "subpass input" {
 
     var unif_buf = try ngl.Buffer.init(gpa, dev, .{
         .size = unif_size,
-        .usage = .{
-            .uniform_buffer = true,
-            .transfer_source = false,
-            .transfer_dest = true,
-        },
+        .usage = .{ .uniform_buffer = true, .transfer_dest = true },
     });
     var unif_mem = blk: {
         errdefer unif_buf.deinit(gpa, dev);

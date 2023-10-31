@@ -151,12 +151,7 @@ test "FrameBuffer.init/deinit" {
         .levels = 1,
         .samples = .@"1",
         .tiling = .optimal,
-        .usage = .{
-            .color_attachment = true,
-            .input_attachment = true,
-            .transfer_source = false,
-            .transfer_dest = false,
-        },
+        .usage = .{ .color_attachment = true, .input_attachment = true },
         .misc = .{},
         .initial_layout = .undefined,
     });
@@ -211,11 +206,7 @@ test "FrameBuffer.init/deinit" {
         .levels = 1,
         .samples = .@"1",
         .tiling = .optimal,
-        .usage = .{
-            .depth_stencil_attachment = true,
-            .transfer_source = false,
-            .transfer_dest = false,
-        },
+        .usage = .{ .depth_stencil_attachment = true },
         .misc = .{},
         .initial_layout = .undefined,
     });

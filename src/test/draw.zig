@@ -66,11 +66,7 @@ test "draw primitive" {
         .levels = 1,
         .samples = .@"1",
         .tiling = .optimal,
-        .usage = .{
-            .color_attachment = true,
-            .transfer_source = true,
-            .transfer_dest = false,
-        },
+        .usage = .{ .color_attachment = true, .transfer_source = true },
         .misc = .{},
         .initial_layout = .undefined,
     });
@@ -105,11 +101,7 @@ test "draw primitive" {
 
     var unif_buf = try ngl.Buffer.init(gpa, dev, .{
         .size = unif_size,
-        .usage = .{
-            .uniform_buffer = true,
-            .transfer_source = false,
-            .transfer_dest = true,
-        },
+        .usage = .{ .uniform_buffer = true, .transfer_dest = true },
     });
     var unif_buf_mem = blk: {
         errdefer unif_buf.deinit(gpa, dev);
@@ -129,11 +121,7 @@ test "draw primitive" {
 
     var vert_buf = try ngl.Buffer.init(gpa, dev, .{
         .size = unif_size,
-        .usage = .{
-            .vertex_buffer = true,
-            .transfer_source = false,
-            .transfer_dest = true,
-        },
+        .usage = .{ .vertex_buffer = true, .transfer_dest = true },
     });
     var vert_buf_mem = blk: {
         errdefer vert_buf.deinit(gpa, dev);

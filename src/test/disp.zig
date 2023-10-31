@@ -34,11 +34,7 @@ test "compute dispatch" {
         .levels = 1,
         .samples = .@"1",
         .tiling = .optimal,
-        .usage = .{
-            .storage_image = true,
-            .transfer_source = true,
-            .transfer_dest = false,
-        },
+        .usage = .{ .storage_image = true, .transfer_source = true },
         .misc = .{},
         .initial_layout = .undefined,
     });
@@ -73,7 +69,7 @@ test "compute dispatch" {
 
     var buf = try ngl.Buffer.init(gpa, dev, .{
         .size = size,
-        .usage = .{ .transfer_source = false, .transfer_dest = true },
+        .usage = .{ .transfer_dest = true },
     });
     var buf_mem = blk: {
         errdefer buf.deinit(gpa, dev);

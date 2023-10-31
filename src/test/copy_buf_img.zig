@@ -22,9 +22,9 @@ test "copy between resources" {
     var bufs: [3]ngl.Buffer = undefined;
     var buf_mems: [3]ngl.Memory = undefined;
     const buf_usgs: [3]ngl.Buffer.Usage = .{
-        .{ .transfer_source = true, .transfer_dest = false },
-        .{ .transfer_source = false, .transfer_dest = true },
-        .{ .transfer_source = false, .transfer_dest = true },
+        .{ .transfer_source = true },
+        .{ .transfer_dest = true },
+        .{ .transfer_dest = true },
     };
     for (0..bufs.len) |i| {
         errdefer for (0..i) |j| {

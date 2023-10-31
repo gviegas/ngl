@@ -14,28 +14,19 @@ test "Buffer.init/deinit" {
             .index_buffer = true,
             .vertex_buffer = true,
             .indirect_buffer = true,
-            .transfer_source = false,
-            .transfer_dest = false,
         },
     });
     defer prim.deinit(gpa, dev);
 
     var unif = try ngl.Buffer.init(gpa, dev, .{
         .size = 8192,
-        .usage = .{
-            .uniform_buffer = true,
-            .transfer_source = false,
-            .transfer_dest = false,
-        },
+        .usage = .{ .uniform_buffer = true },
     });
     unif.deinit(gpa, dev);
 
     var stg = try ngl.Buffer.init(gpa, dev, .{
         .size = 262144,
-        .usage = .{
-            .transfer_source = true,
-            .transfer_dest = false,
-        },
+        .usage = .{ .transfer_source = true },
     });
     stg.deinit(gpa, dev);
 }
@@ -45,11 +36,7 @@ test "Buffer allocation" {
 
     const buf_desc = .{
         .size = 4096,
-        .usage = .{
-            .storage_buffer = true,
-            .transfer_source = false,
-            .transfer_dest = false,
-        },
+        .usage = .{ .storage_buffer = true },
     };
 
     var buf = try ngl.Buffer.init(gpa, dev, buf_desc);
@@ -86,11 +73,7 @@ test "BufferView.init/deinit" {
 
     var tb = try ngl.Buffer.init(gpa, dev, .{
         .size = 147456,
-        .usage = .{
-            .storage_texel_buffer = true,
-            .transfer_source = false,
-            .transfer_dest = false,
-        },
+        .usage = .{ .storage_texel_buffer = true },
     });
     // It's invalid to create a view with no backing memory
     var tb_mem = blk: {
