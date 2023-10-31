@@ -472,6 +472,14 @@ pub const VTable = struct {
         semaphore: Semaphore,
     ) void,
 
+    // Format ----------------------------------------------
+
+    getFormatFeatures: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        format: ngl.Format,
+    ) ngl.Format.FeatureSet,
+
     // Buffer ----------------------------------------------
 
     initBuffer: *const fn (
@@ -1332,6 +1340,10 @@ pub fn deinitSemaphore(
     semaphore: Semaphore,
 ) void {
     self.vtable.deinitSemaphore(self.ptr, allocator, device, semaphore);
+}
+
+pub fn getFormatFeatures(self: *Self, device: Device, format: ngl.Format) ngl.Format.FeatureSet {
+    return self.vtable.getFormatFeatures(self.ptr, device, format);
 }
 
 pub fn initBuffer(

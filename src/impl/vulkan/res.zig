@@ -9,6 +9,80 @@ const check = conv.check;
 const Device = @import("init.zig").Device;
 const Memory = @import("init.zig").Memory;
 
+pub fn getFormatFeatures(
+    _: *anyopaque,
+    device: Impl.Device,
+    format: ngl.Format,
+) ngl.Format.FeatureSet {
+    const dev = Device.cast(device);
+
+    var props: c.VkFormatProperties = undefined;
+    dev.instance.vkGetPhysicalDeviceFormatProperties(
+        dev.physical_device,
+        conv.toVkFormat(format) catch return .{
+            .linear_tiling = .{},
+            .optimal_tiling = .{},
+            .buffer = .{},
+        },
+        &props,
+    );
+
+    // TODO: There's no valid usage defined for these flags, so in theory
+    // an implementation could do something confusing like setting only
+    // `VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT` and assume that
+    // `VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT` is inferred
+
+    const convFlagsImg = struct {
+        fn f(flags: c.VkFormatFeatureFlags) ngl.Format.Features {
+            var feats = ngl.Format.Features{};
+            if (flags != 0) {
+                feats.sampled_image =
+                    flags & c.VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT != 0;
+                feats.sampled_image_filter_linear =
+                    flags & c.VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT != 0;
+                feats.storage_image =
+                    flags & c.VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT != 0;
+                feats.storage_image_atomic =
+                    flags & c.VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT != 0;
+                feats.color_attachment =
+                    flags & c.VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT != 0;
+                feats.color_attachment_blend =
+                    flags & c.VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT != 0;
+                feats.depth_stencil_attachment =
+                    flags & c.VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT != 0;
+            }
+            return feats;
+        }
+    }.f;
+
+    const convFlagsBuf = struct {
+        fn f(flags: c.VkFormatFeatureFlags) ngl.Format.Features {
+            var feats = ngl.Format.Features{};
+            if (flags != 0) {
+                feats.uniform_texel_buffer =
+                    flags & c.VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT != 0;
+                feats.storage_texel_buffer =
+                    flags & c.VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT != 0;
+                feats.storage_texel_buffer_atomic =
+                    flags & c.VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT != 0;
+                feats.vertex_buffer =
+                    flags & c.VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT != 0;
+            }
+            return feats;
+        }
+    }.f;
+
+    const lin = convFlagsImg(props.linearTilingFeatures);
+    return .{
+        .linear_tiling = lin,
+        .optimal_tiling = if (props.linearTilingFeatures == props.optimalTilingFeatures)
+            lin
+        else
+            convFlagsImg(props.optimalTilingFeatures),
+        .buffer = convFlagsBuf(props.bufferFeatures),
+    };
+}
+
 // TODO: Don't allocate this type on the heap
 pub const Buffer = struct {
     handle: c.VkBuffer,

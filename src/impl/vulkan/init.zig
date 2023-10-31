@@ -128,6 +128,7 @@ pub const Instance = struct {
     getPhysicalDeviceProperties: c.PFN_vkGetPhysicalDeviceProperties,
     getPhysicalDeviceQueueFamilyProperties: c.PFN_vkGetPhysicalDeviceQueueFamilyProperties,
     getPhysicalDeviceMemoryProperties: c.PFN_vkGetPhysicalDeviceMemoryProperties,
+    getPhysicalDeviceFormatProperties: c.PFN_vkGetPhysicalDeviceFormatProperties,
     createDevice: c.PFN_vkCreateDevice,
     enumerateDeviceExtensionProperties: c.PFN_vkEnumerateDeviceExtensionProperties,
 
@@ -179,6 +180,7 @@ pub const Instance = struct {
             .getPhysicalDeviceProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceProperties")),
             .getPhysicalDeviceQueueFamilyProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceQueueFamilyProperties")),
             .getPhysicalDeviceMemoryProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceMemoryProperties")),
+            .getPhysicalDeviceFormatProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceFormatProperties")),
             .createDevice = @ptrCast(try Instance.getProc(inst, "vkCreateDevice")),
             .enumerateDeviceExtensionProperties = @ptrCast(try Instance.getProc(inst, "vkEnumerateDeviceExtensionProperties")),
         };
@@ -298,6 +300,15 @@ pub const Instance = struct {
         properties: *c.VkPhysicalDeviceMemoryProperties,
     ) void {
         self.getPhysicalDeviceMemoryProperties.?(device, properties);
+    }
+
+    pub inline fn vkGetPhysicalDeviceFormatProperties(
+        self: *Instance,
+        device: c.VkPhysicalDevice,
+        format: c.VkFormat,
+        properties: *c.VkFormatProperties,
+    ) void {
+        self.getPhysicalDeviceFormatProperties.?(device, format, properties);
     }
 
     pub inline fn vkCreateDevice(
@@ -1806,6 +1817,8 @@ const vtable = Impl.VTable{
 
     .initSemaphore = @import("sync.zig").Semaphore.init,
     .deinitSemaphore = @import("sync.zig").Semaphore.deinit,
+
+    .getFormatFeatures = @import("res.zig").getFormatFeatures,
 
     .initBuffer = @import("res.zig").Buffer.init,
     .getMemoryRequirementsBuffer = @import("res.zig").Buffer.getMemoryRequirements,

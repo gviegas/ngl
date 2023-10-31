@@ -125,6 +125,32 @@ pub const Format = enum {
     d32_sfloat_s8_uint,
 
     // TODO: Compressed formats
+
+    pub const Features = packed struct {
+        sampled_image: bool = false,
+        sampled_image_filter_linear: bool = false,
+        storage_image: bool = false,
+        storage_image_atomic: bool = false,
+        color_attachment: bool = false,
+        color_attachment_blend: bool = false,
+        depth_stencil_attachment: bool = false,
+        uniform_texel_buffer: bool = false,
+        storage_texel_buffer: bool = false,
+        storage_texel_buffer_atomic: bool = false,
+        vertex_buffer: bool = false,
+    };
+
+    pub const FeatureSet = struct {
+        linear_tiling: Features,
+        optimal_tiling: Features,
+        buffer: Features,
+    };
+
+    const Self = @This();
+
+    pub fn getFeatures(self: Self, device: *Device) FeatureSet {
+        return Impl.get().getFormatFeatures(device.impl, self);
+    }
 };
 
 pub const Buffer = struct {
