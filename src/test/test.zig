@@ -38,6 +38,7 @@ test {
     _ = @import("pl_cache.zig");
     _ = @import("pl.zig");
     _ = @import("mem.zig");
+    _ = @import("fmt.zig");
     _ = @import("cmd_pool.zig");
     _ = @import("cmd_buf.zig");
     _ = @import("queue.zig");
