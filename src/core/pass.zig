@@ -48,11 +48,9 @@ pub const RenderPass = struct {
         final_layout: Image.Layout,
         resolve_mode: ?ResolveMode,
         combined: ?struct {
-            stencil_store_op: StoreOp,
             stencil_load_op: LoadOp,
-            //stencil_initial_layout: Image.Layout,
-            //stencil_final_layout: Image.Layout,
-            //stencil_resolve_mode: ?ResolveMode,
+            stencil_store_op: StoreOp,
+            // TODO: Separate stencil initial/final layouts and resolve mode
         },
         may_alias: bool,
 
