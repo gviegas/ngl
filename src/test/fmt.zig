@@ -104,7 +104,7 @@ test "required format support" {
     }
 
     for ([_]ngl.Format{
-        .s8_uint,
+        //.s8_uint, // Must be a combined depth/stencil format
         .d16_unorm_s8_uint,
         .d24_unorm_s8_uint,
         .d32_sfloat_s8_uint,
