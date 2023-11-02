@@ -68,8 +68,27 @@ test "RenderPass.init/deinit" {
         .may_alias = false,
     };
 
-    // TODO: Stencil attachment
-    // Need to query which stencil format the implementation supports
+    const ds_attach = ngl.RenderPass.Attachment{
+        .format = for ([_]ngl.Format{
+            .d16_unorm_s8_uint,
+            .d24_unorm_s8_uint,
+            .d32_sfloat_s8_uint,
+        }) |fmt| {
+            if (fmt.getFeatures(dev).optimal_tiling.depth_stencil_attachment)
+                break fmt;
+        } else unreachable,
+        .samples = .@"1",
+        .load_op = .clear,
+        .store_op = .dont_care,
+        .initial_layout = .unknown,
+        .final_layout = .general,
+        .resolve_mode = null,
+        .combined = .{
+            .stencil_load_op = .clear,
+            .stencil_store_op = .dont_care,
+        },
+        .may_alias = false,
+    };
 
     {
         const in: ngl.RenderPass.Index = 0;
@@ -313,6 +332,36 @@ test "RenderPass.init/deinit" {
                 depend_2,
                 depend_3,
             },
+        });
+        rp.deinit(gpa, dev);
+    }
+
+    {
+        const ds: ngl.RenderPass.Index = 0;
+        const ldr: ngl.RenderPass.Index = 1;
+
+        const subp = ngl.RenderPass.Subpass{
+            .pipeline_type = .graphics,
+            .input_attachments = null,
+            .color_attachments = &.{.{
+                .index = ldr,
+                .layout = .color_attachment_optimal,
+                .aspect_mask = .{ .color = true },
+                .resolve = null,
+            }},
+            .depth_stencil_attachment = .{
+                .index = ds,
+                .layout = .depth_stencil_attachment_optimal,
+                .aspect_mask = .{ .depth = true, .stencil = true },
+                .resolve = null,
+            },
+            .preserve_attachments = null,
+        };
+
+        var rp = try ngl.RenderPass.init(gpa, dev, .{
+            .attachments = &.{ ds_attach, ldr_attach },
+            .subpasses = &.{subp},
+            .dependencies = null,
         });
         rp.deinit(gpa, dev);
     }
