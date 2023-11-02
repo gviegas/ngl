@@ -77,7 +77,6 @@ test "Pipeline.initGraphics/deinit" {
 
     const col_blend = ngl.ColorBlend{
         .attachments = &.{.{
-            // TODO: Need to query whether the format supports blending
             .blend = .{
                 .color_source_factor = .source_alpha,
                 .color_dest_factor = .one_minus_source_alpha,
