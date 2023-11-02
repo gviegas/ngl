@@ -2,7 +2,6 @@ const std = @import("std");
 const testing = std.testing;
 
 const ngl = @import("../ngl.zig");
-const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 
 test "Format.getFeatures" {
@@ -78,4 +77,44 @@ test "Format.getFeatures" {
         try testing.expect(@as(U, @bitCast(feat_set.optimal_tiling)) & feats_buf == 0);
         try testing.expect(@as(U, @bitCast(feat_set.buffer)) & feats_img == 0);
     }
+}
+
+test "required format support" {
+    const dev = &context().device;
+
+    var ok = true;
+
+    inline for (@typeInfo(ngl.Format).Enum.fields) |field| {
+        const U = @typeInfo(ngl.Format.Features).Struct.backing_integer.?;
+
+        const feat_set = @field(ngl.Format, field.name).getFeatures(dev);
+        const opt: U = @bitCast(feat_set.optimal_tiling);
+        const buf: U = @bitCast(feat_set.buffer);
+        const feats = opt | buf;
+
+        const min: U = @bitCast(@field(ngl.Format.min_features, field.name));
+
+        testing.expect(feats & min == min) catch {
+            std.debug.print(
+                "[!] Format.{s} doesn't support the minimum required features\n",
+                .{field.name},
+            );
+            ok = false;
+        };
+    }
+
+    for ([_]ngl.Format{
+        .s8_uint,
+        .d16_unorm_s8_uint,
+        .d24_unorm_s8_uint,
+        .d32_sfloat_s8_uint,
+    }) |fmt| {
+        if (fmt.getFeatures(dev).optimal_tiling.depth_stencil_attachment)
+            break;
+    } else {
+        std.debug.print("[!] No valid stencil format found\n", .{});
+        ok = false;
+    }
+
+    try testing.expect(ok);
 }
