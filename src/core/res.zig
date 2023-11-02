@@ -151,6 +151,276 @@ pub const Format = enum {
     pub fn getFeatures(self: Self, device: *Device) FeatureSet {
         return Impl.get().getFormatFeatures(device.impl, self);
     }
+
+    /// Required format support.
+    /// The image features pertain only to optimal tiling.
+    pub const min_features = @Type(.{ .Struct = .{
+        .layout = .Auto,
+        .fields = blk: {
+            const StructField = std.builtin.Type.StructField;
+            var fields: []const StructField = &[_]StructField{};
+            for (@typeInfo(Self).Enum.fields) |f|
+                fields = fields ++ &[_]StructField{.{
+                    .name = f.name,
+                    .type = Features,
+                    .default_value = &Features{},
+                    .is_comptime = false,
+                    .alignment = @alignOf(Features),
+                }};
+            break :blk fields;
+        },
+        .decls = &.{},
+        .is_tuple = false,
+    } }){
+        // Color 8 bpp -------------------------------------
+        .r8_unorm = .{
+            .sampled_image = true,
+            .sampled_image_filter_linear = true,
+            .color_attachment = true,
+            .color_attachment_blend = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .r8_snorm = .{
+            .sampled_image = true,
+            .sampled_image_filter_linear = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .r8_uint = .{
+            .sampled_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .r8_sint = .{
+            .sampled_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        // Color 16 bpp ------------------------------------
+        .r16_unorm = .{ .vertex_buffer = true },
+        .r16_snorm = .{ .vertex_buffer = true },
+        .r16_uint = .{
+            .sampled_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .r16_sint = .{
+            .sampled_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .r16_sfloat = .{
+            .sampled_image = true,
+            .sampled_image_filter_linear = true,
+            .color_attachment = true,
+            .color_attachment_blend = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rg8_unorm = .{
+            .sampled_image = true,
+            .sampled_image_filter_linear = true,
+            .color_attachment = true,
+            .color_attachment_blend = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rg8_snorm = .{
+            .sampled_image = true,
+            .sampled_image_filter_linear = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rg8_uint = .{
+            .sampled_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rg8_sint = .{
+            .sampled_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        // Color 32 bpp ------------------------------------
+        .r32_uint = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .storage_image_atomic = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .storage_texel_buffer_atomic = true,
+            .vertex_buffer = true,
+        },
+        .r32_sint = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .storage_image_atomic = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .storage_texel_buffer_atomic = true,
+            .vertex_buffer = true,
+        },
+        .r32_sfloat = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rg16_unorm = .{ .vertex_buffer = true },
+        .rg16_snorm = .{ .vertex_buffer = true },
+        .rg16_uint = .{
+            .sampled_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rg16_sint = .{
+            .sampled_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rg16_sfloat = .{
+            .sampled_image = true,
+            .sampled_image_filter_linear = true,
+            .color_attachment = true,
+            .color_attachment_blend = true,
+            .uniform_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rgba8_unorm = .{
+            .sampled_image = true,
+            .sampled_image_filter_linear = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .color_attachment_blend = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rgba8_snorm = .{
+            .sampled_image = true,
+            .sampled_image_filter_linear = true,
+            .storage_image = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rgba8_uint = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rgba8_sint = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        // Color 64 bpp ------------------------------------
+        .rg32_uint = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rg32_sint = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rg32_sfloat = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rgba16_unorm = .{ .vertex_buffer = true },
+        .rgba16_snorm = .{ .vertex_buffer = true },
+        .rgba16_uint = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rgba16_sint = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rgba16_sfloat = .{
+            .sampled_image = true,
+            .sampled_image_filter_linear = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .color_attachment_blend = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        // Color 96 bpp ------------------------------------
+        .rgb32_uint = .{ .vertex_buffer = true },
+        .rgb32_sint = .{ .vertex_buffer = true },
+        .rgb32_sfloat = .{ .vertex_buffer = true },
+        // Color 128 bpp -----------------------------------
+        .rgba32_uint = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rgba32_sint = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        .rgba32_sfloat = .{
+            .sampled_image = true,
+            .storage_image = true,
+            .color_attachment = true,
+            .uniform_texel_buffer = true,
+            .storage_texel_buffer = true,
+            .vertex_buffer = true,
+        },
+        // Depth/stencil -----------------------------------
+        // NOTE: Which formats are allowed as stencil attachment can't be
+        // known in advance - one must use `getFeatures` to query support
+        // at runtime (at least one format will support it)
+        .d16_unorm = .{ .sampled_image = true, .depth_stencil_attachment = true },
+    };
 };
 
 pub const Buffer = struct {
