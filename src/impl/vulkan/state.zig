@@ -368,7 +368,15 @@ pub const Pipeline = struct {
                     .compareMask = t.read_mask,
                     .writeMask = t.write_mask,
                     .reference = t.reference orelse 0,
-                } else defaults.depth_stencil_state.front,
+                } else .{
+                    .failOp = c.VK_STENCIL_OP_KEEP,
+                    .passOp = c.VK_STENCIL_OP_KEEP,
+                    .depthFailOp = c.VK_STENCIL_OP_KEEP,
+                    .compareOp = c.VK_COMPARE_OP_ALWAYS,
+                    .compareMask = 0,
+                    .writeMask = 0,
+                    .reference = if (s.stencil_back) |x| x.reference orelse 0 else 0,
+                },
                 .back = if (s.stencil_back) |t| .{
                     .failOp = conv.toVkStencilOp(t.fail_op),
                     .passOp = conv.toVkStencilOp(t.pass_op),
@@ -377,7 +385,15 @@ pub const Pipeline = struct {
                     .compareMask = t.read_mask,
                     .writeMask = t.write_mask,
                     .reference = t.reference orelse 0,
-                } else defaults.depth_stencil_state.back,
+                } else .{
+                    .failOp = c.VK_STENCIL_OP_KEEP,
+                    .passOp = c.VK_STENCIL_OP_KEEP,
+                    .depthFailOp = c.VK_STENCIL_OP_KEEP,
+                    .compareOp = c.VK_COMPARE_OP_ALWAYS,
+                    .compareMask = 0,
+                    .writeMask = 0,
+                    .reference = if (s.stencil_front) |x| x.reference orelse 0 else 0,
+                },
                 .minDepthBounds = 0,
                 .maxDepthBounds = 0,
             } else defaults.depth_stencil_state;
