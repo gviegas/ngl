@@ -52,7 +52,7 @@ test "draw primitive" {
         const sz = @sizeOf(@TypeOf(vert_data));
         break :blk (sz + 255) & ~@as(u64, 255);
     };
-    if (@sizeOf(@TypeOf(vert_data[0])) != shd_code.color_input_bindings[0].stride)
+    if (@sizeOf(@TypeOf(vert_data[0])) != shd_code.color_prim_bindings[0].stride)
         @compileError("Fix vertex input stride");
 
     const size = @max(w * h * 4, unif_size + vert_size);
@@ -233,9 +233,9 @@ test "draw primitive" {
         },
     };
 
-    const vert_input = ngl.VertexInput{
-        .bindings = &shd_code.color_input_bindings,
-        .attributes = &shd_code.color_input_attributes,
+    const prim = ngl.Primitive{
+        .bindings = &shd_code.color_prim_bindings,
+        .attributes = &shd_code.color_prim_attributes,
         .topology = .triangle_list,
     };
 
@@ -267,7 +267,7 @@ test "draw primitive" {
             .states = &.{.{
                 .stages = &stages,
                 .layout = &pl_layt,
-                .vertex_input = &vert_input,
+                .primitive = &prim,
                 .viewport = &vport,
                 .rasterization = &raster,
                 .depth_stencil = null,

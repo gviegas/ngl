@@ -33,11 +33,11 @@ test "Pipeline.initGraphics/deinit" {
     });
     defer pl_layt.deinit(gpa, dev);
 
-    const vert_input = ngl.VertexInput{
-        .bindings = &shd_code.color_input_bindings,
-        .attributes = &shd_code.color_input_attributes,
+    const prim = ngl.Primitive{
+        .bindings = &shd_code.color_prim_bindings,
+        .attributes = &shd_code.color_prim_attributes,
         .topology = .triangle_list,
-        .primitive_restart = false,
+        .restart = false,
     };
 
     const vport = ngl.Viewport{
@@ -140,7 +140,7 @@ test "Pipeline.initGraphics/deinit" {
         .states = &.{.{
             .stages = &stages,
             .layout = &pl_layt,
-            .vertex_input = &vert_input,
+            .primitive = &prim,
             .viewport = &vport,
             .rasterization = &raster,
             .depth_stencil = &ds,

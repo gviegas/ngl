@@ -292,9 +292,9 @@ test "stencil test" {
             },
         },
         .layout = &pl_layt,
-        .vertex_input = &.{
-            .bindings = &shd_code.sten_input_bindings,
-            .attributes = &shd_code.sten_input_attributes,
+        .primitive = &.{
+            .bindings = &shd_code.sten_prim_bindings,
+            .attributes = &shd_code.sten_prim_attributes,
             .topology = .triangle_list,
         },
         .viewport = &.{

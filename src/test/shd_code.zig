@@ -50,13 +50,13 @@ pub const screen_vert_spv align(4) = [632]u8{
     0xfd, 0x0, 0x1,  0x0, 0x38, 0x0,  0x1,  0x0,
 };
 
-pub const screen_input_bindings = [_]ngl.VertexInput.Binding{.{
+pub const screen_prim_bindings = [_]ngl.Primitive.Binding{.{
     .binding = 0,
     .stride = 2 * 4,
-    .per_instance = false,
+    .step_rate = .vertex,
 }};
 
-pub const screen_input_attributes = [_]ngl.VertexInput.Attribute{.{
+pub const screen_prim_attributes = [_]ngl.Primitive.Attribute{.{
     .location = 0,
     .binding = 0,
     .format = .rg32_sfloat,
@@ -201,13 +201,13 @@ pub const color_desc_bindings = [_]ngl.DescriptorSetLayout.Binding{.{
     .immutable_samplers = null,
 }};
 
-pub const color_input_bindings = [_]ngl.VertexInput.Binding{.{
+pub const color_prim_bindings = [_]ngl.Primitive.Binding{.{
     .binding = 0,
     .stride = (3 + (1) + 4) * 4,
-    .per_instance = false,
+    .step_rate = .vertex,
 }};
 
-pub const color_input_attributes = [_]ngl.VertexInput.Attribute{
+pub const color_prim_attributes = [_]ngl.Primitive.Attribute{
     .{
         .location = 1,
         .binding = 0,
@@ -303,13 +303,13 @@ pub const depth_desc_bindings = [_]ngl.DescriptorSetLayout.Binding{.{
     .immutable_samplers = null,
 }};
 
-pub const depth_input_bindings = [_]ngl.VertexInput.Binding{.{
+pub const depth_prim_bindings = [_]ngl.Primitive.Binding{.{
     .binding = 0,
     .stride = 3 * 4,
-    .per_instance = false,
+    .step_rate = .vertex,
 }};
 
-pub const depth_input_attributes = [_]ngl.VertexInput.Attribute{.{
+pub const depth_prim_attributes = [_]ngl.Primitive.Attribute{.{
     .location = 0,
     .binding = 0,
     .format = .rgb32_sfloat,
@@ -424,20 +424,20 @@ pub const sten_frag_spv align(4) = [408]u8{
     0xfd, 0x0, 0x1,  0x0, 0x38, 0x0,  0x1,  0x0,
 };
 
-pub const sten_input_bindings = [_]ngl.VertexInput.Binding{
+pub const sten_prim_bindings = [_]ngl.Primitive.Binding{
     .{
         .binding = 0,
         .stride = (3 + (1)) * 1,
-        .per_instance = false,
+        .step_rate = .vertex,
     },
     .{
         .binding = 1,
         .stride = (1 + (1)) * 2,
-        .per_instance = false,
+        .step_rate = .vertex,
     },
 };
 
-pub const sten_input_attributes = [_]ngl.VertexInput.Attribute{
+pub const sten_prim_attributes = [_]ngl.Primitive.Attribute{
     .{
         .location = 0,
         .binding = 1,
@@ -627,20 +627,20 @@ pub const gen_desc_bindings = [_]ngl.DescriptorSetLayout.Binding{.{
     .immutable_samplers = null,
 }};
 
-pub const gen_input_bindings = [_]ngl.VertexInput.Binding{
+pub const gen_prim_bindings = [_]ngl.Primitive.Binding{
     .{
         .binding = 0,
         .stride = 3 * 4,
-        .per_instance = false,
+        .step_rate = .vertex,
     },
     .{
         .binding = 1,
         .stride = 1 * 4,
-        .per_instance = false,
+        .step_rate = .vertex,
     },
 };
 
-pub const gen_input_attributes = [_]ngl.VertexInput.Attribute{
+pub const gen_prim_attributes = [_]ngl.Primitive.Attribute{
     .{
         .location = 0,
         .binding = 0,

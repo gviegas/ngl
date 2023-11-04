@@ -544,7 +544,7 @@ pub fn toVkShaderStageFlags(shader_stage_flags: ngl.ShaderStage.Flags) c.VkShade
     return flags;
 }
 
-pub fn toVkPrimitiveTopology(topology: ngl.VertexInput.Topology) c.VkPrimitiveTopology {
+pub fn toVkPrimitiveTopology(topology: ngl.Primitive.Topology) c.VkPrimitiveTopology {
     return switch (topology) {
         .point_list => c.VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
         .line_list => c.VK_PRIMITIVE_TOPOLOGY_LINE_LIST,

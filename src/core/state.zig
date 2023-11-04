@@ -79,17 +79,19 @@ pub const ShaderStage = enum {
     };
 };
 
-pub const VertexInput = struct {
+pub const Primitive = struct {
     bindings: []const Binding,
     attributes: []const Attribute,
     topology: Topology,
-    primitive_restart: bool = false,
+    restart: bool = false,
 
     pub const Binding = struct {
         binding: u32,
         stride: u32,
-        per_instance: bool = false,
-        //divisor: u32 = 1,
+        step_rate: union(enum) {
+            vertex,
+            instance: u1, // This must be `1` currently
+        },
     };
 
     pub const Attribute = struct {
@@ -238,7 +240,7 @@ pub const ColorBlend = struct {
 pub const GraphicsState = struct {
     stages: []const ShaderStage.Desc,
     layout: *PipelineLayout,
-    vertex_input: ?*const VertexInput,
+    primitive: ?*const Primitive,
     viewport: ?*const Viewport,
     rasterization: ?*const Rasterization,
     depth_stencil: ?*const DepthStencil,

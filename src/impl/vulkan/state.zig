@@ -70,7 +70,7 @@ pub const Pipeline = struct {
             var blend_n: usize = 0;
             for (desc.states) |state| {
                 stage_n += state.stages.len;
-                if (state.vertex_input) |x| {
+                if (state.primitive) |x| {
                     bind_n += x.bindings.len;
                     attr_n += x.attributes.len;
                 }
@@ -232,7 +232,7 @@ pub const Pipeline = struct {
                 .basePipelineIndex = -1,
             };
 
-            inner.vertex_input_state = if (state.vertex_input) |s| .{
+            inner.vertex_input_state = if (state.primitive) |s| .{
                 .sType = defaults.vertex_input_state.sType,
                 .pNext = null,
                 .flags = 0,
@@ -242,10 +242,15 @@ pub const Pipeline = struct {
                         p.* = .{
                             .binding = b.binding,
                             .stride = b.stride,
-                            .inputRate = if (b.per_instance)
-                                c.VK_VERTEX_INPUT_RATE_INSTANCE
-                            else
-                                c.VK_VERTEX_INPUT_RATE_VERTEX,
+                            .inputRate = switch (b.step_rate) {
+                                .vertex => c.VK_VERTEX_INPUT_RATE_VERTEX,
+                                // TODO: Support other instance divisor values
+                                // (need to check availability)
+                                .instance => |div| if (div == 1)
+                                    c.VK_VERTEX_INPUT_RATE_INSTANCE
+                                else
+                                    return Error.NotSupported,
+                            },
                         };
                     defer vert_binds_ptr += s.bindings.len;
                     break :blk vert_binds_ptr;
@@ -264,12 +269,12 @@ pub const Pipeline = struct {
                 },
             } else defaults.vertex_input_state;
 
-            inner.input_assembly_state = if (state.vertex_input) |s| .{
+            inner.input_assembly_state = if (state.primitive) |s| .{
                 .sType = defaults.input_assembly_state.sType,
                 .pNext = null,
                 .flags = 0,
                 .topology = conv.toVkPrimitiveTopology(s.topology),
-                .primitiveRestartEnable = if (s.primitive_restart) c.VK_TRUE else c.VK_FALSE,
+                .primitiveRestartEnable = if (s.restart) c.VK_TRUE else c.VK_FALSE,
             } else defaults.input_assembly_state;
 
             inner.viewport_state = if (state.viewport) |s| .{

@@ -241,9 +241,9 @@ test "depth-only rendering" {
         .name = "main",
     }};
 
-    const vert_input = ngl.VertexInput{
-        .bindings = &shd_code.depth_input_bindings,
-        .attributes = &shd_code.depth_input_attributes,
+    const prim = ngl.Primitive{
+        .bindings = &shd_code.depth_prim_bindings,
+        .attributes = &shd_code.depth_prim_attributes,
         .topology = .triangle_list,
     };
 
@@ -277,7 +277,7 @@ test "depth-only rendering" {
             .states = &.{.{
                 .stages = &stages,
                 .layout = &pl_layt,
-                .vertex_input = &vert_input,
+                .primitive = &prim,
                 .viewport = &vport,
                 .rasterization = &raster,
                 .depth_stencil = &ds,

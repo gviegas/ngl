@@ -387,9 +387,9 @@ test "subpass input" {
                     },
                 },
                 .layout = &pl_layt,
-                .vertex_input = &.{
-                    .bindings = &shd_code.gen_input_bindings,
-                    .attributes = &shd_code.gen_input_attributes,
+                .primitive = &.{
+                    .bindings = &shd_code.gen_prim_bindings,
+                    .attributes = &shd_code.gen_prim_attributes,
                     .topology = .triangle_list,
                 },
                 .viewport = null, // Dynamic
@@ -425,9 +425,9 @@ test "subpass input" {
                     },
                 },
                 .layout = &pl_layt,
-                .vertex_input = &.{
-                    .bindings = &shd_code.screen_input_bindings,
-                    .attributes = &shd_code.screen_input_attributes,
+                .primitive = &.{
+                    .bindings = &shd_code.screen_prim_bindings,
+                    .attributes = &shd_code.screen_prim_attributes,
                     .topology = .triangle_list,
                 },
                 .viewport = null, // Dynamic
