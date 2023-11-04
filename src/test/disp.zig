@@ -234,19 +234,20 @@ test "compute dispatch" {
         }
     }
 
-    if (false) {
+    if (@import("test.zig").writer) |writer| {
         var str = std.ArrayList(u8).init(gpa);
         defer str.deinit();
+        try str.appendSlice("\n" ++ @src().fn_name ++ "\n");
         for (0..size / 4) |k| {
             const i = k * 4;
             const p = @as(*const u32, @ptrCast(@alignCast(&s[i])));
             try str.appendSlice(switch (p.*) {
                 0xff_00_00_00, 0x00_00_00_ff => " ♥",
-                0xff_ff_ff_ff => " ♢",
+                0xff_ff_ff_ff => " ♡",
                 else => unreachable,
             });
             if ((k + 1) % w == 0) try str.append('\n');
         }
-        std.debug.print("{s}", .{str.items});
+        try writer.print("{s}", .{str.items});
     }
 }

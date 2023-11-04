@@ -527,9 +527,10 @@ test "stencil test" {
     try testing.expectEqual(clear_sten_n, sten_front_n + sten_back_n);
     try testing.expectEqual(sten_front_n, sten_back_n);
 
-    if (false) {
+    if (@import("test.zig").writer) |writer| {
         var str = std.ArrayList(u8).init(gpa);
         defer str.deinit();
+        try str.appendSlice("\n" ++ @src().fn_name ++ "\n");
         try str.appendSlice("color:\n");
         for (0..h) |y| {
             for (0..w) |x| {
@@ -557,6 +558,6 @@ test "stencil test" {
             }
             try str.append('\n');
         }
-        std.debug.print("{s}\n", .{str.items});
+        try writer.print("{s}", .{str.items});
     }
 }

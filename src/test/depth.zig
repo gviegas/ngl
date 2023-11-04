@@ -503,22 +503,23 @@ test "depth-only rendering" {
         0.1,
     );
 
-    if (false) {
+    if (@import("test.zig").writer) |writer| {
         var str = std.ArrayList(u8).init(gpa);
         defer str.deinit();
+        try str.appendSlice("\n" ++ @src().fn_name ++ "\n");
         for (0..h) |y| {
             for (0..w) |x| {
                 const i = (x + w * y) * 2;
                 const data = @as([*]const u16, @ptrCast(@alignCast(p + i)))[0];
                 try str.appendSlice(switch (data) {
-                    clear_dep => " ∙",
-                    vert_dep[0] => " ✽",
-                    vert_dep[1] => " ✰",
+                    clear_dep => " ⋅",
+                    vert_dep[0] => " ■",
+                    vert_dep[1] => " □",
                     else => unreachable,
                 });
             }
             try str.append('\n');
         }
-        std.debug.print("{s}", .{str.items});
+        try writer.print("{s}", .{str.items});
     }
 }

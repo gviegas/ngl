@@ -456,21 +456,22 @@ test "draw primitive" {
         if (w & 1 == 0 and h & 1 == 0) 0 else 0.1,
     );
 
-    if (false) {
+    if (@import("test.zig").writer) |writer| {
         var str = std.ArrayList(u8).init(gpa);
         defer str.deinit();
+        try str.appendSlice("\n" ++ @src().fn_name ++ "\n");
         for (0..h) |y| {
             for (0..w) |x| {
                 const i = (x + w * y) * 4;
                 const data = @as([*]const u32, @ptrCast(@alignCast(p + i)))[0];
                 try str.appendSlice(switch (data) {
-                    clear_col_un => " ▿",
-                    vert_col_un => " ☻",
+                    clear_col_un => " 🂿",
+                    vert_col_un => " 🃟",
                     else => unreachable,
                 });
             }
             try str.append('\n');
         }
-        std.debug.print("{s}", .{str.items});
+        try writer.print("{s}", .{str.items});
     }
 }

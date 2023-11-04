@@ -16,8 +16,8 @@ test "subpass input" {
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);
 
-    const w = 40;
-    const h = 56;
+    const w = 24;
+    const h = 32;
 
     const idx_data = [6]u16{
         0, 1, 2,
@@ -696,9 +696,10 @@ test "subpass input" {
         try testing.expect(n > m);
     }
 
-    if (false) {
+    if (@import("test.zig").writer) |writer| {
         var str = std.ArrayList(u8).init(gpa);
         defer str.deinit();
+        try str.appendSlice("\n" ++ @src().fn_name ++ "\n");
         for (0..h) |y| {
             for (0..w) |x| {
                 const i = (x + w * y) * 1;
@@ -710,6 +711,6 @@ test "subpass input" {
             }
             try str.append('\n');
         }
-        std.debug.print("{s}", .{str.items});
+        try writer.print("{s}", .{str.items});
     }
 }
