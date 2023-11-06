@@ -291,8 +291,8 @@ pub const Feature = union(enum) {
     /// The `core` feature is always supported.
     core: struct {
         memory: struct {
-            max_allocation_count: u64 = 4096,
-            max_allocation_size: u64 = 1073741824,
+            max_count: u64 = 4096,
+            max_size: u64 = 1073741824,
             min_map_alignment: u64 = 64,
         } = .{},
         sampler: struct {
@@ -413,4 +413,20 @@ pub const Feature = union(enum) {
         .decls = &.{},
         .is_tuple = false,
     } });
+
+    /// It returns `null` if the requested feature isn't supported
+    /// by the device (note that `core` is always supported).
+    /// `device_desc` must have been obtained through a call to
+    /// `instance.listDevices`.
+    pub fn get(
+        instance: *Instance,
+        device_desc: Device.Desc,
+        comptime tag: @typeInfo(Feature).Union.tag_type.?,
+    ) ?@typeInfo(Feature).Union.fields[@intFromEnum(tag)].type {
+        var feat = @unionInit(Feature, @tagName(tag), undefined);
+        return if (Impl.get().getFeature(instance.impl, device_desc, &feat)) |_|
+            @field(feat, @tagName(tag))
+        else |_|
+            null;
+    }
 };

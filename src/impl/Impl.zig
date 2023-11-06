@@ -151,6 +151,15 @@ pub const VTable = struct {
         sizes: ?[]const u64,
     ) Error!void,
 
+    // Feature ---------------------------------------------
+
+    getFeature: *const fn (
+        ctx: *anyopaque,
+        instance: Instance,
+        device_desc: ngl.Device.Desc,
+        feature: *ngl.Feature,
+    ) Error!void,
+
     // CommandPool -----------------------------------------
 
     initCommandPool: *const fn (
@@ -886,6 +895,15 @@ pub fn invalidateMappedMemory(
     sizes: ?[]const u64,
 ) Error!void {
     return self.vtable.invalidateMappedMemory(self.ptr, allocator, device, memory, offsets, sizes);
+}
+
+pub fn getFeature(
+    self: *Self,
+    instance: Instance,
+    device_desc: ngl.Device.Desc,
+    feature: *ngl.Feature,
+) Error!void {
+    return self.vtable.getFeature(self.ptr, instance, device_desc, feature);
 }
 
 pub fn initCommandPool(

@@ -1753,6 +1753,144 @@ pub const Memory = struct {
     }
 };
 
+fn getFeature(
+    _: *anyopaque,
+    instance: Impl.Instance,
+    device_desc: ngl.Device.Desc,
+    feature: *ngl.Feature,
+) Error!void {
+    const inst = Instance.cast(instance);
+    const phys_dev: c.VkPhysicalDevice =
+        @ptrFromInt(device_desc.impl orelse return Error.InvalidArgument);
+
+    // TODO: Maybe define this conversion in `conv.zig`
+    const convSpls = struct {
+        fn f(vk_flags: c.VkSampleCountFlags) ngl.SampleCount.Flags {
+            var flags = ngl.SampleCount.Flags{};
+            if (vk_flags & c.VK_SAMPLE_COUNT_1_BIT != 0) flags.@"1" = true;
+            if (vk_flags & c.VK_SAMPLE_COUNT_2_BIT != 0) flags.@"2" = true;
+            if (vk_flags & c.VK_SAMPLE_COUNT_4_BIT != 0) flags.@"4" = true;
+            if (vk_flags & c.VK_SAMPLE_COUNT_8_BIT != 0) flags.@"8" = true;
+            if (vk_flags & c.VK_SAMPLE_COUNT_16_BIT != 0) flags.@"16" = true;
+            if (vk_flags & c.VK_SAMPLE_COUNT_32_BIT != 0) flags.@"32" = true;
+            if (vk_flags & c.VK_SAMPLE_COUNT_64_BIT != 0) flags.@"64" = true;
+            return flags;
+        }
+    }.f;
+
+    switch (feature.*) {
+        .core => |*feat| {
+            const l = blk: {
+                var props: c.VkPhysicalDeviceProperties = undefined;
+                inst.vkGetPhysicalDeviceProperties(phys_dev, &props);
+                break :blk props.limits;
+            };
+            feat.* = .{
+                .memory = .{
+                    .max_count = l.maxMemoryAllocationCount,
+                    // TODO: Requires v1.1
+                    //.max_size = 1073741824,
+                    .min_map_alignment = l.minMemoryMapAlignment,
+                },
+                .sampler = .{
+                    .max_count = l.maxSamplerAllocationCount,
+                    .max_anisotropy = @intFromFloat(@min(16, @max(1, l.maxSamplerAnisotropy))),
+                },
+                .image = .{
+                    .max_dimension_1d = l.maxImageDimension1D,
+                    .max_dimension_2d = l.maxImageDimension2D,
+                    .max_dimension_cube = l.maxImageDimensionCube,
+                    .max_dimension_3d = l.maxImageDimension3D,
+                    .max_layers = l.maxImageArrayLayers,
+                    .sampled_color_sample_counts = convSpls(l.sampledImageColorSampleCounts),
+                    .sampled_integer_sample_counts = convSpls(l.sampledImageIntegerSampleCounts),
+                    .sampled_depth_sample_counts = convSpls(l.sampledImageDepthSampleCounts),
+                    .sampled_stencil_sample_counts = convSpls(l.sampledImageStencilSampleCounts),
+                    .storage_sample_counts = convSpls(l.storageImageSampleCounts),
+                },
+                .buffer = .{
+                    // TODO: Requires v1.3
+                    //.max_size = 1073741824,
+                    .max_texel_elements = l.maxTexelBufferElements,
+                    .min_texel_offset_alignment = l.minTexelBufferOffsetAlignment,
+                },
+                .descriptor = .{
+                    .max_bound_sets = l.maxBoundDescriptorSets,
+                    .max_samplers = l.maxDescriptorSetSamplers,
+                    .max_uniform_buffers = l.maxDescriptorSetUniformBuffers,
+                    .max_storage_buffers = l.maxDescriptorSetStorageBuffers,
+                    .max_sampled_images = l.maxDescriptorSetSampledImages,
+                    .max_storage_images = l.maxDescriptorSetStorageImages,
+                    .max_input_attachments = l.maxDescriptorSetInputAttachments,
+                    .max_samplers_per_stage = l.maxPerStageDescriptorSamplers,
+                    .max_uniform_buffers_per_stage = l.maxPerStageDescriptorUniformBuffers,
+                    .max_storage_buffers_per_stage = l.maxPerStageDescriptorStorageBuffers,
+                    .max_sampled_images_per_stage = l.maxPerStageDescriptorSampledImages,
+                    .max_storage_images_per_stage = l.maxPerStageDescriptorStorageImages,
+                    .max_input_attachments_per_stage = l.maxPerStageDescriptorInputAttachments,
+                    .max_resources_per_stage = l.maxPerStageResources,
+                    .max_push_constants_size = l.maxPushConstantsSize,
+                    .min_uniform_buffer_offset_alignment = l.minUniformBufferOffsetAlignment,
+                    .max_uniform_buffer_range = l.maxUniformBufferRange,
+                    .min_storage_buffer_offset_alignment = l.minStorageBufferOffsetAlignment,
+                    .max_storage_buffer_range = l.maxStorageBufferRange,
+                },
+                .subpass = .{
+                    .max_color_attachments = @min(
+                        @as(u17, ngl.RenderPass.max_attachment_index) + 1,
+                        l.maxColorAttachments,
+                    ),
+                },
+                .frame_buffer = .{
+                    .max_width = l.maxFramebufferWidth,
+                    .max_height = l.maxFramebufferHeight,
+                    .max_layers = l.maxFramebufferLayers,
+                    .color_sample_counts = convSpls(l.framebufferColorSampleCounts),
+                    // TODO: Requires v1.2
+                    //.integer_sample_counts = .{ .@"1" = true },
+                    .depth_sample_counts = convSpls(l.framebufferDepthSampleCounts),
+                    .stencil_sample_counts = convSpls(l.framebufferStencilSampleCounts),
+                    .no_attachment_sample_counts = convSpls(l.framebufferNoAttachmentsSampleCounts),
+                },
+                .draw = .{
+                    .max_index_value = l.maxDrawIndexedIndexValue,
+                    .max_indirect_count = l.maxDrawIndirectCount,
+                },
+                .primitive = .{
+                    .max_bindings = l.maxVertexInputBindings,
+                    .max_attributes = l.maxVertexInputAttributes,
+                    .max_binding_stride = l.maxVertexInputBindingStride,
+                    .max_attribute_offset = l.maxVertexInputAttributeOffset,
+                },
+                .viewport = .{
+                    .max_width = l.maxViewportDimensions[0],
+                    .max_height = l.maxViewportDimensions[1],
+                    .min_bound = l.viewportBoundsRange[0],
+                    .max_bound = l.viewportBoundsRange[1],
+                },
+                .vertex = .{
+                    .max_output_components = l.maxVertexOutputComponents,
+                },
+                .fragment = .{
+                    .max_input_components = l.maxFragmentInputComponents,
+                    .max_output_attachments = l.maxFragmentOutputAttachments,
+                    .max_combined_output_resources = l.maxFragmentCombinedOutputResources,
+                },
+                .compute = .{
+                    .max_shared_memory_size = l.maxComputeSharedMemorySize,
+                    .max_group_count_x = l.maxComputeWorkGroupCount[0],
+                    .max_group_count_y = l.maxComputeWorkGroupCount[1],
+                    .max_group_count_z = l.maxComputeWorkGroupCount[2],
+                    .max_local_invocations = l.maxComputeWorkGroupInvocations,
+                    .max_local_size_x = l.maxComputeWorkGroupSize[0],
+                    .max_local_size_y = l.maxComputeWorkGroupSize[1],
+                    .max_local_size_z = l.maxComputeWorkGroupSize[2],
+                },
+            };
+        },
+    }
+}
+
 const vtable = Impl.VTable{
     .deinit = deinit,
 
@@ -1775,6 +1913,8 @@ const vtable = Impl.VTable{
     .unmapMemory = Memory.unmap,
     .flushMappedMemory = Memory.flushMapped,
     .invalidateMappedMemory = Memory.invalidateMapped,
+
+    .getFeature = getFeature,
 
     .initCommandPool = @import("cmd.zig").CommandPool.init,
     .allocCommandBuffers = @import("cmd.zig").CommandPool.alloc,
