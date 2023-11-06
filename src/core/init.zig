@@ -285,3 +285,132 @@ pub const Memory = struct {
         return Impl.get().invalidateMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
     }
 };
+
+// TODO: Optional features
+pub const Feature = union(enum) {
+    /// The `core` feature is always supported.
+    core: struct {
+        memory: struct {
+            max_allocation_count: u64 = 4096,
+            max_allocation_size: u64 = 1073741824,
+            min_map_alignment: u64 = 64,
+        } = .{},
+        sampler: struct {
+            max_count: u32 = 4000,
+            max_anisotropy: u5 = 1,
+        } = .{},
+        image: struct {
+            max_dimension_1d: u32 = 4096,
+            max_dimension_2d: u32 = 4096,
+            max_dimension_cube: u32 = 4096,
+            max_dimension_3d: u32 = 256,
+            max_layers: u32 = 256,
+            sampled_color_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
+            sampled_integer_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true },
+            sampled_depth_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
+            sampled_stencil_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
+            storage_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true },
+        } = .{},
+        buffer: struct {
+            max_size: u64 = 1073741824,
+            max_texel_elements: u32 = 65536,
+            min_texel_offset_alignment: u64 = 256,
+        } = .{},
+        descriptor: struct {
+            max_bound_sets: u32 = 4,
+            max_samplers: u32 = 96,
+            max_uniform_buffers: u32 = 72,
+            max_storage_buffers: u32 = 24,
+            max_sampled_images: u32 = 96,
+            max_storage_images: u32 = 24,
+            max_input_attachments: u32 = 4,
+            max_samplers_per_stage: u32 = 16,
+            max_uniform_buffers_per_stage: u32 = 12,
+            max_storage_buffers_per_stage: u32 = 4,
+            max_sampled_images_per_stage: u32 = 16,
+            max_storage_images_per_stage: u32 = 4,
+            max_input_attachments_per_stage: u32 = 4,
+            max_resources_per_stage: u32 = 128,
+            max_push_constants_size: u32 = 128,
+            min_uniform_buffer_offset_alignment: u64 = 256,
+            max_uniform_buffer_range: u64 = 16384,
+            min_storage_buffer_offset_alignment: u64 = 256,
+            max_storage_buffer_range: u64 = 134217728,
+        } = .{},
+        subpass: struct {
+            max_color_attachments: u17 = 4,
+        } = .{},
+        frame_buffer: struct {
+            max_width: u32 = 4096,
+            max_height: u32 = 4096,
+            max_layers: u32 = 256,
+            color_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
+            integer_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true },
+            depth_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
+            stencil_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
+            no_attachment_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
+        } = .{},
+        draw: struct {
+            max_index_value: u32 = 16777215,
+            max_indirect_count: u32 = 1,
+        } = .{},
+        primitive: struct {
+            max_bindings: u32 = 8,
+            max_attributes: u32 = 16,
+            max_binding_stride: u32 = 2048,
+            max_attribute_offset: u32 = 2047,
+        } = .{},
+        viewport: struct {
+            max_width: u32 = 4096,
+            max_height: u32 = 4096,
+            min_bound: f32 = -8192,
+            max_bound: f32 = 8192,
+        } = .{},
+        vertex: struct {
+            max_output_components: u32 = 64,
+        } = .{},
+        fragment: struct {
+            max_input_components: u32 = 64,
+            max_output_attachments: u32 = 4,
+            max_combined_output_resources: u32 = 4,
+        } = .{},
+        compute: struct {
+            max_shared_memory_size: u32 = 16384,
+            max_group_count_x: u32 = 65535,
+            max_group_count_y: u32 = 65535,
+            max_group_count_z: u32 = 65535,
+            max_local_invocations: u32 = 128,
+            max_local_size_x: u32 = 128,
+            max_local_size_y: u32 = 128,
+            max_local_size_z: u32 = 64,
+        } = .{},
+    },
+
+    pub const Set = @Type(.{ .Struct = .{
+        .layout = .Packed,
+        .fields = blk: {
+            const type_info = @typeInfo(Feature);
+            if (!std.mem.eql(u8, type_info.Union.fields[0].name, "core"))
+                @compileError("Feature.core must come first");
+            const StructField = std.builtin.Type.StructField;
+            var fields: []const StructField = &[_]StructField{.{
+                .name = type_info.Union.fields[0].name,
+                .type = bool,
+                .default_value = @ptrCast(&true),
+                .is_comptime = false,
+                .alignment = 0,
+            }};
+            for (type_info.Union.fields[1..]) |f|
+                fields = fields ++ &[_]StructField{.{
+                    .name = f.name,
+                    .type = bool,
+                    .default_value = @ptrCast(&false),
+                    .is_comptime = false,
+                    .alignment = 0,
+                }};
+            break :blk fields;
+        },
+        .decls = &.{},
+        .is_tuple = false,
+    } });
+};
