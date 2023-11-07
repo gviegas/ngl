@@ -51,15 +51,15 @@ inline fn vkEnumerateInstanceExtensionProperties(
 
 // v1.1
 var enumerateInstanceVersion: c.PFN_vkEnumerateInstanceVersion = null;
-// This wrapper can be called regardless of API version.
+/// This wrapper can be called regardless of API version.
 inline fn vkEnumerateInstanceVersion(version: *u32) c.VkResult {
     if (enumerateInstanceVersion) |fp| return fp(version);
     version.* = c.VK_API_VERSION_1_0;
     return c.VK_SUCCESS;
 }
 
-// The returned proc is guaranteed to be non-null.
-// Use for global procs only.
+/// The returned proc is guaranteed to be non-null.
+/// Use for global procs only.
 fn getProc(name: [:0]const u8) Error!c.PFN_vkVoidFunction {
     std.debug.assert(getInstanceProcAddr != null);
     return if (getInstanceProcAddr.?(null, name)) |fp| fp else Error.InitializationFailed;
@@ -137,7 +137,7 @@ pub const Instance = struct {
         return impl.ptr(Instance);
     }
 
-    // The returned proc is guaranteed to be non-null.
+    /// The returned proc is guaranteed to be non-null.
     pub fn getProc(instance: c.VkInstance, name: [:0]const u8) Error!c.PFN_vkVoidFunction {
         std.debug.assert(getInstanceProcAddr != null);
         return if (getInstanceProcAddr.?(instance, name)) |fp| fp else Error.InitializationFailed;
@@ -152,10 +152,47 @@ pub const Instance = struct {
         std.debug.assert(enumerateInstanceLayerProperties != null);
         std.debug.assert(enumerateInstanceExtensionProperties != null);
 
-        // TODO
-        _ = desc;
+        var ext_prop_n: u32 = undefined;
+        try check(vkEnumerateInstanceExtensionProperties(null, &ext_prop_n, null));
+        var ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
+        defer allocator.free(ext_props);
+        try check(vkEnumerateInstanceExtensionProperties(null, &ext_prop_n, ext_props.ptr));
 
-        // TODO: App info; extensions
+        var ext_names = std.ArrayList([*:0]const u8).init(allocator);
+        defer ext_names.deinit();
+
+        if (desc.presentation) {
+            const surface_ext = "VK_KHR_surface";
+            for (ext_props) |prop| {
+                if (std.mem.eql(u8, prop.extensionName[0..surface_ext.len], surface_ext)) {
+                    try ext_names.append(@ptrCast(&prop.extensionName));
+                    break;
+                }
+            } else return Error.NotPresent;
+            const platform_exts = switch (builtin.os.tag) {
+                .linux => if (builtin.target.isAndroid())
+                    .{"VK_KHR_android_surface"}
+                else
+                    .{ "VK_KHR_wayland_surface", "VK_KHR_xcb_surface" },
+                .windows => .{"VK_KHR_win32_surface"},
+                else => @compileError("OS not supported"),
+            };
+            // TODO: Consider succeeding if at least one of the
+            // surface extensions is available
+            inline for (platform_exts) |ext| {
+                for (ext_props) |prop| {
+                    if (std.mem.eql(u8, prop.extensionName[0..ext.len], ext)) {
+                        try ext_names.append(@ptrCast(&prop.extensionName));
+                        break;
+                    }
+                } else return Error.NotPresent;
+            }
+        }
+
+        // TODO
+        if (desc.debugging) log.warn("Instance.Desc.debugging ignored", .{});
+
+        // TODO: App info
         const create_info = c.VkInstanceCreateInfo{
             .sType = c.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             .pNext = null,
@@ -163,8 +200,8 @@ pub const Instance = struct {
             .pApplicationInfo = null,
             .enabledLayerCount = 0,
             .ppEnabledLayerNames = null,
-            .enabledExtensionCount = 0,
-            .ppEnabledExtensionNames = null,
+            .enabledExtensionCount = @intCast(ext_names.items.len),
+            .ppEnabledExtensionNames = if (ext_names.items.len > 0) ext_names.items.ptr else null,
         };
         var inst: c.VkInstance = undefined;
         try check(vkCreateInstance(&create_info, null, &inst));
@@ -447,7 +484,7 @@ pub const Device = struct {
         return impl.ptr(Device);
     }
 
-    // The returned proc is guaranteed to be non-null.
+    /// The returned proc is guaranteed to be non-null.
     pub fn getProc(
         get: c.PFN_vkGetDeviceProcAddr,
         device: c.VkDevice,
