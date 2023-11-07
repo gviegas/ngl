@@ -46,10 +46,10 @@ pub const Device = struct {
         other,
     };
 
-    // TODO
     pub const Desc = struct {
         type: Type = .discrete_gpu,
         queues: [Queue.max]?Queue.Desc = [_]?Queue.Desc{null} ** Queue.max,
+        feature_set: Feature.Set = .{},
         impl: ?u64 = null,
     };
 

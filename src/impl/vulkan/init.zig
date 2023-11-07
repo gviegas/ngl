@@ -237,7 +237,8 @@ pub const Instance = struct {
                 }
             } else return Error.InitializationFailed; // TODO: This should never happen
 
-            // TODO: Limits; features; extensions
+            if (@typeInfo(ngl.Feature).Union.fields.len > 1)
+                @compileError("Set new feature(s)");
 
             desc.* = .{
                 .type = switch (prop.deviceType) {
