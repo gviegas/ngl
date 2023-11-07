@@ -11,8 +11,10 @@ const Impl = @import("../impl/Impl.zig");
 pub const Instance = struct {
     impl: Impl.Instance,
 
-    // TODO
-    pub const Desc = struct {};
+    pub const Desc = struct {
+        presentation: bool = true,
+        debugging: bool = false,
+    };
 
     const Self = @This();
 
