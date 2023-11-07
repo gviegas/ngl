@@ -233,9 +233,9 @@ pub fn toVkImageLayout(image_layout: ngl.Image.Layout) c.VkImageLayout {
         .shader_read_only_optimal => c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .transfer_source_optimal => c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         .transfer_dest_optimal => c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        // TODO: Should check availability
-        .present_source__ext => c.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        .shared_present__ext => c.VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR,
+        // TODO
+        //.present_source => c.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        //.shared_present => c.VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR,
     };
 }
 
@@ -260,8 +260,7 @@ pub fn toVkSamplerAddressMode(
         .clamp_to_border => c.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
         .repeat => c.VK_SAMPLER_ADDRESS_MODE_REPEAT,
         .mirror_repeat => c.VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT,
-        // TODO: Should check availability
-        .mirror_clamp_to_edge__ext => c.VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,
+        .mirror_clamp_to_edge => c.VK_SAMPLER_ADDRESS_MODE_MIRROR_CLAMP_TO_EDGE,
     };
 }
 

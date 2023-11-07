@@ -293,12 +293,12 @@ pub const Feature = union(enum) {
         memory: struct {
             max_count: u64 = 4096,
             max_size: u64 = 1073741824,
-            // No default for this one
             min_map_alignment: u64,
         },
         sampler: struct {
             max_count: u32 = 4000,
             max_anisotropy: u5 = 1,
+            address_mode_mirror_clamp_to_edge: bool,
         },
         image: struct {
             max_dimension_1d: u32 = 4096,
@@ -311,6 +311,7 @@ pub const Feature = union(enum) {
             sampled_depth_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
             sampled_stencil_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
             storage_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true },
+            cube_array: bool,
         },
         buffer: struct {
             max_size: u64 = 1073741824,
@@ -354,6 +355,7 @@ pub const Feature = union(enum) {
         draw: struct {
             max_index_value: u32 = 16777215,
             max_indirect_count: u32 = 1,
+            indirect_first_instance: bool,
         },
         primitive: struct {
             max_bindings: u32 = 8,
@@ -367,13 +369,24 @@ pub const Feature = union(enum) {
             min_bound: f32 = -8192,
             max_bound: f32 = 8191,
         },
+        rasterization: struct {
+            polygon_mode_line: bool,
+            depth_clamp: bool,
+            depth_bias_clamp: bool,
+            alpha_to_one: bool,
+        },
+        color_blend: struct {
+            independent_blend: bool,
+        },
         vertex: struct {
             max_output_components: u32 = 64,
+            stores_and_atomics: bool,
         },
         fragment: struct {
             max_input_components: u32 = 64,
             max_output_attachments: u32 = 4,
             max_combined_output_resources: u32 = 4,
+            stores_and_atomics: bool,
         },
         compute: struct {
             max_shared_memory_size: u32 = 16384,

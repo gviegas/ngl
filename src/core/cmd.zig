@@ -329,6 +329,8 @@ pub const CommandBuffer = struct {
             vertex_count: u32,
             instance_count: u32,
             first_vertex: u32,
+            /// Must be zero if `Feature.core.draw.indirect_first_instance`
+            /// isn't supported.
             first_instance: u32,
         };
 
@@ -354,6 +356,8 @@ pub const CommandBuffer = struct {
             instance_count: u32,
             first_index: u32,
             vertex_offset: i32,
+            /// Must be zero if `Feature.core.draw.indirect_first_instance`
+            /// isn't supported.
             first_instance: u32,
         };
 

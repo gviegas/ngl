@@ -531,9 +531,9 @@ pub const Image = struct {
         shader_read_only_optimal,
         transfer_source_optimal,
         transfer_dest_optimal,
-        // Extensions
-        present_source__ext,
-        shared_present__ext,
+        // TODO
+        //present_source,
+        //shared_present,
     };
 
     pub const Type = enum {
@@ -612,7 +612,8 @@ pub const ImageView = struct {
         cube,
         @"1d_array",
         @"2d_array",
-        cube_array, // Not supported everywhere
+        /// `Feature.core.image.cube_array`.
+        cube_array,
     };
 
     pub const Desc = struct {
@@ -654,8 +655,8 @@ pub const Sampler = struct {
         clamp_to_border,
         repeat,
         mirror_repeat,
-        // Extensions
-        mirror_clamp_to_edge__ext,
+        /// `Feature.core.sampler.address_mode_clamp_to_edge`.
+        mirror_clamp_to_edge,
     };
 
     pub const BorderColor = enum {

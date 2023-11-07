@@ -129,6 +129,7 @@ pub const Instance = struct {
     getPhysicalDeviceQueueFamilyProperties: c.PFN_vkGetPhysicalDeviceQueueFamilyProperties,
     getPhysicalDeviceMemoryProperties: c.PFN_vkGetPhysicalDeviceMemoryProperties,
     getPhysicalDeviceFormatProperties: c.PFN_vkGetPhysicalDeviceFormatProperties,
+    getPhysicalDeviceFeatures: c.PFN_vkGetPhysicalDeviceFeatures,
     createDevice: c.PFN_vkCreateDevice,
     enumerateDeviceExtensionProperties: c.PFN_vkEnumerateDeviceExtensionProperties,
 
@@ -181,6 +182,7 @@ pub const Instance = struct {
             .getPhysicalDeviceQueueFamilyProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceQueueFamilyProperties")),
             .getPhysicalDeviceMemoryProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceMemoryProperties")),
             .getPhysicalDeviceFormatProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceFormatProperties")),
+            .getPhysicalDeviceFeatures = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceFeatures")),
             .createDevice = @ptrCast(try Instance.getProc(inst, "vkCreateDevice")),
             .enumerateDeviceExtensionProperties = @ptrCast(try Instance.getProc(inst, "vkEnumerateDeviceExtensionProperties")),
         };
@@ -309,6 +311,14 @@ pub const Instance = struct {
         properties: *c.VkFormatProperties,
     ) void {
         self.getPhysicalDeviceFormatProperties.?(device, format, properties);
+    }
+
+    pub inline fn vkGetPhysicalDeviceFeatures(
+        self: *Instance,
+        device: c.VkPhysicalDevice,
+        features: *c.VkPhysicalDeviceFeatures,
+    ) void {
+        self.getPhysicalDeviceFeatures.?(device, features);
     }
 
     pub inline fn vkCreateDevice(
@@ -1785,6 +1795,11 @@ fn getFeature(
                 inst.vkGetPhysicalDeviceProperties(phys_dev, &props);
                 break :blk props.limits;
             };
+            const f = blk: {
+                var feats: c.VkPhysicalDeviceFeatures = undefined;
+                inst.vkGetPhysicalDeviceFeatures(phys_dev, &feats);
+                break :blk feats;
+            };
             feat.* = .{
                 .memory = .{
                     .max_count = l.maxMemoryAllocationCount,
@@ -1795,6 +1810,8 @@ fn getFeature(
                 .sampler = .{
                     .max_count = l.maxSamplerAllocationCount,
                     .max_anisotropy = @intFromFloat(@min(16, @max(1, l.maxSamplerAnisotropy))),
+                    // TODO: Requires v1.2
+                    .address_mode_mirror_clamp_to_edge = false,
                 },
                 .image = .{
                     .max_dimension_1d = l.maxImageDimension1D,
@@ -1807,6 +1824,7 @@ fn getFeature(
                     .sampled_depth_sample_counts = convSpls(l.sampledImageDepthSampleCounts),
                     .sampled_stencil_sample_counts = convSpls(l.sampledImageStencilSampleCounts),
                     .storage_sample_counts = convSpls(l.storageImageSampleCounts),
+                    .cube_array = f.imageCubeArray == c.VK_TRUE,
                 },
                 .buffer = .{
                     // TODO: Requires v1.3
@@ -1855,6 +1873,7 @@ fn getFeature(
                 .draw = .{
                     .max_index_value = l.maxDrawIndexedIndexValue,
                     .max_indirect_count = l.maxDrawIndirectCount,
+                    .indirect_first_instance = f.drawIndirectFirstInstance == c.VK_TRUE,
                 },
                 .primitive = .{
                     .max_bindings = l.maxVertexInputBindings,
@@ -1868,13 +1887,24 @@ fn getFeature(
                     .min_bound = l.viewportBoundsRange[0],
                     .max_bound = l.viewportBoundsRange[1],
                 },
+                .rasterization = .{
+                    .polygon_mode_line = f.fillModeNonSolid == c.VK_TRUE,
+                    .depth_clamp = f.depthClamp == c.VK_TRUE,
+                    .depth_bias_clamp = f.depthBiasClamp == c.VK_TRUE,
+                    .alpha_to_one = f.alphaToOne == c.VK_TRUE,
+                },
+                .color_blend = .{
+                    .independent_blend = f.independentBlend == c.VK_TRUE,
+                },
                 .vertex = .{
                     .max_output_components = l.maxVertexOutputComponents,
+                    .stores_and_atomics = f.vertexPipelineStoresAndAtomics == c.VK_TRUE,
                 },
                 .fragment = .{
                     .max_input_components = l.maxFragmentInputComponents,
                     .max_output_attachments = l.maxFragmentOutputAttachments,
                     .max_combined_output_resources = l.maxFragmentCombinedOutputResources,
+                    .stores_and_atomics = f.fragmentStoresAndAtomics == c.VK_TRUE,
                 },
                 .compute = .{
                     .max_shared_memory_size = l.maxComputeSharedMemorySize,

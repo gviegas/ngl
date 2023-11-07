@@ -129,15 +129,18 @@ pub const Rasterization = struct {
     polygon_mode: PolygonMode,
     cull_mode: CullMode,
     clockwise: bool,
+    /// `Feature.core.rasterization.depth_clamp`.
     depth_clamp: bool = false,
     depth_bias: ?struct {
         value: f32,
         slope: f32,
+        /// `Feature.core.rasterization.depth_bias_clamp`.
         clamp: f32,
     } = null,
     samples: SampleCount,
     sample_mask: u64 = ~@as(u64, 0),
     alpha_to_coverage: bool = false,
+    /// `Feature.core.rasterization.alpha_to_one`.
     alpha_to_one: bool = false,
 
     pub const PolygonMode = enum {
@@ -181,6 +184,9 @@ pub const DepthStencil = struct {
 };
 
 pub const ColorBlend = struct {
+    /// Must contain identical elements unless
+    /// `Feature.core.color_blend.independent_blend`
+    /// is supported.
     attachments: []const Attachment,
     constants: union(enum) {
         unused,
