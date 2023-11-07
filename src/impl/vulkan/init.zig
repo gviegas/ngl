@@ -489,6 +489,69 @@ pub const Device = struct {
             break :blk n;
         };
 
+        const feats: c.VkPhysicalDeviceFeatures = blk: {
+            var feats: c.VkPhysicalDeviceFeatures = undefined;
+            inst.vkGetPhysicalDeviceFeatures(phys_dev, &feats);
+            // TODO: Expose/enable more features
+            break :blk .{
+                .robustBufferAccess = c.VK_FALSE,
+                .fullDrawIndexUint32 = feats.fullDrawIndexUint32,
+                .imageCubeArray = feats.imageCubeArray,
+                .independentBlend = feats.independentBlend,
+                .geometryShader = c.VK_FALSE,
+                .tessellationShader = c.VK_FALSE,
+                .sampleRateShading = c.VK_FALSE,
+                .dualSrcBlend = c.VK_FALSE,
+                .logicOp = c.VK_FALSE,
+                .multiDrawIndirect = feats.multiDrawIndirect,
+                .drawIndirectFirstInstance = feats.drawIndirectFirstInstance,
+                .depthClamp = feats.depthClamp,
+                .depthBiasClamp = feats.depthBiasClamp,
+                .fillModeNonSolid = feats.fillModeNonSolid,
+                .depthBounds = c.VK_FALSE,
+                .wideLines = c.VK_FALSE,
+                .largePoints = c.VK_FALSE,
+                .alphaToOne = feats.alphaToOne,
+                .multiViewport = c.VK_FALSE,
+                .samplerAnisotropy = feats.samplerAnisotropy,
+                .textureCompressionETC2 = c.VK_FALSE,
+                .textureCompressionASTC_LDR = c.VK_FALSE,
+                .textureCompressionBC = c.VK_FALSE,
+                .occlusionQueryPrecise = c.VK_FALSE,
+                .pipelineStatisticsQuery = c.VK_FALSE,
+                .vertexPipelineStoresAndAtomics = feats.vertexPipelineStoresAndAtomics,
+                .fragmentStoresAndAtomics = feats.fragmentStoresAndAtomics,
+                .shaderTessellationAndGeometryPointSize = c.VK_FALSE,
+                .shaderImageGatherExtended = c.VK_FALSE,
+                .shaderStorageImageExtendedFormats = c.VK_FALSE,
+                .shaderStorageImageMultisample = feats.shaderStorageImageMultisample,
+                .shaderStorageImageReadWithoutFormat = c.VK_FALSE,
+                .shaderStorageImageWriteWithoutFormat = c.VK_FALSE,
+                .shaderUniformBufferArrayDynamicIndexing = c.VK_FALSE,
+                .shaderSampledImageArrayDynamicIndexing = c.VK_FALSE,
+                .shaderStorageBufferArrayDynamicIndexing = c.VK_FALSE,
+                .shaderStorageImageArrayDynamicIndexing = c.VK_FALSE,
+                .shaderClipDistance = c.VK_FALSE,
+                .shaderCullDistance = c.VK_FALSE,
+                .shaderFloat64 = c.VK_FALSE,
+                .shaderInt64 = c.VK_FALSE,
+                .shaderInt16 = c.VK_FALSE,
+                .shaderResourceResidency = c.VK_FALSE,
+                .shaderResourceMinLod = c.VK_FALSE,
+                .sparseBinding = c.VK_FALSE,
+                .sparseResidencyBuffer = c.VK_FALSE,
+                .sparseResidencyImage2D = c.VK_FALSE,
+                .sparseResidencyImage3D = c.VK_FALSE,
+                .sparseResidency2Samples = c.VK_FALSE,
+                .sparseResidency4Samples = c.VK_FALSE,
+                .sparseResidency8Samples = c.VK_FALSE,
+                .sparseResidency16Samples = c.VK_FALSE,
+                .sparseResidencyAliased = c.VK_FALSE,
+                .variableMultisampleRate = c.VK_FALSE,
+                .inheritedQueries = c.VK_FALSE,
+            };
+        };
+
         var create_info = c.VkDeviceCreateInfo{
             .sType = c.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
             .pNext = null,
@@ -499,7 +562,7 @@ pub const Device = struct {
             .ppEnabledLayerNames = null,
             .enabledExtensionCount = 0, // TODO
             .ppEnabledExtensionNames = null, // TODO
-            .pEnabledFeatures = null, // TODO
+            .pEnabledFeatures = &feats,
         };
         var dev: c.VkDevice = undefined;
         try check(inst.vkCreateDevice(phys_dev, &create_info, null, &dev));
