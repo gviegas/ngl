@@ -57,41 +57,6 @@ pub const Error = error{
     Other,
 };
 
-pub const Context = struct {
-    instance: Instance,
-    device: Device,
-
-    const Self = @This();
-
-    pub fn initDefault(allocator: std.mem.Allocator) Error!Self {
-        var inst = try Instance.init(allocator, .{});
-        errdefer inst.deinit(allocator);
-        var descs = try inst.listDevices(allocator);
-        defer allocator.free(descs);
-        var desc_i: usize = 0;
-        // TODO: Improve selection criteria
-        for (0..descs.len) |i| {
-            if (descs[i].type == .discrete_gpu) {
-                desc_i = i;
-                break;
-            }
-            if (descs[i].type == .integrated_gpu) desc_i = i;
-        }
-        return .{
-            .instance = inst,
-            .device = try Device.init(allocator, &inst, descs[desc_i]),
-        };
-    }
-
-    pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-        self.device.deinit(allocator);
-        self.instance.deinit(allocator);
-        self.* = undefined;
-        // TODO: Shouldn't do this here
-        Impl.get().deinit();
-    }
-};
-
 pub fn Flags(comptime E: type) type {
     const StructField = std.builtin.Type.StructField;
     var fields: []const StructField = &[_]StructField{};

@@ -4,15 +4,49 @@ pub const gpa = testing.allocator;
 
 const ngl = @import("../ngl.zig");
 
-pub fn context() *ngl.Context {
+pub const Context = struct {
+    instance: ngl.Instance,
+    device: ngl.Device,
+
+    const Self = @This();
+
+    pub fn initDefault(allocator: std.mem.Allocator) ngl.Error!Self {
+        var inst = try ngl.Instance.init(allocator, .{});
+        errdefer inst.deinit(allocator);
+        var descs = try inst.listDevices(allocator);
+        defer allocator.free(descs);
+        var desc_i: usize = 0;
+        for (0..descs.len) |i| {
+            if (descs[i].type == .discrete_gpu) {
+                desc_i = i;
+                break;
+            }
+            if (descs[i].type == .integrated_gpu) desc_i = i;
+        }
+        return .{
+            .instance = inst,
+            .device = try ngl.Device.init(allocator, &inst, descs[desc_i]),
+        };
+    }
+
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
+        self.device.deinit(allocator);
+        self.instance.deinit(allocator);
+        self.* = undefined;
+        // TODO: Shouldn't do this here
+        @import("../impl/Impl.zig").get().deinit();
+    }
+};
+
+pub fn context() *Context {
     const Static = struct {
-        var ctx: ngl.Context = undefined;
+        var ctx: Context = undefined;
         var once = std.once(init);
 
         fn init() void {
             // Let it leak
             const allocator = std.heap.page_allocator;
-            ctx = ngl.Context.initDefault(allocator) catch |err| @panic(@errorName(err));
+            ctx = Context.initDefault(allocator) catch |err| @panic(@errorName(err));
         }
     };
 
