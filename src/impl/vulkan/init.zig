@@ -1952,6 +1952,7 @@ pub const Memory = struct {
 
 fn getFeature(
     _: *anyopaque,
+    _: std.mem.Allocator,
     instance: Impl.Instance,
     device_desc: ngl.Device.Desc,
     feature: *ngl.Feature,

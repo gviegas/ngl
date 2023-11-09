@@ -435,12 +435,13 @@ pub const Feature = union(enum) {
     /// `device_desc` must have been obtained through a call to
     /// `instance.listDevices`.
     pub fn get(
+        allocator: std.mem.Allocator,
         instance: *Instance,
         device_desc: Device.Desc,
         comptime tag: @typeInfo(Feature).Union.tag_type.?,
     ) ?@typeInfo(Feature).Union.fields[@intFromEnum(tag)].type {
         var feat = @unionInit(Feature, @tagName(tag), undefined);
-        return if (Impl.get().getFeature(instance.impl, device_desc, &feat)) |_|
+        return if (Impl.get().getFeature(allocator, instance.impl, device_desc, &feat)) |_|
             @field(feat, @tagName(tag))
         else |_|
             null;

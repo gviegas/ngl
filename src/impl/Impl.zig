@@ -156,6 +156,7 @@ pub const VTable = struct {
 
     getFeature: *const fn (
         ctx: *anyopaque,
+        allocator: std.mem.Allocator,
         instance: Instance,
         device_desc: ngl.Device.Desc,
         feature: *ngl.Feature,
@@ -916,11 +917,12 @@ pub fn invalidateMappedMemory(
 
 pub fn getFeature(
     self: *Self,
+    allocator: std.mem.Allocator,
     instance: Instance,
     device_desc: ngl.Device.Desc,
     feature: *ngl.Feature,
 ) Error!void {
-    return self.vtable.getFeature(self.ptr, instance, device_desc, feature);
+    return self.vtable.getFeature(self.ptr, allocator, instance, device_desc, feature);
 }
 
 pub fn initCommandPool(
