@@ -17,8 +17,8 @@ const Semaphore = @import("sync.zig").Semaphore;
 var libvulkan: ?*anyopaque = null;
 var getInstanceProcAddr: c.PFN_vkGetInstanceProcAddr = null;
 
-// NOTE: Procs from any version greater than 1.0 are allowed to be null
-// after initialization.
+// NOTE: Procs from any version greater than 1.0, as well as extensions,
+// are allowed to be null after initialization.
 
 // v1.0
 var createInstance: c.PFN_vkCreateInstance = null;
@@ -132,6 +132,28 @@ pub const Instance = struct {
     getPhysicalDeviceFeatures: c.PFN_vkGetPhysicalDeviceFeatures,
     createDevice: c.PFN_vkCreateDevice,
     enumerateDeviceExtensionProperties: c.PFN_vkEnumerateDeviceExtensionProperties,
+    // VK_KHR_surface
+    destroySurface: c.PFN_vkDestroySurfaceKHR,
+    // VK_KHR_android_surface
+    createAndroidSurface: if (builtin.target.isAndroid())
+        c.PFN_vkCreateAndroidSurfaceKHR
+    else
+        void,
+    // VK_KHR_wayland_surface
+    createWaylandSurface: if (builtin.os.tag == .linux and !builtin.target.isAndroid())
+        c.PFN_vkCreateWaylandSurfaceKHR
+    else
+        void,
+    // VK_KHR_win32_surface
+    createWin32Surface: if (builtin.os.tag == .windows)
+        c.PFN_vkCreateWin32SurfaceKHR
+    else
+        void,
+    // VK_KHR_xcb_surface
+    createXcbSurface: if (builtin.os.tag == .linux and !builtin.target.isAndroid())
+        c.PFN_vkCreateXcbSurfaceKHR
+    else
+        void,
 
     pub inline fn cast(impl: Impl.Instance) *Instance {
         return impl.ptr(Instance);
@@ -222,6 +244,19 @@ pub const Instance = struct {
             .getPhysicalDeviceFeatures = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceFeatures")),
             .createDevice = @ptrCast(try Instance.getProc(inst, "vkCreateDevice")),
             .enumerateDeviceExtensionProperties = @ptrCast(try Instance.getProc(inst, "vkEnumerateDeviceExtensionProperties")),
+            .destroySurface = if (desc.presentation) @ptrCast(try Instance.getProc(inst, "vkDestroySurfaceKHR")) else null,
+            .createAndroidSurface = if (builtin.target.isAndroid())
+                if (desc.presentation) @ptrCast(try Instance.getProc(inst, "vkCreateAndroidSurfaceKHR")) else null
+            else {},
+            .createWaylandSurface = if (builtin.os.tag == .linux and !builtin.target.isAndroid())
+                if (desc.presentation) @ptrCast(try Instance.getProc(inst, "vkCreateWaylandSurfaceKHR")) else null
+            else {},
+            .createWin32Surface = if (builtin.os.tag == .windows)
+                if (desc.presentation) @ptrCast(try Instance.getProc(inst, "vkCreateWin32SurfaceKHR")) else null
+            else {},
+            .createXcbSurface = if (builtin.os.tag == .linux and !builtin.target.isAndroid())
+                if (desc.presentation) @ptrCast(try Instance.getProc(inst, "vkCreateXcbSurfaceKHR")) else null
+            else {},
         };
 
         return .{ .val = @intFromPtr(ptr) };
@@ -382,6 +417,50 @@ pub const Instance = struct {
             property_count,
             properties,
         );
+    }
+
+    pub inline fn vkDestroySurfaceKHR(
+        self: *Instance,
+        surface: c.VkSurfaceKHR,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroySurface.?(self.handle, surface, vk_allocator);
+    }
+
+    pub inline fn vkCreateAndroidSurfaceKHR(
+        self: *Instance,
+        create_info: *const c.VkAndroidSurfaceCreateInfoKHR,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        surface: *c.VkSurfaceKHR,
+    ) c.VkResult {
+        return self.createAndroidSurface.?(self.handle, create_info, vk_allocator, surface);
+    }
+
+    pub inline fn vkCreateWaylandSurfaceKHR(
+        self: *Instance,
+        create_info: *const c.VkWaylandSurfaceCreateInfoKHR,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        surface: *c.VkSurfaceKHR,
+    ) c.VkResult {
+        return self.createWaylandSurface.?(self.handle, create_info, vk_allocator, surface);
+    }
+
+    pub inline fn vkCreateWin32SurfaceKHR(
+        self: *Instance,
+        create_info: *const c.VkWin32SurfaceCreateInfoKHR,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        surface: *c.VkSurfaceKHR,
+    ) c.VkResult {
+        return self.createWin32Surface.?(self.handle, create_info, vk_allocator, surface);
+    }
+
+    pub inline fn vkCreateXcbSurfaceKHR(
+        self: *Instance,
+        create_info: *const c.VkXcbSurfaceCreateInfoKHR,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        surface: *c.VkSurfaceKHR,
+    ) c.VkResult {
+        return self.createXcbSurface.?(self.handle, create_info, vk_allocator, surface);
     }
 };
 
@@ -2135,4 +2214,7 @@ const vtable = Impl.VTable{
 
     .initPipelineCache = @import("state.zig").PipelineCache.init,
     .deinitPipelineCache = @import("state.zig").PipelineCache.deinit,
+
+    .initSurface = @import("dpy.zig").Surface.init,
+    .deinitSurface = @import("dpy.zig").Surface.deinit,
 };

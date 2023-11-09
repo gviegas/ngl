@@ -45,6 +45,7 @@ pub const DescriptorPool = Type(ngl.DescriptorPool);
 pub const DescriptorSet = Type(ngl.DescriptorSet);
 pub const Pipeline = Type(ngl.Pipeline);
 pub const PipelineCache = Type(ngl.PipelineCache);
+pub const Surface = Type(ngl.Surface);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -741,6 +742,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         pipeline_cache: PipelineCache,
+    ) void,
+
+    // Surface ---------------------------------------------
+
+    initSurface: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        instance: Instance,
+        desc: ngl.Surface.Desc,
+    ) Error!Surface,
+
+    deinitSurface: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        instance: Instance,
+        surface: Surface,
     ) void,
 };
 
@@ -1656,4 +1673,22 @@ pub fn deinitPipelineCache(
     pipeline_cache: PipelineCache,
 ) void {
     self.vtable.deinitPipelineCache(self.ptr, allocator, device, pipeline_cache);
+}
+
+pub fn initSurface(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    instance: Instance,
+    desc: ngl.Surface.Desc,
+) Error!Surface {
+    return self.vtable.initSurface(self.ptr, allocator, instance, desc);
+}
+
+pub fn deinitSurface(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    instance: Instance,
+    surface: Surface,
+) void {
+    self.vtable.deinitSurface(self.ptr, allocator, instance, surface);
 }
