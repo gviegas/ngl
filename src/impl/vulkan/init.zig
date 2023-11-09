@@ -581,8 +581,13 @@ pub const Device = struct {
         desc: ngl.Device.Desc,
     ) Error!Impl.Device {
         const inst = Instance.cast(instance);
-        const phys_dev: c.VkPhysicalDevice =
-            @ptrFromInt(desc.impl orelse return Error.InvalidArgument);
+        const phys_dev: c.VkPhysicalDevice = if (desc.impl) |x|
+            @ptrFromInt(x)
+        else {
+            // TODO: Consider supporting this
+            log.warn("Device.init requires a description produced by Instance.listDevices", .{});
+            return Error.InvalidArgument;
+        };
 
         var queue_infos: [ngl.Queue.max]c.VkDeviceQueueCreateInfo = undefined;
         var queue_prios: [ngl.Queue.max]f32 = undefined;

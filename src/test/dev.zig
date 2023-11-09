@@ -10,6 +10,7 @@ test "Device.init/deinit" {
     defer inst.deinit(gpa);
 
     // Should fail if no queue descriptions are provided
+    // XXX: Currently this fails on Vulkan due to unset `impl`
     inline for (@typeInfo(ngl.Device.Type).Enum.fields) |f|
         try testing.expectError(ngl.Error.InvalidArgument, ngl.Device.init(gpa, &inst, .{
             .type = @enumFromInt(f.value),
