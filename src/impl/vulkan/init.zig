@@ -320,6 +320,7 @@ pub const Instance = struct {
                     else => .other,
                 },
                 .queues = .{ main_queue, null, null, null },
+                .feature_set = .{},
                 .impl = @intFromPtr(dev),
             };
         }

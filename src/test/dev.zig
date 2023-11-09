@@ -10,7 +10,12 @@ test "Device.init/deinit" {
     defer inst.deinit(gpa);
 
     // Should fail if no queue descriptions are provided
-    try testing.expectError(ngl.Error.InvalidArgument, ngl.Device.init(gpa, &inst, .{}));
+    inline for (@typeInfo(ngl.Device.Type).Enum.fields) |f|
+        try testing.expectError(ngl.Error.InvalidArgument, ngl.Device.init(gpa, &inst, .{
+            .type = @enumFromInt(f.value),
+            .queues = [_]?ngl.Queue.Desc{null} ** ngl.Queue.max,
+            .feature_set = .{},
+        }));
 
     var dev_descs = try inst.listDevices(gpa);
     defer gpa.free(dev_descs);

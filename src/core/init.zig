@@ -49,9 +49,9 @@ pub const Device = struct {
     };
 
     pub const Desc = struct {
-        type: Type = .discrete_gpu,
-        queues: [Queue.max]?Queue.Desc = [_]?Queue.Desc{null} ** Queue.max,
-        feature_set: Feature.Set = .{},
+        type: Type,
+        queues: [Queue.max]?Queue.Desc,
+        feature_set: Feature.Set,
         impl: ?u64 = null,
     };
 
