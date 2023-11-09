@@ -288,7 +288,7 @@ pub const Memory = struct {
     }
 };
 
-// TODO: Optional features
+// TODO: Other optional features
 pub const Feature = union(enum) {
     /// The `core` feature is always supported.
     core: struct {
@@ -401,6 +401,11 @@ pub const Feature = union(enum) {
             max_local_size_z: u32 = 64,
         },
     },
+
+    /// Allow the creation of swap chains.
+    /// This feature is only meaningful when the instance used to
+    /// create the device also supports presentation.
+    presentation,
 
     pub const Set = @Type(.{ .Struct = .{
         .layout = .Packed,

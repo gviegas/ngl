@@ -310,7 +310,7 @@ pub const Instance = struct {
                 }
             } else return Error.InitializationFailed; // TODO: This should never happen
 
-            if (@typeInfo(ngl.Feature).Union.fields.len > 1)
+            if (@typeInfo(ngl.Feature).Union.fields.len > 2)
                 @compileError("Set new feature(s)");
 
             desc.* = .{
@@ -321,7 +321,16 @@ pub const Instance = struct {
                     else => .other,
                 },
                 .queues = .{ main_queue, null, null, null },
-                .feature_set = .{},
+                .feature_set = .{
+                    .core = true,
+                    // Don't expose this feature if the instance was created
+                    // with presentation disabled, regardless of whether or not
+                    // the device can support it
+                    .presentation = if (inst.destroySurface != null)
+                        (try inst.hasDeviceExtensions(allocator, dev, &.{"VK_KHR_swapchain"}))[0]
+                    else
+                        false,
+                },
                 .impl = @intFromPtr(dev),
             };
         }
@@ -335,6 +344,32 @@ pub const Instance = struct {
         // and instance-level objects have been destroyed
         inst.vkDestroyInstance(null);
         allocator.destroy(inst);
+    }
+
+    fn hasDeviceExtensions(
+        self: *Instance,
+        allocator: std.mem.Allocator,
+        device: c.VkPhysicalDevice,
+        comptime names: []const [:0]const u8,
+    ) Error![names.len]bool {
+        var ext_prop_n: u32 = undefined;
+        try check(self.vkEnumerateDeviceExtensionProperties(device, null, &ext_prop_n, null));
+        var ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
+        defer allocator.free(ext_props);
+        try check(self.vkEnumerateDeviceExtensionProperties(
+            device,
+            null,
+            &ext_prop_n,
+            ext_props.ptr,
+        ));
+        var has: [names.len]bool = undefined;
+        for (names, 0..) |name, i| {
+            has[i] = for (ext_props) |prop| {
+                if (std.mem.eql(u8, name, prop.extensionName[0..name.len]))
+                    break true;
+            } else false;
+        }
+        return has;
     }
 
     // Wrappers --------------------------------------------
@@ -2106,6 +2141,10 @@ fn getFeature(
                 },
             };
         },
+
+        .presentation => |*feat| if (device_desc.feature_set.presentation) {
+            feat.* = {};
+        } else return Error.NotPresent,
     }
 }
 
