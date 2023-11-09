@@ -227,8 +227,9 @@ pub const Instance = struct {
         };
         var inst: c.VkInstance = undefined;
         try check(vkCreateInstance(&create_info, null, &inst));
-
-        // TODO: Destroy inst on failure
+        errdefer if (Instance.getProc(inst, "vkDestroyInstance")) |x| {
+            if (@as(c.PFN_vkDestroyInstance, @ptrCast(x))) |f| f(inst, null);
+        } else |_| {};
 
         var ptr = try allocator.create(Instance);
         errdefer allocator.destroy(ptr);
