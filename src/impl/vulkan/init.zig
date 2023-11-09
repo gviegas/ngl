@@ -134,6 +134,10 @@ pub const Instance = struct {
     enumerateDeviceExtensionProperties: c.PFN_vkEnumerateDeviceExtensionProperties,
     // VK_KHR_surface
     destroySurface: c.PFN_vkDestroySurfaceKHR,
+    getPhysicalDeviceSurfaceSupport: c.PFN_vkGetPhysicalDeviceSurfaceSupportKHR,
+    getPhysicalDeviceSurfaceCapabilities: c.PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR,
+    getPhysicalDeviceSurfaceFormats: c.PFN_vkGetPhysicalDeviceSurfaceFormatsKHR,
+    getPhysicalDeviceSurfacePresentModes: c.PFN_vkGetPhysicalDeviceSurfacePresentModesKHR,
     // VK_KHR_android_surface
     createAndroidSurface: if (builtin.target.isAndroid())
         c.PFN_vkCreateAndroidSurfaceKHR
@@ -245,18 +249,54 @@ pub const Instance = struct {
             .getPhysicalDeviceFeatures = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceFeatures")),
             .createDevice = @ptrCast(try Instance.getProc(inst, "vkCreateDevice")),
             .enumerateDeviceExtensionProperties = @ptrCast(try Instance.getProc(inst, "vkEnumerateDeviceExtensionProperties")),
-            .destroySurface = if (desc.presentation) @ptrCast(try Instance.getProc(inst, "vkDestroySurfaceKHR")) else null,
+
+            .destroySurface = if (desc.presentation)
+                @ptrCast(try Instance.getProc(inst, "vkDestroySurfaceKHR"))
+            else
+                null,
+            .getPhysicalDeviceSurfaceSupport = if (desc.presentation)
+                @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceSurfaceSupportKHR"))
+            else
+                null,
+            .getPhysicalDeviceSurfaceCapabilities = if (desc.presentation)
+                @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"))
+            else
+                null,
+            .getPhysicalDeviceSurfaceFormats = if (desc.presentation)
+                @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceSurfaceFormatsKHR"))
+            else
+                null,
+            .getPhysicalDeviceSurfacePresentModes = if (desc.presentation)
+                @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceSurfacePresentModesKHR"))
+            else
+                null,
+
             .createAndroidSurface = if (builtin.target.isAndroid())
-                if (desc.presentation) @ptrCast(try Instance.getProc(inst, "vkCreateAndroidSurfaceKHR")) else null
+                if (desc.presentation)
+                    @ptrCast(try Instance.getProc(inst, "vkCreateAndroidSurfaceKHR"))
+                else
+                    null
             else {},
+
             .createWaylandSurface = if (builtin.os.tag == .linux and !builtin.target.isAndroid())
-                if (desc.presentation) @ptrCast(try Instance.getProc(inst, "vkCreateWaylandSurfaceKHR")) else null
+                if (desc.presentation)
+                    @ptrCast(try Instance.getProc(inst, "vkCreateWaylandSurfaceKHR"))
+                else
+                    null
             else {},
+
             .createWin32Surface = if (builtin.os.tag == .windows)
-                if (desc.presentation) @ptrCast(try Instance.getProc(inst, "vkCreateWin32SurfaceKHR")) else null
+                if (desc.presentation)
+                    @ptrCast(try Instance.getProc(inst, "vkCreateWin32SurfaceKHR"))
+                else
+                    null
             else {},
+
             .createXcbSurface = if (builtin.os.tag == .linux and !builtin.target.isAndroid())
-                if (desc.presentation) @ptrCast(try Instance.getProc(inst, "vkCreateXcbSurfaceKHR")) else null
+                if (desc.presentation)
+                    @ptrCast(try Instance.getProc(inst, "vkCreateXcbSurfaceKHR"))
+                else
+                    null
             else {},
         };
 
@@ -462,6 +502,50 @@ pub const Instance = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.destroySurface.?(self.handle, surface, vk_allocator);
+    }
+
+    pub inline fn vkGetPhysicalDeviceSurfaceSupportKHR(
+        self: *Instance,
+        device: c.VkPhysicalDevice,
+        queue_family: u32,
+        surface: c.VkSurfaceKHR,
+        supported: *c.VkBool32,
+    ) c.VkResult {
+        return self.getPhysicalDeviceSurfaceSupport.?(device, queue_family, surface, supported);
+    }
+
+    pub inline fn vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        self: *Instance,
+        device: c.VkPhysicalDevice,
+        surface: c.VkSurfaceKHR,
+        capabilities: *c.VkSurfaceCapabilitiesKHR,
+    ) c.VkResult {
+        return self.getPhysicalDeviceSurfaceCapabilities.?(device, surface, capabilities);
+    }
+
+    pub inline fn vkGetPhysicalDeviceSurfaceFormatsKHR(
+        self: *Instance,
+        device: c.VkPhysicalDevice,
+        surface: c.VkSurfaceKHR,
+        format_count: *u32,
+        formats: ?[*]c.VkSurfaceFormatKHR,
+    ) c.VkResult {
+        return self.getPhysicalDeviceSurfaceFormats.?(device, surface, format_count, formats);
+    }
+
+    pub inline fn vkGetPhysicalDeviceSurfacePresentModesKHR(
+        self: *Instance,
+        device: c.VkPhysicalDevice,
+        surface: c.VkSurfaceKHR,
+        present_mode_count: *u32,
+        present_modes: ?[*]c.VkPresentModeKHR,
+    ) c.VkResult {
+        return self.getPhysicalDeviceSurfacePresentModes.?(
+            device,
+            surface,
+            present_mode_count,
+            present_modes,
+        );
     }
 
     pub inline fn vkCreateAndroidSurfaceKHR(
