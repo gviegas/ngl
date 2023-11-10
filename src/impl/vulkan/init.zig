@@ -731,6 +731,34 @@ pub const Device = struct {
             break :blk n;
         };
 
+        // TODO: Check other extensions that may be useful
+        var ext_prop_n: u32 = undefined;
+        try check(inst.vkEnumerateDeviceExtensionProperties(phys_dev, null, &ext_prop_n, null));
+        var ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
+        defer allocator.free(ext_props);
+        try check(inst.vkEnumerateDeviceExtensionProperties(
+            phys_dev,
+            null,
+            &ext_prop_n,
+            ext_props.ptr,
+        ));
+
+        var ext_names = std.ArrayList([*:0]const u8).init(allocator);
+        defer ext_names.deinit();
+
+        if (desc.feature_set.presentation) {
+            if (inst.destroySurface == null) return Error.InvalidArgument;
+            const exts = .{"VK_KHR_swapchain"};
+            inline for (exts) |ext| {
+                for (ext_props) |prop| {
+                    if (std.mem.eql(u8, ext, prop.extensionName[0..ext.len])) {
+                        try ext_names.append(@ptrCast(&prop.extensionName));
+                        break;
+                    }
+                } else return Error.NotPresent;
+            }
+        }
+
         const feats: c.VkPhysicalDeviceFeatures = blk: {
             var feats: c.VkPhysicalDeviceFeatures = undefined;
             inst.vkGetPhysicalDeviceFeatures(phys_dev, &feats);
@@ -802,8 +830,8 @@ pub const Device = struct {
             .pQueueCreateInfos = &queue_infos,
             .enabledLayerCount = 0,
             .ppEnabledLayerNames = null,
-            .enabledExtensionCount = 0, // TODO
-            .ppEnabledExtensionNames = null, // TODO
+            .enabledExtensionCount = @intCast(ext_names.items.len),
+            .ppEnabledExtensionNames = if (ext_names.items.len > 0) ext_names.items.ptr else null,
             .pEnabledFeatures = &feats,
         };
         var dev: c.VkDevice = undefined;
