@@ -836,8 +836,9 @@ pub const Device = struct {
         };
         var dev: c.VkDevice = undefined;
         try check(inst.vkCreateDevice(phys_dev, &create_info, null, &dev));
-
-        // TODO: Destroy dev on failure
+        errdefer if (Instance.getProc(inst.handle, "vkDestroyDevice")) |x| {
+            if (@as(c.PFN_vkDestroyDevice, @ptrCast(x))) |f| f(dev, null);
+        } else |_| {};
 
         const get: c.PFN_vkGetDeviceProcAddr = @ptrCast(try Instance.getProc(
             inst.handle,
