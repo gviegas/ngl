@@ -2405,6 +2405,7 @@ const vtable = Impl.VTable{
     .deinitPipelineCache = @import("state.zig").PipelineCache.deinit,
 
     .initSurface = @import("dpy.zig").Surface.init,
+    .isSurfaceCompatible = @import("dpy.zig").Surface.isCompatible,
     .deinitSurface = @import("dpy.zig").Surface.deinit,
 
     .initSwapChain = @import("dpy.zig").SwapChain.init,

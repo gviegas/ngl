@@ -755,6 +755,14 @@ pub const VTable = struct {
         desc: ngl.Surface.Desc,
     ) Error!Surface,
 
+    isSurfaceCompatible: *const fn (
+        ctx: *anyopaque,
+        instance: Instance,
+        surface: Surface,
+        device_desc: ngl.Device.Desc,
+        queue_desc: ngl.Queue.Desc,
+    ) Error!bool,
+
     deinitSurface: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1701,6 +1709,16 @@ pub fn initSurface(
     desc: ngl.Surface.Desc,
 ) Error!Surface {
     return self.vtable.initSurface(self.ptr, allocator, instance, desc);
+}
+
+pub fn isSurfaceCompatible(
+    self: *Self,
+    instance: Instance,
+    surface: Surface,
+    device_desc: ngl.Device.Desc,
+    queue_desc: ngl.Queue.Desc,
+) Error!bool {
+    return self.vtable.isSurfaceCompatible(self.ptr, instance, surface, device_desc, queue_desc);
 }
 
 pub fn deinitSurface(

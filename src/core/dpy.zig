@@ -4,6 +4,7 @@ const builtin = @import("builtin");
 const ngl = @import("../ngl.zig");
 const Instance = ngl.Instance;
 const Device = ngl.Device;
+const Queue = ngl.Queue;
 const Format = ngl.Format;
 const Image = ngl.Image;
 const Error = ngl.Error;
@@ -113,6 +114,20 @@ pub const Surface = struct {
     /// with `Instance.Desc.presentation` set to `true`.
     pub fn init(allocator: std.mem.Allocator, instance: *Instance, desc: Desc) Error!Self {
         return .{ .impl = try Impl.get().initSurface(allocator, instance.impl, desc) };
+    }
+
+    /// Returns whether the given queue of the given device can present
+    /// to the surface.
+    /// `device_desc` must have been obtained through a call to
+    /// `instance.listDevices`.
+    /// `queue_desc` must refer to an element of `device_desc.queues`.
+    pub fn isCompatible(
+        self: *Self,
+        instance: *Instance,
+        device_desc: Device.Desc,
+        queue_desc: Queue.Desc,
+    ) Error!bool {
+        return Impl.get().isSurfaceCompatible(instance.impl, self.impl, device_desc, queue_desc);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, instance: *Instance) void {

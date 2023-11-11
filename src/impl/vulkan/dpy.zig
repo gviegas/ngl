@@ -71,6 +71,29 @@ pub const Surface = packed struct {
         return .{ .val = @bitCast(Surface{ .handle = surface }) };
     }
 
+    pub fn isCompatible(
+        _: *anyopaque,
+        instance: Impl.Instance,
+        surface: Impl.Surface,
+        device_desc: ngl.Device.Desc,
+        queue_desc: ngl.Queue.Desc,
+    ) Error!bool {
+        const inst = Instance.cast(instance);
+        const sf = cast(surface);
+        const phys_dev: c.VkPhysicalDevice =
+            @ptrFromInt(device_desc.impl orelse return Error.InvalidArgument);
+        const queue_fam: u32 = @intCast(queue_desc.impl orelse return Error.InvalidArgument);
+
+        var supported: c.VkBool32 = undefined;
+        try (check(inst.vkGetPhysicalDeviceSurfaceSupportKHR(
+            phys_dev,
+            queue_fam,
+            sf.handle,
+            &supported,
+        )));
+        return supported == c.VK_TRUE;
+    }
+
     pub fn deinit(
         _: *anyopaque,
         _: std.mem.Allocator,
