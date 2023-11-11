@@ -106,6 +106,8 @@ pub const Surface = struct {
         mailbox,
         fifo,
         fifo_relaxed,
+
+        pub const Flags = ngl.Flags(PresentMode);
     };
 
     const Self = @This();
@@ -128,6 +130,14 @@ pub const Surface = struct {
         queue_desc: Queue.Desc,
     ) Error!bool {
         return Impl.get().isSurfaceCompatible(instance.impl, self.impl, device_desc, queue_desc);
+    }
+
+    pub fn getPresentModes(
+        self: *Self,
+        instance: *Instance,
+        device_desc: Device.Desc,
+    ) Error!PresentMode.Flags {
+        return Impl.get().getSurfacePresentModes(instance.impl, self.impl, device_desc);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, instance: *Instance) void {

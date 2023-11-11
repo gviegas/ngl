@@ -8,6 +8,7 @@ const c = @import("../c.zig");
 const conv = @import("conv.zig");
 const null_handle = conv.null_handle;
 const check = conv.check;
+const log = @import("init.zig").log;
 const Instance = @import("init.zig").Instance;
 const Device = @import("init.zig").Device;
 
@@ -92,6 +93,59 @@ pub const Surface = packed struct {
             &supported,
         )));
         return supported == c.VK_TRUE;
+    }
+
+    pub fn getPresentModes(
+        _: *anyopaque,
+        instance: Impl.Instance,
+        surface: Impl.Surface,
+        device_desc: ngl.Device.Desc,
+    ) Error!ngl.Surface.PresentMode.Flags {
+        const inst = Instance.cast(instance);
+        const sf = cast(surface);
+        const phys_dev: c.VkPhysicalDevice =
+            @ptrFromInt(device_desc.impl orelse return Error.InvalidArgument);
+
+        var modes: [6]c.VkPresentModeKHR = undefined;
+        var mode_n: u32 = undefined;
+        try check(inst.vkGetPhysicalDeviceSurfacePresentModesKHR(
+            phys_dev,
+            sf.handle,
+            &mode_n,
+            null,
+        ));
+        if (mode_n > modes.len) {
+            // Will have to increase the length of `modes` in this case
+            // (currently it matches the number of valid present modes
+            // that are defined in the C enum)
+            std.debug.assert(false);
+            log.warn(
+                "Too many supported present modes for Surface - ignoring {}",
+                .{mode_n - modes.len},
+            );
+            mode_n = modes.len;
+        }
+        const result = inst.vkGetPhysicalDeviceSurfacePresentModesKHR(
+            phys_dev,
+            sf.handle,
+            &mode_n,
+            &modes,
+        );
+        if (result != c.VK_SUCCESS and result != c.VK_INCOMPLETE) {
+            try check(result);
+            unreachable;
+        }
+
+        var flags: ngl.Surface.PresentMode.Flags = .{ .fifo = true };
+        for (modes[0..mode_n]) |mode| {
+            switch (mode) {
+                c.VK_PRESENT_MODE_IMMEDIATE_KHR => flags.immediate = true,
+                c.VK_PRESENT_MODE_MAILBOX_KHR => flags.mailbox = true,
+                c.VK_PRESENT_MODE_FIFO_RELAXED_KHR => flags.fifo_relaxed = true,
+                else => continue,
+            }
+        }
+        return flags;
     }
 
     pub fn deinit(

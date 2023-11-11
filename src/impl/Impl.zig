@@ -763,6 +763,13 @@ pub const VTable = struct {
         queue_desc: ngl.Queue.Desc,
     ) Error!bool,
 
+    getSurfacePresentModes: *const fn (
+        ctx: *anyopaque,
+        instance: Instance,
+        surface: Surface,
+        device_desc: ngl.Device.Desc,
+    ) Error!ngl.Surface.PresentMode.Flags,
+
     deinitSurface: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1719,6 +1726,15 @@ pub fn isSurfaceCompatible(
     queue_desc: ngl.Queue.Desc,
 ) Error!bool {
     return self.vtable.isSurfaceCompatible(self.ptr, instance, surface, device_desc, queue_desc);
+}
+
+pub fn getSurfacePresentModes(
+    self: *Self,
+    instance: Instance,
+    surface: Surface,
+    device_desc: ngl.Device.Desc,
+) Error!ngl.Surface.PresentMode.Flags {
+    return self.vtable.getSurfacePresentModes(self.ptr, instance, surface, device_desc);
 }
 
 pub fn deinitSurface(

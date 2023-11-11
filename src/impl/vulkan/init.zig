@@ -2406,6 +2406,7 @@ const vtable = Impl.VTable{
 
     .initSurface = @import("dpy.zig").Surface.init,
     .isSurfaceCompatible = @import("dpy.zig").Surface.isCompatible,
+    .getSurfacePresentModes = @import("dpy.zig").Surface.getPresentModes,
     .deinitSurface = @import("dpy.zig").Surface.deinit,
 
     .initSwapChain = @import("dpy.zig").SwapChain.init,
