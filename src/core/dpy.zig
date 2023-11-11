@@ -110,6 +110,11 @@ pub const Surface = struct {
         pub const Flags = ngl.Flags(PresentMode);
     };
 
+    pub const Format = struct {
+        format: ngl.Format,
+        color_space: ColorSpace,
+    };
+
     const Self = @This();
 
     /// It's only valid to call this function if the instance was created
@@ -138,6 +143,16 @@ pub const Surface = struct {
         device_desc: Device.Desc,
     ) Error!PresentMode.Flags {
         return Impl.get().getSurfacePresentModes(instance.impl, self.impl, device_desc);
+    }
+
+    /// Caller is responsible for freeing the returned slice.
+    pub fn getFormats(
+        self: *Self,
+        allocator: std.mem.Allocator,
+        instance: *Instance,
+        device_desc: Device.Desc,
+    ) Error![]Self.Format {
+        return Impl.get().getSurfaceFormats(allocator, instance.impl, self.impl, device_desc);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, instance: *Instance) void {

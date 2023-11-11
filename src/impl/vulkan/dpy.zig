@@ -148,6 +148,73 @@ pub const Surface = packed struct {
         return flags;
     }
 
+    pub fn getFormats(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        instance: Impl.Instance,
+        surface: Impl.Surface,
+        device_desc: ngl.Device.Desc,
+    ) Error![]ngl.Surface.Format {
+        const inst = Instance.cast(instance);
+        const sf = cast(surface);
+        const phys_dev: c.VkPhysicalDevice =
+            @ptrFromInt(device_desc.impl orelse return Error.InvalidArgument);
+
+        const n = 16;
+        var stk_fmts: [n]c.VkSurfaceFormatKHR = undefined;
+
+        var fmts_n: u32 = undefined;
+        try check(inst.vkGetPhysicalDeviceSurfaceFormatsKHR(phys_dev, sf.handle, &fmts_n, null));
+        var fmts = if (fmts_n > n)
+            try allocator.alloc(c.VkSurfaceFormatKHR, fmts_n)
+        else
+            stk_fmts[0..fmts_n];
+        defer if (fmts_n > n) allocator.free(fmts);
+        try check(inst.vkGetPhysicalDeviceSurfaceFormatsKHR(
+            phys_dev,
+            sf.handle,
+            &fmts_n,
+            fmts.ptr,
+        ));
+
+        // BUG: We don't expose all Vulkan formats and the implementation
+        // is allowed to return anything it likes here
+        var s = try allocator.alloc(ngl.Surface.Format, fmts.len);
+        errdefer allocator.free(s);
+        var i: usize = 0;
+        for (fmts) |fmt| {
+            // TODO: Consider defining these conversions in `conv.zig`
+            s[i] = .{
+                .format = switch (fmt.format) {
+                    c.VK_FORMAT_R8G8B8A8_UNORM => .rgba8_unorm,
+                    c.VK_FORMAT_R8G8B8A8_SRGB => .rgba8_srgb,
+                    c.VK_FORMAT_R8G8B8A8_SNORM => .rgba8_snorm,
+                    c.VK_FORMAT_B8G8R8A8_UNORM => .bgra8_unorm,
+                    c.VK_FORMAT_B8G8R8A8_SRGB => .bgra8_srgb,
+                    c.VK_FORMAT_B8G8R8A8_SNORM => .bgra8_snorm,
+                    c.VK_FORMAT_A2R10G10B10_UNORM_PACK32 => .a2rgb10_unorm,
+                    c.VK_FORMAT_A2B10G10R10_UNORM_PACK32 => .a2bgr10_unorm,
+                    c.VK_FORMAT_R16G16B16A16_UNORM => .rgba16_unorm,
+                    c.VK_FORMAT_R16G16B16A16_SNORM => .rgba16_snorm,
+                    c.VK_FORMAT_R16G16B16A16_SFLOAT => .rgba16_sfloat,
+                    else => |x| {
+                        log.warn("Surface format {} ignored", .{x});
+                        continue;
+                    },
+                },
+                .color_space = switch (fmt.colorSpace) {
+                    c.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR => .srgb_non_linear,
+                    else => |x| {
+                        log.warn("Surface color space {} ignored", .{x});
+                        continue;
+                    },
+                },
+            };
+            i += 1;
+        }
+        return if (i > 0) s[0..i] else Error.NotSupported;
+    }
+
     pub fn deinit(
         _: *anyopaque,
         _: std.mem.Allocator,
