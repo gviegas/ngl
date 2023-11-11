@@ -644,3 +644,43 @@ pub fn toVkClearValue(clear_value: ngl.CommandBuffer.Cmd.ClearValue) c.VkClearVa
         .depth_stencil => |x| .{ .depthStencil = .{ .depth = x.@"0", .stencil = x.@"1" } },
     };
 }
+
+pub fn toVkColorSpace(color_space: ngl.Surface.ColorSpace) c.VkColorSpaceKHR {
+    return switch (color_space) {
+        .srgb_non_linear => c.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR,
+    };
+}
+
+pub fn toVkPresentMode(present_mode: ngl.Surface.PresentMode) c.VkPresentModeKHR {
+    return switch (present_mode) {
+        .immediate => c.VK_PRESENT_MODE_IMMEDIATE_KHR,
+        .mailbox => c.VK_PRESENT_MODE_MAILBOX_KHR,
+        .fifo => c.VK_PRESENT_MODE_FIFO_KHR,
+        .fifo_relaxed => c.VK_PRESENT_MODE_FIFO_RELAXED_KHR,
+    };
+}
+
+pub fn toVkCompositeAlpha(
+    composite_alpha: ngl.Surface.CompositeAlpha,
+) c.VkCompositeAlphaFlagBitsKHR {
+    return switch (composite_alpha) {
+        .@"opaque" => c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        .pre_multiplied => c.VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR,
+        .post_multiplied => c.VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR,
+        .inherit => c.VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
+    };
+}
+
+pub fn toVkSurfaceTransform(transform: ngl.Surface.Transform) c.VkSurfaceTransformFlagBitsKHR {
+    return switch (transform) {
+        .identity => c.VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
+        .rotate_90 => c.VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR,
+        .rotate_180 => c.VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR,
+        .rotate_270 => c.VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR,
+        .horizontal_mirror => c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR,
+        .horizontal_mirror_rotate_90 => c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR,
+        .horizontal_mirror_rotate_180 => c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR,
+        .horizontal_mirror_rotate_270 => c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR,
+        .inherit => c.VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR,
+    };
+}

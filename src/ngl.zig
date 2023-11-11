@@ -43,6 +43,7 @@ pub const GraphicsState = @import("core/state.zig").GraphicsState;
 pub const ComputeState = @import("core/state.zig").ComputeState;
 pub const PipelineCache = @import("core/state.zig").PipelineCache;
 pub const Surface = @import("core/dpy.zig").Surface;
+pub const SwapChain = @import("core/dpy.zig").SwapChain;
 
 pub const Error = error{
     NotReady,

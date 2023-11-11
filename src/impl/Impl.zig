@@ -46,6 +46,7 @@ pub const DescriptorSet = Type(ngl.DescriptorSet);
 pub const Pipeline = Type(ngl.Pipeline);
 pub const PipelineCache = Type(ngl.PipelineCache);
 pub const Surface = Type(ngl.Surface);
+pub const SwapChain = Type(ngl.SwapChain);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -759,6 +760,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         instance: Instance,
         surface: Surface,
+    ) void,
+
+    // SwapChain -------------------------------------------
+
+    initSwapChain: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        desc: ngl.SwapChain.Desc,
+    ) Error!SwapChain,
+
+    deinitSwapChain: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        swap_chain: SwapChain,
     ) void,
 };
 
@@ -1693,4 +1710,22 @@ pub fn deinitSurface(
     surface: Surface,
 ) void {
     self.vtable.deinitSurface(self.ptr, allocator, instance, surface);
+}
+
+pub fn initSwapChain(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    desc: ngl.SwapChain.Desc,
+) Error!SwapChain {
+    return self.vtable.initSwapChain(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitSwapChain(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    swap_chain: SwapChain,
+) void {
+    self.vtable.deinitSwapChain(self.ptr, allocator, device, swap_chain);
 }

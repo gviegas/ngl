@@ -679,6 +679,9 @@ pub const Device = struct {
     destroyPipelineCache: c.PFN_vkDestroyPipelineCache,
     createShaderModule: c.PFN_vkCreateShaderModule,
     destroyShaderModule: c.PFN_vkDestroyShaderModule,
+    // VK_KHR_swapchain
+    createSwapchain: c.PFN_vkCreateSwapchainKHR,
+    destroySwapchain: c.PFN_vkDestroySwapchainKHR,
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -939,6 +942,15 @@ pub const Device = struct {
             .destroyPipelineCache = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipelineCache")),
             .createShaderModule = @ptrCast(try Device.getProc(get, dev, "vkCreateShaderModule")),
             .destroyShaderModule = @ptrCast(try Device.getProc(get, dev, "vkDestroyShaderModule")),
+
+            .createSwapchain = if (desc.feature_set.presentation)
+                @ptrCast(try Device.getProc(get, dev, "vkCreateSwapchainKHR"))
+            else
+                null,
+            .destroySwapchain = if (desc.feature_set.presentation)
+                @ptrCast(try Device.getProc(get, dev, "vkDestroySwapchainKHR"))
+            else
+                null,
         };
 
         for (queue_infos[0..queue_n]) |info| {
@@ -1878,6 +1890,23 @@ pub const Device = struct {
     ) void {
         self.destroyShaderModule.?(self.handle, shader_module, vk_allocator);
     }
+
+    pub inline fn vkCreateSwapchainKHR(
+        self: *Device,
+        create_info: *const c.VkSwapchainCreateInfoKHR,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        swapchain: *c.VkSwapchainKHR,
+    ) c.VkResult {
+        return self.createSwapchain.?(self.handle, create_info, vk_allocator, swapchain);
+    }
+
+    pub inline fn vkDestroySwapchainKHR(
+        self: *Device,
+        swapchain: c.VkSwapchainKHR,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroySwapchain.?(self.handle, swapchain, vk_allocator);
+    }
 };
 
 pub const Queue = struct {
@@ -2377,4 +2406,7 @@ const vtable = Impl.VTable{
 
     .initSurface = @import("dpy.zig").Surface.init,
     .deinitSurface = @import("dpy.zig").Surface.deinit,
+
+    .initSwapChain = @import("dpy.zig").SwapChain.init,
+    .deinitSwapChain = @import("dpy.zig").SwapChain.deinit,
 };

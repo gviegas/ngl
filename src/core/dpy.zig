@@ -3,6 +3,9 @@ const builtin = @import("builtin");
 
 const ngl = @import("../ngl.zig");
 const Instance = ngl.Instance;
+const Device = ngl.Device;
+const Format = ngl.Format;
+const Image = ngl.Image;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 const c = @import("../impl/c.zig");
@@ -69,6 +72,41 @@ pub const Surface = struct {
         platform: Platform,
     };
 
+    // TODO: Other color spaces
+    pub const ColorSpace = enum {
+        srgb_non_linear,
+    };
+
+    pub const Transform = enum {
+        identity,
+        rotate_90,
+        rotate_180,
+        rotate_270,
+        horizontal_mirror,
+        horizontal_mirror_rotate_90,
+        horizontal_mirror_rotate_180,
+        horizontal_mirror_rotate_270,
+        inherit,
+
+        pub const Flags = ngl.Flags(Transform);
+    };
+
+    pub const CompositeAlpha = enum {
+        @"opaque",
+        pre_multiplied,
+        post_multiplied,
+        inherit,
+
+        pub const Flags = ngl.Flags(CompositeAlpha);
+    };
+
+    pub const PresentMode = enum {
+        immediate,
+        mailbox,
+        fifo,
+        fifo_relaxed,
+    };
+
     const Self = @This();
 
     /// It's only valid to call this function if the instance was created
@@ -79,6 +117,39 @@ pub const Surface = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, instance: *Instance) void {
         Impl.get().deinitSurface(allocator, instance.impl, self.impl);
+        self.* = undefined;
+    }
+};
+
+pub const SwapChain = struct {
+    impl: Impl.SwapChain,
+
+    pub const Desc = struct {
+        surface: *Surface,
+        min_count: u32,
+        format: Format,
+        color_space: Surface.ColorSpace,
+        width: u32,
+        height: u32,
+        layers: u32,
+        usage: Image.Usage,
+        pre_transform: Surface.Transform,
+        composite_alpha: Surface.CompositeAlpha,
+        present_mode: Surface.PresentMode,
+        clipped: bool,
+        old_swap_chain: ?*SwapChain,
+    };
+
+    const Self = @This();
+
+    /// It's only valid to call this function if the device was created
+    /// with `Device.Desc.feature_set.presentation` set to `true`.
+    pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        return .{ .impl = try Impl.get().initSwapChain(allocator, device.impl, desc) };
+    }
+
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
+        Impl.get().deinitSwapChain(allocator, device.impl, self.impl);
         self.* = undefined;
     }
 };

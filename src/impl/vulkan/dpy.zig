@@ -6,8 +6,10 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const c = @import("../c.zig");
 const conv = @import("conv.zig");
+const null_handle = conv.null_handle;
 const check = conv.check;
 const Instance = @import("init.zig").Instance;
+const Device = @import("init.zig").Device;
 
 pub const Surface = packed struct {
     handle: c.VkSurfaceKHR,
@@ -76,5 +78,69 @@ pub const Surface = packed struct {
         surface: Impl.Surface,
     ) void {
         Instance.cast(instance).vkDestroySurfaceKHR(cast(surface).handle, null);
+    }
+};
+
+pub const SwapChain = packed struct {
+    handle: c.VkSwapchainKHR,
+
+    pub inline fn cast(impl: Impl.SwapChain) SwapChain {
+        return @bitCast(impl.val);
+    }
+
+    pub fn init(
+        _: *anyopaque,
+        _: std.mem.Allocator,
+        device: Impl.Device,
+        desc: ngl.SwapChain.Desc,
+    ) Error!Impl.SwapChain {
+        const dev = Device.cast(device);
+
+        var swapchain: c.VkSwapchainKHR = undefined;
+
+        try check(dev.vkCreateSwapchainKHR(&.{
+            .sType = c.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            .pNext = null,
+            .flags = 0,
+            .surface = Surface.cast(desc.surface.impl).handle,
+            .minImageCount = desc.min_count,
+            .imageFormat = try conv.toVkFormat(desc.format),
+            .imageColorSpace = conv.toVkColorSpace(desc.color_space),
+            .imageExtent = .{ .width = desc.width, .height = desc.height },
+            .imageArrayLayers = desc.layers,
+            .imageUsage = blk: {
+                var usage: c.VkImageUsageFlags = 0;
+                if (desc.usage.sampled_image) usage |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
+                if (desc.usage.storage_image) usage |= c.VK_IMAGE_USAGE_STORAGE_BIT;
+                if (desc.usage.color_attachment) usage |= c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+                if (desc.usage.input_attachment) usage |= c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+                if (desc.usage.transfer_source) usage |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+                if (desc.usage.transfer_dest) usage |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+                // TODO: Do these checks on `Impl`
+                std.debug.assert(usage != 0);
+                std.debug.assert(!desc.usage.depth_stencil_attachment);
+                std.debug.assert(!desc.usage.transient_attachment);
+                break :blk usage;
+            },
+            .imageSharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices = null,
+            .preTransform = conv.toVkSurfaceTransform(desc.pre_transform),
+            .compositeAlpha = conv.toVkCompositeAlpha(desc.composite_alpha),
+            .presentMode = conv.toVkPresentMode(desc.present_mode),
+            .clipped = if (desc.clipped) c.VK_TRUE else c.VK_FALSE,
+            .oldSwapchain = if (desc.old_swap_chain) |x| cast(x.impl).handle else null_handle,
+        }, null, &swapchain));
+
+        return .{ .val = @bitCast(SwapChain{ .handle = swapchain }) };
+    }
+
+    pub fn deinit(
+        _: *anyopaque,
+        _: std.mem.Allocator,
+        device: Impl.Device,
+        swap_chain: Impl.SwapChain,
+    ) void {
+        Device.cast(device).vkDestroySwapchainKHR(cast(swap_chain).handle, null);
     }
 };
