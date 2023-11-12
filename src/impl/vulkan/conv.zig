@@ -198,13 +198,20 @@ pub fn toVkSampleCount(sample_count: ngl.SampleCount) c.VkSampleCountFlagBits {
 
 pub fn toVkSampleCountFlags(sample_count_flags: ngl.SampleCount.Flags) c.VkSampleCountFlags {
     var flags: c.VkSampleCountFlags = 0;
-    if (sample_count_flags.@"1") flags |= c.VK_SAMPLE_COUNT_1_BIT;
-    if (sample_count_flags.@"2") flags |= c.VK_SAMPLE_COUNT_2_BIT;
-    if (sample_count_flags.@"4") flags |= c.VK_SAMPLE_COUNT_4_BIT;
-    if (sample_count_flags.@"8") flags |= c.VK_SAMPLE_COUNT_8_BIT;
-    if (sample_count_flags.@"16") flags |= c.VK_SAMPLE_COUNT_16_BIT;
-    if (sample_count_flags.@"32") flags |= c.VK_SAMPLE_COUNT_32_BIT;
-    if (sample_count_flags.@"64") flags |= c.VK_SAMPLE_COUNT_64_BIT;
+    if (sample_count_flags.@"1")
+        flags |= c.VK_SAMPLE_COUNT_1_BIT;
+    if (sample_count_flags.@"2")
+        flags |= c.VK_SAMPLE_COUNT_2_BIT;
+    if (sample_count_flags.@"4")
+        flags |= c.VK_SAMPLE_COUNT_4_BIT;
+    if (sample_count_flags.@"8")
+        flags |= c.VK_SAMPLE_COUNT_8_BIT;
+    if (sample_count_flags.@"16")
+        flags |= c.VK_SAMPLE_COUNT_16_BIT;
+    if (sample_count_flags.@"32")
+        flags |= c.VK_SAMPLE_COUNT_32_BIT;
+    if (sample_count_flags.@"64")
+        flags |= c.VK_SAMPLE_COUNT_64_BIT;
     return flags;
 }
 
@@ -218,9 +225,12 @@ pub fn toVkImageAspect(image_aspect: ngl.Image.Aspect) c.VkImageAspectFlagBits {
 
 pub fn toVkImageAspectFlags(image_aspect_flags: ngl.Image.Aspect.Flags) c.VkImageAspectFlags {
     var flags: c.VkImageAspectFlags = 0;
-    if (image_aspect_flags.color) flags |= c.VK_IMAGE_ASPECT_COLOR_BIT;
-    if (image_aspect_flags.depth) flags |= c.VK_IMAGE_ASPECT_DEPTH_BIT;
-    if (image_aspect_flags.stencil) flags |= c.VK_IMAGE_ASPECT_STENCIL_BIT;
+    if (image_aspect_flags.color)
+        flags |= c.VK_IMAGE_ASPECT_COLOR_BIT;
+    if (image_aspect_flags.depth)
+        flags |= c.VK_IMAGE_ASPECT_DEPTH_BIT;
+    if (image_aspect_flags.stencil)
+        flags |= c.VK_IMAGE_ASPECT_STENCIL_BIT;
     return flags;
 }
 
@@ -289,6 +299,50 @@ pub fn toVkSamplerMipmapMode(sampler_mipmap_mode: ngl.Sampler.MipmapMode) c.VkSa
         .nearest => c.VK_SAMPLER_MIPMAP_MODE_NEAREST,
         .linear => c.VK_SAMPLER_MIPMAP_MODE_LINEAR,
     };
+}
+
+pub fn toVkBufferUsageFlags(buffer_usage: ngl.Buffer.Usage) c.VkBufferUsageFlags {
+    var usage: c.VkBufferUsageFlags = 0;
+    if (buffer_usage.uniform_texel_buffer)
+        usage |= c.VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+    if (buffer_usage.storage_texel_buffer)
+        usage |= c.VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+    if (buffer_usage.uniform_buffer)
+        usage |= c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    if (buffer_usage.storage_buffer)
+        usage |= c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    if (buffer_usage.index_buffer)
+        usage |= c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    if (buffer_usage.vertex_buffer)
+        usage |= c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    if (buffer_usage.indirect_buffer)
+        usage |= c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    if (buffer_usage.transfer_source)
+        usage |= c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    if (buffer_usage.transfer_dest)
+        usage |= c.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    return usage;
+}
+
+pub fn toVkImageUsageFlags(image_usage: ngl.Image.Usage) c.VkImageUsageFlags {
+    var usage: c.VkImageUsageFlags = 0;
+    if (image_usage.sampled_image)
+        usage |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (image_usage.storage_image)
+        usage |= c.VK_IMAGE_USAGE_STORAGE_BIT;
+    if (image_usage.color_attachment)
+        usage |= c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (image_usage.depth_stencil_attachment)
+        usage |= c.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (image_usage.transient_attachment)
+        usage |= c.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+    if (image_usage.input_attachment)
+        usage |= c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    if (image_usage.transfer_source)
+        usage |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if (image_usage.transfer_dest)
+        usage |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    return usage;
 }
 
 // TODO: `toVkPipelineStage2`
@@ -501,10 +555,14 @@ pub fn toVkResolveMode(resolve_mode: ngl.ResolveMode) c.VkResolveModeFlagBits {
 /// v1.2
 pub fn toVkResolveModeFlags(resolve_mode_flags: ngl.ResolveMode.Flags) c.VkResolveModeFlags {
     var flags: c.VkResolveModeFlags = 0;
-    if (resolve_mode_flags.average) flags |= c.VK_RESOLVE_MODE_AVERAGE_BIT;
-    if (resolve_mode_flags.sample_zero) flags |= c.VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
-    if (resolve_mode_flags.min) flags |= c.VK_RESOLVE_MODE_MIN_BIT;
-    if (resolve_mode_flags.max) flags |= c.VK_RESOLVE_MODE_MAX_BIT;
+    if (resolve_mode_flags.average)
+        flags |= c.VK_RESOLVE_MODE_AVERAGE_BIT;
+    if (resolve_mode_flags.sample_zero)
+        flags |= c.VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+    if (resolve_mode_flags.min)
+        flags |= c.VK_RESOLVE_MODE_MIN_BIT;
+    if (resolve_mode_flags.max)
+        flags |= c.VK_RESOLVE_MODE_MAX_BIT;
     return flags;
 }
 
@@ -539,9 +597,12 @@ pub fn toVkShaderStage(shader_stage: ngl.ShaderStage) c.VkShaderStageFlagBits {
 
 pub fn toVkShaderStageFlags(shader_stage_flags: ngl.ShaderStage.Flags) c.VkShaderStageFlags {
     var flags: c.VkShaderStageFlags = 0;
-    if (shader_stage_flags.vertex) flags |= c.VK_SHADER_STAGE_VERTEX_BIT;
-    if (shader_stage_flags.fragment) flags |= c.VK_SHADER_STAGE_FRAGMENT_BIT;
-    if (shader_stage_flags.compute) flags |= c.VK_SHADER_STAGE_COMPUTE_BIT;
+    if (shader_stage_flags.vertex)
+        flags |= c.VK_SHADER_STAGE_VERTEX_BIT;
+    if (shader_stage_flags.fragment)
+        flags |= c.VK_SHADER_STAGE_FRAGMENT_BIT;
+    if (shader_stage_flags.compute)
+        flags |= c.VK_SHADER_STAGE_COMPUTE_BIT;
     return flags;
 }
 

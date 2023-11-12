@@ -289,15 +289,9 @@ pub const SwapChain = packed struct {
             .imageExtent = .{ .width = desc.width, .height = desc.height },
             .imageArrayLayers = desc.layers,
             .imageUsage = blk: {
-                var usage: c.VkImageUsageFlags = 0;
-                if (desc.usage.sampled_image) usage |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
-                if (desc.usage.storage_image) usage |= c.VK_IMAGE_USAGE_STORAGE_BIT;
-                if (desc.usage.color_attachment) usage |= c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-                if (desc.usage.input_attachment) usage |= c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-                if (desc.usage.transfer_source) usage |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-                if (desc.usage.transfer_dest) usage |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+                const usage = conv.toVkImageUsageFlags(desc.usage);
                 // Usage must not be zero
-                break :blk if (usage != 0) usage else c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+                break :blk if (usage != 0) usage else return Error.InvalidArgument;
             },
             .imageSharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,

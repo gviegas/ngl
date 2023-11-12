@@ -102,27 +102,13 @@ pub const Buffer = struct {
         var ptr = try allocator.create(Buffer);
         errdefer allocator.destroy(ptr);
 
-        const usage = blk: {
-            var usage: c.VkBufferUsageFlags = 0;
-            if (desc.usage.uniform_texel_buffer) usage |= c.VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-            if (desc.usage.storage_texel_buffer) usage |= c.VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-            if (desc.usage.uniform_buffer) usage |= c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-            if (desc.usage.storage_buffer) usage |= c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-            if (desc.usage.index_buffer) usage |= c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            if (desc.usage.vertex_buffer) usage |= c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            if (desc.usage.indirect_buffer) usage |= c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-            if (desc.usage.transfer_source) usage |= c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-            if (desc.usage.transfer_dest) usage |= c.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-            break :blk usage;
-        };
-
         var buf: c.VkBuffer = undefined;
         try check(dev.vkCreateBuffer(&.{
             .sType = c.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .pNext = null,
             .flags = 0,
             .size = desc.size,
-            .usage = usage,
+            .usage = conv.toVkBufferUsageFlags(desc.usage),
             .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices = null,
@@ -256,16 +242,9 @@ pub const Image = struct {
             .optimal => c.VK_IMAGE_TILING_OPTIMAL,
         };
         const usage = blk: {
-            var usage: c.VkImageUsageFlags = 0;
-            if (desc.usage.sampled_image) usage |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
-            if (desc.usage.storage_image) usage |= c.VK_IMAGE_USAGE_STORAGE_BIT;
-            if (desc.usage.color_attachment) usage |= c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-            if (desc.usage.depth_stencil_attachment) usage |= c.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-            if (desc.usage.transient_attachment) usage |= c.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
-            if (desc.usage.input_attachment) usage |= c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-            if (desc.usage.transfer_source) usage |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-            if (desc.usage.transfer_dest) usage |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-            break :blk usage;
+            const usage = conv.toVkImageUsageFlags(desc.usage);
+            // Usage must not be zero
+            break :blk if (usage != 0) usage else return Error.InvalidArgument;
         };
         const flags = blk: {
             var flags: c.VkImageCreateFlags = 0;
