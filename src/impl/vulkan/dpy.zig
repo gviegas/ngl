@@ -244,56 +244,10 @@ pub const Surface = packed struct {
             .max_width = capab.maxImageExtent.width,
             .max_height = capab.maxImageExtent.height,
             .max_layers = capab.maxImageArrayLayers,
-            // TODO: Consider defining these conversions in `conv.zig`
-            .current_transform = switch (capab.currentTransform) {
-                c.VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR => .identity,
-                c.VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR => .rotate_90,
-                c.VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR => .rotate_180,
-                c.VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR => .rotate_270,
-                c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR => .horizontal_mirror,
-                c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR => .horizontal_mirror_rotate_90,
-                c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR => .horizontal_mirror_rotate_180,
-                c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR => .horizontal_mirror_rotate_270,
-                c.VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR => .inherit,
-                else => {
-                    std.debug.assert(false);
-                    return Error.Other;
-                },
-            },
-            .supported_transforms = blk: {
-                var flags = ngl.Surface.Transform.Flags{};
-                const mask = capab.supportedTransforms;
-                if (mask & c.VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR != 0) flags.identity = true;
-                if (mask & c.VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR != 0) flags.rotate_90 = true;
-                if (mask & c.VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR != 0) flags.rotate_180 = true;
-                if (mask & c.VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR != 0) flags.rotate_270 = true;
-                if (mask & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR != 0) flags.horizontal_mirror = true;
-                if (mask & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR != 0) flags.horizontal_mirror_rotate_90 = true;
-                if (mask & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR != 0) flags.horizontal_mirror_rotate_180 = true;
-                if (mask & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR != 0) flags.horizontal_mirror_rotate_270 = true;
-                if (mask & c.VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR != 0) flags.inherit = true;
-                break :blk flags;
-            },
-            .supported_composite_alpha = blk: {
-                var flags = ngl.Surface.CompositeAlpha.Flags{};
-                const mask = capab.supportedCompositeAlpha;
-                if (mask & c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR != 0) flags.@"opaque" = true;
-                if (mask & c.VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR != 0) flags.pre_multiplied = true;
-                if (mask & c.VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR != 0) flags.post_multiplied = true;
-                if (mask & c.VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR != 0) flags.inherit = true;
-                break :blk flags;
-            },
-            .supported_usage = blk: {
-                var usage = ngl.Image.Usage{};
-                const mask = capab.supportedUsageFlags;
-                if (mask & c.VK_IMAGE_USAGE_SAMPLED_BIT != 0) usage.sampled_image = true;
-                if (mask & c.VK_IMAGE_USAGE_STORAGE_BIT != 0) usage.storage_image = true;
-                if (mask & c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT != 0) usage.color_attachment = true;
-                if (mask & c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT != 0) usage.input_attachment = true;
-                if (mask & c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT != 0) usage.transfer_source = true;
-                if (mask & c.VK_IMAGE_USAGE_TRANSFER_DST_BIT != 0) usage.transfer_dest = true;
-                break :blk usage;
-            },
+            .current_transform = conv.fromVkSurfaceTransform(capab.currentTransform),
+            .supported_transforms = conv.fromVkSurfaceTransformFlags(capab.supportedTransforms),
+            .supported_composite_alpha = conv.fromVkCompositeAlphaFlags(capab.supportedCompositeAlpha),
+            .supported_usage = conv.fromVkImageUsageFlags(capab.supportedUsageFlags),
         };
     }
 
@@ -342,11 +296,8 @@ pub const SwapChain = packed struct {
                 if (desc.usage.input_attachment) usage |= c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
                 if (desc.usage.transfer_source) usage |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
                 if (desc.usage.transfer_dest) usage |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-                // TODO: Do these checks on `Impl`
-                std.debug.assert(usage != 0);
-                std.debug.assert(!desc.usage.depth_stencil_attachment);
-                std.debug.assert(!desc.usage.transient_attachment);
-                break :blk usage;
+                // Usage must not be zero
+                break :blk if (usage != 0) usage else c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
             },
             .imageSharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
