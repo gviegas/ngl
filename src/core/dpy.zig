@@ -115,6 +115,22 @@ pub const Surface = struct {
         color_space: ColorSpace,
     };
 
+    pub const Capabilities = struct {
+        min_count: u32,
+        max_count: u32,
+        current_width: u32,
+        current_height: u32,
+        min_width: u32,
+        min_height: u32,
+        max_width: u32,
+        max_height: u32,
+        max_layers: u32,
+        current_transform: Transform,
+        supported_transforms: Transform.Flags,
+        supported_composite_alpha: CompositeAlpha.Flags,
+        supported_usage: Image.Usage,
+    };
+
     const Self = @This();
 
     /// It's only valid to call this function if the instance was created
@@ -153,6 +169,20 @@ pub const Surface = struct {
         device_desc: Device.Desc,
     ) Error![]Self.Format {
         return Impl.get().getSurfaceFormats(allocator, instance.impl, self.impl, device_desc);
+    }
+
+    pub fn getCapabilities(
+        self: *Self,
+        instance: *Instance,
+        device_desc: Device.Desc,
+        present_mode: PresentMode,
+    ) Error!Capabilities {
+        return Impl.get().getSurfaceCapabilities(
+            instance.impl,
+            self.impl,
+            device_desc,
+            present_mode,
+        );
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, instance: *Instance) void {

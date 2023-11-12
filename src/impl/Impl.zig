@@ -778,6 +778,14 @@ pub const VTable = struct {
         device_desc: ngl.Device.Desc,
     ) Error![]ngl.Surface.Format,
 
+    getSurfaceCapabilities: *const fn (
+        ctx: *anyopaque,
+        instance: Instance,
+        surface: Surface,
+        device_desc: ngl.Device.Desc,
+        present_mode: ngl.Surface.PresentMode,
+    ) Error!ngl.Surface.Capabilities,
+
     deinitSurface: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1753,6 +1761,22 @@ pub fn getSurfaceFormats(
     device_desc: ngl.Device.Desc,
 ) Error![]ngl.Surface.Format {
     return self.vtable.getSurfaceFormats(self.ptr, allocator, instance, surface, device_desc);
+}
+
+pub fn getSurfaceCapabilities(
+    self: *Self,
+    instance: Instance,
+    surface: Surface,
+    device_desc: ngl.Device.Desc,
+    present_mode: ngl.Surface.PresentMode,
+) Error!ngl.Surface.Capabilities {
+    return self.vtable.getSurfaceCapabilities(
+        self.ptr,
+        instance,
+        surface,
+        device_desc,
+        present_mode,
+    );
 }
 
 pub fn deinitSurface(
