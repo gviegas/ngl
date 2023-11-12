@@ -185,29 +185,13 @@ pub const Surface = packed struct {
         for (fmts) |fmt| {
             // TODO: Consider defining these conversions in `conv.zig`
             s[i] = .{
-                .format = switch (fmt.format) {
-                    c.VK_FORMAT_R8G8B8A8_UNORM => .rgba8_unorm,
-                    c.VK_FORMAT_R8G8B8A8_SRGB => .rgba8_srgb,
-                    c.VK_FORMAT_R8G8B8A8_SNORM => .rgba8_snorm,
-                    c.VK_FORMAT_B8G8R8A8_UNORM => .bgra8_unorm,
-                    c.VK_FORMAT_B8G8R8A8_SRGB => .bgra8_srgb,
-                    c.VK_FORMAT_B8G8R8A8_SNORM => .bgra8_snorm,
-                    c.VK_FORMAT_A2R10G10B10_UNORM_PACK32 => .a2rgb10_unorm,
-                    c.VK_FORMAT_A2B10G10R10_UNORM_PACK32 => .a2bgr10_unorm,
-                    c.VK_FORMAT_R16G16B16A16_UNORM => .rgba16_unorm,
-                    c.VK_FORMAT_R16G16B16A16_SNORM => .rgba16_snorm,
-                    c.VK_FORMAT_R16G16B16A16_SFLOAT => .rgba16_sfloat,
-                    else => |x| {
-                        log.warn("Surface format {} ignored", .{x});
-                        continue;
-                    },
+                .format = conv.fromVkFormat(fmt.format) catch {
+                    log.warn("Surface format {} ignored", .{fmt.format});
+                    continue;
                 },
-                .color_space = switch (fmt.colorSpace) {
-                    c.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR => .srgb_non_linear,
-                    else => |x| {
-                        log.warn("Surface color space {} ignored", .{x});
-                        continue;
-                    },
+                .color_space = conv.fromVkColorSpace(fmt.colorSpace) catch {
+                    log.warn("Surface color space {} ignored", .{fmt.colorSpace});
+                    continue;
                 },
             };
             i += 1;
