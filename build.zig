@@ -1,5 +1,6 @@
 const std = @import("std");
 const fs = std.fs;
+const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -12,6 +13,9 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .link_libc = true,
     });
+
+    if (builtin.os.tag == .linux and !builtin.target.isAndroid())
+        main_tests.linkSystemLibrary2("xcb", .{});
 
     const run_main_tests = b.addRunArtifact(main_tests);
 

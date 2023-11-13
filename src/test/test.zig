@@ -87,4 +87,5 @@ test {
     _ = @import("depth.zig");
     _ = @import("sten.zig");
     _ = @import("pass_input.zig");
+    _ = @import("sf.zig");
 }
