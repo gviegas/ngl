@@ -34,6 +34,39 @@ test "Surface.init/deinit" {
     }
 }
 
+test "Surface queries" {
+    const ctx = context();
+    const sf = &platform().surface;
+
+    for (ctx.device_desc.queues) |queue_desc| {
+        const is_compatible = try sf.isCompatible(
+            &ctx.instance,
+            ctx.device_desc,
+            queue_desc orelse continue,
+        );
+        if (is_compatible) break;
+    } else {
+        // NOTE: This could happen but shouldn't
+        try testing.expect(false);
+    }
+
+    const pres_modes = try sf.getPresentModes(&ctx.instance, ctx.device_desc);
+    // FIFO support is mandatory
+    try testing.expect(pres_modes.fifo);
+
+    // NOTE: Currently this may return no formats at all
+    const fmts = try sf.getFormats(gpa, &ctx.instance, ctx.device_desc);
+    defer gpa.free(fmts);
+    for (fmts) |fmt|
+        try testing.expect(fmt.format.getFeatures(&ctx.device).optimal_tiling.color_attachment);
+
+    const capab = try sf.getCapabilities(&ctx.instance, ctx.device_desc, .fifo);
+    try testing.expect(capab.min_count > 0);
+    try testing.expect(!ngl.noFlagsSet(capab.supported_transforms));
+    try testing.expect(!ngl.noFlagsSet(capab.supported_composite_alpha));
+    try testing.expect(capab.supported_usage.color_attachment);
+}
+
 pub const Platform = struct {
     surface: ngl.Surface,
     impl: switch (builtin.os.tag) {
