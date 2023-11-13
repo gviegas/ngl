@@ -93,4 +93,5 @@ test {
     _ = @import("sten.zig");
     _ = @import("pass_input.zig");
     _ = @import("sf.zig");
+    _ = @import("sc.zig");
 }

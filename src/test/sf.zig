@@ -88,8 +88,8 @@ pub const Platform = struct {
         else => @compileError("OS not supported"),
     },
 
-    const width = 480;
-    const height = 270;
+    pub const width = 480;
+    pub const height = 270;
 
     fn init(allocator: std.mem.Allocator) !Platform {
         const ctx = context();
