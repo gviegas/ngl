@@ -5,7 +5,9 @@ pub const gpa = testing.allocator;
 const ngl = @import("../ngl.zig");
 
 pub const Context = struct {
+    instance_desc: ngl.Instance.Desc,
     instance: ngl.Instance,
+    device_desc: ngl.Device.Desc,
     device: ngl.Device,
 
     const Self = @This();
@@ -15,6 +17,7 @@ pub const Context = struct {
         errdefer inst.deinit(allocator);
         var descs = try inst.listDevices(allocator);
         defer allocator.free(descs);
+        // TODO: Prioritize devices that support presentation
         var desc_i: usize = 0;
         for (0..descs.len) |i| {
             if (descs[i].type == .discrete_gpu) {
@@ -24,7 +27,9 @@ pub const Context = struct {
             if (descs[i].type == .integrated_gpu) desc_i = i;
         }
         return .{
+            .instance_desc = .{},
             .instance = inst,
+            .device_desc = descs[desc_i],
             .device = try ngl.Device.init(allocator, &inst, descs[desc_i]),
         };
     }
