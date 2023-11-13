@@ -36,7 +36,7 @@ test "Surface.init/deinit" {
 
 test "Surface queries" {
     const ctx = context();
-    const sf = &platform().surface;
+    const sf = &(try platform()).surface;
 
     for (ctx.device_desc.queues) |queue_desc| {
         const is_compatible = try sf.isCompatible(
@@ -79,8 +79,8 @@ pub const Platform = struct {
     const height = 270;
 
     fn init(allocator: std.mem.Allocator) !Platform {
-        // TODO: Check presentation support
-        const inst = &context().instance;
+        const ctx = context();
+        if (!ctx.instance_desc.presentation) return error.SkipZigTest;
 
         var impl = try @typeInfo(Platform).Struct.fields[1].type.init();
         errdefer impl.deinit();
@@ -89,7 +89,7 @@ pub const Platform = struct {
             .linux => if (builtin.target.isAndroid())
                 @compileError("TODO")
             else
-                ngl.Surface.init(allocator, inst, .{
+                ngl.Surface.init(allocator, &ctx.instance, .{
                     .platform = .{ .xcb = .{
                         .connection = impl.connection,
                         .window = impl.window,
@@ -108,20 +108,23 @@ pub const Platform = struct {
     }
 };
 
-pub fn platform() *Platform {
+pub fn platform() !*Platform {
     const Static = struct {
-        var plat: Platform = undefined;
+        var plat: anyerror!Platform = undefined;
         var once = std.once(init);
 
         fn init() void {
             // Let it leak
             const allocator = std.heap.page_allocator;
-            plat = Platform.init(allocator) catch |err| @panic(@errorName(err));
+            plat = Platform.init(allocator);
+            if (plat) |_| {} else |err| {
+                if (err != error.SkipZigTest) @panic(@errorName(err));
+            }
         }
     };
 
     Static.once.call();
-    return &Static.plat;
+    return &(try Static.plat);
 }
 
 pub var platform_lock = std.Thread.Mutex{};
@@ -169,11 +172,10 @@ const PlatformXcb = struct {
         if (c.xcb_connection_has_error(self.connection) != 0)
             return error.Connection;
         errdefer c.xcb_disconnect(self.connection);
-
         self.setup = c.xcb_get_setup(self.connection);
         self.screen = c.xcb_setup_roots_iterator(self.setup).data.*;
-
         self.window = try self.createWindow(Platform.width, Platform.height);
+        errdefer _ = c.xcb_destroy_window(self.connection, self.window);
         try self.mapWindow(self.window);
 
         return self;
