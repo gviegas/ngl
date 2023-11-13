@@ -4,6 +4,7 @@ const builtin = @import("builtin");
 
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
+const context = @import("test.zig").context;
 const c = @import("../impl/c.zig");
 
 test "Surface.init/deinit" {
@@ -33,6 +34,95 @@ test "Surface.init/deinit" {
     }
 }
 
+pub const Platform = struct {
+    surface: ngl.Surface,
+    impl: switch (builtin.os.tag) {
+        .linux => if (builtin.target.isAndroid()) PlatformAndroid else PlatformXcb,
+        .windows => PlatformWin32,
+        else => @compileError("OS not supported"),
+    },
+
+    const width = 480;
+    const height = 270;
+
+    fn init(allocator: std.mem.Allocator) !Platform {
+        // TODO: Check presentation support
+        const inst = &context().instance;
+
+        var impl = try @typeInfo(Platform).Struct.fields[1].type.init();
+        errdefer impl.deinit();
+
+        const sf = try switch (builtin.os.tag) {
+            .linux => if (builtin.target.isAndroid())
+                @compileError("TODO")
+            else
+                ngl.Surface.init(allocator, inst, .{
+                    .platform = .{ .xcb = .{
+                        .connection = impl.connection,
+                        .window = impl.window,
+                    } },
+                }),
+            .windows => @compileError("TODO"),
+            else => @compileError("OS not supported"),
+        };
+
+        return .{ .surface = sf, .impl = impl };
+    }
+
+    fn deinit(self: *Platform, allocator: std.mem.Allocator) void {
+        self.surface.deinit(allocator, self);
+        self.impl.deinit();
+    }
+};
+
+pub fn platform() *Platform {
+    const Static = struct {
+        var plat: Platform = undefined;
+        var once = std.once(init);
+
+        fn init() void {
+            // Let it leak
+            const allocator = std.heap.page_allocator;
+            plat = Platform.init(allocator) catch |err| @panic(@errorName(err));
+        }
+    };
+
+    Static.once.call();
+    return &Static.plat;
+}
+
+pub var platform_lock = std.Thread.Mutex{};
+
+// TODO
+const PlatformAndroid = struct {
+    fn init() !PlatformAndroid {
+        @compileError("TODO");
+    }
+
+    fn poll(_: PlatformAndroid) usize {
+        @compileError("TODO");
+    }
+
+    fn deinit(_: *PlatformAndroid) void {
+        @compileError("TODO");
+    }
+};
+
+// TODO
+const PlatformWin32 = struct {
+    fn init() !PlatformWin32 {
+        @compileError("TODO");
+    }
+
+    fn poll(_: PlatformWin32) usize {
+        @compileError("TODO");
+    }
+
+    fn deinit(_: *PlatformWin32) void {
+        @compileError("TODO");
+    }
+};
+
 const PlatformXcb = struct {
     connection: *c.xcb_connection_t,
     setup: *const c.xcb_setup_t,
@@ -50,7 +140,7 @@ const PlatformXcb = struct {
         self.setup = c.xcb_get_setup(self.connection);
         self.screen = c.xcb_setup_roots_iterator(self.setup).data.*;
 
-        self.window = try self.createWindow(480, 270);
+        self.window = try self.createWindow(Platform.width, Platform.height);
         try self.mapWindow(self.window);
 
         return self;
@@ -109,6 +199,7 @@ const PlatformXcb = struct {
         while (c.xcb_poll_for_event(self.connection)) |event| {
             defer std.c.free(event);
             n += 1;
+            // TODO
             switch (event.*.response_type & 127) {
                 c.XCB_KEY_PRESS, c.XCB_KEY_RELEASE => {},
                 c.XCB_BUTTON_PRESS, c.XCB_BUTTON_RELEASE => {},
