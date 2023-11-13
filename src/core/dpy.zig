@@ -118,8 +118,8 @@ pub const Surface = struct {
     pub const Capabilities = struct {
         min_count: u32,
         max_count: u32,
-        current_width: u32,
-        current_height: u32,
+        current_width: ?u32,
+        current_height: ?u32,
         min_width: u32,
         min_height: u32,
         max_width: u32,

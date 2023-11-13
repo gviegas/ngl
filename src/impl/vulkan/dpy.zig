@@ -218,11 +218,14 @@ pub const Surface = packed struct {
 
         var capab: c.VkSurfaceCapabilitiesKHR = undefined;
         try check(inst.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(phys_dev, sf.handle, &capab));
+        const no_max_count = capab.maxImageCount == 0;
+        const no_cur_extent = capab.currentExtent.width == 0xffffffff and
+            capab.currentExtent.height == 0xffffffff;
         return .{
             .min_count = capab.minImageCount,
-            .max_count = capab.maxImageCount,
-            .current_width = capab.currentExtent.width,
-            .current_height = capab.currentExtent.height,
+            .max_count = if (no_max_count) std.math.maxInt(u32) else capab.maxImageCount,
+            .current_width = if (no_cur_extent) null else capab.currentExtent.width,
+            .current_height = if (no_cur_extent) null else capab.currentExtent.height,
             .min_width = capab.minImageExtent.width,
             .min_height = capab.minImageExtent.height,
             .max_width = capab.maxImageExtent.width,

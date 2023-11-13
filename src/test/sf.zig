@@ -62,6 +62,19 @@ test "Surface queries" {
 
     const capab = try sf.getCapabilities(&ctx.instance, ctx.device_desc, .fifo);
     try testing.expect(capab.min_count > 0);
+    // This differs from Vulkan
+    try testing.expect(capab.max_count >= capab.min_count);
+    if (capab.current_width) |w| {
+        if (capab.current_height) |h| {
+            try testing.expect(w >= capab.min_width);
+            try testing.expect(h >= capab.min_height);
+            try testing.expect(w <= capab.max_width);
+            try testing.expect(h <= capab.max_height);
+        } else try testing.expect(false);
+    } else try testing.expectEqual(capab.current_height, null);
+    try testing.expect(capab.min_width <= capab.max_width);
+    try testing.expect(capab.min_height <= capab.max_height);
+    try testing.expect(capab.max_layers > 0);
     try testing.expect(!ngl.noFlagsSet(capab.supported_transforms));
     try testing.expect(!ngl.noFlagsSet(capab.supported_composite_alpha));
     try testing.expect(capab.supported_usage.color_attachment);
