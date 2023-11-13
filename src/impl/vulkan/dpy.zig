@@ -183,7 +183,6 @@ pub const Surface = packed struct {
         errdefer allocator.free(s);
         var i: usize = 0;
         for (fmts) |fmt| {
-            // TODO: Consider defining these conversions in `conv.zig`
             s[i] = .{
                 .format = conv.fromVkFormat(fmt.format) catch {
                     log.warn("Surface format {} ignored", .{fmt.format});
