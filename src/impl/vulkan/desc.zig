@@ -13,12 +13,11 @@ const BufferView = @import("res.zig").BufferView;
 const ImageView = @import("res.zig").ImageView;
 const Sampler = @import("res.zig").Sampler;
 
-// TODO: Don't allocate this type on the heap
-pub const DescriptorSetLayout = struct {
+pub const DescriptorSetLayout = packed struct {
     handle: c.VkDescriptorSetLayout,
 
-    pub inline fn cast(impl: Impl.DescriptorSetLayout) *DescriptorSetLayout {
-        return impl.ptr(DescriptorSetLayout);
+    pub inline fn cast(impl: Impl.DescriptorSetLayout) DescriptorSetLayout {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
@@ -27,8 +26,6 @@ pub const DescriptorSetLayout = struct {
         device: Impl.Device,
         desc: ngl.DescriptorSetLayout.Desc,
     ) Error!Impl.DescriptorSetLayout {
-        const dev = Device.cast(device);
-
         const bind_n: u32 = if (desc.bindings) |x| @intCast(x.len) else 0;
         var binds: ?[]c.VkDescriptorSetLayoutBinding = undefined;
         var splrs: ?[]c.VkSampler = undefined;
@@ -66,11 +63,8 @@ pub const DescriptorSetLayout = struct {
         defer if (binds) |x| allocator.free(x);
         defer if (splrs) |x| allocator.free(x);
 
-        var ptr = try allocator.create(DescriptorSetLayout);
-        errdefer allocator.destroy(ptr);
-
         var set_layout: c.VkDescriptorSetLayout = undefined;
-        try check(dev.vkCreateDescriptorSetLayout(&.{
+        try check(Device.cast(device).vkCreateDescriptorSetLayout(&.{
             .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -78,29 +72,24 @@ pub const DescriptorSetLayout = struct {
             .pBindings = if (binds) |x| x.ptr else null,
         }, null, &set_layout));
 
-        ptr.* = .{ .handle = set_layout };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(DescriptorSetLayout{ .handle = set_layout }) };
     }
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         descriptor_set_layout: Impl.DescriptorSetLayout,
     ) void {
-        const dev = Device.cast(device);
-        const set_layout = cast(descriptor_set_layout);
-        dev.vkDestroyDescriptorSetLayout(set_layout.handle, null);
-        allocator.destroy(set_layout);
+        Device.cast(device).vkDestroyDescriptorSetLayout(cast(descriptor_set_layout).handle, null);
     }
 };
 
-// TODO: Don't allocate this type on the heap
-pub const PipelineLayout = struct {
+pub const PipelineLayout = packed struct {
     handle: c.VkPipelineLayout,
 
-    pub inline fn cast(impl: Impl.PipelineLayout) *PipelineLayout {
-        return impl.ptr(PipelineLayout);
+    pub inline fn cast(impl: Impl.PipelineLayout) PipelineLayout {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
@@ -109,8 +98,6 @@ pub const PipelineLayout = struct {
         device: Impl.Device,
         desc: ngl.PipelineLayout.Desc,
     ) Error!Impl.PipelineLayout {
-        const dev = Device.cast(device);
-
         const set_layout_n: u32 = if (desc.descriptor_set_layouts) |x| @intCast(x.len) else 0;
         var set_layouts: ?[]c.VkDescriptorSetLayout = blk: {
             if (set_layout_n == 0) break :blk null;
@@ -135,11 +122,8 @@ pub const PipelineLayout = struct {
         };
         defer if (const_ranges) |x| allocator.free(x);
 
-        var ptr = try allocator.create(PipelineLayout);
-        errdefer allocator.destroy(ptr);
-
         var pl_layout: c.VkPipelineLayout = undefined;
-        try check(dev.vkCreatePipelineLayout(&.{
+        try check(Device.cast(device).vkCreatePipelineLayout(&.{
             .sType = c.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -149,20 +133,16 @@ pub const PipelineLayout = struct {
             .pPushConstantRanges = if (const_ranges) |x| x.ptr else null,
         }, null, &pl_layout));
 
-        ptr.* = .{ .handle = pl_layout };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(PipelineLayout{ .handle = pl_layout }) };
     }
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         pipeline_layout: Impl.PipelineLayout,
     ) void {
-        const dev = Device.cast(device);
-        const pl_layout = cast(pipeline_layout);
-        dev.vkDestroyPipelineLayout(pl_layout.handle, null);
-        allocator.destroy(pl_layout);
+        Device.cast(device).vkDestroyPipelineLayout(cast(pipeline_layout).handle, null);
     }
 };
 
