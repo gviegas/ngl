@@ -8,27 +8,21 @@ const conv = @import("conv.zig");
 const check = conv.check;
 const Device = @import("init.zig").Device;
 
-// TODO: Don't allocate this type on the heap
-pub const Fence = struct {
+pub const Fence = packed struct {
     handle: c.VkFence,
 
-    pub inline fn cast(impl: Impl.Fence) *Fence {
-        return impl.ptr(Fence);
+    pub inline fn cast(impl: Impl.Fence) Fence {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.Fence.Desc,
     ) Error!Impl.Fence {
-        const dev = Device.cast(device);
-
-        var ptr = try allocator.create(Fence);
-        errdefer allocator.destroy(ptr);
-
         var fence: c.VkFence = undefined;
-        try check(dev.vkCreateFence(&.{
+        try check(Device.cast(device).vkCreateFence(&.{
             .sType = c.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .pNext = null,
             .flags = switch (desc.initial_status) {
@@ -37,8 +31,7 @@ pub const Fence = struct {
             },
         }, null, &fence));
 
-        ptr.* = .{ .handle = fence };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(Fence{ .handle = fence }) };
     }
 
     pub fn reset(
@@ -93,56 +86,43 @@ pub const Fence = struct {
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         fence: Impl.Fence,
     ) void {
-        const dev = Device.cast(device);
-        const fnc = cast(fence);
-        dev.vkDestroyFence(fnc.handle, null);
-        allocator.destroy(fnc);
+        Device.cast(device).vkDestroyFence(cast(fence).handle, null);
     }
 };
 
-// TODO: Don't allocate this type on the heap
-pub const Semaphore = struct {
+pub const Semaphore = packed struct {
     handle: c.VkSemaphore,
 
-    pub inline fn cast(impl: Impl.Semaphore) *Semaphore {
-        return impl.ptr(Semaphore);
+    pub inline fn cast(impl: Impl.Semaphore) Semaphore {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         _: ngl.Semaphore.Desc,
     ) Error!Impl.Semaphore {
-        const dev = Device.cast(device);
-
-        var ptr = try allocator.create(Semaphore);
-        errdefer allocator.destroy(ptr);
-
         var sema: c.VkSemaphore = undefined;
-        try check(dev.vkCreateSemaphore(&.{
+        try check(Device.cast(device).vkCreateSemaphore(&.{
             .sType = c.VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
             .pNext = null,
             .flags = 0,
         }, null, &sema));
 
-        ptr.* = .{ .handle = sema };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(Semaphore{ .handle = sema }) };
     }
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         semaphore: Impl.Semaphore,
     ) void {
-        const dev = Device.cast(device);
-        const sema = cast(semaphore);
-        dev.vkDestroySemaphore(sema.handle, null);
-        allocator.destroy(sema);
+        Device.cast(device).vkDestroySemaphore(cast(semaphore).handle, null);
     }
 };
