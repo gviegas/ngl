@@ -186,25 +186,19 @@ pub const BufferView = packed struct {
     }
 };
 
-// TODO: Don't allocate this type on the heap
-pub const Image = struct {
+pub const Image = packed struct {
     handle: c.VkImage,
 
-    pub inline fn cast(impl: Impl.Image) *Image {
-        return impl.ptr(Image);
+    pub inline fn cast(impl: Impl.Image) Image {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.Image.Desc,
     ) Error!Impl.Image {
-        const dev = Device.cast(device);
-
-        var ptr = try allocator.create(Image);
-        errdefer allocator.destroy(ptr);
-
         const @"type": c.VkImageType = switch (desc.type) {
             .@"1d" => c.VK_IMAGE_TYPE_1D,
             .@"2d" => c.VK_IMAGE_TYPE_2D,
@@ -239,7 +233,7 @@ pub const Image = struct {
         };
 
         var image: c.VkImage = undefined;
-        try check(dev.vkCreateImage(&.{
+        try check(Device.cast(device).vkCreateImage(&.{
             .sType = c.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .pNext = null,
             .flags = flags,
@@ -257,8 +251,7 @@ pub const Image = struct {
             .initialLayout = conv.toVkImageLayout(desc.initial_layout),
         }, null, &image));
 
-        ptr.* = .{ .handle = image };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(Image{ .handle = image }) };
     }
 
     pub fn getMemoryRequirements(
@@ -291,37 +284,27 @@ pub const Image = struct {
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         image: Impl.Image,
     ) void {
-        const dev = Device.cast(device);
-        const img = cast(image);
-        dev.vkDestroyImage(img.handle, null);
-        allocator.destroy(img);
+        Device.cast(device).vkDestroyImage(cast(image).handle, null);
     }
 };
 
-// TODO: Don't allocate this type on the heap
-pub const ImageView = struct {
+pub const ImageView = packed struct {
     handle: c.VkImageView,
 
-    pub inline fn cast(impl: Impl.ImageView) *ImageView {
-        return impl.ptr(ImageView);
+    pub inline fn cast(impl: Impl.ImageView) ImageView {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.ImageView.Desc,
     ) Error!Impl.ImageView {
-        const dev = Device.cast(device);
-        const image = Image.cast(desc.image.impl);
-
-        var ptr = try allocator.create(ImageView);
-        errdefer allocator.destroy(ptr);
-
         const @"type": c.VkImageViewType = switch (desc.type) {
             .@"1d" => c.VK_IMAGE_VIEW_TYPE_1D,
             .@"2d" => c.VK_IMAGE_VIEW_TYPE_2D,
@@ -347,31 +330,27 @@ pub const ImageView = struct {
         };
 
         var img_view: c.VkImageView = undefined;
-        try check(dev.vkCreateImageView(&.{
+        try check(Device.cast(device).vkCreateImageView(&.{
             .sType = c.VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .pNext = null,
             .flags = 0,
-            .image = image.handle,
+            .image = Image.cast(desc.image.impl).handle,
             .viewType = @"type",
             .format = try conv.toVkFormat(desc.format),
             .components = swizzle,
             .subresourceRange = range,
         }, null, &img_view));
 
-        ptr.* = .{ .handle = img_view };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(ImageView{ .handle = img_view }) };
     }
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         image_view: Impl.ImageView,
     ) void {
-        const dev = Device.cast(device);
-        const img_view = cast(image_view);
-        dev.vkDestroyImageView(img_view.handle, null);
-        allocator.destroy(img_view);
+        Device.cast(device).vkDestroyImageView(cast(image_view).handle, null);
     }
 };
 
