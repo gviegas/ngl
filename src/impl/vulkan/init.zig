@@ -996,7 +996,6 @@ pub const Device = struct {
     ) []ngl.Memory.Type {
         const dev = cast(device);
 
-        // TODO: May need to store this on device
         var props: c.VkPhysicalDeviceMemoryProperties = undefined;
         dev.instance.vkGetPhysicalDeviceMemoryProperties(dev.physical_device, &props);
         const mask: u32 =
@@ -1028,37 +1027,23 @@ pub const Device = struct {
 
     fn alloc(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.Memory.Desc,
     ) Error!Impl.Memory {
-        const dev = cast(device);
-
-        var ptr = try allocator.create(Memory);
-        errdefer allocator.destroy(ptr);
-
         var mem: c.VkDeviceMemory = undefined;
-        try check(dev.vkAllocateMemory(&.{
+        try check(cast(device).vkAllocateMemory(&.{
             .sType = c.VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             .pNext = null,
             .allocationSize = desc.size,
             .memoryTypeIndex = desc.type_index,
         }, null, &mem));
 
-        ptr.* = .{ .handle = mem };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(Memory{ .handle = mem }) };
     }
 
-    fn free(
-        _: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Impl.Device,
-        memory: Impl.Memory,
-    ) void {
-        const dev = cast(device);
-        const mem = Memory.cast(memory);
-        dev.vkFreeMemory(mem.handle, null);
-        allocator.destroy(mem);
+    fn free(_: *anyopaque, _: std.mem.Allocator, device: Impl.Device, memory: Impl.Memory) void {
+        cast(device).vkFreeMemory(Memory.cast(memory).handle, null);
     }
 
     fn wait(_: *anyopaque, device: Impl.Device) Error!void {
@@ -2068,12 +2053,11 @@ pub const Queue = struct {
     }
 };
 
-// TODO: Don't allocate this type on the heap
-pub const Memory = struct {
+pub const Memory = packed struct {
     handle: c.VkDeviceMemory,
 
-    pub inline fn cast(impl: Impl.Memory) *Memory {
-        return impl.ptr(Memory);
+    pub inline fn cast(impl: Impl.Memory) Memory {
+        return @bitCast(impl.val);
     }
 
     fn map(
