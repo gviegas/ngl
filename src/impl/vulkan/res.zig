@@ -367,6 +367,18 @@ pub const Sampler = packed struct {
         device: Impl.Device,
         desc: ngl.Sampler.Desc,
     ) Error!Impl.Sampler {
+        // The caller is responsible for checking anisotropy support
+        var aniso_enable: c.VkBool32 = undefined;
+        var max_aniso: f32 = undefined;
+        if (desc.max_anisotropy != null and desc.max_anisotropy.? > 1 and
+            (desc.mag != .nearest or desc.min != .nearest))
+        {
+            aniso_enable = c.VK_TRUE;
+            max_aniso = @floatFromInt(desc.max_anisotropy.?);
+        } else {
+            aniso_enable = c.VK_FALSE;
+            max_aniso = 1;
+        }
         var cmp_enable: c.VkBool32 = undefined;
         var compare: c.VkCompareOp = undefined;
         if (desc.compare) |cmp| {
@@ -389,8 +401,8 @@ pub const Sampler = packed struct {
             .addressModeV = conv.toVkSamplerAddressMode(desc.v_address),
             .addressModeW = conv.toVkSamplerAddressMode(desc.w_address),
             .mipLodBias = 0,
-            .anisotropyEnable = c.VK_FALSE, // TODO: Need to enable the feature
-            .maxAnisotropy = 1, // TODO: Need to clamp as specified in limits
+            .anisotropyEnable = aniso_enable,
+            .maxAnisotropy = max_aniso,
             .compareEnable = cmp_enable,
             .compareOp = compare,
             .minLod = desc.min_lod,
