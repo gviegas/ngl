@@ -83,27 +83,21 @@ pub fn getFormatFeatures(
     };
 }
 
-// TODO: Don't allocate this type on the heap
-pub const Buffer = struct {
+pub const Buffer = packed struct {
     handle: c.VkBuffer,
 
-    pub inline fn cast(impl: Impl.Buffer) *Buffer {
-        return impl.ptr(Buffer);
+    pub inline fn cast(impl: Impl.Buffer) Buffer {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.Buffer.Desc,
     ) Error!Impl.Buffer {
-        const dev = Device.cast(device);
-
-        var ptr = try allocator.create(Buffer);
-        errdefer allocator.destroy(ptr);
-
         var buf: c.VkBuffer = undefined;
-        try check(dev.vkCreateBuffer(&.{
+        try check(Device.cast(device).vkCreateBuffer(&.{
             .sType = c.VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -114,8 +108,7 @@ pub const Buffer = struct {
             .pQueueFamilyIndices = null,
         }, null, &buf));
 
-        ptr.* = .{ .handle = buf };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(Buffer{ .handle = buf }) };
     }
 
     pub fn getMemoryRequirements(
@@ -148,62 +141,48 @@ pub const Buffer = struct {
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         buffer: Impl.Buffer,
     ) void {
-        const dev = Device.cast(device);
-        const buf = cast(buffer);
-        dev.vkDestroyBuffer(buf.handle, null);
-        allocator.destroy(buf);
+        Device.cast(device).vkDestroyBuffer(cast(buffer).handle, null);
     }
 };
 
-// TODO: Don't allocate this type on the heap
-pub const BufferView = struct {
+pub const BufferView = packed struct {
     handle: c.VkBufferView,
 
-    pub inline fn cast(impl: Impl.BufferView) *BufferView {
-        return impl.ptr(BufferView);
+    pub inline fn cast(impl: Impl.BufferView) BufferView {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.BufferView.Desc,
     ) Error!Impl.BufferView {
-        const dev = Device.cast(device);
-        const buf = Buffer.cast(desc.buffer.impl);
-
-        var ptr = try allocator.create(BufferView);
-        errdefer allocator.destroy(ptr);
-
         var buf_view: c.VkBufferView = undefined;
-        try check(dev.vkCreateBufferView(&.{
+        try check(Device.cast(device).vkCreateBufferView(&.{
             .sType = c.VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO,
             .pNext = null,
             .flags = 0,
-            .buffer = buf.handle,
+            .buffer = Buffer.cast(desc.buffer.impl).handle,
             .format = try conv.toVkFormat(desc.format),
             .offset = desc.offset,
             .range = desc.range orelse c.VK_WHOLE_SIZE,
         }, null, &buf_view));
 
-        ptr.* = .{ .handle = buf_view };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(BufferView{ .handle = buf_view }) };
     }
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         buffer_view: Impl.BufferView,
     ) void {
-        const dev = Device.cast(device);
-        const buf_view = cast(buffer_view);
-        dev.vkDestroyBufferView(buf_view.handle, null);
-        allocator.destroy(buf_view);
+        Device.cast(device).vkDestroyBufferView(cast(buffer_view).handle, null);
     }
 };
 
