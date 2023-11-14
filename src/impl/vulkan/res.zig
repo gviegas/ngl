@@ -354,25 +354,19 @@ pub const ImageView = packed struct {
     }
 };
 
-// TODO: Don't allocate this type on the heap
-pub const Sampler = struct {
+pub const Sampler = packed struct {
     handle: c.VkSampler,
 
-    pub inline fn cast(impl: Impl.Sampler) *Sampler {
-        return impl.ptr(Sampler);
+    pub inline fn cast(impl: Impl.Sampler) Sampler {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.Sampler.Desc,
     ) Error!Impl.Sampler {
-        const dev = Device.cast(device);
-
-        var ptr = try allocator.create(Sampler);
-        errdefer allocator.destroy(ptr);
-
         var cmp_enable: c.VkBool32 = undefined;
         var compare: c.VkCompareOp = undefined;
         if (desc.compare) |cmp| {
@@ -384,7 +378,7 @@ pub const Sampler = struct {
         }
 
         var splr: c.VkSampler = undefined;
-        try check(dev.vkCreateSampler(&.{
+        try check(Device.cast(device).vkCreateSampler(&.{
             .sType = c.VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -405,19 +399,15 @@ pub const Sampler = struct {
             .unnormalizedCoordinates = if (desc.normalized_coordinates) c.VK_FALSE else c.VK_TRUE,
         }, null, &splr));
 
-        ptr.* = .{ .handle = splr };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(Sampler{ .handle = splr }) };
     }
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         sampler: Impl.Sampler,
     ) void {
-        const dev = Device.cast(device);
-        const splr = cast(sampler);
-        dev.vkDestroySampler(splr.handle, null);
-        allocator.destroy(splr);
+        Device.cast(device).vkDestroySampler(cast(sampler).handle, null);
     }
 };
