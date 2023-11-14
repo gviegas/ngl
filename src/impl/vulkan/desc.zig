@@ -146,22 +146,19 @@ pub const PipelineLayout = packed struct {
     }
 };
 
-// TODO: Don't allocate this type on the heap
-pub const DescriptorPool = struct {
+pub const DescriptorPool = packed struct {
     handle: c.VkDescriptorPool,
 
-    pub inline fn cast(impl: Impl.DescriptorPool) *DescriptorPool {
-        return impl.ptr(DescriptorPool);
+    pub inline fn cast(impl: Impl.DescriptorPool) DescriptorPool {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.DescriptorPool.Desc,
     ) Error!Impl.DescriptorPool {
-        const dev = Device.cast(device);
-
         const max_type = @typeInfo(ngl.DescriptorType).Enum.fields.len;
         var pool_sizes: [max_type]c.VkDescriptorPoolSize = undefined;
         const pool_size_n = blk: {
@@ -179,11 +176,8 @@ pub const DescriptorPool = struct {
             break :blk n;
         };
 
-        var ptr = try allocator.create(DescriptorPool);
-        errdefer allocator.destroy(ptr);
-
         var desc_pool: c.VkDescriptorPool = undefined;
-        try check(dev.vkCreateDescriptorPool(&.{
+        try check(Device.cast(device).vkCreateDescriptorPool(&.{
             .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -192,8 +186,7 @@ pub const DescriptorPool = struct {
             .pPoolSizes = if (pool_size_n > 0) pool_sizes[0..].ptr else null,
         }, null, &desc_pool));
 
-        ptr.* = .{ .handle = desc_pool };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(DescriptorPool{ .handle = desc_pool }) };
     }
 
     pub fn alloc(
@@ -204,9 +197,6 @@ pub const DescriptorPool = struct {
         desc: ngl.DescriptorSet.Desc,
         descriptor_sets: []ngl.DescriptorSet,
     ) Error!void {
-        const dev = Device.cast(device);
-        const desc_pool = cast(descriptor_pool);
-
         var set_layouts = try allocator.alloc(c.VkDescriptorSetLayout, desc.layouts.len);
         defer allocator.free(set_layouts);
         for (set_layouts, desc.layouts) |*handle, layout|
@@ -218,12 +208,12 @@ pub const DescriptorPool = struct {
         const alloc_info = c.VkDescriptorSetAllocateInfo{
             .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
             .pNext = null,
-            .descriptorPool = desc_pool.handle,
+            .descriptorPool = cast(descriptor_pool).handle,
             .descriptorSetCount = @intCast(set_layouts.len),
             .pSetLayouts = set_layouts.ptr,
         };
 
-        try check(dev.vkAllocateDescriptorSets(&alloc_info, handles.ptr));
+        try check(Device.cast(device).vkAllocateDescriptorSets(&alloc_info, handles.ptr));
 
         for (descriptor_sets, handles) |*set, handle|
             set.impl = .{ .val = @bitCast(DescriptorSet{ .handle = handle }) };
@@ -244,14 +234,11 @@ pub const DescriptorPool = struct {
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         descriptor_pool: Impl.DescriptorPool,
     ) void {
-        const dev = Device.cast(device);
-        const desc_pool = cast(descriptor_pool);
-        dev.vkDestroyDescriptorPool(desc_pool.handle, null);
-        allocator.destroy(desc_pool);
+        Device.cast(device).vkDestroyDescriptorPool(cast(descriptor_pool).handle, null);
     }
 };
 
