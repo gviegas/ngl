@@ -218,6 +218,14 @@ pub const SwapChain = struct {
         return .{ .impl = try Impl.get().initSwapChain(allocator, device.impl, desc) };
     }
 
+    /// Caller is responsible for freeing the returned slice.
+    /// The images are owned by the swap chain and will be implicitly
+    /// freed when `self.deinit` is called. Calling `Image.deinit` on
+    /// these images is not allowed.
+    pub fn getImages(self: *Self, allocator: std.mem.Allocator, device: *Device) Error![]Image {
+        return Impl.get().getSwapChainImages(allocator, device.impl, self.impl);
+    }
+
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
         Impl.get().deinitSwapChain(allocator, device.impl, self.impl);
         self.* = undefined;

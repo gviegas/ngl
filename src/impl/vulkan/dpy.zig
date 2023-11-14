@@ -11,6 +11,7 @@ const check = conv.check;
 const log = @import("init.zig").log;
 const Instance = @import("init.zig").Instance;
 const Device = @import("init.zig").Device;
+const Image = @import("res.zig").Image;
 
 pub const Surface = packed struct {
     handle: c.VkSurfaceKHR,
@@ -260,11 +261,12 @@ pub const SwapChain = packed struct {
         device: Impl.Device,
         desc: ngl.SwapChain.Desc,
     ) Error!Impl.SwapChain {
-        const dev = Device.cast(device);
+        const usage = conv.toVkImageUsageFlags(desc.usage);
+        // Usage must not be zero
+        if (usage == 0) return Error.InvalidArgument;
 
         var swapchain: c.VkSwapchainKHR = undefined;
-
-        try check(dev.vkCreateSwapchainKHR(&.{
+        try check(Device.cast(device).vkCreateSwapchainKHR(&.{
             .sType = c.VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .pNext = null,
             .flags = 0,
@@ -274,11 +276,7 @@ pub const SwapChain = packed struct {
             .imageColorSpace = conv.toVkColorSpace(desc.color_space),
             .imageExtent = .{ .width = desc.width, .height = desc.height },
             .imageArrayLayers = desc.layers,
-            .imageUsage = blk: {
-                const usage = conv.toVkImageUsageFlags(desc.usage);
-                // Usage must not be zero
-                break :blk if (usage != 0) usage else return Error.InvalidArgument;
-            },
+            .imageUsage = usage,
             .imageSharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices = null,
@@ -290,6 +288,30 @@ pub const SwapChain = packed struct {
         }, null, &swapchain));
 
         return .{ .val = @bitCast(SwapChain{ .handle = swapchain }) };
+    }
+
+    pub fn getImages(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        swap_chain: Impl.SwapChain,
+    ) Error![]ngl.Image {
+        const dev = Device.cast(device);
+        const sc = cast(swap_chain);
+
+        const n = 8;
+        var stk_imgs: [n]c.VkImage = undefined;
+
+        var img_n: u32 = undefined;
+        try check(dev.vkGetSwapchainImagesKHR(sc.handle, &img_n, null));
+        var imgs = if (img_n > n) try allocator.alloc(c.VkImage, img_n) else stk_imgs[0..img_n];
+        defer if (img_n > n) allocator.free(imgs);
+        try check(dev.vkGetSwapchainImagesKHR(sc.handle, &img_n, imgs.ptr));
+
+        var s = try allocator.alloc(ngl.Image, img_n);
+        for (s, imgs) |*image, handle|
+            image.* = .{ .impl = .{ .val = @bitCast(Image{ .handle = handle }) } };
+        return s;
     }
 
     pub fn deinit(

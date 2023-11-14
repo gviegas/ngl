@@ -41,6 +41,18 @@ test "SwapChain.init/deinit" {
     });
     errdefer sc.deinit(gpa, &ctx.device);
 
+    const imgs = blk: {
+        var imgs = try sc.getImages(gpa, &ctx.device);
+        const n = imgs.len;
+        gpa.free(imgs);
+        imgs = try sc.getImages(gpa, &ctx.device);
+        errdefer gpa.free(imgs);
+        try testing.expectEqual(imgs.len, n);
+        try testing.expect(n >= capab.min_count);
+        break :blk imgs;
+    };
+    defer gpa.free(imgs);
+
     var sc_2 = try ngl.SwapChain.init(gpa, &ctx.device, .{
         .surface = &plat.surface,
         .min_count = capab.min_count,
@@ -57,6 +69,10 @@ test "SwapChain.init/deinit" {
         .old_swap_chain = &sc,
     });
     defer sc_2.deinit(gpa, &ctx.device);
+
+    const imgs_2 = try sc_2.getImages(gpa, &ctx.device);
+    defer gpa.free(imgs_2);
+    try testing.expect(imgs_2.len == imgs.len);
 
     sc.deinit(gpa, &ctx.device);
 }

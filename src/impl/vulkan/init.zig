@@ -681,6 +681,7 @@ pub const Device = struct {
     destroyShaderModule: c.PFN_vkDestroyShaderModule,
     // VK_KHR_swapchain
     createSwapchain: c.PFN_vkCreateSwapchainKHR,
+    getSwapchainImages: c.PFN_vkGetSwapchainImagesKHR,
     destroySwapchain: c.PFN_vkDestroySwapchainKHR,
 
     pub fn cast(impl: Impl.Device) *Device {
@@ -945,6 +946,10 @@ pub const Device = struct {
 
             .createSwapchain = if (desc.feature_set.presentation)
                 @ptrCast(try Device.getProc(get, dev, "vkCreateSwapchainKHR"))
+            else
+                null,
+            .getSwapchainImages = if (desc.feature_set.presentation)
+                @ptrCast(try Device.getProc(get, dev, "vkGetSwapchainImagesKHR"))
             else
                 null,
             .destroySwapchain = if (desc.feature_set.presentation)
@@ -1900,6 +1905,15 @@ pub const Device = struct {
         return self.createSwapchain.?(self.handle, create_info, vk_allocator, swapchain);
     }
 
+    pub inline fn vkGetSwapchainImagesKHR(
+        self: *Device,
+        swapchain: c.VkSwapchainKHR,
+        image_count: *u32,
+        images: ?[*]c.VkImage,
+    ) c.VkResult {
+        return self.getSwapchainImages.?(self.handle, swapchain, image_count, images);
+    }
+
     pub inline fn vkDestroySwapchainKHR(
         self: *Device,
         swapchain: c.VkSwapchainKHR,
@@ -2412,5 +2426,6 @@ const vtable = Impl.VTable{
     .deinitSurface = @import("dpy.zig").Surface.deinit,
 
     .initSwapChain = @import("dpy.zig").SwapChain.init,
+    .getSwapChainImages = @import("dpy.zig").SwapChain.getImages,
     .deinitSwapChain = @import("dpy.zig").SwapChain.deinit,
 };
