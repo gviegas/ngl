@@ -10,6 +10,20 @@ test "SwapChain.init/deinit" {
     const ctx = context();
     const plat = try platform();
 
+    var fence = try ngl.Fence.init(gpa, &ctx.device, .{});
+    defer fence.deinit(gpa, &ctx.device);
+    var fence_2 = try ngl.Fence.init(gpa, &ctx.device, .{});
+    defer fence_2.deinit(gpa, &ctx.device);
+    var sema = try ngl.Semaphore.init(gpa, &ctx.device, .{});
+    defer sema.deinit(gpa, &ctx.device);
+    var sema_2 = try ngl.Semaphore.init(gpa, &ctx.device, .{});
+    defer sema_2.deinit(gpa, &ctx.device);
+
+    const pres_modes: ngl.Surface.PresentMode.Flags = plat.surface.getPresentModes(
+        &ctx.instance,
+        ctx.device_desc,
+    ) catch .{};
+
     const fmts = try plat.surface.getFormats(gpa, &ctx.instance, ctx.device_desc);
     defer gpa.free(fmts);
     // TODO: Need to fix this somehow
@@ -53,9 +67,23 @@ test "SwapChain.init/deinit" {
     };
     defer gpa.free(imgs);
 
+    if (imgs.len > capab.min_count) {
+        const idx = try sc.nextImage(&ctx.device, std.time.ns_per_ms, null, &fence);
+        const idx_2 = try sc.nextImage(&ctx.device, std.time.ns_per_ms, &sema, null);
+        try testing.expect(idx != idx_2);
+        try testing.expect(idx < imgs.len);
+        try testing.expect(idx_2 < imgs.len);
+    } else if (imgs.len == 1) {
+        const idx = try sc.nextImage(&ctx.device, std.time.ns_per_ms, &sema, &fence);
+        try testing.expectEqual(idx, 0);
+    } else {
+        const idx = try sc.nextImage(&ctx.device, std.time.ns_per_ms, &sema, &fence);
+        try testing.expect(idx < imgs.len);
+    }
+
     var sc_2 = try ngl.SwapChain.init(gpa, &ctx.device, .{
         .surface = &plat.surface,
-        .min_count = capab.min_count,
+        .min_count = capab.min_count + @intFromBool(capab.min_count < capab.max_count),
         .format = fmts[fmts.len - 1].format,
         .color_space = fmts[fmts.len - 1].color_space,
         .width = @TypeOf(plat.*).width,
@@ -64,15 +92,36 @@ test "SwapChain.init/deinit" {
         .usage = .{ .color_attachment = true },
         .pre_transform = capab.current_transform,
         .composite_alpha = comp_alpha,
-        .present_mode = .fifo,
-        .clipped = true,
+        .present_mode = if (pres_modes.immediate)
+            .immediate
+        else if (pres_modes.mailbox)
+            .mailbox
+        else if (pres_modes.fifo_relaxed)
+            .fifo_relaxed
+        else
+            .fifo,
+        .clipped = false,
         .old_swap_chain = &sc,
     });
     defer sc_2.deinit(gpa, &ctx.device);
 
     const imgs_2 = try sc_2.getImages(gpa, &ctx.device);
     defer gpa.free(imgs_2);
-    try testing.expect(imgs_2.len == imgs.len);
+    try testing.expect(imgs_2.len >= imgs.len);
+
+    if (imgs_2.len > capab.min_count) {
+        const idx = try sc_2.nextImage(&ctx.device, std.time.ns_per_ms, &sema_2, null);
+        const idx_2 = try sc_2.nextImage(&ctx.device, std.time.ns_per_ms, null, &fence_2);
+        try testing.expect(idx != idx_2);
+        try testing.expect(idx < imgs_2.len);
+        try testing.expect(idx_2 < imgs_2.len);
+    } else if (imgs_2.len == 1) {
+        const idx = try sc_2.nextImage(&ctx.device, std.time.ns_per_ms, &sema_2, &fence_2);
+        try testing.expectEqual(idx, 0);
+    } else {
+        const idx = try sc_2.nextImage(&ctx.device, std.time.ns_per_ms, &sema_2, &fence_2);
+        try testing.expect(idx < imgs_2.len);
+    }
 
     sc.deinit(gpa, &ctx.device);
 }

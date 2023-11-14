@@ -12,6 +12,8 @@ const log = @import("init.zig").log;
 const Instance = @import("init.zig").Instance;
 const Device = @import("init.zig").Device;
 const Image = @import("res.zig").Image;
+const Semaphore = @import("sync.zig").Semaphore;
+const Fence = @import("sync.zig").Fence;
 
 pub const Surface = packed struct {
     handle: c.VkSurfaceKHR,
@@ -312,6 +314,25 @@ pub const SwapChain = packed struct {
         for (s, imgs) |*image, handle|
             image.* = .{ .impl = .{ .val = @bitCast(Image{ .handle = handle }) } };
         return s;
+    }
+
+    pub fn nextImage(
+        _: *anyopaque,
+        device: Impl.Device,
+        swap_chain: Impl.SwapChain,
+        timeout: u64,
+        semaphore: ?Impl.Semaphore,
+        fence: ?Impl.Fence,
+    ) Error!ngl.SwapChain.Index {
+        var idx: u32 = undefined;
+        try check(Device.cast(device).vkAcquireNextImageKHR(
+            cast(swap_chain).handle,
+            timeout,
+            if (semaphore) |x| Semaphore.cast(x).handle else null_handle,
+            if (fence) |x| Fence.cast(x).handle else null_handle,
+            &idx,
+        ));
+        return idx;
     }
 
     pub fn deinit(

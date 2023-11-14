@@ -7,6 +7,8 @@ const Device = ngl.Device;
 const Queue = ngl.Queue;
 const Format = ngl.Format;
 const Image = ngl.Image;
+const Semaphore = ngl.Semaphore;
+const Fence = ngl.Fence;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 const c = @import("../impl/c.zig");
@@ -194,6 +196,10 @@ pub const Surface = struct {
 pub const SwapChain = struct {
     impl: Impl.SwapChain,
 
+    // TODO: Should use a smaller integer for this type
+    // (need to update `Surface.Capabilities`)
+    pub const Index = u32;
+
     pub const Desc = struct {
         surface: *Surface,
         min_count: u32,
@@ -224,6 +230,23 @@ pub const SwapChain = struct {
     /// these images is not allowed.
     pub fn getImages(self: *Self, allocator: std.mem.Allocator, device: *Device) Error![]Image {
         return Impl.get().getSwapChainImages(allocator, device.impl, self.impl);
+    }
+
+    /// `semaphore` and `fence` must not both be `null`.
+    pub fn nextImage(
+        self: *Self,
+        device: *Device,
+        timeout: u64,
+        semaphore: ?*Semaphore,
+        fence: ?*Fence,
+    ) Error!Index {
+        return Impl.get().nextSwapChainImage(
+            device.impl,
+            self.impl,
+            timeout,
+            if (semaphore) |x| x.impl else null,
+            if (fence) |x| x.impl else null,
+        );
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {

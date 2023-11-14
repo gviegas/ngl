@@ -809,6 +809,15 @@ pub const VTable = struct {
         swap_chain: SwapChain,
     ) Error![]ngl.Image,
 
+    nextSwapChainImage: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        swap_chain: SwapChain,
+        timeout: u64,
+        semaphore: ?Semaphore,
+        fence: ?Fence,
+    ) Error!ngl.SwapChain.Index,
+
     deinitSwapChain: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1811,6 +1820,17 @@ pub fn getSwapChainImages(
     swap_chain: SwapChain,
 ) Error![]ngl.Image {
     return self.vtable.getSwapChainImages(self.ptr, allocator, device, swap_chain);
+}
+
+pub fn nextSwapChainImage(
+    self: *Self,
+    device: Device,
+    swap_chain: SwapChain,
+    timeout: u64,
+    semaphore: ?Semaphore,
+    fence: ?Fence,
+) Error!ngl.SwapChain.Index {
+    return self.vtable.nextSwapChainImage(self.ptr, device, swap_chain, timeout, semaphore, fence);
 }
 
 pub fn deinitSwapChain(

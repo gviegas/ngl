@@ -682,6 +682,7 @@ pub const Device = struct {
     // VK_KHR_swapchain
     createSwapchain: c.PFN_vkCreateSwapchainKHR,
     getSwapchainImages: c.PFN_vkGetSwapchainImagesKHR,
+    acquireNextImage: c.PFN_vkAcquireNextImageKHR,
     destroySwapchain: c.PFN_vkDestroySwapchainKHR,
 
     pub fn cast(impl: Impl.Device) *Device {
@@ -950,6 +951,10 @@ pub const Device = struct {
                 null,
             .getSwapchainImages = if (desc.feature_set.presentation)
                 @ptrCast(try Device.getProc(get, dev, "vkGetSwapchainImagesKHR"))
+            else
+                null,
+            .acquireNextImage = if (desc.feature_set.presentation)
+                @ptrCast(try Device.getProc(get, dev, "vkAcquireNextImageKHR"))
             else
                 null,
             .destroySwapchain = if (desc.feature_set.presentation)
@@ -1914,6 +1919,24 @@ pub const Device = struct {
         return self.getSwapchainImages.?(self.handle, swapchain, image_count, images);
     }
 
+    pub inline fn vkAcquireNextImageKHR(
+        self: *Device,
+        swapchain: c.VkSwapchainKHR,
+        timeout: u64,
+        semaphore: c.VkSemaphore,
+        fence: c.VkFence,
+        image_index: *u32,
+    ) c.VkResult {
+        return self.acquireNextImage.?(
+            self.handle,
+            swapchain,
+            timeout,
+            semaphore,
+            fence,
+            image_index,
+        );
+    }
+
     pub inline fn vkDestroySwapchainKHR(
         self: *Device,
         swapchain: c.VkSwapchainKHR,
@@ -2427,5 +2450,6 @@ const vtable = Impl.VTable{
 
     .initSwapChain = @import("dpy.zig").SwapChain.init,
     .getSwapChainImages = @import("dpy.zig").SwapChain.getImages,
+    .nextSwapChainImage = @import("dpy.zig").SwapChain.nextImage,
     .deinitSwapChain = @import("dpy.zig").SwapChain.deinit,
 };
