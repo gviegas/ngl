@@ -245,9 +245,7 @@ pub fn toVkImageLayout(image_layout: ngl.Image.Layout) c.VkImageLayout {
         .shader_read_only_optimal => c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .transfer_source_optimal => c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         .transfer_dest_optimal => c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        // TODO
-        //.present_source => c.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        //.shared_present => c.VK_IMAGE_LAYOUT_SHARED_PRESENT_KHR,
+        .present_source => c.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
     };
 }
 

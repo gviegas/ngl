@@ -531,9 +531,8 @@ pub const Image = struct {
         shader_read_only_optimal,
         transfer_source_optimal,
         transfer_dest_optimal,
-        // TODO
-        //present_source,
-        //shared_present,
+        // `Feature.presentation`.
+        present_source,
     };
 
     pub const Type = enum {
