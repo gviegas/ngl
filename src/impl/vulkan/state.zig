@@ -660,27 +660,21 @@ pub const Pipeline = struct {
     }
 };
 
-// TODO: Don't store this type on the heap
-pub const PipelineCache = struct {
+pub const PipelineCache = packed struct {
     handle: c.VkPipelineCache,
 
-    pub inline fn cast(impl: Impl.PipelineCache) *PipelineCache {
-        return impl.ptr(PipelineCache);
+    pub inline fn cast(impl: Impl.PipelineCache) PipelineCache {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.PipelineCache.Desc,
     ) Error!Impl.PipelineCache {
-        const dev = Device.cast(device);
-
-        var ptr = try allocator.create(PipelineCache);
-        errdefer allocator.destroy(ptr);
-
         var pl_cache: c.VkPipelineCache = undefined;
-        try check(dev.vkCreatePipelineCache(&.{
+        try check(Device.cast(device).vkCreatePipelineCache(&.{
             .sType = c.VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
             .pNext = null,
             .flags = 0,
@@ -688,19 +682,15 @@ pub const PipelineCache = struct {
             .pInitialData = if (desc.initial_data) |x| x.ptr else null,
         }, null, &pl_cache));
 
-        ptr.* = .{ .handle = pl_cache };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(PipelineCache{ .handle = pl_cache }) };
     }
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         pipeline_cache: Impl.PipelineCache,
     ) void {
-        const dev = Device.cast(device);
-        const pl_cache = cast(pipeline_cache);
-        dev.vkDestroyPipelineCache(pl_cache.handle, null);
-        allocator.destroy(pl_cache);
+        Device.cast(device).vkDestroyPipelineCache(cast(pipeline_cache).handle, null);
     }
 };
