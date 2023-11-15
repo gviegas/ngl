@@ -11,12 +11,11 @@ const check = conv.check;
 const log = @import("init.zig").log;
 const Device = @import("init.zig").Device;
 
-// TODO: Don't allocate this type on the heap
-pub const RenderPass = struct {
+pub const RenderPass = packed struct {
     handle: c.VkRenderPass,
 
-    pub inline fn cast(impl: Impl.RenderPass) *RenderPass {
-        return impl.ptr(RenderPass);
+    pub inline fn cast(impl: Impl.RenderPass) RenderPass {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
@@ -25,8 +24,6 @@ pub const RenderPass = struct {
         device: Impl.Device,
         desc: ngl.RenderPass.Desc,
     ) Error!Impl.RenderPass {
-        const dev = Device.cast(device);
-
         // TODO:
         // - Input attachment's aspect mask (v1.1/VK_KHR_maintenance2)
         // - Depth/stencil resolve (v1.2/VK_KHR_depth_stencil_resolve)
@@ -223,34 +220,26 @@ pub const RenderPass = struct {
         defer if (subp_depends) |x| allocator.free(x);
 
         // Render pass
-        var ptr = try allocator.create(RenderPass);
-        errdefer allocator.destroy(ptr);
         var rp: c.VkRenderPass = undefined;
-        try check(dev.vkCreateRenderPass(&create_info, null, &rp));
-
-        ptr.* = .{ .handle = rp };
-        return .{ .val = @intFromPtr(ptr) };
+        try check(Device.cast(device).vkCreateRenderPass(&create_info, null, &rp));
+        return .{ .val = @bitCast(RenderPass{ .handle = rp }) };
     }
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         render_pass: Impl.RenderPass,
     ) void {
-        const dev = Device.cast(device);
-        const rp = cast(render_pass);
-        dev.vkDestroyRenderPass(rp.handle, null);
-        allocator.destroy(rp);
+        Device.cast(device).vkDestroyRenderPass(cast(render_pass).handle, null);
     }
 };
 
-// TODO: Don't allocate this type on the heap
-pub const FrameBuffer = struct {
+pub const FrameBuffer = packed struct {
     handle: c.VkFramebuffer,
 
-    pub inline fn cast(impl: Impl.FrameBuffer) *FrameBuffer {
-        return impl.ptr(FrameBuffer);
+    pub inline fn cast(impl: Impl.FrameBuffer) FrameBuffer {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
@@ -259,9 +248,6 @@ pub const FrameBuffer = struct {
         device: Impl.Device,
         desc: ngl.FrameBuffer.Desc,
     ) Error!Impl.FrameBuffer {
-        const dev = Device.cast(device);
-        const rp = RenderPass.cast(desc.render_pass.impl);
-
         const attach_n: u32 = if (desc.attachments) |x| @intCast(x.len) else 0;
         var attachs: ?[]c.VkImageView = blk: {
             if (attach_n == 0) break :blk null;
@@ -272,15 +258,12 @@ pub const FrameBuffer = struct {
         };
         defer if (attachs) |x| allocator.free(x);
 
-        var ptr = try allocator.create(FrameBuffer);
-        errdefer allocator.destroy(ptr);
-
         var fb: c.VkFramebuffer = undefined;
-        try check(dev.vkCreateFramebuffer(&.{
+        try check(Device.cast(device).vkCreateFramebuffer(&.{
             .sType = c.VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             .pNext = null,
             .flags = 0,
-            .renderPass = rp.handle,
+            .renderPass = RenderPass.cast(desc.render_pass.impl).handle,
             .attachmentCount = attach_n,
             .pAttachments = if (attachs) |x| x.ptr else null,
             .width = desc.width,
@@ -288,19 +271,15 @@ pub const FrameBuffer = struct {
             .layers = desc.layers,
         }, null, &fb));
 
-        ptr.* = .{ .handle = fb };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(FrameBuffer{ .handle = fb }) };
     }
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         frame_buffer: Impl.FrameBuffer,
     ) void {
-        const dev = Device.cast(device);
-        const fb = cast(frame_buffer);
-        dev.vkDestroyFramebuffer(fb.handle, null);
-        allocator.destroy(fb);
+        Device.cast(device).vkDestroyFramebuffer(cast(frame_buffer).handle, null);
     }
 };
