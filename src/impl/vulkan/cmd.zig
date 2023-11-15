@@ -18,35 +18,28 @@ const PipelineLayout = @import("desc.zig").PipelineLayout;
 const DescriptorSet = @import("desc.zig").DescriptorSet;
 const Pipeline = @import("state.zig").Pipeline;
 
-pub const CommandPool = struct {
+pub const CommandPool = packed struct {
     handle: c.VkCommandPool,
 
-    pub inline fn cast(impl: Impl.CommandPool) *CommandPool {
-        return impl.ptr(CommandPool);
+    pub inline fn cast(impl: Impl.CommandPool) CommandPool {
+        return @bitCast(impl.val);
     }
 
     pub fn init(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.CommandPool.Desc,
     ) Error!Impl.CommandPool {
-        const dev = Device.cast(device);
-        const queue = Queue.cast(desc.queue.impl);
-
-        var ptr = try allocator.create(CommandPool);
-        errdefer allocator.destroy(ptr);
-
         var cmd_pool: c.VkCommandPool = undefined;
-        try check(dev.vkCreateCommandPool(&.{
+        try check(Device.cast(device).vkCreateCommandPool(&.{
             .sType = c.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext = null,
             .flags = 0, // TODO: Maybe expose this
-            .queueFamilyIndex = queue.family,
+            .queueFamilyIndex = Queue.cast(desc.queue.impl).family,
         }, null, &cmd_pool));
 
-        ptr.* = .{ .handle = cmd_pool };
-        return .{ .val = @intFromPtr(ptr) };
+        return .{ .val = @bitCast(CommandPool{ .handle = cmd_pool }) };
     }
 
     pub fn alloc(
@@ -96,7 +89,8 @@ pub const CommandPool = struct {
     ) void {
         const dev = Device.cast(device);
         const cmd_pool = cast(command_pool);
-        const n = command_buffers.len;
+        // Should be safe to assume this
+        const n: u32 = @intCast(command_buffers.len);
 
         var handles = allocator.alloc(c.VkCommandBuffer, n) catch {
             for (command_buffers) |cmd_buf| {
@@ -109,19 +103,16 @@ pub const CommandPool = struct {
 
         for (handles, command_buffers) |*handle, cmd_buf|
             handle.* = CommandBuffer.cast(cmd_buf.impl).handle;
-        dev.vkFreeCommandBuffers(cmd_pool.handle, @intCast(n), handles.ptr);
+        dev.vkFreeCommandBuffers(cmd_pool.handle, n, handles.ptr);
     }
 
     pub fn deinit(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         command_pool: Impl.CommandPool,
     ) void {
-        const dev = Device.cast(device);
-        const cmd_pool = cast(command_pool);
-        dev.vkDestroyCommandPool(cmd_pool.handle, null);
-        allocator.destroy(cmd_pool);
+        Device.cast(device).vkDestroyCommandPool(cast(command_pool).handle, null);
     }
 };
 
