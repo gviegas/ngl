@@ -5,6 +5,7 @@ const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 const queue_locks = &@import("test.zig").queue_locks;
+const platform = @import("sf.zig").platform;
 
 test "Queue.submit" {
     const dev = &context().device;
@@ -182,6 +183,86 @@ test "Queue.submit" {
         // We don't have to submit anything at all
         try queue.submit(gpa, dev, &fences[0], &.{});
         try ngl.Fence.wait(gpa, dev, timeout, &.{&fences[0]});
+    }
+}
+
+test "Queue.present" {
+    const dev = &context().device;
+    const plat = try platform();
+
+    var semas = try gpa.alloc(ngl.Semaphore, plat.images.len);
+    defer gpa.free(semas);
+    for (semas, 0..) |*sema, i| {
+        sema.* = ngl.Semaphore.init(gpa, dev, .{}) catch |err| {
+            for (0..i) |j| semas[j].deinit(gpa, dev);
+            return err;
+        };
+    }
+    var fences = try gpa.alloc(ngl.Fence, plat.images.len);
+    defer gpa.free(fences);
+    for (fences, 0..) |*fence, i| {
+        fence.* = ngl.Fence.init(gpa, dev, .{}) catch |err| {
+            for (0..i) |j| fences[j].deinit(gpa, dev);
+            return err;
+        };
+    }
+
+    const timeout = std.time.ns_per_ms * 3;
+
+    // TODO: Create the swap chain with more images than the minimum
+    // so we can test multiple presents in one call
+
+    var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[plat.queue_index] });
+    defer cmd_pool.deinit(gpa, dev);
+    var cmd_bufs = try cmd_pool.alloc(gpa, dev, .{
+        .level = .primary,
+        .count = @intCast(plat.images.len),
+    });
+    defer gpa.free(cmd_bufs);
+
+    for (0..plat.images.len) |i| {
+        const next = try plat.swap_chain.nextImage(dev, timeout, null, &fences[i]);
+
+        var cmd = try cmd_bufs[i].begin(gpa, dev, .{
+            .one_time_submit = true,
+            .inheritance = null,
+        });
+        cmd.pipelineBarrier(&.{.{
+            .image_dependencies = &.{.{
+                .source_stage_mask = .{},
+                .source_access_mask = .{},
+                .dest_stage_mask = .{},
+                .dest_access_mask = .{},
+                .queue_transfer = null,
+                .old_layout = .unknown,
+                .new_layout = .present_source,
+                .image = &plat.images[next],
+                .range = .{
+                    .aspect_mask = .{ .color = true },
+                    .base_level = 0,
+                    .levels = 1,
+                    .base_layer = 0,
+                    .layers = 1,
+                },
+            }},
+            .by_region = false,
+        }});
+        try cmd.end();
+
+        try ngl.Fence.wait(gpa, dev, timeout, &.{&fences[i]});
+
+        try dev.queues[plat.queue_index].submit(gpa, dev, null, &.{.{
+            .commands = &.{.{ .command_buffer = &cmd_bufs[i] }},
+            .wait = &.{},
+            .signal = &.{.{ .semaphore = &semas[i], .stage_mask = .{} }},
+        }});
+
+        try dev.queues[plat.queue_index].present(
+            gpa,
+            dev,
+            &.{&semas[i]},
+            &.{.{ .swap_chain = &plat.swap_chain, .image_index = next }},
+        );
     }
 }
 
