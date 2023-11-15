@@ -121,6 +121,15 @@ pub const VTable = struct {
         submits: []const ngl.Queue.Submit,
     ) Error!void,
 
+    present: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        queue: Queue,
+        wait_semaphores: []const *ngl.Semaphore,
+        presents: []const ngl.Queue.Present,
+    ) Error!void,
+
     waitQueue: *const fn (ctx: *anyopaque, device: Device, queue: Queue) Error!void,
 
     // Memory ----------------------------------------------
@@ -943,6 +952,17 @@ pub fn submit(
     submits: []const ngl.Queue.Submit,
 ) Error!void {
     return self.vtable.submit(self.ptr, allocator, device, queue, fence, submits);
+}
+
+pub fn present(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    queue: Queue,
+    wait_semaphores: []const *ngl.Semaphore,
+    presents: []const ngl.Queue.Present,
+) Error!void {
+    return self.vtable.present(self.ptr, allocator, device, queue, wait_semaphores, presents);
 }
 
 pub fn waitQueue(self: *Self, device: Device, queue: Queue) Error!void {

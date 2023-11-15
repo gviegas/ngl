@@ -5,6 +5,7 @@ const CommandBuffer = ngl.CommandBuffer;
 const PipelineStage = ngl.PipelineStage;
 const Fence = ngl.Fence;
 const Semaphore = ngl.Semaphore;
+const SwapChain = ngl.SwapChain;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
@@ -145,6 +146,11 @@ pub const Queue = struct {
         };
     };
 
+    pub const Present = struct {
+        swap_chain: *SwapChain,
+        image_index: SwapChain.Index,
+    };
+
     const Self = @This();
 
     pub fn submit(
@@ -161,6 +167,19 @@ pub const Queue = struct {
             if (fence) |x| x.impl else null,
             submits,
         );
+    }
+
+    /// `Feature.presentation`.
+    /// One must ensure that the queue is compatible with the surface
+    /// of every swap chain in `presents`.
+    pub fn present(
+        self: *Self,
+        allocator: std.mem.Allocator,
+        device: *Device,
+        wait_semaphores: []const *Semaphore,
+        presents: []const Present,
+    ) Error!void {
+        return Impl.get().present(allocator, device.impl, self.impl, wait_semaphores, presents);
     }
 
     pub fn wait(self: *Self, device: *Device) Error!void {

@@ -13,6 +13,7 @@ const check = conv.check;
 const CommandBuffer = @import("cmd.zig").CommandBuffer;
 const Fence = @import("sync.zig").Fence;
 const Semaphore = @import("sync.zig").Semaphore;
+const SwapChain = @import("dpy.zig").SwapChain;
 
 var libvulkan: ?*anyopaque = null;
 var getInstanceProcAddr: c.PFN_vkGetInstanceProcAddr = null;
@@ -680,6 +681,7 @@ pub const Device = struct {
     createShaderModule: c.PFN_vkCreateShaderModule,
     destroyShaderModule: c.PFN_vkDestroyShaderModule,
     // VK_KHR_swapchain
+    queuePresent: c.PFN_vkQueuePresentKHR,
     createSwapchain: c.PFN_vkCreateSwapchainKHR,
     getSwapchainImages: c.PFN_vkGetSwapchainImagesKHR,
     acquireNextImage: c.PFN_vkAcquireNextImageKHR,
@@ -945,6 +947,10 @@ pub const Device = struct {
             .createShaderModule = @ptrCast(try Device.getProc(get, dev, "vkCreateShaderModule")),
             .destroyShaderModule = @ptrCast(try Device.getProc(get, dev, "vkDestroyShaderModule")),
 
+            .queuePresent = if (desc.feature_set.presentation)
+                @ptrCast(try Device.getProc(get, dev, "vkQueuePresentKHR"))
+            else
+                null,
             .createSwapchain = if (desc.feature_set.presentation)
                 @ptrCast(try Device.getProc(get, dev, "vkCreateSwapchainKHR"))
             else
@@ -1886,6 +1892,14 @@ pub const Device = struct {
         self.destroyShaderModule.?(self.handle, shader_module, vk_allocator);
     }
 
+    pub inline fn vkQueuePresentKHR(
+        self: *Device,
+        queue: c.VkQueue,
+        present_info: *const c.VkPresentInfoKHR,
+    ) c.VkResult {
+        return self.queuePresent.?(queue, present_info);
+    }
+
     pub inline fn vkCreateSwapchainKHR(
         self: *Device,
         create_info: *const c.VkSwapchainCreateInfoKHR,
@@ -2046,6 +2060,63 @@ pub const Queue = struct {
             if (submits.len > 0) subm_infos.ptr else null,
             if (fence) |x| Fence.cast(x).handle else null_handle,
         ));
+    }
+
+    // TODO: Don't allocate on every call
+    fn present(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        queue: Impl.Queue,
+        wait_semaphores: []const *ngl.Semaphore,
+        presents: []const ngl.Queue.Present,
+    ) Error!void {
+        std.debug.assert(presents.len > 0);
+
+        const n = 8;
+        var stk_semas: [n]c.VkSemaphore = undefined;
+        var stk_scs: [n]c.VkSwapchainKHR = undefined;
+        var stk_inds: [n]u32 = undefined;
+
+        var semas = if (wait_semaphores.len > n)
+            try allocator.alloc(c.VkSemaphore, wait_semaphores.len)
+        else
+            stk_semas[0..wait_semaphores.len];
+        defer if (wait_semaphores.len > n) allocator.free(semas);
+        for (semas, wait_semaphores) |*handle, sema|
+            handle.* = Semaphore.cast(sema.impl).handle;
+
+        var scs: []c.VkSwapchainKHR = undefined;
+        var inds: []u32 = undefined;
+        if (presents.len > n) {
+            scs = try allocator.alloc(c.VkSwapchainKHR, presents.len);
+            inds = allocator.alloc(u32, presents.len) catch |err| {
+                allocator.free(scs);
+                return err;
+            };
+        } else {
+            scs = stk_scs[0..presents.len];
+            inds = stk_inds[0..presents.len];
+        }
+        defer if (presents.len > n) {
+            allocator.free(scs);
+            allocator.free(inds);
+        };
+        for (scs, inds, presents) |*sc, *idx, pres| {
+            sc.* = SwapChain.cast(pres.swap_chain.impl).handle;
+            idx.* = pres.image_index;
+        }
+
+        try check(Device.cast(device).vkQueuePresentKHR(Queue.cast(queue).handle, &.{
+            .sType = c.VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .pNext = null,
+            .waitSemaphoreCount = @intCast(wait_semaphores.len),
+            .pWaitSemaphores = if (wait_semaphores.len > 0) semas.ptr else null,
+            .swapchainCount = @intCast(presents.len),
+            .pSwapchains = scs.ptr,
+            .pImageIndices = inds.ptr,
+            .pResults = null,
+        }));
     }
 
     fn wait(_: *anyopaque, device: Impl.Device, queue: Impl.Queue) Error!void {
@@ -2327,6 +2398,7 @@ const vtable = Impl.VTable{
     .deinitDevice = Device.deinit,
 
     .submit = Queue.submit,
+    .present = Queue.present,
     .waitQueue = Queue.wait,
 
     .mapMemory = Memory.map,
