@@ -81,6 +81,8 @@ test "Surface queries" {
 }
 
 pub const Platform = struct {
+    queue_index: usize,
+    swap_chain: ngl.SwapChain,
     surface: ngl.Surface,
     impl: switch (builtin.os.tag) {
         .linux => if (builtin.target.isAndroid()) PlatformAndroid else PlatformXcb,
@@ -93,12 +95,13 @@ pub const Platform = struct {
 
     fn init(allocator: std.mem.Allocator) !Platform {
         const ctx = context();
-        if (!ctx.instance_desc.presentation) return error.SkipZigTest;
+        if (!ctx.instance_desc.presentation or !ctx.device_desc.feature_set.presentation)
+            return error.SkipZigTest;
 
-        var impl = try @typeInfo(Platform).Struct.fields[1].type.init();
+        var impl = try @typeInfo(Platform).Struct.fields[3].type.init();
         errdefer impl.deinit();
 
-        const sf = try switch (builtin.os.tag) {
+        var sf = try switch (builtin.os.tag) {
             .linux => if (builtin.target.isAndroid())
                 @compileError("TODO")
             else
@@ -111,12 +114,60 @@ pub const Platform = struct {
             .windows => @compileError("TODO"),
             else => @compileError("OS not supported"),
         };
+        errdefer sf.deinit(allocator, &ctx.instance);
 
-        return .{ .surface = sf, .impl = impl };
+        const fmts = try sf.getFormats(allocator, &ctx.instance, ctx.device_desc);
+        defer allocator.free(fmts);
+        const fmt_i = for (fmts, 0..) |fmt, i| {
+            // TODO
+            _ = fmt;
+            break i;
+        } else unreachable;
+        const capab = try sf.getCapabilities(&ctx.instance, ctx.device_desc, .fifo);
+
+        var sc = try ngl.SwapChain.init(allocator, &ctx.device, .{
+            .surface = &sf,
+            .min_count = capab.min_count,
+            .format = fmts[fmt_i].format,
+            .color_space = fmts[fmt_i].color_space,
+            .width = width,
+            .height = height,
+            .layers = 1,
+            .usage = .{ .color_attachment = true },
+            .pre_transform = capab.current_transform,
+            .composite_alpha = inline for (
+                @typeInfo(ngl.Surface.CompositeAlpha.Flags).Struct.fields,
+            ) |f| {
+                if (@field(capab.supported_composite_alpha, f.name))
+                    break @field(ngl.Surface.CompositeAlpha, f.name);
+            } else unreachable,
+            .present_mode = .fifo,
+            .clipped = true,
+            .old_swap_chain = null,
+        });
+        errdefer sc.deinit(allocator, &ctx.device);
+
+        const queue_i = for (ctx.device_desc.queues, 0..) |queue_desc, i| {
+            const is = sf.isCompatible(
+                &ctx.instance,
+                ctx.device_desc,
+                queue_desc orelse continue,
+            ) catch continue;
+            if (is) break i;
+        } else return error.SkipZigTest;
+
+        return .{
+            .queue_index = queue_i,
+            .swap_chain = sc,
+            .surface = sf,
+            .impl = impl,
+        };
     }
 
     fn deinit(self: *Platform, allocator: std.mem.Allocator) void {
-        self.surface.deinit(allocator, self);
+        const ctx = context();
+        self.swap_chain.deinit(allocator, &ctx.device);
+        self.surface.deinit(allocator, &ctx.instance);
         self.impl.deinit();
     }
 };
