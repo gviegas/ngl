@@ -81,14 +81,16 @@ test "Surface queries" {
 }
 
 pub const Platform = struct {
-    queue_index: usize,
-    swap_chain: ngl.SwapChain,
-    surface: ngl.Surface,
     impl: switch (builtin.os.tag) {
         .linux => if (builtin.target.isAndroid()) PlatformAndroid else PlatformXcb,
         .windows => PlatformWin32,
         else => @compileError("OS not supported"),
     },
+    surface: ngl.Surface,
+    swap_chain: ngl.SwapChain,
+    images: []ngl.Image,
+    image_views: []ngl.ImageView,
+    queue_index: usize,
 
     pub const width = 480;
     pub const height = 270;
@@ -98,7 +100,7 @@ pub const Platform = struct {
         if (!ctx.instance_desc.presentation or !ctx.device_desc.feature_set.presentation)
             return error.SkipZigTest;
 
-        var impl = try @typeInfo(Platform).Struct.fields[3].type.init();
+        var impl = try @typeInfo(Platform).Struct.fields[0].type.init();
         errdefer impl.deinit();
 
         var sf = try switch (builtin.os.tag) {
@@ -147,6 +149,29 @@ pub const Platform = struct {
         });
         errdefer sc.deinit(allocator, &ctx.device);
 
+        var imgs = try sc.getImages(allocator, &ctx.device);
+        errdefer allocator.free(imgs);
+
+        var views = try allocator.alloc(ngl.ImageView, imgs.len);
+        errdefer allocator.free(views);
+        for (views, imgs, 0..) |*view, *image, i| {
+            view.* = ngl.ImageView.init(allocator, &ctx.device, .{
+                .image = image,
+                .type = .@"2d",
+                .format = fmts[fmt_i].format,
+                .range = .{
+                    .aspect_mask = .{ .color = true },
+                    .base_level = 0,
+                    .levels = 1,
+                    .base_layer = 0,
+                    .layers = 1,
+                },
+            }) catch |err| {
+                for (0..i) |j| views[j].deinit(allocator, &ctx.device);
+                return err;
+            };
+        }
+
         const queue_i = for (ctx.device_desc.queues, 0..) |queue_desc, i| {
             const is = sf.isCompatible(
                 &ctx.instance,
@@ -157,18 +182,24 @@ pub const Platform = struct {
         } else return error.SkipZigTest;
 
         return .{
-            .queue_index = queue_i,
-            .swap_chain = sc,
-            .surface = sf,
             .impl = impl,
+            .surface = sf,
+            .swap_chain = sc,
+            .images = imgs,
+            .image_views = views,
+            .queue_index = queue_i,
         };
     }
 
     fn deinit(self: *Platform, allocator: std.mem.Allocator) void {
         const ctx = context();
+        for (self.image_views) |*view| view.deinit(allocator, &ctx.device);
+        allocator.free(self.image_views);
+        allocator.free(self.images);
         self.swap_chain.deinit(allocator, &ctx.device);
         self.surface.deinit(allocator, &ctx.instance);
         self.impl.deinit();
+        self.* = undefined;
     }
 };
 
