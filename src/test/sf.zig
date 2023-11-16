@@ -87,6 +87,7 @@ pub const Platform = struct {
         else => @compileError("OS not supported"),
     },
     surface: ngl.Surface,
+    format: ngl.Surface.Format,
     swap_chain: ngl.SwapChain,
     images: []ngl.Image,
     image_views: []ngl.ImageView,
@@ -184,6 +185,7 @@ pub const Platform = struct {
         return .{
             .impl = impl,
             .surface = sf,
+            .format = fmts[fmt_i],
             .swap_chain = sc,
             .images = imgs,
             .image_views = views,
