@@ -505,36 +505,6 @@ pub const SampleCount = enum {
 pub const Image = struct {
     impl: Impl.Image,
 
-    pub const Range = struct {
-        aspect_mask: Aspect.Flags,
-        base_level: u32,
-        levels: ?u32,
-        base_layer: u32,
-        layers: ?u32,
-    };
-
-    pub const Aspect = enum {
-        color,
-        depth,
-        stencil,
-
-        pub const Flags = ngl.Flags(Aspect);
-    };
-
-    pub const Layout = enum {
-        unknown,
-        preinitialized,
-        general,
-        color_attachment_optimal,
-        depth_stencil_attachment_optimal,
-        depth_stencil_read_only_optimal,
-        shader_read_only_optimal,
-        transfer_source_optimal,
-        transfer_dest_optimal,
-        // `Feature.presentation`.
-        present_source,
-    };
-
     pub const Type = enum {
         @"1d",
         @"2d",
@@ -562,6 +532,20 @@ pub const Image = struct {
         cube_compatible: bool = false,
     };
 
+    pub const Layout = enum {
+        unknown,
+        preinitialized,
+        general,
+        color_attachment_optimal,
+        depth_stencil_attachment_optimal,
+        depth_stencil_read_only_optimal,
+        shader_read_only_optimal,
+        transfer_source_optimal,
+        transfer_dest_optimal,
+        // `Feature.presentation`.
+        present_source,
+    };
+
     pub const Desc = struct {
         type: Type,
         format: Format,
@@ -576,10 +560,48 @@ pub const Image = struct {
         initial_layout: Layout,
     };
 
+    pub const Aspect = enum {
+        color,
+        depth,
+        stencil,
+
+        pub const Flags = ngl.Flags(Aspect);
+    };
+
+    pub const Range = struct {
+        aspect_mask: Aspect.Flags,
+        base_level: u32,
+        levels: ?u32,
+        base_layer: u32,
+        layers: ?u32,
+    };
+
+    pub const DataLayout = struct {
+        offset: u64,
+        size: u64,
+        /// Number of bytes between adjacent rows.
+        row_pitch: u64,
+        /// Number of bytes between adjacent slices.
+        /// This value is undefined for images created with
+        /// `Desc.depth_or_layers` equal to `1`.
+        slice_pitch: u64,
+    };
+
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
         return .{ .impl = try Impl.get().initImage(allocator, device.impl, desc) };
+    }
+
+    pub fn getDataLayout(
+        self: *Self,
+        device: *Device,
+        @"type": Type,
+        aspect: Aspect,
+        level: u32,
+        layer: u32,
+    ) DataLayout {
+        return Impl.get().getImageDataLayout(device.impl, self.impl, @"type", aspect, level, layer);
     }
 
     pub fn getMemoryRequirements(self: *Self, device: *Device) Memory.Requirements {

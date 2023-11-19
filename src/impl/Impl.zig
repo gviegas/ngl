@@ -556,6 +556,16 @@ pub const VTable = struct {
         desc: ngl.Image.Desc,
     ) Error!Image,
 
+    getImageDataLayout: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        image: Image,
+        type: ngl.Image.Type,
+        aspect: ngl.Image.Aspect,
+        level: u32,
+        layer: u32,
+    ) ngl.Image.DataLayout,
+
     getMemoryRequirementsImage: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1532,6 +1542,18 @@ pub fn initImage(
 
 pub fn deinitImage(self: *Self, allocator: std.mem.Allocator, device: Device, image: Image) void {
     self.vtable.deinitImage(self.ptr, allocator, device, image);
+}
+
+pub fn getImageDataLayout(
+    self: *Self,
+    device: Device,
+    image: Image,
+    @"type": ngl.Image.Type,
+    aspect: ngl.Image.Aspect,
+    level: u32,
+    layer: u32,
+) ngl.Image.DataLayout {
+    return self.vtable.getImageDataLayout(self.ptr, device, image, @"type", aspect, level, layer);
 }
 
 pub fn getMemoryRequirementsImage(

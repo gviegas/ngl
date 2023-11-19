@@ -654,6 +654,7 @@ pub const Device = struct {
     destroyBufferView: c.PFN_vkDestroyBufferView,
     createImage: c.PFN_vkCreateImage,
     destroyImage: c.PFN_vkDestroyImage,
+    getImageSubresourceLayout: c.PFN_vkGetImageSubresourceLayout,
     getImageMemoryRequirements: c.PFN_vkGetImageMemoryRequirements,
     bindImageMemory: c.PFN_vkBindImageMemory,
     createImageView: c.PFN_vkCreateImageView,
@@ -920,6 +921,7 @@ pub const Device = struct {
             .destroyBufferView = @ptrCast(try Device.getProc(get, dev, "vkDestroyBufferView")),
             .createImage = @ptrCast(try Device.getProc(get, dev, "vkCreateImage")),
             .destroyImage = @ptrCast(try Device.getProc(get, dev, "vkDestroyImage")),
+            .getImageSubresourceLayout = @ptrCast(try Device.getProc(get, dev, "vkGetImageSubresourceLayout")),
             .getImageMemoryRequirements = @ptrCast(try Device.getProc(get, dev, "vkGetImageMemoryRequirements")),
             .bindImageMemory = @ptrCast(try Device.getProc(get, dev, "vkBindImageMemory")),
             .createImageView = @ptrCast(try Device.getProc(get, dev, "vkCreateImageView")),
@@ -1639,6 +1641,15 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.destroyImage.?(self.handle, image, vk_allocator);
+    }
+
+    pub inline fn vkGetImageSubresourceLayout(
+        self: *Device,
+        image: c.VkImage,
+        subresource: *const c.VkImageSubresource,
+        layout: *c.VkSubresourceLayout,
+    ) void {
+        self.getImageSubresourceLayout.?(self.handle, image, subresource, layout);
     }
 
     pub inline fn vkGetImageMemoryRequirements(
@@ -2461,6 +2472,7 @@ const vtable = Impl.VTable{
     .deinitBufferView = @import("res.zig").BufferView.deinit,
 
     .initImage = @import("res.zig").Image.init,
+    .getImageDataLayout = @import("res.zig").Image.getDataLayout,
     .getMemoryRequirementsImage = @import("res.zig").Image.getMemoryRequirements,
     .bindMemoryImage = @import("res.zig").Image.bindMemory,
     .deinitImage = @import("res.zig").Image.deinit,

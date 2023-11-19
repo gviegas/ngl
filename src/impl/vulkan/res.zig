@@ -116,12 +116,12 @@ pub const Buffer = packed struct {
         device: Impl.Device,
         buffer: Impl.Buffer,
     ) ngl.Memory.Requirements {
-        var mem_req: c.VkMemoryRequirements = undefined;
-        Device.cast(device).vkGetBufferMemoryRequirements(cast(buffer).handle, &mem_req);
+        var mem_reqs: c.VkMemoryRequirements = undefined;
+        Device.cast(device).vkGetBufferMemoryRequirements(cast(buffer).handle, &mem_reqs);
         return .{
-            .size = mem_req.size,
-            .alignment = mem_req.alignment,
-            .type_bits = mem_req.memoryTypeBits,
+            .size = mem_reqs.size,
+            .alignment = mem_reqs.alignment,
+            .type_bits = mem_reqs.memoryTypeBits,
         };
     }
 
@@ -254,17 +254,41 @@ pub const Image = packed struct {
         return .{ .val = @bitCast(Image{ .handle = image }) };
     }
 
+    pub fn getDataLayout(
+        _: *anyopaque,
+        device: Impl.Device,
+        image: Impl.Image,
+        @"type": ngl.Image.Type,
+        aspect: ngl.Image.Aspect,
+        level: u32,
+        layer: u32,
+    ) ngl.Image.DataLayout {
+        var layout: c.VkSubresourceLayout = undefined;
+        Device.cast(device).vkGetImageSubresourceLayout(cast(image).handle, &.{
+            .aspectMask = conv.toVkImageAspect(aspect),
+            .mipLevel = level,
+            .arrayLayer = layer,
+        }, &layout);
+
+        return .{
+            .offset = layout.offset,
+            .size = layout.size,
+            .row_pitch = layout.rowPitch,
+            .slice_pitch = if (@"type" == .@"3d") layout.depthPitch else layout.arrayPitch,
+        };
+    }
+
     pub fn getMemoryRequirements(
         _: *anyopaque,
         device: Impl.Device,
         image: Impl.Image,
     ) ngl.Memory.Requirements {
-        var mem_req: c.VkMemoryRequirements = undefined;
-        Device.cast(device).vkGetImageMemoryRequirements(cast(image).handle, &mem_req);
+        var mem_reqs: c.VkMemoryRequirements = undefined;
+        Device.cast(device).vkGetImageMemoryRequirements(cast(image).handle, &mem_reqs);
         return .{
-            .size = mem_req.size,
-            .alignment = mem_req.alignment,
-            .type_bits = mem_req.memoryTypeBits,
+            .size = mem_reqs.size,
+            .alignment = mem_reqs.alignment,
+            .type_bits = mem_reqs.memoryTypeBits,
         };
     }
 
