@@ -62,7 +62,7 @@ pub fn context() *Context {
 pub var queue_locks = [_]std.Thread.Mutex{.{}} ** ngl.Queue.max;
 
 // This can be set to `null` to suppress test output
-pub const writer: ?std.fs.File.Writer = std.io.getStdErr().writer();
+pub const writer: ?std.fs.File.Writer = null; //std.io.getStdErr().writer();
 
 test {
     _ = @import("inst.zig");
@@ -94,4 +94,5 @@ test {
     _ = @import("pass_input.zig");
     _ = @import("sf.zig");
     _ = @import("sc.zig");
+    _ = @import("ads.zig");
 }

@@ -93,8 +93,8 @@ pub const Platform = struct {
     image_views: []ngl.ImageView,
     queue_index: usize,
 
-    pub const width = 480;
-    pub const height = 270;
+    pub const width = 800;
+    pub const height = 450;
 
     fn init(allocator: std.mem.Allocator) !Platform {
         const ctx = context();
