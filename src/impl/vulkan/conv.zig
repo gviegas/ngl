@@ -53,8 +53,9 @@ pub fn check(result: c.VkResult) Error!void {
         c.VK_ERROR_NATIVE_WINDOW_IN_USE_KHR => Error.WindowInUse,
 
         // VK_KHR_swapchain
-        c.VK_SUBOPTIMAL_KHR => Error.Suboptimal,
-        c.VK_ERROR_OUT_OF_DATE_KHR => Error.OutOfDate,
+        c.VK_SUBOPTIMAL_KHR,
+        c.VK_ERROR_OUT_OF_DATE_KHR,
+        => Error.OutOfDate,
 
         else => Error.Other,
     };

@@ -58,7 +58,6 @@ pub const Error = error{
     DeviceLost,
     SurfaceLost,
     WindowInUse,
-    Suboptimal,
     OutOfDate,
     Other,
 };
