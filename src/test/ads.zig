@@ -131,18 +131,20 @@ test "basic shading" {
         upl_p + vert_cpy_off,
         @as([*]const u8, @ptrCast(&cube.data))[0..@sizeOf(@TypeOf(cube.data))],
     );
-    @memcpy(
-        upl_p + xform_cpy_off,
-        @as([*]const u8, @ptrCast(&transform))[0..@sizeOf(Transform)],
-    );
-    @memcpy(
-        upl_p + light_cpy_off,
-        @as([*]const u8, @ptrCast(&light))[0..@sizeOf(Light)],
-    );
-    @memcpy(
-        upl_p + matl_cpy_off,
-        @as([*]const u8, @ptrCast(&material))[0..@sizeOf(Material)],
-    );
+    for (0..Data.frame_n) |i| {
+        @memcpy(
+            upl_p + unif_off * i + xform_cpy_off,
+            @as([*]const u8, @ptrCast(&transform))[0..@sizeOf(Transform)],
+        );
+        @memcpy(
+            upl_p + unif_off * i + light_cpy_off,
+            @as([*]const u8, @ptrCast(&light))[0..@sizeOf(Light)],
+        );
+        @memcpy(
+            upl_p + unif_off * i + matl_cpy_off,
+            @as([*]const u8, @ptrCast(&material))[0..@sizeOf(Material)],
+        );
+    }
 
     var cmd = try d.submit.buffers[0].begin(gpa, dev, .{
         .one_time_submit = true,
@@ -229,23 +231,11 @@ test "basic shading" {
         .{
             .source = &d.upload.buffer,
             .dest = &d.uniform.buffer,
-            .regions = &.{
-                .{
-                    .source_offset = xform_cpy_off,
-                    .dest_offset = 0,
-                    .size = @sizeOf(Transform),
-                },
-                .{
-                    .source_offset = light_cpy_off,
-                    .dest_offset = 256,
-                    .size = @sizeOf(Light),
-                },
-                .{
-                    .source_offset = matl_cpy_off,
-                    .dest_offset = 512,
-                    .size = @sizeOf(Material),
-                },
-            },
+            .regions = &.{.{
+                .source_offset = xform_cpy_off,
+                .dest_offset = 0,
+                .size = Data.frame_n * unif_off,
+            }},
         },
     });
     try cmd.end();
@@ -364,7 +354,7 @@ test "basic shading" {
 }
 
 const Data = struct {
-    const frame_n = 1;
+    const frame_n = 2;
     const width = @import("sf.zig").Platform.width;
     const height = @import("sf.zig").Platform.height;
 
