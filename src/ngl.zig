@@ -56,6 +56,10 @@ pub const Error = error{
     NotPresent,
     InitializationFailed,
     DeviceLost,
+    SurfaceLost,
+    WindowInUse,
+    Suboptimal,
+    OutOfDate,
     Other,
 };
 
