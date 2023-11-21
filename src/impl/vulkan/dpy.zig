@@ -325,14 +325,26 @@ pub const SwapChain = packed struct {
         fence: ?Impl.Fence,
     ) Error!ngl.SwapChain.Index {
         var idx: u32 = undefined;
-        try check(Device.cast(device).vkAcquireNextImageKHR(
+        const result = Device.cast(device).vkAcquireNextImageKHR(
             cast(swap_chain).handle,
             timeout,
             if (semaphore) |x| Semaphore.cast(x).handle else null_handle,
             if (fence) |x| Fence.cast(x).handle else null_handle,
             &idx,
-        ));
-        return idx;
+        );
+
+        return switch (result) {
+            // We can't treat suboptimal as out of date error in this
+            // case due to the semaphore/fence operations
+            // However, we can do such in `Queue.present`, so pretend
+            // that we succeeded here and let that method fail with
+            // `Error.OutOfDate` (most likely)
+            c.VK_SUCCESS,
+            c.VK_SUBOPTIMAL_KHR,
+            => idx,
+
+            else => |x| if (check(x)) |_| unreachable else |err| err,
+        };
     }
 
     pub fn deinit(
