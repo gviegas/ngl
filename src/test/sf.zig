@@ -96,6 +96,16 @@ pub const Platform = struct {
     pub const width = 800;
     pub const height = 450;
 
+    pub const Input = packed struct {
+        done: bool = false,
+        up: bool = false,
+        down: bool = false,
+        left: bool = false,
+        right: bool = false,
+        option: bool = false,
+        option_2: bool = false,
+    };
+
     fn init(allocator: std.mem.Allocator) !Platform {
         const ctx = context();
         if (!ctx.instance_desc.presentation or !ctx.device_desc.feature_set.presentation)
@@ -193,6 +203,10 @@ pub const Platform = struct {
         };
     }
 
+    pub fn poll(self: *Platform) Input {
+        return self.impl.poll();
+    }
+
     fn deinit(self: *Platform, allocator: std.mem.Allocator) void {
         const ctx = context();
         for (self.image_views) |*view| view.deinit(allocator, &ctx.device);
@@ -232,7 +246,7 @@ const PlatformAndroid = struct {
         @compileError("TODO");
     }
 
-    fn poll(_: PlatformAndroid) usize {
+    fn poll(_: PlatformAndroid) Platform.Input {
         @compileError("TODO");
     }
 
@@ -247,7 +261,7 @@ const PlatformWin32 = struct {
         @compileError("TODO");
     }
 
-    fn poll(_: PlatformWin32) usize {
+    fn poll(_: PlatformWin32) Platform.Input {
         @compileError("TODO");
     }
 
@@ -326,15 +340,28 @@ const PlatformXcb = struct {
         }
     }
 
-    fn poll(self: PlatformXcb) usize {
-        var n: usize = 0;
+    fn poll(self: PlatformXcb) Platform.Input {
+        var input = Platform.Input{};
         while (c.xcb_poll_for_event(self.connection)) |event| {
             defer std.c.free(event);
-            n += 1;
-            // TODO
             switch (event.*.response_type & 127) {
-                c.XCB_KEY_PRESS, c.XCB_KEY_RELEASE => {},
-                c.XCB_BUTTON_PRESS, c.XCB_BUTTON_RELEASE => {},
+                c.XCB_KEY_PRESS => {
+                    const evt: *const c.xcb_key_press_event_t = @ptrCast(event);
+                    const key = evt.detail - 8;
+                    switch (key) {
+                        1 => input.done = true,
+                        2 => input.option = true,
+                        3 => input.option_2 = true,
+                        103 => input.up = true,
+                        105 => input.left = true,
+                        106 => input.right = true,
+                        108 => input.down = true,
+                        else => {},
+                    }
+                },
+                c.XCB_KEY_RELEASE => {},
+                c.XCB_BUTTON_PRESS => {},
+                c.XCB_BUTTON_RELEASE => {},
                 c.XCB_MOTION_NOTIFY => {},
                 c.XCB_ENTER_NOTIFY => {},
                 c.XCB_LEAVE_NOTIFY => {},
@@ -346,7 +373,7 @@ const PlatformXcb = struct {
                 else => {},
             }
         }
-        return n;
+        return input;
     }
 
     fn deinit(self: *PlatformXcb) void {

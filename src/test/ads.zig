@@ -269,7 +269,9 @@ test "basic shading" {
     var timer = try std.time.Timer.start();
     const need_queue_transfer = d.present.need_queue_transfer;
 
-    while (timer.read() < std.time.ns_per_s * 30) {
+    while (timer.read() < std.time.ns_per_min) {
+        if (plat.poll().done) break;
+
         // TODO: Need to associate semaphores with specific swap chain images,
         // otherwise this will deadlock without the device wait at the end
         var semas = .{ &d.submit.semaphores[frame], &d.submit.semaphores[frame + 1] };
