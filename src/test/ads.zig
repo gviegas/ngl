@@ -292,7 +292,7 @@ test "basic shading" {
             &d.descriptor.sets[frame * 2],
             &d.descriptor.sets[frame * 2 + 1],
         });
-        cmd.setIndexBuffer(.u16, &d.index.buffer, 0, @sizeOf(@TypeOf(cube.indices)));
+        cmd.setIndexBuffer(cube.index_type, &d.index.buffer, 0, @sizeOf(@TypeOf(cube.indices)));
         cmd.setVertexBuffers(
             0,
             &.{
