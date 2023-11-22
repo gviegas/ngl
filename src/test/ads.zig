@@ -246,6 +246,8 @@ test "basic shading" {
         queue_locks[d.submit.queue_index].lock();
         defer queue_locks[d.submit.queue_index].unlock();
 
+        try ngl.Fence.reset(gpa, dev, &.{&d.submit.fences[0]});
+
         try dev.queues[d.submit.queue_index].submit(gpa, dev, &d.submit.fences[0], &.{.{
             .commands = &.{.{ .command_buffer = &d.submit.buffers[0] }},
             .wait = &.{},
@@ -264,8 +266,11 @@ test "basic shading" {
     while (timer.read() < std.time.ns_per_min) {
         if (plat.poll().done) break;
 
-        // TODO: Need to associate semaphores with specific swap chain images,
-        // otherwise this will deadlock without the device wait at the end
+        try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&d.submit.fences[frame]});
+        try ngl.Fence.reset(gpa, dev, &.{&d.submit.fences[frame]});
+
+        // TODO: Confirm that reusing the 2nd semaphore is valid
+        // since presentation is not waited for
         var semas = .{ &d.submit.semaphores[frame], &d.submit.semaphores[frame + 1] };
 
         const next = try plat.swap_chain.nextImage(dev, std.time.ns_per_s, semas[0], null);
@@ -323,8 +328,7 @@ test "basic shading" {
         queue_locks[d.submit.queue_index].lock();
         defer queue_locks[d.submit.queue_index].unlock();
 
-        // TODO: Fence
-        try dev.queues[d.submit.queue_index].submit(gpa, dev, null, &.{.{
+        try dev.queues[d.submit.queue_index].submit(gpa, dev, &d.submit.fences[frame], &.{.{
             .commands = &.{.{ .command_buffer = &d.submit.buffers[frame] }},
             .wait = &.{.{
                 .semaphore = semas[0],
@@ -348,11 +352,14 @@ test "basic shading" {
             .image_index = next,
         }});
 
-        // TODO: Remove
-        try dev.wait();
-
         frame = (frame + 1) % Data.frame_n;
     }
+
+    try ngl.Fence.wait(gpa, dev, std.time.ns_per_s * 5, blk: {
+        var fences: [Data.frame_n]*ngl.Fence = undefined;
+        for (0..fences.len) |i| fences[i] = &d.submit.fences[i];
+        break :blk &fences;
+    });
 }
 
 const Data = struct {
@@ -907,6 +914,7 @@ const Data = struct {
         queue_index: usize,
         pools: [frame_n]ngl.CommandPool,
         buffers: [frame_n]ngl.CommandBuffer,
+        // Signaled
         fences: [frame_n]ngl.Fence,
         semaphores: [frame_n * 2]ngl.Semaphore,
 
@@ -930,7 +938,7 @@ const Data = struct {
             var fence_i: usize = 0;
             errdefer for (self.fences[0..fence_i]) |*fence| fence.deinit(gpa, device);
             for (&self.fences) |*fence| {
-                fence.* = try ngl.Fence.init(gpa, device, .{});
+                fence.* = try ngl.Fence.init(gpa, device, .{ .initial_status = .signaled });
                 fence_i += 1;
             }
             var sema_i: usize = 0;
