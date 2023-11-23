@@ -54,6 +54,148 @@ test "Image.init/deinit" {
     @"3d".deinit(gpa, dev);
 }
 
+test "Image capabilities" {
+    const ctx = context();
+    const dev = &ctx.device;
+    const core = ngl.Feature.get(gpa, &ctx.instance, ctx.device_desc, .core).?;
+    const CoreFeat = @TypeOf(core);
+
+    const expect = struct {
+        const U = @typeInfo(ngl.SampleCount.Flags).Struct.backing_integer.?;
+
+        fn dimensions(capabilities: ngl.Image.Capabilities, core_feat: CoreFeat) !void {
+            try testing.expect(capabilities.max_width >= core_feat.image.max_dimension_2d);
+            try testing.expect(capabilities.max_height >= core_feat.image.max_dimension_2d);
+            try testing.expect(capabilities.max_depth_or_layers >= core_feat.image.max_layers);
+        }
+
+        fn sampleCounts(
+            capabilities: ngl.Image.Capabilities,
+            format_name: []const u8,
+            aspect_mask: ngl.Image.Aspect.Flags,
+            usage: ngl.Image.Usage,
+            core_feat: CoreFeat,
+        ) !void {
+            const flags: U = @bitCast(capabilities.sample_counts);
+            var min = ~@as(U, 0);
+
+            if (usage.color_attachment or usage.depth_stencil_attachment) {
+                if (aspect_mask.color) {
+                    min &= if (std.mem.indexOf(u8, format_name, "int") == null)
+                        @bitCast(core_feat.frame_buffer.color_sample_counts)
+                    else
+                        @bitCast(core_feat.frame_buffer.integer_sample_counts);
+                } else if (aspect_mask.depth) {
+                    min &= @bitCast(core_feat.frame_buffer.depth_sample_counts);
+                    if (aspect_mask.stencil)
+                        min &= @bitCast(core_feat.frame_buffer.stencil_sample_counts);
+                } else if (aspect_mask.stencil) {
+                    min &= @bitCast(core_feat.frame_buffer.stencil_sample_counts);
+                } else unreachable;
+            }
+
+            if (usage.sampled_image) {
+                if (aspect_mask.color) {
+                    min &= if (std.mem.indexOf(u8, format_name, "int") == null)
+                        @bitCast(core_feat.image.sampled_color_sample_counts)
+                    else
+                        @bitCast(core_feat.image.sampled_integer_sample_counts);
+                } else if (aspect_mask.depth) {
+                    min &= @bitCast(core_feat.image.sampled_depth_sample_counts);
+                    if (aspect_mask.stencil)
+                        min &= @bitCast(core_feat.image.sampled_stencil_sample_counts);
+                } else if (aspect_mask.stencil) {
+                    min &= @bitCast(core_feat.image.sampled_stencil_sample_counts);
+                } else unreachable;
+            }
+
+            if (usage.storage_image)
+                min &= @bitCast(core_feat.image.storage_sample_counts);
+
+            try testing.expect(flags & min == min);
+        }
+    };
+
+    inline for (@typeInfo(ngl.Format).Enum.fields) |f| {
+        const feats = @field(ngl.Format.min_features, f.name);
+        if (feats.color_attachment) {
+            const usage = ngl.Image.Usage{
+                .color_attachment = true,
+                .sampled_image = feats.sampled_image,
+                .storage_image = feats.storage_image,
+            };
+            const capabs = try ngl.Image.getCapabilities(
+                dev,
+                .@"2d",
+                @field(ngl.Format, f.name),
+                .optimal,
+                usage,
+                .{},
+            );
+            try expect.dimensions(capabs, core);
+            try expect.sampleCounts(capabs, f.name, .{ .color = true }, usage, core);
+        } else if (feats.depth_stencil_attachment) {
+            // Currently, this is the only format in `Format.min_features`
+            // that must support depth/stencil attachments
+            if (@field(ngl.Format, f.name) != .d16_unorm)
+                @compileError("Update Image capabilities test");
+            const usage = ngl.Image.Usage{
+                .depth_stencil_attachment = true,
+                .sampled_image = feats.sampled_image,
+            };
+            const capabs = try ngl.Image.getCapabilities(
+                dev,
+                .@"2d",
+                @field(ngl.Format, f.name),
+                .optimal,
+                usage,
+                .{},
+            );
+            try expect.dimensions(capabs, core);
+            try expect.sampleCounts(capabs, f.name, .{ .depth = true }, usage, core);
+        }
+    }
+
+    inline for (@typeInfo(ngl.Format).Enum.fields) |f| {
+        const feats = @field(ngl.Format.min_features, f.name);
+        if (feats.color_attachment or feats.depth_stencil_attachment)
+            continue;
+        const asp_mask: ngl.Image.Aspect.Flags = switch (@field(ngl.Format, f.name)) {
+            .d16_unorm => unreachable,
+
+            .d32_sfloat,
+            .x8_d24_unorm,
+            => .{ .depth = true },
+
+            .s8_uint => .{ .stencil = true },
+
+            .d16_unorm_s8_uint,
+            .d24_unorm_s8_uint,
+            .d32_sfloat_s8_uint,
+            => .{ .depth = true, .stencil = true },
+
+            else => .{ .color = true },
+        };
+        const usage = .{
+            .sampled_image = true,
+            .storage_image = feats.storage_image,
+            .color_attachment = asp_mask.color,
+            .depth_stencil_attachment = asp_mask.depth or asp_mask.stencil,
+        };
+        if (ngl.Image.getCapabilities(
+            dev,
+            .@"2d",
+            @field(ngl.Format, f.name),
+            .optimal,
+            usage,
+            .{},
+        )) |capabs| {
+            try expect.dimensions(capabs, core);
+            try expect.sampleCounts(capabs, f.name, asp_mask, usage, core);
+        } else |_| {}
+    }
+}
+
 test "Image allocation" {
     const dev = &context().device;
 
