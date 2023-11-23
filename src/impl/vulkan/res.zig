@@ -304,17 +304,7 @@ pub const Image = packed struct {
             else
                 props.maxArrayLayers,
             .max_levels = props.maxMipLevels,
-            .sample_counts = blk: {
-                var flags = ngl.SampleCount.Flags{};
-                if (props.sampleCounts & c.VK_SAMPLE_COUNT_1_BIT != 0) flags.@"1" = true;
-                if (props.sampleCounts & c.VK_SAMPLE_COUNT_2_BIT != 0) flags.@"2" = true;
-                if (props.sampleCounts & c.VK_SAMPLE_COUNT_4_BIT != 0) flags.@"4" = true;
-                if (props.sampleCounts & c.VK_SAMPLE_COUNT_8_BIT != 0) flags.@"8" = true;
-                if (props.sampleCounts & c.VK_SAMPLE_COUNT_16_BIT != 0) flags.@"16" = true;
-                if (props.sampleCounts & c.VK_SAMPLE_COUNT_32_BIT != 0) flags.@"32" = true;
-                if (props.sampleCounts & c.VK_SAMPLE_COUNT_64_BIT != 0) flags.@"64" = true;
-                break :blk flags;
-            },
+            .sample_counts = conv.fromVkSampleCountFlags(props.sampleCounts),
         };
     }
 

@@ -2264,20 +2264,7 @@ fn getFeature(
     const phys_dev: c.VkPhysicalDevice =
         @ptrFromInt(device_desc.impl orelse return Error.InvalidArgument);
 
-    // TODO: Maybe define this conversion in `conv.zig`
-    const convSpls = struct {
-        fn f(vk_flags: c.VkSampleCountFlags) ngl.SampleCount.Flags {
-            var flags = ngl.SampleCount.Flags{};
-            if (vk_flags & c.VK_SAMPLE_COUNT_1_BIT != 0) flags.@"1" = true;
-            if (vk_flags & c.VK_SAMPLE_COUNT_2_BIT != 0) flags.@"2" = true;
-            if (vk_flags & c.VK_SAMPLE_COUNT_4_BIT != 0) flags.@"4" = true;
-            if (vk_flags & c.VK_SAMPLE_COUNT_8_BIT != 0) flags.@"8" = true;
-            if (vk_flags & c.VK_SAMPLE_COUNT_16_BIT != 0) flags.@"16" = true;
-            if (vk_flags & c.VK_SAMPLE_COUNT_32_BIT != 0) flags.@"32" = true;
-            if (vk_flags & c.VK_SAMPLE_COUNT_64_BIT != 0) flags.@"64" = true;
-            return flags;
-        }
-    }.f;
+    const convSpls = conv.fromVkSampleCountFlags;
 
     switch (feature.*) {
         .core => |*feat| {

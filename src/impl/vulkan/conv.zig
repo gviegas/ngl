@@ -874,6 +874,25 @@ pub fn fromVkFormat(vk_format: c.VkFormat) Error!ngl.Format {
     };
 }
 
+pub fn fromVkSampleCountFlags(vk_flags: c.VkSampleCountFlags) ngl.SampleCount.Flags {
+    var flags = ngl.SampleCount.Flags{};
+    if (vk_flags & c.VK_SAMPLE_COUNT_1_BIT != 0)
+        flags.@"1" = true;
+    if (vk_flags & c.VK_SAMPLE_COUNT_2_BIT != 0)
+        flags.@"2" = true;
+    if (vk_flags & c.VK_SAMPLE_COUNT_4_BIT != 0)
+        flags.@"4" = true;
+    if (vk_flags & c.VK_SAMPLE_COUNT_8_BIT != 0)
+        flags.@"8" = true;
+    if (vk_flags & c.VK_SAMPLE_COUNT_16_BIT != 0)
+        flags.@"16" = true;
+    if (vk_flags & c.VK_SAMPLE_COUNT_32_BIT != 0)
+        flags.@"32" = true;
+    if (vk_flags & c.VK_SAMPLE_COUNT_64_BIT != 0)
+        flags.@"64" = true;
+    return flags;
+}
+
 pub fn fromVkImageUsageFlags(vk_flags: c.VkImageUsageFlags) ngl.Image.Usage {
     var usage = ngl.Image.Usage{};
     if (vk_flags & c.VK_IMAGE_USAGE_SAMPLED_BIT != 0)
