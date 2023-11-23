@@ -130,6 +130,7 @@ pub const Instance = struct {
     getPhysicalDeviceQueueFamilyProperties: c.PFN_vkGetPhysicalDeviceQueueFamilyProperties,
     getPhysicalDeviceMemoryProperties: c.PFN_vkGetPhysicalDeviceMemoryProperties,
     getPhysicalDeviceFormatProperties: c.PFN_vkGetPhysicalDeviceFormatProperties,
+    getPhysicalDeviceImageFormatProperties: c.PFN_vkGetPhysicalDeviceImageFormatProperties,
     getPhysicalDeviceFeatures: c.PFN_vkGetPhysicalDeviceFeatures,
     createDevice: c.PFN_vkCreateDevice,
     enumerateDeviceExtensionProperties: c.PFN_vkEnumerateDeviceExtensionProperties,
@@ -247,6 +248,7 @@ pub const Instance = struct {
             .getPhysicalDeviceQueueFamilyProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceQueueFamilyProperties")),
             .getPhysicalDeviceMemoryProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceMemoryProperties")),
             .getPhysicalDeviceFormatProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceFormatProperties")),
+            .getPhysicalDeviceImageFormatProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceImageFormatProperties")),
             .getPhysicalDeviceFeatures = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceFeatures")),
             .createDevice = @ptrCast(try Instance.getProc(inst, "vkCreateDevice")),
             .enumerateDeviceExtensionProperties = @ptrCast(try Instance.getProc(inst, "vkEnumerateDeviceExtensionProperties")),
@@ -381,8 +383,8 @@ pub const Instance = struct {
 
     fn deinit(_: *anyopaque, allocator: std.mem.Allocator, instance: Impl.Instance) void {
         const inst = cast(instance);
-        // TODO: Need to gate destruction until all devices
-        // and instance-level objects have been destroyed
+        // NOTE: This assumes that all instance-level objects
+        // have been destroyed
         inst.vkDestroyInstance(null);
         allocator.destroy(inst);
     }
@@ -462,6 +464,27 @@ pub const Instance = struct {
         properties: *c.VkFormatProperties,
     ) void {
         self.getPhysicalDeviceFormatProperties.?(device, format, properties);
+    }
+
+    pub inline fn vkGetPhysicalDeviceImageFormatProperties(
+        self: *Instance,
+        device: c.VkPhysicalDevice,
+        format: c.VkFormat,
+        @"type": c.VkImageType,
+        tiling: c.VkImageTiling,
+        usage: c.VkImageUsageFlags,
+        flags: c.VkImageCreateFlags,
+        properties: *c.VkImageFormatProperties,
+    ) c.VkResult {
+        return self.getPhysicalDeviceImageFormatProperties.?(
+            device,
+            format,
+            @"type",
+            tiling,
+            usage,
+            flags,
+            properties,
+        );
     }
 
     pub inline fn vkGetPhysicalDeviceFeatures(
@@ -2472,6 +2495,7 @@ const vtable = Impl.VTable{
     .deinitBufferView = @import("res.zig").BufferView.deinit,
 
     .initImage = @import("res.zig").Image.init,
+    .getImageCapabilities = @import("res.zig").Image.getCapabilities,
     .getImageDataLayout = @import("res.zig").Image.getDataLayout,
     .getMemoryRequirementsImage = @import("res.zig").Image.getMemoryRequirements,
     .bindMemoryImage = @import("res.zig").Image.bindMemory,

@@ -560,6 +560,14 @@ pub const Image = struct {
         initial_layout: Layout,
     };
 
+    pub const Capabilities = struct {
+        max_width: u32,
+        max_height: u32,
+        max_depth_or_layers: u32,
+        max_levels: u32,
+        sample_counts: SampleCount.Flags,
+    };
+
     pub const Aspect = enum {
         color,
         depth,
@@ -591,6 +599,17 @@ pub const Image = struct {
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
         return .{ .impl = try Impl.get().initImage(allocator, device.impl, desc) };
+    }
+
+    pub fn getCapabilities(
+        device: *Device,
+        @"type": Type,
+        format: Format,
+        tiling: Tiling,
+        usage: Usage,
+        misc: Misc,
+    ) Error!Capabilities {
+        return Impl.get().getImageCapabilities(device.impl, @"type", format, tiling, usage, misc);
     }
 
     pub fn getDataLayout(

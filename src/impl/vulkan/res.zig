@@ -254,6 +254,70 @@ pub const Image = packed struct {
         return .{ .val = @bitCast(Image{ .handle = image }) };
     }
 
+    pub fn getCapabilities(
+        _: *anyopaque,
+        device: Impl.Device,
+        @"type": ngl.Image.Type,
+        format: ngl.Format,
+        tiling: ngl.Image.Tiling,
+        usage: ngl.Image.Usage,
+        misc: ngl.Image.Misc,
+    ) Error!ngl.Image.Capabilities {
+        const dev = Device.cast(device);
+        const inst = dev.instance;
+        const phys_dev = dev.physical_device;
+
+        var props: c.VkImageFormatProperties = undefined;
+        try check(inst.vkGetPhysicalDeviceImageFormatProperties(
+            phys_dev,
+            try conv.toVkFormat(format),
+            switch (@"type") {
+                .@"1d" => c.VK_IMAGE_TYPE_1D,
+                .@"2d" => c.VK_IMAGE_TYPE_2D,
+                .@"3d" => c.VK_IMAGE_TYPE_3D,
+            },
+            switch (tiling) {
+                .optimal => c.VK_IMAGE_TILING_OPTIMAL,
+                .linear => c.VK_IMAGE_TILING_LINEAR,
+            },
+            conv.toVkImageUsageFlags(usage),
+            blk: {
+                var flags: c.VkImageCreateFlags = 0;
+                if (misc.view_formats) |fmts| {
+                    for (fmts) |f| {
+                        if (f == format) continue;
+                        flags |= c.VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+                        break;
+                    }
+                }
+                if (misc.cube_compatible) flags |= c.VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+                break :blk flags;
+            },
+            &props,
+        ));
+
+        return .{
+            .max_width = props.maxExtent.width,
+            .max_height = props.maxExtent.height,
+            .max_depth_or_layers = if (@"type" == .@"3d")
+                props.maxExtent.depth
+            else
+                props.maxArrayLayers,
+            .max_levels = props.maxMipLevels,
+            .sample_counts = blk: {
+                var flags = ngl.SampleCount.Flags{};
+                if (props.sampleCounts & c.VK_SAMPLE_COUNT_1_BIT != 0) flags.@"1" = true;
+                if (props.sampleCounts & c.VK_SAMPLE_COUNT_2_BIT != 0) flags.@"2" = true;
+                if (props.sampleCounts & c.VK_SAMPLE_COUNT_4_BIT != 0) flags.@"4" = true;
+                if (props.sampleCounts & c.VK_SAMPLE_COUNT_8_BIT != 0) flags.@"8" = true;
+                if (props.sampleCounts & c.VK_SAMPLE_COUNT_16_BIT != 0) flags.@"16" = true;
+                if (props.sampleCounts & c.VK_SAMPLE_COUNT_32_BIT != 0) flags.@"32" = true;
+                if (props.sampleCounts & c.VK_SAMPLE_COUNT_64_BIT != 0) flags.@"64" = true;
+                break :blk flags;
+            },
+        };
+    }
+
     pub fn getDataLayout(
         _: *anyopaque,
         device: Impl.Device,
