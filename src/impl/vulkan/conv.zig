@@ -188,6 +188,29 @@ pub fn toVkFormat(format: ngl.Format) Error!c.VkFormat {
     };
 }
 
+pub fn toVkBufferUsageFlags(buffer_usage: ngl.Buffer.Usage) c.VkBufferUsageFlags {
+    var usage: c.VkBufferUsageFlags = 0;
+    if (buffer_usage.uniform_texel_buffer)
+        usage |= c.VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+    if (buffer_usage.storage_texel_buffer)
+        usage |= c.VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+    if (buffer_usage.uniform_buffer)
+        usage |= c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    if (buffer_usage.storage_buffer)
+        usage |= c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    if (buffer_usage.index_buffer)
+        usage |= c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    if (buffer_usage.vertex_buffer)
+        usage |= c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    if (buffer_usage.indirect_buffer)
+        usage |= c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    if (buffer_usage.transfer_source)
+        usage |= c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    if (buffer_usage.transfer_dest)
+        usage |= c.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    return usage;
+}
+
 pub fn toVkSampleCount(sample_count: ngl.SampleCount) c.VkSampleCountFlagBits {
     return switch (sample_count) {
         .@"1" => c.VK_SAMPLE_COUNT_1_BIT,
@@ -219,6 +242,71 @@ pub fn toVkSampleCountFlags(sample_count_flags: ngl.SampleCount.Flags) c.VkSampl
     return flags;
 }
 
+pub fn toVkImageType(image_type: ngl.Image.Type) c.VkImageType {
+    return switch (image_type) {
+        .@"1d" => c.VK_IMAGE_TYPE_1D,
+        .@"2d" => c.VK_IMAGE_TYPE_2D,
+        .@"3d" => c.VK_IMAGE_TYPE_3D,
+    };
+}
+
+pub fn toVkImageTiling(image_tiling: ngl.Image.Tiling) c.VkImageTiling {
+    return switch (image_tiling) {
+        .linear => c.VK_IMAGE_TILING_LINEAR,
+        .optimal => c.VK_IMAGE_TILING_OPTIMAL,
+    };
+}
+
+pub fn toVkImageUsageFlags(image_usage: ngl.Image.Usage) c.VkImageUsageFlags {
+    var usage: c.VkImageUsageFlags = 0;
+    if (image_usage.sampled_image)
+        usage |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (image_usage.storage_image)
+        usage |= c.VK_IMAGE_USAGE_STORAGE_BIT;
+    if (image_usage.color_attachment)
+        usage |= c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (image_usage.depth_stencil_attachment)
+        usage |= c.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (image_usage.transient_attachment)
+        usage |= c.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+    if (image_usage.input_attachment)
+        usage |= c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    if (image_usage.transfer_source)
+        usage |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if (image_usage.transfer_dest)
+        usage |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    return usage;
+}
+
+pub fn toVkImageCreateFlags(format: ngl.Format, image_misc: ngl.Image.Misc) c.VkImageCreateFlags {
+    var flags: c.VkImageCreateFlags = 0;
+    if (image_misc.view_formats) |fmts| {
+        for (fmts) |f| {
+            if (f == format) continue;
+            flags |= c.VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+            break;
+        }
+    }
+    if (image_misc.cube_compatible)
+        flags |= c.VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    return flags;
+}
+
+pub fn toVkImageLayout(image_layout: ngl.Image.Layout) c.VkImageLayout {
+    return switch (image_layout) {
+        .unknown => c.VK_IMAGE_LAYOUT_UNDEFINED,
+        .preinitialized => c.VK_IMAGE_LAYOUT_PREINITIALIZED,
+        .general => c.VK_IMAGE_LAYOUT_GENERAL,
+        .color_attachment_optimal => c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .depth_stencil_attachment_optimal => c.VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        .depth_stencil_read_only_optimal => c.VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+        .shader_read_only_optimal => c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        .transfer_source_optimal => c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+        .transfer_dest_optimal => c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .present_source => c.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    };
+}
+
 pub fn toVkImageAspect(image_aspect: ngl.Image.Aspect) c.VkImageAspectFlagBits {
     return switch (image_aspect) {
         .color => c.VK_IMAGE_ASPECT_COLOR_BIT,
@@ -236,21 +324,6 @@ pub fn toVkImageAspectFlags(image_aspect_flags: ngl.Image.Aspect.Flags) c.VkImag
     if (image_aspect_flags.stencil)
         flags |= c.VK_IMAGE_ASPECT_STENCIL_BIT;
     return flags;
-}
-
-pub fn toVkImageLayout(image_layout: ngl.Image.Layout) c.VkImageLayout {
-    return switch (image_layout) {
-        .unknown => c.VK_IMAGE_LAYOUT_UNDEFINED,
-        .preinitialized => c.VK_IMAGE_LAYOUT_PREINITIALIZED,
-        .general => c.VK_IMAGE_LAYOUT_GENERAL,
-        .color_attachment_optimal => c.VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .depth_stencil_attachment_optimal => c.VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-        .depth_stencil_read_only_optimal => c.VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-        .shader_read_only_optimal => c.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        .transfer_source_optimal => c.VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-        .transfer_dest_optimal => c.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        .present_source => c.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-    };
 }
 
 pub fn toVkCompareOp(compare_op: ngl.CompareOp) c.VkCompareOp {
@@ -301,50 +374,6 @@ pub fn toVkSamplerMipmapMode(sampler_mipmap_mode: ngl.Sampler.MipmapMode) c.VkSa
         .nearest => c.VK_SAMPLER_MIPMAP_MODE_NEAREST,
         .linear => c.VK_SAMPLER_MIPMAP_MODE_LINEAR,
     };
-}
-
-pub fn toVkBufferUsageFlags(buffer_usage: ngl.Buffer.Usage) c.VkBufferUsageFlags {
-    var usage: c.VkBufferUsageFlags = 0;
-    if (buffer_usage.uniform_texel_buffer)
-        usage |= c.VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-    if (buffer_usage.storage_texel_buffer)
-        usage |= c.VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-    if (buffer_usage.uniform_buffer)
-        usage |= c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    if (buffer_usage.storage_buffer)
-        usage |= c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    if (buffer_usage.index_buffer)
-        usage |= c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    if (buffer_usage.vertex_buffer)
-        usage |= c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    if (buffer_usage.indirect_buffer)
-        usage |= c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-    if (buffer_usage.transfer_source)
-        usage |= c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    if (buffer_usage.transfer_dest)
-        usage |= c.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    return usage;
-}
-
-pub fn toVkImageUsageFlags(image_usage: ngl.Image.Usage) c.VkImageUsageFlags {
-    var usage: c.VkImageUsageFlags = 0;
-    if (image_usage.sampled_image)
-        usage |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
-    if (image_usage.storage_image)
-        usage |= c.VK_IMAGE_USAGE_STORAGE_BIT;
-    if (image_usage.color_attachment)
-        usage |= c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    if (image_usage.depth_stencil_attachment)
-        usage |= c.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    if (image_usage.transient_attachment)
-        usage |= c.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
-    if (image_usage.input_attachment)
-        usage |= c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-    if (image_usage.transfer_source)
-        usage |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    if (image_usage.transfer_dest)
-        usage |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    return usage;
 }
 
 // TODO: `toVkPipelineStage2`

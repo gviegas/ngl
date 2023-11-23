@@ -199,51 +199,36 @@ pub const Image = packed struct {
         device: Impl.Device,
         desc: ngl.Image.Desc,
     ) Error!Impl.Image {
-        const @"type": c.VkImageType = switch (desc.type) {
-            .@"1d" => c.VK_IMAGE_TYPE_1D,
-            .@"2d" => c.VK_IMAGE_TYPE_2D,
-            .@"3d" => c.VK_IMAGE_TYPE_3D,
-        };
-        const extent: c.VkExtent3D = .{
-            .width = desc.width,
-            .height = desc.height,
-            .depth = if (desc.type == .@"3d") desc.depth_or_layers else 1,
-        };
-        const layers = if (desc.type == .@"3d") 1 else desc.depth_or_layers;
-        const tiling: c.VkImageTiling = switch (desc.tiling) {
-            .linear => c.VK_IMAGE_TILING_LINEAR,
-            .optimal => c.VK_IMAGE_TILING_OPTIMAL,
-        };
-        const usage = blk: {
-            const usage = conv.toVkImageUsageFlags(desc.usage);
-            // Usage must not be zero
-            break :blk if (usage != 0) usage else return Error.InvalidArgument;
-        };
-        const flags = blk: {
-            var flags: c.VkImageCreateFlags = 0;
-            if (desc.misc.view_formats) |fmts| {
-                for (fmts) |f| {
-                    if (f == desc.format) continue;
-                    flags |= c.VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-                    break;
-                }
-            }
-            if (desc.misc.cube_compatible) flags |= c.VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-            break :blk flags;
-        };
+        const usage = conv.toVkImageUsageFlags(desc.usage);
+        // Usage must not be zero
+        if (usage == 0) return Error.InvalidArgument;
+
+        var depth: u32 = undefined;
+        var layers: u32 = undefined;
+        if (desc.type == .@"3d") {
+            depth = desc.depth_or_layers;
+            layers = 1;
+        } else {
+            depth = 1;
+            layers = desc.depth_or_layers;
+        }
 
         var image: c.VkImage = undefined;
         try check(Device.cast(device).vkCreateImage(&.{
             .sType = c.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .pNext = null,
-            .flags = flags,
-            .imageType = @"type",
+            .flags = conv.toVkImageCreateFlags(desc.format, desc.misc),
+            .imageType = conv.toVkImageType(desc.type),
             .format = try conv.toVkFormat(desc.format),
-            .extent = extent,
+            .extent = .{
+                .width = desc.width,
+                .height = desc.height,
+                .depth = depth,
+            },
             .mipLevels = desc.levels,
             .arrayLayers = layers,
             .samples = conv.toVkSampleCount(desc.samples),
-            .tiling = tiling,
+            .tiling = conv.toVkImageTiling(desc.tiling),
             .usage = usage,
             .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
@@ -271,28 +256,10 @@ pub const Image = packed struct {
         try check(inst.vkGetPhysicalDeviceImageFormatProperties(
             phys_dev,
             try conv.toVkFormat(format),
-            switch (@"type") {
-                .@"1d" => c.VK_IMAGE_TYPE_1D,
-                .@"2d" => c.VK_IMAGE_TYPE_2D,
-                .@"3d" => c.VK_IMAGE_TYPE_3D,
-            },
-            switch (tiling) {
-                .optimal => c.VK_IMAGE_TILING_OPTIMAL,
-                .linear => c.VK_IMAGE_TILING_LINEAR,
-            },
+            conv.toVkImageType(@"type"),
+            conv.toVkImageTiling(tiling),
             conv.toVkImageUsageFlags(usage),
-            blk: {
-                var flags: c.VkImageCreateFlags = 0;
-                if (misc.view_formats) |fmts| {
-                    for (fmts) |f| {
-                        if (f == format) continue;
-                        flags |= c.VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-                        break;
-                    }
-                }
-                if (misc.cube_compatible) flags |= c.VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
-                break :blk flags;
-            },
+            conv.toVkImageCreateFlags(format, misc),
             &props,
         ));
 
