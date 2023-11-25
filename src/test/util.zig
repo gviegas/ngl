@@ -80,6 +80,24 @@ pub fn mulM(comptime n: comptime_int, lh: [n * n]f32, rh: [n * n]f32) [n * n]f32
     return m;
 }
 
+pub fn mulMV(comptime n: comptime_int, matrix: [n * n]f32, vector: [n]f32) [n]f32 {
+    const row_mask = comptime blk: {
+        var m: [n]@Vector(n, i32) = undefined;
+        for (0..n) |i| {
+            for (0..n) |j| {
+                m[i][j] = i + n * j;
+            }
+        }
+        break :blk m;
+    };
+    const m: @Vector(n * n, f32) = matrix;
+    const v: @Vector(n, f32) = vector;
+    var res: [n]f32 = undefined;
+    inline for (0..n) |i|
+        res[i] = @reduce(.Add, @shuffle(f32, m, undefined, row_mask[i]) * v);
+    return res;
+}
+
 pub fn lookAt(center: [3]f32, eye: [3]f32, up: [3]f32) [16]f32 {
     const f = norm(3, subV(3, center, eye));
     const s = norm(3, cross(f, up));
