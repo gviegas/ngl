@@ -21,7 +21,7 @@ test "basic shading" {
     // Update descriptor sets ------------------------------
 
     const Transform = [16 + 16 + 12]f32;
-    const Light = [4 + 4]f32;
+    const Light = [4 + 3]f32;
     const Material = [4 + 4 + 4 + 1]f32;
 
     const xform_off = 0;
@@ -104,8 +104,8 @@ test "basic shading" {
         break :blk xform;
     };
     const light: Light =
-        util.mulMV(4, v, .{ 4.75, -6, -0.3, 0 }) // Position
-    ++ [4]f32{ 0.125, 0.125, 0.125, undefined }; // Intensity
+        util.mulMV(4, v, .{ 4.75, -6, -0.3, 1 }) // Position
+    ++ [3]f32{ 0.125, 0.125, 0.125 }; // Intensity
     const material = Material{
         0.0, 0.1, 0.0, undefined, // Ka
         1.0, 0.0, 0.0, undefined, // Kd
@@ -476,8 +476,8 @@ const Data = struct {
                 .v_address = .repeat,
                 .w_address = .repeat,
                 .border_color = null,
-                .mag = .linear,
-                .min = .linear,
+                .mag = .nearest,
+                .min = .nearest,
                 .mipmap = .nearest,
                 .min_lod = 0,
                 .max_lod = null,
