@@ -135,7 +135,7 @@ pub const Rasterization = struct {
         value: f32,
         slope: f32,
         /// `Feature.core.rasterization.depth_bias_clamp`.
-        clamp: f32,
+        clamp: ?f32,
     } = null,
     samples: SampleCount,
     sample_mask: u64 = ~@as(u64, 0),

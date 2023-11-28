@@ -73,17 +73,14 @@ fn do() !void {
     var draw_xforms = blk: {
         var m: [draw_n][16]f32 = undefined;
         for (0..draw_n) |i| {
-            const d: f32 = if (i & 1 == 0) 1 else -1;
             m[i] = util.identity(4);
-            m[i][12] = @as(f32, @floatFromInt(i)) * 2.5 * d;
-            m[i][13] = @as(f32, @floatFromInt(i)) * 1.0 * d;
-            m[i][14] = @as(f32, @floatFromInt(i)) * 2.5 * d;
+            m[i][12] = @as(f32, @floatFromInt(i)) * 4;
         }
         break :blk m;
     };
 
     // TODO
-    const light_pos = [3]f32{ -100, -100, -100 };
+    const light_pos = [3]f32{ -10, -5, -3 };
     const shdw_v = util.lookAt(.{ 0, 0, 0 }, light_pos, .{ 0, -1, 0 });
     //const shdw_p = util.infPerspective(std.math.pi / 2.0, 1, 0.01);
     const shdw_p = util.frustum(-1, 1, -1, 1, 1, 1000);
@@ -93,7 +90,7 @@ fn do() !void {
         0,   0,   1.0, 0,
         0.5, 0.5, 0,   1,
     }, util.mulM(4, shdw_p, shdw_v));
-    const v = util.lookAt(.{ 0, 0, 0 }, .{ 0, 0, -10 }, .{ 0, -1, 0 });
+    const v = util.lookAt(.{ 4, 0, 0 }, .{ -2, -4, -7 }, .{ 0, -1, 0 });
     const p = util.infPerspective(
         std.math.pi / 3.0,
         @as(f32, @floatFromInt(width)) / @as(f32, @floatFromInt(height)),
@@ -1216,7 +1213,10 @@ const Pipeline = struct {
         texture: *Texture,
         uniform_buffer: *UniformBuffer,
     ) ngl.Error!Pipeline {
-        const dev = &context().device;
+        const ctx = context();
+        const inst = &ctx.instance;
+        const dev_desc = ctx.device_desc;
+        const dev = &ctx.device;
 
         var set_layts: [3]ngl.DescriptorSetLayout = undefined;
         set_layts[0] = try ngl.DescriptorSetLayout.init(gpa, dev, .{ .bindings = &.{
@@ -1311,7 +1311,16 @@ const Pipeline = struct {
                 .polygon_mode = .fill,
                 .cull_mode = .front,
                 .clockwise = cube.clockwise,
-                // TODO: Depth bias
+                .depth_bias = .{
+                    .value = 0.01,
+                    .slope = 1,
+                    .clamp = if (ngl.Feature.get(
+                        gpa,
+                        inst,
+                        dev_desc,
+                        .core,
+                    ).?.rasterization.depth_bias_clamp) 1 else null,
+                },
                 .samples = .@"1",
             },
             .depth_stencil = &.{

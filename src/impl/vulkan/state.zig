@@ -332,9 +332,9 @@ pub const Pipeline = struct {
                     c.VK_FRONT_FACE_COUNTER_CLOCKWISE,
                 .depthBiasEnable = if (s.depth_bias == null) c.VK_FALSE else c.VK_TRUE,
                 .depthBiasConstantFactor = if (s.depth_bias) |x| x.value else 0,
-                .depthBiasClamp = if (s.depth_bias) |x| x.clamp else 0,
+                .depthBiasClamp = if (s.depth_bias) |x| x.clamp orelse 0 else 0,
                 .depthBiasSlopeFactor = if (s.depth_bias) |x| x.slope else 0,
-                .lineWidth = 1.0,
+                .lineWidth = 1,
             } else defaults.rasterization_state;
 
             inner.multisample_state = if (state.rasterization) |s| .{
