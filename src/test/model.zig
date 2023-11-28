@@ -102,3 +102,20 @@ pub const cube = struct {
         },
     } = .{};
 };
+
+pub const plane = struct {
+    pub const vertex_count = 4;
+    pub const topology = ngl.Primitive.Topology.triangle_strip;
+    pub const clockwise = true;
+
+    pub const data: struct {
+        const n = vertex_count;
+        position: [n * 3]f32 = .{
+            -1, 0, -1,
+            -1, 0, 1,
+            1,  0, -1,
+            1,  0, 1,
+        },
+        normal: [n * 3]f32 = [_]f32{ 0, -1, 0 } ** n,
+    } = .{};
+};
