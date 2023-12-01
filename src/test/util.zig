@@ -122,6 +122,29 @@ pub fn lookAt(center: [3]f32, eye: [3]f32, up: [3]f32) [16]f32 {
     };
 }
 
+pub fn frustum(left: f32, right: f32, top: f32, bottom: f32, near: f32, far: f32) [16]f32 {
+    var m = [_]f32{0} ** 16;
+    m[0] = (2 * near) / (right - left);
+    m[5] = (2 * near) / (bottom - top);
+    m[8] = (right + left) / (right - left);
+    m[9] = (bottom + top) / (bottom - top);
+    m[10] = (far + near) / (near - far);
+    m[11] = -1;
+    m[14] = (2 * far * near) / (near - far);
+    return m;
+}
+
+pub fn perspective(yfov: f32, aspect_ratio: f32, near: f32, far: f32) [16]f32 {
+    var m = [_]f32{0} ** 16;
+    const ct = 1 / @tan(yfov * 0.5);
+    m[0] = ct / aspect_ratio;
+    m[5] = ct;
+    m[10] = (far + near) / (near - far);
+    m[11] = -1;
+    m[14] = (2 * far * near) / (near - far);
+    return m;
+}
+
 pub fn infPerspective(yfov: f32, aspect_ratio: f32, near: f32) [16]f32 {
     var m = [_]f32{0} ** 16;
     const ct = 1 / @tan(yfov * 0.5);
@@ -133,15 +156,13 @@ pub fn infPerspective(yfov: f32, aspect_ratio: f32, near: f32) [16]f32 {
     return m;
 }
 
-pub fn frustum(left: f32, right: f32, top: f32, bottom: f32, near: f32, far: f32) [16]f32 {
+pub fn ortho(xmag: f32, ymag: f32, near: f32, far: f32) [16]f32 {
     var m = [_]f32{0} ** 16;
-    m[0] = (2 * near) / (right - left);
-    m[5] = (2 * near) / (bottom - top);
-    m[8] = (right + left) / (right - left);
-    m[9] = (bottom + top) / (bottom - top);
-    m[10] = (near + far) / (near - far);
-    m[11] = -1;
-    m[14] = (2 * near * far) / (near - far);
+    m[0] = 1 / xmag;
+    m[5] = 1 / ymag;
+    m[10] = 2 / (near - far);
+    m[14] = (far + near) / (near - far);
+    m[15] = 1;
     return m;
 }
 

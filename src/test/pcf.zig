@@ -15,11 +15,35 @@ test "shadows" {
     try do();
 }
 
-const frame_n = 1;
+const frame_n = 2;
 const width = Platform.width;
 const height = Platform.height;
-const material_n = 1; // TODO
-const draw_n = 3; // TODO
+const materials = [_]UniformBuffer.Material{
+    .{
+        0.1, 0.0, 0,   undefined,
+        1,   0,   0,   undefined,
+        0.1, 0.1, 0.1, undefined,
+        200,
+    },
+    .{
+        0.0, 0,   0.05, undefined,
+        0,   0,   0.6,  undefined,
+        0.1, 0.1, 0.1,  undefined,
+        100,
+    },
+};
+const draws =
+    [_]Draw{.{
+    .model = .cube,
+    .material = 0,
+    .index_offset = 0,
+    .vertex_offset = 0,
+}} ** 3 ++ [_]Draw{.{
+    .model = .plane,
+    .material = 1,
+    .index_offset = null,
+    .vertex_offset = @sizeOf(@TypeOf(cube.data)),
+}};
 
 fn do() !void {
     const dev = &context().device;
@@ -61,65 +85,60 @@ fn do() !void {
     var queue = try Queue.init();
     defer queue.deinit();
 
-    // TODO
-    const draws = [_]Draw{.{
-        .model = .cube,
-        .material = 0,
-        .index_offset = 0,
-        .vertex_offset = 0,
-    }} ** draw_n;
-
-    // TODO
     var draw_xforms = blk: {
-        var m: [draw_n][16]f32 = undefined;
-        for (0..draw_n) |i| {
+        var m: [draws.len][16]f32 = undefined;
+        for (0..draws.len) |i| {
             m[i] = util.identity(4);
-            m[i][12] = @as(f32, @floatFromInt(i)) * 4;
+            switch (draws[i].model) {
+                .cube => {
+                    m[i][5] += @as(f32, @floatFromInt(i)) * 0.65;
+                    m[i][10] += @as(f32, @floatFromInt(i)) * 0.35;
+                    m[i][12] = @as(f32, @floatFromInt(i)) * 4;
+                },
+                .plane => {
+                    m[i][0] = 50;
+                    m[i][10] = 50;
+                    m[i][13] = 1;
+                },
+            }
         }
         break :blk m;
     };
 
-    // TODO
-    const light_pos = [3]f32{ -10, -5, -3 };
+    const light_pos = [3]f32{ -16, -10, -4 };
     const shdw_v = util.lookAt(.{ 0, 0, 0 }, light_pos, .{ 0, -1, 0 });
-    //const shdw_p = util.infPerspective(std.math.pi / 2.0, 1, 0.01);
-    const shdw_p = util.frustum(-1, 1, -1, 1, 1, 1000);
+    const shdw_p = util.frustum(-1, 1, -1, 1, 1, 100);
     const vps = util.mulM(4, .{
         0.5, 0,   0,   0,
         0,   0.5, 0,   0,
         0,   0,   1.0, 0,
         0.5, 0.5, 0,   1,
     }, util.mulM(4, shdw_p, shdw_v));
-    const v = util.lookAt(.{ 4, 0, 0 }, .{ -2, -4, -7 }, .{ 0, -1, 0 });
-    const p = util.infPerspective(
+    const v = util.lookAt(.{ 4, 0, 0 }, .{ -2, -7, -7 }, .{ 0, -1, 0 });
+    const p = util.perspective(
         std.math.pi / 3.0,
         @as(f32, @floatFromInt(width)) / @as(f32, @floatFromInt(height)),
         0.1,
+        100,
     );
     for (0..frame_n) |i| {
         unif_buf.updateLight(
             i,
             util.mulMV(4, v, light_pos ++ [_]f32{1}) ++ [3]f32{ 0.2, 0.2, 0.2 },
         );
-        for (0..material_n) |j|
-            // TODO
-            unif_buf.updateMaterial(i, j, .{
-                0,   0,   0,   undefined,
-                1.0, 0,   0,   undefined,
-                0.1, 0.1, 0.1, undefined,
-                100,
-            });
-        for (0..draw_n) |j| {
+        for (0..materials.len) |j|
+            unif_buf.updateMaterial(i, j, materials[j]);
+        for (0..draws.len) |j| {
             const m = draw_xforms[j];
             const s = util.mulM(4, vps, m);
             const mv = util.mulM(4, v, m);
             const mvp = util.mulM(4, p, mv);
             const n = blk: {
-                const n = util.transpose(3, util.invert3(util.upperLeft(4, mv)));
+                const n = util.invert3(util.upperLeft(4, mv));
                 break :blk [12]f32{
-                    n[0], n[1], n[2], undefined,
-                    n[3], n[4], n[5], undefined,
-                    n[6], n[7], n[8], undefined,
+                    n[0], n[3], n[6], undefined,
+                    n[1], n[4], n[7], undefined,
+                    n[2], n[5], n[8], undefined,
                 };
             };
             unif_buf.updateTransform(i, j, s ++ mvp ++ mv ++ n);
@@ -152,8 +171,8 @@ fn do() !void {
 
         try cmd_pool.reset(dev);
         var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
-        shdw_pass.record(&cmd, &pl, &idx_buf, &vert_buf, draws, draw_xforms);
-        light_pass.record(&cmd, next, &pl, &idx_buf, &vert_buf, draws, frame);
+        shdw_pass.record(&cmd, &pl, &idx_buf, &vert_buf, draw_xforms);
+        light_pass.record(&cmd, next, &pl, &idx_buf, &vert_buf, frame);
         if (!is_unified) @panic("TODO");
         try cmd.end();
 
@@ -187,7 +206,11 @@ fn do() !void {
         frame = (frame + 1) % frame_n;
     }
 
-    // TODO: Wait
+    try ngl.Fence.wait(gpa, dev, std.time.ns_per_s * 5, blk: {
+        var fences: [frame_n]*ngl.Fence = undefined;
+        for (0..fences.len) |i| fences[i] = &queue.fences[i];
+        break :blk &fences;
+    });
 }
 
 const ShadowMap = struct {
@@ -331,22 +354,32 @@ const ShadowPass = struct {
                 },
                 .preserve_attachments = null,
             }},
-            // TODO
-            .dependencies = &.{.{
-                .source_subpass = .external,
-                .dest_subpass = .{ .index = 0 },
-                .source_stage_mask = .{ .fragment_shader = true },
-                .source_access_mask = .{ .shader_sampled_read = true },
-                .dest_stage_mask = .{
-                    .early_fragment_tests = true,
-                    .late_fragment_tests = true,
+            .dependencies = &.{
+                .{
+                    .source_subpass = .external,
+                    .dest_subpass = .{ .index = 0 },
+                    .source_stage_mask = .{ .fragment_shader = true },
+                    .source_access_mask = .{ .shader_sampled_read = true },
+                    .dest_stage_mask = .{
+                        .early_fragment_tests = true,
+                        .late_fragment_tests = true,
+                    },
+                    .dest_access_mask = .{
+                        .depth_stencil_attachment_read = true,
+                        .depth_stencil_attachment_write = true,
+                    },
+                    .by_region = false,
                 },
-                .dest_access_mask = .{
-                    .depth_stencil_attachment_read = true,
-                    .depth_stencil_attachment_write = true,
+                .{
+                    .source_subpass = .{ .index = 0 },
+                    .dest_subpass = .external,
+                    .source_stage_mask = .{ .late_fragment_tests = true },
+                    .source_access_mask = .{ .depth_stencil_attachment_write = true },
+                    .dest_stage_mask = .{ .fragment_shader = true },
+                    .dest_access_mask = .{ .shader_sampled_read = true },
+                    .by_region = false,
                 },
-                .by_region = false,
-            }},
+            },
         });
         errdefer rp.deinit(gpa, dev);
         var fb = try ngl.FrameBuffer.init(gpa, dev, .{
@@ -366,8 +399,7 @@ const ShadowPass = struct {
         pipeline: *Pipeline,
         index_buffer: *IndexBuffer,
         vertex_buffer: *VertexBuffer,
-        draws: [draw_n]Draw,
-        draw_transforms: [draw_n][16]f32,
+        draw_transforms: [draws.len][16]f32,
     ) void {
         cmd.beginRenderPass(.{
             .render_pass = &self.render_pass,
@@ -381,9 +413,8 @@ const ShadowPass = struct {
             .clear_values = &.{.{ .depth_stencil = .{ 1, undefined } }},
         }, .{ .contents = .inline_only });
 
-        cmd.setPipeline(&pipeline.shadow);
-
         for (draws, draw_transforms) |draw, xform| {
+            cmd.setPipeline(&pipeline.shadow[@intFromEnum(draw.model)]);
             const s = @as([*]align(4) const u8, @ptrCast(&xform))[0..64];
             cmd.setPushConstants(&pipeline.pipeline_layout, .{ .vertex = true }, 0, s);
             draw.draw(cmd, index_buffer, vertex_buffer);
@@ -722,7 +753,6 @@ const LightPass = struct {
         pipeline: *Pipeline,
         index_buffer: *IndexBuffer,
         vertex_buffer: *VertexBuffer,
-        draws: [draw_n]Draw,
         frame: usize,
     ) void {
         cmd.beginRenderPass(
@@ -736,7 +766,7 @@ const LightPass = struct {
                     .height = height,
                 },
                 .clear_values = &.{
-                    .{ .color_f32 = .{ 0.3, 0.3, 0, 1 } },
+                    .{ .color_f32 = .{ 0.6, 0.6, 0, 1 } },
                     null,
                     .{ .depth_stencil = .{ 1, undefined } },
                 },
@@ -744,12 +774,11 @@ const LightPass = struct {
             .{ .contents = .inline_only },
         );
 
-        cmd.setPipeline(&pipeline.light);
-
         const set_off = Pipeline.set_n / frame_n * frame;
         cmd.setDescriptors(.graphics, &pipeline.pipeline_layout, 0, &.{&pipeline.sets[set_off]});
 
         for (draws, 0..) |draw, i| {
+            cmd.setPipeline(&pipeline.light[@intFromEnum(draw.model)]);
             cmd.setDescriptors(
                 .graphics,
                 &pipeline.pipeline_layout,
@@ -760,7 +789,7 @@ const LightPass = struct {
                 .graphics,
                 &pipeline.pipeline_layout,
                 2,
-                &.{&pipeline.sets[set_off + 1 + material_n + i]},
+                &.{&pipeline.sets[set_off + 1 + materials.len + i]},
             );
             draw.draw(cmd, index_buffer, vertex_buffer);
         }
@@ -780,7 +809,7 @@ const LightPass = struct {
 const Texture = struct {
     image: ngl.Image,
     memory: ngl.Memory,
-    views: [material_n]ngl.ImageView,
+    views: [materials.len]ngl.ImageView,
     sampler: ngl.Sampler,
 
     fn init() ngl.Error!Texture {
@@ -791,7 +820,7 @@ const Texture = struct {
             .format = .rgba8_unorm,
             .width = 1,
             .height = 1,
-            .depth_or_layers = material_n,
+            .depth_or_layers = materials.len,
             .levels = 1,
             .samples = .@"1",
             .tiling = .optimal,
@@ -814,7 +843,7 @@ const Texture = struct {
             image.deinit(gpa, dev);
             dev.free(gpa, &mem);
         }
-        var views: [material_n]ngl.ImageView = undefined;
+        var views: [materials.len]ngl.ImageView = undefined;
         for (0..views.len) |i|
             views[i] = ngl.ImageView.init(gpa, dev, .{
                 .image = &image,
@@ -908,11 +937,11 @@ const VertexBuffer = struct {
 
         var buf = try ngl.Buffer.init(gpa, dev, .{
             .size = blk: {
-                const a = @sizeOf(@TypeOf(cube.data));
-                if (a & 3 != 0) unreachable;
-                const b = @sizeOf(@TypeOf(plane.data));
-                if (b & 3 != 0) unreachable;
-                break :blk a + b;
+                const cube_size = @sizeOf(@TypeOf(cube.data));
+                if (cube_size & 3 != 0) unreachable;
+                const plane_size = @sizeOf(@TypeOf(plane.data));
+                if (plane_size & 3 != 0) unreachable;
+                break :blk cube_size + plane_size;
             },
             .usage = .{ .vertex_buffer = true, .transfer_dest = true },
         });
@@ -945,7 +974,7 @@ const UniformBuffer = struct {
     data: []u8,
 
     // Per frame
-    const stride = 256 * (1 + material_n + draw_n);
+    const stride = 256 * (1 + materials.len + draws.len);
 
     fn init() ngl.Error!UniformBuffer {
         const dev = &context().device;
@@ -999,7 +1028,7 @@ const UniformBuffer = struct {
 
     fn updateTransform(self: *UniformBuffer, frame: usize, draw: usize, data: Transform) void {
         const p = @as([*]const u8, @ptrCast(&data));
-        const off = frame * stride + 256 + material_n * 256 + draw * 256;
+        const off = frame * stride + 256 + materials.len * 256 + draw * 256;
         @memcpy(self.data[off .. off + @sizeOf(Transform)], p);
     }
 
@@ -1049,7 +1078,6 @@ const StagingBuffer = struct {
 
     // Will lock the graphics queue and wait on fence 0
     // `Texture.image` will be transitioned to `shader_read_only_optimal`
-    // TODO: `plane`
     fn copy(
         self: *StagingBuffer,
         queue: *Queue,
@@ -1062,7 +1090,7 @@ const StagingBuffer = struct {
         const a = 256;
         var s = self.data;
 
-        const pixels = [_][4]u8{.{ 255, 255, 255, 255 }} ** material_n;
+        const pixels = [_][4]u8{.{ 255, 255, 255, 255 }} ** materials.len;
         for (pixels) |px| {
             @memcpy(s[0..4], &px);
             s = s[a..];
@@ -1076,11 +1104,17 @@ const StagingBuffer = struct {
         s = s[(indices.len + a - 1) & ~@as(u64, a - 1) ..];
 
         const vertices = blk: {
-            const p = @as([*]const u8, @ptrCast(&cube.data));
-            break :blk p[0..@sizeOf(@TypeOf(cube.data))];
+            const cube_p = @as([*]const u8, @ptrCast(&cube.data));
+            const plane_p = @as([*]const u8, @ptrCast(&plane.data));
+            break :blk .{
+                cube_p[0..@sizeOf(@TypeOf(cube.data))],
+                plane_p[0..@sizeOf(@TypeOf(plane.data))],
+            };
         };
-        @memcpy(s[0..vertices.len], vertices);
-        s = s[(vertices.len + a - 1) & ~@as(u64, a - 1) ..];
+        @memcpy(s[0..vertices[0].len], vertices[0]);
+        s = s[vertices[0].len..];
+        @memcpy(s[0..vertices[1].len], vertices[1]);
+        s = s[(vertices[1].len + a - 1) & ~@as(u64, a - 1) ..];
 
         try queue.pools[0].reset(dev);
         var cmd = try queue.buffers[0].begin(gpa, dev, .{
@@ -1102,7 +1136,7 @@ const StagingBuffer = struct {
                     .base_level = 0,
                     .levels = 1,
                     .base_layer = 0,
-                    .layers = material_n,
+                    .layers = materials.len,
                 },
             }},
             .by_region = false,
@@ -1113,7 +1147,7 @@ const StagingBuffer = struct {
             .image_layout = .transfer_dest_optimal,
             .image_type = .@"2d",
             .regions = blk: {
-                var regs: [material_n]ngl.CommandBuffer.Cmd.BufferImageCopy.Region = undefined;
+                var regs: [materials.len]ngl.CommandBuffer.Cmd.BufferImageCopy.Region = undefined;
                 for (&regs, 0..) |*reg, i|
                     reg.* = .{
                         .buffer_offset = i * a,
@@ -1146,7 +1180,7 @@ const StagingBuffer = struct {
                     .base_level = 0,
                     .levels = 1,
                     .base_layer = 0,
-                    .layers = material_n,
+                    .layers = materials.len,
                 },
             }},
             .by_region = false,
@@ -1156,7 +1190,7 @@ const StagingBuffer = struct {
                 .source = &self.buffer,
                 .dest = &index_buffer.buffer,
                 .regions = &.{.{
-                    .source_offset = material_n * a,
+                    .source_offset = materials.len * a,
                     .dest_offset = 0,
                     .size = indices.len,
                 }},
@@ -1165,9 +1199,9 @@ const StagingBuffer = struct {
                 .source = &self.buffer,
                 .dest = &vertex_buffer.buffer,
                 .regions = &.{.{
-                    .source_offset = (material_n * a + indices.len + a - 1) & ~@as(u64, a - 1),
+                    .source_offset = (materials.len * a + indices.len + a - 1) & ~@as(u64, a - 1),
                     .dest_offset = 0,
-                    .size = vertices.len,
+                    .size = vertices[0].len + vertices[1].len,
                 }},
             },
         });
@@ -1194,16 +1228,19 @@ const StagingBuffer = struct {
 };
 
 const Pipeline = struct {
-    shadow: ngl.Pipeline,
-    light: ngl.Pipeline,
+    shadow: [2]ngl.Pipeline,
+    light: [2]ngl.Pipeline,
     set_layouts: [3]ngl.DescriptorSetLayout,
     pipeline_layout: ngl.PipelineLayout,
     pool: ngl.DescriptorPool,
     sets: [set_n]ngl.DescriptorSet,
 
+    const cube_model: u1 = 0;
+    const plane_model: u1 = 1;
+
     // One for shadow and light, plus one for each kind
     // of material plus one for each draw call
-    const set_n = frame_n * (1 + material_n + draw_n);
+    const set_n = frame_n * (1 + materials.len + draws.len);
 
     fn init(
         shadow_map: *ShadowMap,
@@ -1277,154 +1314,183 @@ const Pipeline = struct {
         });
         errdefer pl_layt.deinit(gpa, dev);
 
-        // TODO: `plane`
-        const shdw_state = ngl.GraphicsState{
-            .stages = &.{.{
-                .stage = .vertex,
-                .code = &sm_vert_spv,
-                .name = "main",
-            }},
-            .layout = &pl_layt,
-            .primitive = &.{
-                .bindings = &.{.{
-                    .binding = 0,
-                    .stride = 12,
-                    .step_rate = .vertex,
-                }},
-                .attributes = &.{.{
-                    .location = 0,
-                    .binding = 0,
-                    .format = .rgb32_sfloat,
-                    .offset = 0,
-                }},
-                .topology = cube.topology,
-            },
-            .viewport = &.{
-                .x = 0,
-                .y = 0,
-                .width = ShadowMap.extent,
-                .height = ShadowMap.extent,
-                .near = 0,
-                .far = 1,
-            },
-            .rasterization = &.{
-                .polygon_mode = .fill,
-                .cull_mode = .front,
-                .clockwise = cube.clockwise,
-                .depth_bias = .{
-                    .value = 0.01,
-                    .slope = 1,
-                    .clamp = if (ngl.Feature.get(
-                        gpa,
-                        inst,
-                        dev_desc,
-                        .core,
-                    ).?.rasterization.depth_bias_clamp) 1 else null,
-                },
-                .samples = .@"1",
-            },
-            .depth_stencil = &.{
-                .depth_compare = .less_equal,
-                .depth_write = true,
-                .stencil_front = null,
-                .stencil_back = null,
-            },
-            .color_blend = null,
-            .render_pass = &shadow_pass.render_pass,
-            .subpass = 0,
+        var shdw_state_params: [2]struct {
+            topology: ngl.Primitive.Topology,
+            cull_mode: ngl.Rasterization.CullMode,
+            clockwise: bool,
+        } = undefined;
+        shdw_state_params[cube_model] = .{
+            .topology = cube.topology,
+            .cull_mode = .front,
+            .clockwise = cube.clockwise,
         };
-        const light_state = ngl.GraphicsState{
-            .stages = &.{
-                .{
+        shdw_state_params[plane_model] = .{
+            .topology = plane.topology,
+            .cull_mode = .back,
+            .clockwise = plane.clockwise,
+        };
+        var shdw_states: [2]ngl.GraphicsState = undefined;
+        inline for (&shdw_states, shdw_state_params) |*state, params|
+            state.* = .{
+                .stages = &.{.{
                     .stage = .vertex,
-                    .code = &vert_spv,
+                    .code = &sm_vert_spv,
                     .name = "main",
-                },
-                .{
-                    .stage = .fragment,
-                    .code = &frag_spv,
-                    .name = "main",
-                },
-            },
-            .layout = &pl_layt,
-            .primitive = &.{
-                .bindings = &.{
-                    .{
+                }},
+                .layout = &pl_layt,
+                .primitive = &.{
+                    .bindings = &.{.{
                         .binding = 0,
                         .stride = 12,
                         .step_rate = .vertex,
-                    },
-                    .{
-                        .binding = 1,
-                        .stride = 12,
-                        .step_rate = .vertex,
-                    },
-                    .{
-                        .binding = 2,
-                        .stride = 8,
-                        .step_rate = .vertex,
-                    },
-                },
-                .attributes = &.{
-                    .{
+                    }},
+                    .attributes = &.{.{
                         .location = 0,
                         .binding = 0,
                         .format = .rgb32_sfloat,
                         .offset = 0,
+                    }},
+                    .topology = params.topology,
+                },
+                .viewport = &.{
+                    .x = 0,
+                    .y = 0,
+                    .width = ShadowMap.extent,
+                    .height = ShadowMap.extent,
+                    .near = 0,
+                    .far = 1,
+                },
+                .rasterization = &.{
+                    .polygon_mode = .fill,
+                    .cull_mode = params.cull_mode,
+                    .clockwise = params.clockwise,
+                    .depth_bias = .{
+                        .value = 0.01,
+                        .slope = 3,
+                        .clamp = if (ngl.Feature.get(
+                            gpa,
+                            inst,
+                            dev_desc,
+                            .core,
+                        ).?.rasterization.depth_bias_clamp) 1 else null,
+                    },
+                    .samples = .@"1",
+                },
+                .depth_stencil = &.{
+                    .depth_compare = .less_equal,
+                    .depth_write = true,
+                    .stencil_front = null,
+                    .stencil_back = null,
+                },
+                .color_blend = null,
+                .render_pass = &shadow_pass.render_pass,
+                .subpass = 0,
+            };
+
+        var light_state_params: [2]struct {
+            topology: ngl.Primitive.Topology,
+            clockwise: bool,
+        } = undefined;
+        light_state_params[cube_model] = .{
+            .topology = cube.topology,
+            .clockwise = cube.clockwise,
+        };
+        light_state_params[plane_model] = .{
+            .topology = plane.topology,
+            .clockwise = plane.clockwise,
+        };
+        var light_states: [2]ngl.GraphicsState = undefined;
+        inline for (&light_states, light_state_params) |*state, params|
+            state.* = .{
+                .stages = &.{
+                    .{
+                        .stage = .vertex,
+                        .code = &vert_spv,
+                        .name = "main",
                     },
                     .{
-                        .location = 1,
-                        .binding = 1,
-                        .format = .rgb32_sfloat,
-                        .offset = 0,
-                    },
-                    .{
-                        .location = 2,
-                        .binding = 2,
-                        .format = .rg32_sfloat,
-                        .offset = 0,
+                        .stage = .fragment,
+                        .code = &frag_spv,
+                        .name = "main",
                     },
                 },
-                .topology = cube.topology,
-            },
-            .viewport = &.{
-                .x = 0,
-                .y = 0,
-                .width = width,
-                .height = height,
-                .near = 0,
-                .far = 1,
-            },
-            .rasterization = &.{
-                .polygon_mode = .fill,
-                .cull_mode = .back,
-                .clockwise = cube.clockwise,
-                .samples = color_attachment.samples,
-            },
-            .depth_stencil = &.{
-                .depth_compare = .less_equal,
-                .depth_write = true,
-                .stencil_front = null,
-                .stencil_back = null,
-            },
-            .color_blend = &.{
-                .attachments = &.{.{ .blend = null, .write = .all }},
-                .constants = .unused,
-            },
-            .render_pass = &light_pass.render_pass,
-            .subpass = 0,
-        };
+                .layout = &pl_layt,
+                .primitive = &.{
+                    .bindings = &.{
+                        .{
+                            .binding = 0,
+                            .stride = 12,
+                            .step_rate = .vertex,
+                        },
+                        .{
+                            .binding = 1,
+                            .stride = 12,
+                            .step_rate = .vertex,
+                        },
+                        .{
+                            .binding = 2,
+                            .stride = 8,
+                            .step_rate = .vertex,
+                        },
+                    },
+                    .attributes = &.{
+                        .{
+                            .location = 0,
+                            .binding = 0,
+                            .format = .rgb32_sfloat,
+                            .offset = 0,
+                        },
+                        .{
+                            .location = 1,
+                            .binding = 1,
+                            .format = .rgb32_sfloat,
+                            .offset = 0,
+                        },
+                        .{
+                            .location = 2,
+                            .binding = 2,
+                            .format = .rg32_sfloat,
+                            .offset = 0,
+                        },
+                    },
+                    .topology = params.topology,
+                },
+                .viewport = &.{
+                    .x = 0,
+                    .y = 0,
+                    .width = width,
+                    .height = height,
+                    .near = 0,
+                    .far = 1,
+                },
+                .rasterization = &.{
+                    .polygon_mode = .fill,
+                    .cull_mode = .back,
+                    .clockwise = params.clockwise,
+                    .samples = color_attachment.samples,
+                },
+                .depth_stencil = &.{
+                    .depth_compare = .less_equal,
+                    .depth_write = true,
+                    .stencil_front = null,
+                    .stencil_back = null,
+                },
+                .color_blend = &.{
+                    .attachments = &.{.{ .blend = null, .write = .all }},
+                    .constants = .unused,
+                },
+                .render_pass = &light_pass.render_pass,
+                .subpass = 0,
+            };
+
         const pls = try ngl.Pipeline.initGraphics(gpa, dev, .{
-            .states = &.{ shdw_state, light_state },
+            .states = &shdw_states ++ &light_states,
             .cache = null,
         });
-        var shdw_pl = pls[0];
-        var light_pl = pls[1];
+        var shdw_pls = pls[0..2].*;
+        var light_pls = pls[2..4].*;
         gpa.free(pls);
-        errdefer {
-            shdw_pl.deinit(gpa, dev);
-            light_pl.deinit(gpa, dev);
-        }
+        errdefer for (&shdw_pls ++ &light_pls) |*pl| pl.deinit(gpa, dev);
 
         var pool = try ngl.DescriptorPool.init(gpa, dev, .{
             .max_sets = set_n,
@@ -1436,8 +1502,8 @@ const Pipeline = struct {
         errdefer pool.deinit(gpa, dev);
         var sets = blk: {
             const l0 = [_]*ngl.DescriptorSetLayout{&set_layts[0]};
-            const l1 = [_]*ngl.DescriptorSetLayout{&set_layts[1]} ** material_n;
-            const l2 = [_]*ngl.DescriptorSetLayout{&set_layts[2]} ** draw_n;
+            const l1 = [_]*ngl.DescriptorSetLayout{&set_layts[1]} ** materials.len;
+            const l2 = [_]*ngl.DescriptorSetLayout{&set_layts[2]} ** draws.len;
             const frame: [set_n / frame_n]*ngl.DescriptorSetLayout = l0 ++ l1 ++ l2;
             const layts: [set_n]*ngl.DescriptorSetLayout = frame ** frame_n;
             var s = try pool.alloc(gpa, dev, .{ .layouts = &layts });
@@ -1446,9 +1512,9 @@ const Pipeline = struct {
         };
         const writes = blk: {
             var is_writes = [_]ngl.DescriptorSet.Write.ImageSamplerWrite{undefined} **
-                (frame_n * (1 + material_n));
+                (frame_n * (1 + materials.len));
             var buf_writes = [_]ngl.DescriptorSet.Write.BufferWrite{undefined} **
-                (frame_n * (1 + material_n + draw_n));
+                (frame_n * (1 + materials.len + draws.len));
             var writes: [is_writes.len + buf_writes.len]ngl.DescriptorSet.Write = undefined;
             var zero: usize = 0;
             var iw = is_writes[zero..];
@@ -1473,7 +1539,7 @@ const Pipeline = struct {
                 bw[0] = .{
                     .buffer = &uniform_buffer.buffer,
                     .offset = off,
-                    .range = 256, // TODO
+                    .range = @sizeOf(UniformBuffer.Light),
                 };
                 w[1] = .{
                     .descriptor_set = &s[0],
@@ -1486,7 +1552,7 @@ const Pipeline = struct {
                 w = w[2..];
                 s = s[1..];
                 off += 256;
-                for (0..material_n) |i| {
+                for (0..materials.len) |i| {
                     // Base color texture/sampler (set 1)
                     iw[0] = .{
                         .view = &texture.views[i],
@@ -1503,7 +1569,7 @@ const Pipeline = struct {
                     bw[0] = .{
                         .buffer = &uniform_buffer.buffer,
                         .offset = off,
-                        .range = 256, // TODO
+                        .range = @sizeOf(UniformBuffer.Material),
                     };
                     w[1] = .{
                         .descriptor_set = &s[0],
@@ -1517,20 +1583,18 @@ const Pipeline = struct {
                     s = s[1..];
                     off += 256;
                 }
-                for (0..draw_n) |_| {
+                for (0..draws.len) |_| {
                     // Transform uniform (set 2)
                     bw[0] = .{
                         .buffer = &uniform_buffer.buffer,
                         .offset = off,
-                        .range = 256, // TODO
+                        .range = @sizeOf(UniformBuffer.Transform),
                     };
                     w[0] = .{
                         .descriptor_set = &s[0],
                         .binding = 0,
                         .element = 0,
-                        .contents = .{
-                            .uniform_buffer = bw[0..1],
-                        },
+                        .contents = .{ .uniform_buffer = bw[0..1] },
                     };
                     bw = bw[1..];
                     w = w[1..];
@@ -1543,8 +1607,8 @@ const Pipeline = struct {
         try ngl.DescriptorSet.write(gpa, dev, &writes);
 
         return .{
-            .shadow = shdw_pl,
-            .light = light_pl,
+            .shadow = shdw_pls,
+            .light = light_pls,
             .set_layouts = set_layts,
             .pipeline_layout = pl_layt,
             .pool = pool,
@@ -1554,8 +1618,7 @@ const Pipeline = struct {
 
     fn deinit(self: *Pipeline) void {
         const dev = &context().device;
-        self.shadow.deinit(gpa, dev);
-        self.light.deinit(gpa, dev);
+        for (&self.shadow ++ &self.light) |*pl| pl.deinit(gpa, dev);
         for (&self.set_layouts) |*layt| layt.deinit(gpa, dev);
         self.pipeline_layout.deinit(gpa, dev);
         self.pool.deinit(gpa, dev);
@@ -1706,9 +1769,9 @@ const Draw = struct {
                     0,
                     &[_]*ngl.Buffer{&vertex_buffer.buffer} ** 3,
                     &.{
-                        @offsetOf(@TypeOf(cube.data), "position"),
-                        @offsetOf(@TypeOf(cube.data), "normal"),
-                        @offsetOf(@TypeOf(cube.data), "tex_coord"),
+                        self.vertex_offset + @offsetOf(@TypeOf(cube.data), "position"),
+                        self.vertex_offset + @offsetOf(@TypeOf(cube.data), "normal"),
+                        self.vertex_offset + @offsetOf(@TypeOf(cube.data), "tex_coord"),
                     },
                     &.{
                         @sizeOf(@TypeOf(cube.data.position)),
@@ -1718,7 +1781,23 @@ const Draw = struct {
                 );
                 cmd.drawIndexed(cube.indices.len, 1, 0, 0, 0);
             },
-            .plane => @panic("TODO"),
+            .plane => {
+                cmd.setVertexBuffers(
+                    0,
+                    &[_]*ngl.Buffer{&vertex_buffer.buffer} ** 3,
+                    &.{
+                        self.vertex_offset + @offsetOf(@TypeOf(plane.data), "position"),
+                        self.vertex_offset + @offsetOf(@TypeOf(plane.data), "normal"),
+                        self.vertex_offset + @offsetOf(@TypeOf(plane.data), "tex_coord"),
+                    },
+                    &.{
+                        @sizeOf(@TypeOf(plane.data.position)),
+                        @sizeOf(@TypeOf(plane.data.normal)),
+                        @sizeOf(@TypeOf(plane.data.tex_coord)),
+                    },
+                );
+                cmd.draw(plane.vertex_count, 1, 0, 0);
+            },
         }
     }
 };
