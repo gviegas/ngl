@@ -421,6 +421,577 @@ pub const Format = enum {
         // at runtime (at least one format will support it)
         .d16_unorm = .{ .sampled_image = true, .depth_stencil_attachment = true },
     };
+
+    const Info = union(enum) {
+        color: struct {
+            non_float: bool = false,
+            srgb: bool = false,
+            r_bits: u7 = 0,
+            g_bits: u7 = 0,
+            b_bits: u7 = 0,
+            a_bits: u7 = 0,
+        },
+        depth: struct { bits: u7 },
+        stencil: struct { bits: u7 },
+        combined: struct { depth_bits: u7, stencil_bits: u7 },
+        compressed, // TODO
+    };
+
+    fn getInfo(self: Self) Info {
+        return switch (self) {
+            .unknown => undefined,
+
+            .r8_unorm => .{ .color = .{
+                .r_bits = 8,
+            } },
+            .r8_srgb => .{ .color = .{
+                .srgb = true,
+                .r_bits = 8,
+            } },
+            .r8_snorm => .{ .color = .{
+                .r_bits = 8,
+            } },
+            .r8_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+            } },
+            .r8_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+            } },
+            .a8_unorm => .{ .color = .{
+                .a_bits = 8,
+            } },
+            .r4g4_unorm => .{ .color = .{
+                .r_bits = 4,
+                .g_bits = 4,
+            } },
+
+            .r16_unorm => .{ .color = .{
+                .r_bits = 16,
+            } },
+            .r16_snorm => .{ .color = .{
+                .r_bits = 16,
+            } },
+            .r16_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 16,
+            } },
+            .r16_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 16,
+            } },
+            .r16_sfloat => .{ .color = .{
+                .r_bits = 16,
+            } },
+            .rg8_unorm => .{ .color = .{
+                .r_bits = 8,
+                .g_bits = 8,
+            } },
+            .rg8_srgb => .{ .color = .{
+                .srgb = true,
+                .r_bits = 8,
+                .g_bits = 8,
+            } },
+            .rg8_snorm => .{ .color = .{
+                .r_bits = 8,
+                .g_bits = 8,
+            } },
+            .rg8_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+                .g_bits = 8,
+            } },
+            .rg8_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+                .g_bits = 8,
+            } },
+            .rgba4_unorm => .{ .color = .{
+                .r_bits = 4,
+                .g_bits = 4,
+                .b_bits = 4,
+                .a_bits = 4,
+            } },
+            .bgra4_unorm => .{ .color = .{
+                .r_bits = 4,
+                .g_bits = 4,
+                .b_bits = 4,
+                .a_bits = 4,
+            } },
+            .argb4_unorm => .{ .color = .{
+                .r_bits = 4,
+                .g_bits = 4,
+                .b_bits = 4,
+                .a_bits = 4,
+            } },
+            .abgr4_unorm => .{ .color = .{
+                .r_bits = 4,
+                .g_bits = 4,
+                .b_bits = 4,
+                .a_bits = 4,
+            } },
+            .r5g6b5_unorm => .{ .color = .{
+                .r_bits = 5,
+                .g_bits = 6,
+                .b_bits = 5,
+            } },
+            .b5g6r5_unorm => .{ .color = .{
+                .r_bits = 5,
+                .g_bits = 6,
+                .b_bits = 5,
+            } },
+            .rgb5a1_unorm => .{ .color = .{
+                .r_bits = 5,
+                .g_bits = 5,
+                .b_bits = 5,
+                .a_bits = 1,
+            } },
+            .bgr5a1_unorm => .{ .color = .{
+                .r_bits = 5,
+                .g_bits = 5,
+                .b_bits = 5,
+                .a_bits = 1,
+            } },
+            .a1rgb5_unorm => .{ .color = .{
+                .r_bits = 5,
+                .g_bits = 5,
+                .b_bits = 5,
+                .a_bits = 1,
+            } },
+            .a1bgr5_unorm => .{ .color = .{
+                .r_bits = 5,
+                .g_bits = 5,
+                .b_bits = 5,
+                .a_bits = 1,
+            } },
+
+            .rgb8_unorm => .{ .color = .{
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+            } },
+            .rgb8_srgb => .{ .color = .{
+                .srgb = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+            } },
+            .rgb8_snorm => .{ .color = .{
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+            } },
+            .rgb8_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+            } },
+            .rgb8_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+            } },
+            .bgr8_unorm => .{ .color = .{
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+            } },
+            .bgr8_srgb => .{ .color = .{
+                .srgb = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+            } },
+            .bgr8_snorm => .{ .color = .{
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+            } },
+            .bgr8_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+            } },
+            .bgr8_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+            } },
+
+            .r32_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 32,
+            } },
+            .r32_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 32,
+            } },
+            .r32_sfloat => .{ .color = .{
+                .r_bits = 32,
+            } },
+            .rg16_unorm => .{ .color = .{
+                .r_bits = 16,
+                .g_bits = 16,
+            } },
+            .rg16_snorm => .{ .color = .{
+                .r_bits = 16,
+                .g_bits = 16,
+            } },
+            .rg16_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 16,
+                .g_bits = 16,
+            } },
+            .rg16_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 16,
+                .g_bits = 16,
+            } },
+            .rg16_sfloat => .{ .color = .{
+                .r_bits = 16,
+                .g_bits = 16,
+            } },
+            .rgba8_unorm => .{ .color = .{
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+                .a_bits = 8,
+            } },
+            .rgba8_srgb => .{ .color = .{
+                .srgb = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+                .a_bits = 8,
+            } },
+            .rgba8_snorm => .{ .color = .{
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+                .a_bits = 8,
+            } },
+            .rgba8_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+                .a_bits = 8,
+            } },
+            .rgba8_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+                .a_bits = 8,
+            } },
+            .bgra8_unorm => .{ .color = .{
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+                .a_bits = 8,
+            } },
+            .bgra8_srgb => .{ .color = .{
+                .srgb = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+                .a_bits = 8,
+            } },
+            .bgra8_snorm => .{ .color = .{
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+                .a_bits = 8,
+            } },
+            .bgra8_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+                .a_bits = 8,
+            } },
+            .bgra8_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 8,
+                .g_bits = 8,
+                .b_bits = 8,
+                .a_bits = 8,
+            } },
+            .rgb10a2_unorm => .{ .color = .{
+                .r_bits = 10,
+                .g_bits = 10,
+                .b_bits = 10,
+                .a_bits = 2,
+            } },
+            .rgb10a2_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 10,
+                .g_bits = 10,
+                .b_bits = 10,
+                .a_bits = 2,
+            } },
+            .a2rgb10_unorm => .{ .color = .{
+                .r_bits = 10,
+                .g_bits = 10,
+                .b_bits = 10,
+                .a_bits = 2,
+            } },
+            .a2rgb10_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 10,
+                .g_bits = 10,
+                .b_bits = 10,
+                .a_bits = 2,
+            } },
+            .a2bgr10_unorm => .{ .color = .{
+                .r_bits = 10,
+                .g_bits = 10,
+                .b_bits = 10,
+                .a_bits = 2,
+            } },
+            .a2bgr10_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 10,
+                .g_bits = 10,
+                .b_bits = 10,
+                .a_bits = 2,
+            } },
+            .bgr10a2_unorm => .{ .color = .{
+                .r_bits = 10,
+                .g_bits = 10,
+                .b_bits = 10,
+                .a_bits = 2,
+            } },
+            .rg11b10_sfloat => .{ .color = .{
+                .r_bits = 11,
+                .g_bits = 11,
+                .b_bits = 10,
+            } },
+            .b10gr11_ufloat => .{ .color = .{
+                .r_bits = 11,
+                .g_bits = 11,
+                .b_bits = 10,
+            } },
+            .rgb9e5_sfloat => .{ .color = .{
+                .r_bits = 9,
+                .g_bits = 9,
+                .b_bits = 9,
+            } },
+            .e5bgr9_ufloat => .{ .color = .{
+                .r_bits = 9,
+                .g_bits = 9,
+                .b_bits = 9,
+            } },
+
+            .rgb16_unorm => .{ .color = .{
+                .r_bits = 16,
+                .g_bits = 16,
+                .b_bits = 16,
+            } },
+            .rgb16_snorm => .{ .color = .{
+                .r_bits = 16,
+                .g_bits = 16,
+                .b_bits = 16,
+            } },
+            .rgb16_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 16,
+                .g_bits = 16,
+                .b_bits = 16,
+            } },
+            .rgb16_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 16,
+                .g_bits = 16,
+                .b_bits = 16,
+            } },
+            .rgb16_sfloat => .{ .color = .{
+                .r_bits = 16,
+                .g_bits = 16,
+                .b_bits = 16,
+            } },
+
+            .r64_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 64,
+            } },
+            .r64_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 64,
+            } },
+            .r64_sfloat => .{ .color = .{
+                .r_bits = 64,
+            } },
+            .rg32_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 32,
+                .g_bits = 32,
+            } },
+            .rg32_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 32,
+                .g_bits = 32,
+            } },
+            .rg32_sfloat => .{ .color = .{
+                .r_bits = 32,
+                .g_bits = 32,
+            } },
+            .rgba16_unorm => .{ .color = .{
+                .r_bits = 16,
+                .g_bits = 16,
+                .b_bits = 16,
+                .a_bits = 16,
+            } },
+            .rgba16_snorm => .{ .color = .{
+                .r_bits = 16,
+                .g_bits = 16,
+                .b_bits = 16,
+                .a_bits = 16,
+            } },
+            .rgba16_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 16,
+                .g_bits = 16,
+                .b_bits = 16,
+                .a_bits = 16,
+            } },
+            .rgba16_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 16,
+                .g_bits = 16,
+                .b_bits = 16,
+                .a_bits = 16,
+            } },
+            .rgba16_sfloat => .{ .color = .{
+                .r_bits = 16,
+                .g_bits = 16,
+                .b_bits = 16,
+                .a_bits = 16,
+            } },
+
+            .rgb32_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 32,
+                .g_bits = 32,
+                .b_bits = 32,
+            } },
+            .rgb32_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 32,
+                .g_bits = 32,
+                .b_bits = 32,
+            } },
+            .rgb32_sfloat => .{ .color = .{
+                .r_bits = 32,
+                .g_bits = 32,
+                .b_bits = 32,
+            } },
+
+            .rg64_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 64,
+                .g_bits = 64,
+            } },
+            .rg64_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 64,
+                .g_bits = 64,
+            } },
+            .rg64_sfloat => .{ .color = .{
+                .r_bits = 64,
+                .g_bits = 64,
+            } },
+            .rgba32_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 32,
+                .g_bits = 32,
+                .b_bits = 32,
+                .a_bits = 32,
+            } },
+            .rgba32_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 32,
+                .g_bits = 32,
+                .b_bits = 32,
+                .a_bits = 32,
+            } },
+            .rgba32_sfloat => .{ .color = .{
+                .r_bits = 32,
+                .g_bits = 32,
+                .b_bits = 32,
+                .a_bits = 32,
+            } },
+
+            .rgb64_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 64,
+                .g_bits = 64,
+                .b_bits = 64,
+            } },
+            .rgb64_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 64,
+                .g_bits = 64,
+                .b_bits = 64,
+            } },
+            .rgb64_sfloat => .{ .color = .{
+                .r_bits = 64,
+                .g_bits = 64,
+                .b_bits = 64,
+            } },
+
+            .rgba64_uint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 64,
+                .g_bits = 64,
+                .b_bits = 64,
+                .a_bits = 64,
+            } },
+            .rgba64_sint => .{ .color = .{
+                .non_float = true,
+                .r_bits = 64,
+                .g_bits = 64,
+                .b_bits = 64,
+                .a_bits = 64,
+            } },
+            .rgba64_sfloat => .{ .color = .{
+                .r_bits = 64,
+                .g_bits = 64,
+                .b_bits = 64,
+                .a_bits = 64,
+            } },
+
+            .d16_unorm => .{ .depth = .{
+                .bits = 16,
+            } },
+            .x8_d24_unorm => .{ .depth = .{
+                .bits = 24,
+            } },
+            .d32_sfloat => .{ .depth = .{
+                .bits = 32,
+            } },
+            .s8_uint => .{ .stencil = .{
+                .bits = 8,
+            } },
+            .d16_unorm_s8_uint => .{ .combined = .{
+                .depth_bits = 16,
+                .stencil_bits = 8,
+            } },
+            .d24_unorm_s8_uint => .{ .combined = .{
+                .depth_bits = 24,
+                .stencil_bits = 8,
+            } },
+            .d32_sfloat_s8_uint => .{ .combined = .{
+                .depth_bits = 32,
+                .stencil_bits = 8,
+            } },
+        };
+    }
 };
 
 pub const Buffer = struct {
