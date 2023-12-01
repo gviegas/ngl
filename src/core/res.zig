@@ -992,6 +992,23 @@ pub const Format = enum {
             } },
         };
     }
+
+    /// If `self` is `unknown`, then the returned mask will have
+    /// no flags set.
+    pub fn getAspectMask(self: Self) Image.Aspect.Flags {
+        var mask = Image.Aspect.Flags{};
+        if (self != .unknown)
+            switch (self.getInfo()) {
+                .color, .compressed => mask.color = true,
+                .depth => mask.depth = true,
+                .stencil => mask.stencil = true,
+                .combined => {
+                    mask.depth = true;
+                    mask.stencil = true;
+                },
+            };
+        return mask;
+    }
 };
 
 pub const Buffer = struct {
