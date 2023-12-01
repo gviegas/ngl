@@ -339,7 +339,10 @@ const ShadowPass = struct {
                 .initial_layout = .unknown,
                 .final_layout = .shader_read_only_optimal,
                 .resolve_mode = null,
-                .combined = null, // TODO
+                .combined = if (shadow_map.format.getAspectMask().stencil) .{
+                    .stencil_load_op = .dont_care,
+                    .stencil_store_op = .dont_care,
+                } else null,
                 .may_alias = false,
             }},
             .subpasses = &.{.{
@@ -660,7 +663,10 @@ const LightPass = struct {
                     .initial_layout = .unknown,
                     .final_layout = .depth_stencil_attachment_optimal,
                     .resolve_mode = null,
-                    .combined = null, // TODO
+                    .combined = if (depth_attachment.format.getAspectMask().stencil) .{
+                        .stencil_load_op = .dont_care,
+                        .stencil_store_op = .dont_care,
+                    } else null,
                     .may_alias = false,
                 },
             },
