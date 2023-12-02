@@ -93,8 +93,8 @@ pub const Platform = struct {
     image_views: []ngl.ImageView,
     queue_index: usize,
 
-    pub const width = 800;
-    pub const height = 450;
+    pub const width = 960;
+    pub const height = 540;
 
     pub const Input = packed struct {
         done: bool = false,
