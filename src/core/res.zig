@@ -1010,13 +1010,24 @@ pub const Format = enum {
         return mask;
     }
 
-    /// Whether it's `uint` or `sint`.
+    /// Whether it's `uint`/`sint`.
     /// For non-color formats it returns `false`.
     pub fn isNonFloatColor(self: Self) bool {
         if (self == .unknown)
             return false;
         return switch (self.getInfo()) {
             .color => |x| x.non_float,
+            .compressed => @panic("TODO"),
+            else => false,
+        };
+    }
+
+    /// Whether it's `srgb` (implicit `unorm`).
+    pub fn isSrgb(self: Self) bool {
+        if (self == .unknown)
+            return false;
+        return switch (self.getInfo()) {
+            .color => |x| x.srgb,
             .compressed => @panic("TODO"),
             else => false,
         };
