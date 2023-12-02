@@ -18,7 +18,7 @@ test "Device.init/deinit" {
             .feature_set = .{},
         }));
 
-    var dev_descs = try inst.listDevices(gpa);
+    const dev_descs = try inst.listDevices(gpa);
     defer gpa.free(dev_descs);
 
     var dev = try ngl.Device.init(gpa, &inst, dev_descs[0]);
@@ -48,7 +48,7 @@ test "multiple Device instances" {
     var inst = try ngl.Instance.init(gpa, .{});
     defer inst.deinit(gpa);
 
-    var dev_descs = try inst.listDevices(gpa);
+    const dev_descs = try inst.listDevices(gpa);
     defer gpa.free(dev_descs);
 
     if (dev_descs.len < 2) return error.SkipZigTest;
@@ -86,7 +86,7 @@ test "aliasing Device instances" {
     var inst = try ngl.Instance.init(gpa, .{});
     defer inst.deinit(gpa);
 
-    var dev_descs = try inst.listDevices(gpa);
+    const dev_descs = try inst.listDevices(gpa);
     defer gpa.free(dev_descs);
 
     var devs = try gpa.alloc(ngl.Device, 2);
@@ -135,7 +135,7 @@ test "Device.alloc/free" {
     var inst = try ngl.Instance.init(gpa, .{});
     defer inst.deinit(gpa);
 
-    var dev_descs = try inst.listDevices(gpa);
+    const dev_descs = try inst.listDevices(gpa);
     defer gpa.free(dev_descs);
 
     var dev = try ngl.Device.init(gpa, &inst, dev_descs[0]);
@@ -143,7 +143,7 @@ test "Device.alloc/free" {
 
     const sizes = [_]u64{ 1, 256, 64, 4096, 16384 };
 
-    var mems = try gpa.alloc(ngl.Memory, sizes.len * dev.mem_type_n);
+    const mems = try gpa.alloc(ngl.Memory, sizes.len * dev.mem_type_n);
     defer gpa.free(mems);
     var mems_ptr = mems.ptr;
 
@@ -171,7 +171,7 @@ test "Device.wait" {
     var inst = try ngl.Instance.init(gpa, .{});
     defer inst.deinit(gpa);
 
-    var dev_descs = try inst.listDevices(gpa);
+    const dev_descs = try inst.listDevices(gpa);
     defer gpa.free(dev_descs);
 
     var dev = try ngl.Device.init(gpa, &inst, dev_descs[0]);

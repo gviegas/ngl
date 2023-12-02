@@ -31,10 +31,10 @@ pub const Pipeline = struct {
     ) Error!void {
         const dev = Device.cast(device);
 
-        var create_infos = try allocator.alloc(c.VkGraphicsPipelineCreateInfo, desc.states.len);
+        const create_infos = try allocator.alloc(c.VkGraphicsPipelineCreateInfo, desc.states.len);
         defer allocator.free(create_infos);
 
-        var create_inner = try allocator.alloc(
+        const create_inner = try allocator.alloc(
             struct {
                 vertex_input_state: c.VkPipelineVertexInputStateCreateInfo,
                 input_assembly_state: c.VkPipelineInputAssemblyStateCreateInfo,
@@ -485,7 +485,7 @@ pub const Pipeline = struct {
             };
         }
 
-        var module_create_infos: []c.VkShaderModuleCreateInfo = &.{};
+        const module_create_infos: []c.VkShaderModuleCreateInfo = &.{};
         defer if (module_create_infos.len > 0) allocator.free(module_create_infos);
 
         errdefer for (stages) |s| {
@@ -526,7 +526,7 @@ pub const Pipeline = struct {
             }
         }
 
-        var handles = try allocator.alloc(c.VkPipeline, create_infos.len);
+        const handles = try allocator.alloc(c.VkPipeline, create_infos.len);
         defer allocator.free(handles);
 
         try check(dev.vkCreateGraphicsPipelines(
@@ -565,7 +565,7 @@ pub const Pipeline = struct {
     ) Error!void {
         const dev = Device.cast(device);
 
-        var create_infos = try allocator.alloc(c.VkComputePipelineCreateInfo, desc.states.len);
+        const create_infos = try allocator.alloc(c.VkComputePipelineCreateInfo, desc.states.len);
         defer allocator.free(create_infos);
 
         for (desc.states, create_infos) |state, *info| {
@@ -581,10 +581,10 @@ pub const Pipeline = struct {
             };
         }
 
-        var module_create_infos: []c.VkShaderModuleCreateInfo = &.{};
+        const module_create_infos: []c.VkShaderModuleCreateInfo = &.{};
         defer if (module_create_infos.len > 0) allocator.free(module_create_infos);
 
-        var modules = try allocator.alloc(c.VkShaderModule, desc.states.len);
+        const modules = try allocator.alloc(c.VkShaderModule, desc.states.len);
         defer allocator.free(modules);
         errdefer for (modules) |m| {
             if (m == null_handle) break;
@@ -618,7 +618,7 @@ pub const Pipeline = struct {
             }
         }
 
-        var handles = try allocator.alloc(c.VkPipeline, create_infos.len);
+        const handles = try allocator.alloc(c.VkPipeline, create_infos.len);
         defer allocator.free(handles);
 
         try check(dev.vkCreateComputePipelines(

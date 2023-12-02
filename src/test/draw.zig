@@ -281,7 +281,7 @@ test "draw primitive" {
     };
 
     var pl = blk: {
-        var s = try ngl.Pipeline.initGraphics(gpa, dev, .{
+        const s = try ngl.Pipeline.initGraphics(gpa, dev, .{
             .states = &.{.{
                 .stages = &stages,
                 .layout = &pl_layt,
@@ -306,7 +306,7 @@ test "draw primitive" {
     });
     defer desc_pool.deinit(gpa, dev);
     var desc_set = blk: {
-        var s = try desc_pool.alloc(gpa, dev, .{ .layouts = &.{&set_layt} });
+        const s = try desc_pool.alloc(gpa, dev, .{ .layouts = &.{&set_layt} });
         defer gpa.free(s);
         break :blk s[0];
     };
@@ -349,7 +349,7 @@ test "draw primitive" {
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[queue_i] });
     defer cmd_pool.deinit(gpa, dev);
     var cmd_buf = blk: {
-        var s = try cmd_pool.alloc(gpa, dev, .{ .level = .primary, .count = 1 });
+        const s = try cmd_pool.alloc(gpa, dev, .{ .level = .primary, .count = 1 });
         defer gpa.free(s);
         break :blk s[0];
     };

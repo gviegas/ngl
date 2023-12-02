@@ -36,7 +36,7 @@ pub const Pipeline = struct {
         device: *Device,
         desc: Desc(GraphicsState),
     ) Error![]Pipeline {
-        var pipelines = try allocator.alloc(Pipeline, desc.states.len);
+        const pipelines = try allocator.alloc(Pipeline, desc.states.len);
         errdefer allocator.free(pipelines);
         if (@typeInfo(Self).Struct.fields.len > 2) @compileError("Initialize the new field(s)");
         for (pipelines) |*pl| pl.type = .graphics;
@@ -50,7 +50,7 @@ pub const Pipeline = struct {
         device: *Device,
         desc: Desc(ComputeState),
     ) Error![]Pipeline {
-        var pipelines = try allocator.alloc(Pipeline, desc.states.len);
+        const pipelines = try allocator.alloc(Pipeline, desc.states.len);
         errdefer allocator.free(pipelines);
         if (@typeInfo(Self).Struct.fields.len > 2) @compileError("Initialize the new field(s)");
         for (pipelines) |*pl| pl.type = .compute;

@@ -182,7 +182,7 @@ pub const Instance = struct {
 
         var ext_prop_n: u32 = undefined;
         try check(vkEnumerateInstanceExtensionProperties(null, &ext_prop_n, null));
-        var ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
+        const ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
         defer allocator.free(ext_props);
         try check(vkEnumerateInstanceExtensionProperties(null, &ext_prop_n, ext_props.ptr));
 
@@ -237,7 +237,7 @@ pub const Instance = struct {
             if (@as(c.PFN_vkDestroyInstance, @ptrCast(x))) |f| f(inst, null);
         } else |_| {};
 
-        var ptr = try allocator.create(Instance);
+        const ptr = try allocator.create(Instance);
         errdefer allocator.destroy(ptr);
 
         ptr.* = .{
@@ -316,11 +316,11 @@ pub const Instance = struct {
         var dev_n: u32 = undefined;
         try check(inst.vkEnumeratePhysicalDevices(&dev_n, null));
         if (dev_n == 0) return Error.NotSupported; // TODO: Need a better error for this
-        var devs = try allocator.alloc(c.VkPhysicalDevice, dev_n);
+        const devs = try allocator.alloc(c.VkPhysicalDevice, dev_n);
         defer allocator.free(devs);
         try check(inst.vkEnumeratePhysicalDevices(&dev_n, devs.ptr));
 
-        var descs = try allocator.alloc(ngl.Device.Desc, dev_n);
+        const descs = try allocator.alloc(ngl.Device.Desc, dev_n);
         errdefer allocator.free(descs);
 
         var queue_props = std.ArrayList(c.VkQueueFamilyProperties).init(allocator);
@@ -397,7 +397,7 @@ pub const Instance = struct {
     ) Error![names.len]bool {
         var ext_prop_n: u32 = undefined;
         try check(self.vkEnumerateDeviceExtensionProperties(device, null, &ext_prop_n, null));
-        var ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
+        const ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
         defer allocator.free(ext_props);
         try check(self.vkEnumerateDeviceExtensionProperties(
             device,
@@ -765,7 +765,7 @@ pub const Device = struct {
         // TODO: Check other extensions that may be useful
         var ext_prop_n: u32 = undefined;
         try check(inst.vkEnumerateDeviceExtensionProperties(phys_dev, null, &ext_prop_n, null));
-        var ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
+        const ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
         defer allocator.free(ext_props);
         try check(inst.vkEnumerateDeviceExtensionProperties(
             phys_dev,
@@ -2112,7 +2112,7 @@ pub const Queue = struct {
         var stk_scs: [n]c.VkSwapchainKHR = undefined;
         var stk_inds: [n]u32 = undefined;
 
-        var semas = if (wait_semaphores.len > n)
+        const semas = if (wait_semaphores.len > n)
             try allocator.alloc(c.VkSemaphore, wait_semaphores.len)
         else
             stk_semas[0..wait_semaphores.len];

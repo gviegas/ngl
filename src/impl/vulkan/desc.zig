@@ -99,9 +99,9 @@ pub const PipelineLayout = packed struct {
         desc: ngl.PipelineLayout.Desc,
     ) Error!Impl.PipelineLayout {
         const set_layout_n: u32 = if (desc.descriptor_set_layouts) |x| @intCast(x.len) else 0;
-        var set_layouts: ?[]c.VkDescriptorSetLayout = blk: {
+        const set_layouts: ?[]c.VkDescriptorSetLayout = blk: {
             if (set_layout_n == 0) break :blk null;
-            var handles = try allocator.alloc(c.VkDescriptorSetLayout, set_layout_n);
+            const handles = try allocator.alloc(c.VkDescriptorSetLayout, set_layout_n);
             for (handles, desc.descriptor_set_layouts.?) |*handle, set_layout|
                 handle.* = DescriptorSetLayout.cast(set_layout.impl).handle;
             break :blk handles;
@@ -109,9 +109,9 @@ pub const PipelineLayout = packed struct {
         defer if (set_layouts) |x| allocator.free(x);
 
         const const_range_n: u32 = if (desc.push_constant_ranges) |x| @intCast(x.len) else 0;
-        var const_ranges: ?[]c.VkPushConstantRange = blk: {
+        const const_ranges: ?[]c.VkPushConstantRange = blk: {
             if (const_range_n == 0) break :blk null;
-            var const_ranges = try allocator.alloc(c.VkPushConstantRange, const_range_n);
+            const const_ranges = try allocator.alloc(c.VkPushConstantRange, const_range_n);
             for (const_ranges, desc.push_constant_ranges.?) |*vk_const_range, const_range|
                 vk_const_range.* = .{
                     .stageFlags = conv.toVkShaderStageFlags(const_range.stage_mask),
@@ -197,12 +197,12 @@ pub const DescriptorPool = packed struct {
         desc: ngl.DescriptorSet.Desc,
         descriptor_sets: []ngl.DescriptorSet,
     ) Error!void {
-        var set_layouts = try allocator.alloc(c.VkDescriptorSetLayout, desc.layouts.len);
+        const set_layouts = try allocator.alloc(c.VkDescriptorSetLayout, desc.layouts.len);
         defer allocator.free(set_layouts);
         for (set_layouts, desc.layouts) |*handle, layout|
             handle.* = DescriptorSetLayout.cast(layout.impl).handle;
 
-        var handles = try allocator.alloc(c.VkDescriptorSet, desc.layouts.len);
+        const handles = try allocator.alloc(c.VkDescriptorSet, desc.layouts.len);
         defer allocator.free(handles);
 
         const alloc_info = c.VkDescriptorSetAllocateInfo{
@@ -255,7 +255,7 @@ pub const DescriptorSet = packed struct {
         device: Impl.Device,
         writes: []const ngl.DescriptorSet.Write,
     ) Error!void {
-        var desc_set_writes = try allocator.alloc(c.VkWriteDescriptorSet, writes.len);
+        const desc_set_writes = try allocator.alloc(c.VkWriteDescriptorSet, writes.len);
         defer allocator.free(desc_set_writes);
 
         var img_infos: ?[]c.VkDescriptorImageInfo = undefined;

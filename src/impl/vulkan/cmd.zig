@@ -53,7 +53,7 @@ pub const CommandPool = packed struct {
         const dev = Device.cast(device);
         const cmd_pool = cast(command_pool);
 
-        var handles = try allocator.alloc(c.VkCommandBuffer, desc.count);
+        const handles = try allocator.alloc(c.VkCommandBuffer, desc.count);
         defer allocator.free(handles);
 
         const alloc_info = c.VkCommandBufferAllocateInfo{
@@ -92,7 +92,7 @@ pub const CommandPool = packed struct {
         // Should be safe to assume this
         const n: u32 = @intCast(command_buffers.len);
 
-        var handles = allocator.alloc(c.VkCommandBuffer, n) catch {
+        const handles = allocator.alloc(c.VkCommandBuffer, n) catch {
             for (command_buffers) |cmd_buf| {
                 const handle = [1]c.VkCommandBuffer{CommandBuffer.cast(cmd_buf.impl).handle};
                 dev.vkFreeCommandBuffers(cmd_pool.handle, 1, &handle);
@@ -185,7 +185,7 @@ pub const CommandBuffer = packed struct {
         descriptor_sets: []const *ngl.DescriptorSet,
     ) void {
         var desc_set: [1]c.VkDescriptorSet = undefined;
-        var desc_sets = if (descriptor_sets.len > 1) allocator.alloc(
+        const desc_sets = if (descriptor_sets.len > 1) allocator.alloc(
             c.VkDescriptorSet,
             descriptor_sets.len,
         ) catch {
@@ -267,7 +267,7 @@ pub const CommandBuffer = packed struct {
     ) void {
         const n = 16;
         var stk_bufs: [n]c.VkBuffer = undefined;
-        var bufs = if (buffers.len > n) allocator.alloc(c.VkBuffer, buffers.len) catch {
+        const bufs = if (buffers.len > n) allocator.alloc(c.VkBuffer, buffers.len) catch {
             var i: usize = 0;
             while (i < buffers.len) : (i += n) {
                 const j = @min(i + n, buffers.len);
@@ -373,7 +373,7 @@ pub const CommandBuffer = packed struct {
     ) void {
         const n = 16;
         var stk_clears: [n]c.VkClearValue = undefined;
-        var clears = if (render_pass_begin.clear_values.len > n) allocator.alloc(
+        const clears = if (render_pass_begin.clear_values.len > n) allocator.alloc(
             c.VkClearValue,
             render_pass_begin.clear_values.len,
         ) catch {
@@ -986,7 +986,7 @@ pub const CommandBuffer = packed struct {
         // but such value isn't known at compile time
         const n = if (builtin.single_threaded) 1 else 16;
         var stk_cmd_bufs: [n]c.VkCommandBuffer = undefined;
-        var cmd_bufs = if (secondary_command_buffers.len > n) allocator.alloc(
+        const cmd_bufs = if (secondary_command_buffers.len > n) allocator.alloc(
             c.VkCommandBuffer,
             secondary_command_buffers.len,
         ) catch {

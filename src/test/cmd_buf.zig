@@ -91,7 +91,7 @@ test "CommandBuffer.begin/Cmd.end" {
             }
         }.f;
 
-        var thrds = [2]std.Thread{
+        const thrds = [2]std.Thread{
             try std.Thread.spawn(.{ .allocator = gpa }, doPrimary, .{ dev, &cmd_bufs[1] }),
             try std.Thread.spawn(.{ .allocator = gpa }, doSecondary, .{ dev, cmd_bufs_2[1..3] }),
         };

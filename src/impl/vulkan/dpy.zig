@@ -168,7 +168,7 @@ pub const Surface = packed struct {
 
         var fmts_n: u32 = undefined;
         try check(inst.vkGetPhysicalDeviceSurfaceFormatsKHR(phys_dev, sf.handle, &fmts_n, null));
-        var fmts = if (fmts_n > n)
+        const fmts = if (fmts_n > n)
             try allocator.alloc(c.VkSurfaceFormatKHR, fmts_n)
         else
             stk_fmts[0..fmts_n];
@@ -306,11 +306,11 @@ pub const SwapChain = packed struct {
 
         var img_n: u32 = undefined;
         try check(dev.vkGetSwapchainImagesKHR(sc.handle, &img_n, null));
-        var imgs = if (img_n > n) try allocator.alloc(c.VkImage, img_n) else stk_imgs[0..img_n];
+        const imgs = if (img_n > n) try allocator.alloc(c.VkImage, img_n) else stk_imgs[0..img_n];
         defer if (img_n > n) allocator.free(imgs);
         try check(dev.vkGetSwapchainImagesKHR(sc.handle, &img_n, imgs.ptr));
 
-        var s = try allocator.alloc(ngl.Image, img_n);
+        const s = try allocator.alloc(ngl.Image, img_n);
         for (s, imgs) |*image, handle|
             image.* = .{ .impl = .{ .val = @bitCast(Image{ .handle = handle }) } };
         return s;

@@ -289,7 +289,7 @@ const ShadowMap = struct {
             },
         });
         errdefer view.deinit(gpa, dev);
-        var splr = try ngl.Sampler.init(gpa, dev, .{
+        const splr = try ngl.Sampler.init(gpa, dev, .{
             .normalized_coordinates = true,
             .u_address = .clamp_to_border,
             .v_address = .clamp_to_border,
@@ -385,7 +385,7 @@ const ShadowPass = struct {
             },
         });
         errdefer rp.deinit(gpa, dev);
-        var fb = try ngl.FrameBuffer.init(gpa, dev, .{
+        const fb = try ngl.FrameBuffer.init(gpa, dev, .{
             .render_pass = &rp,
             .attachments = &.{&shadow_map.view},
             .width = ShadowMap.extent,
@@ -493,7 +493,7 @@ const ColorAttachment = struct {
             image.deinit(gpa, dev);
             dev.free(gpa, &mem);
         }
-        var view = try ngl.ImageView.init(gpa, dev, .{
+        const view = try ngl.ImageView.init(gpa, dev, .{
             .image = &image,
             .type = .@"2d",
             .format = fmt,
@@ -589,7 +589,7 @@ const DepthAttachment = struct {
             image.deinit(gpa, dev);
             dev.free(gpa, &mem);
         }
-        var view = try ngl.ImageView.init(gpa, dev, .{
+        const view = try ngl.ImageView.init(gpa, dev, .{
             .image = &image,
             .type = .@"2d",
             .format = fmt,
@@ -867,7 +867,7 @@ const Texture = struct {
                 return err;
             };
         errdefer for (&views) |*view| view.deinit(gpa, dev);
-        var splr = try ngl.Sampler.init(gpa, dev, .{
+        const splr = try ngl.Sampler.init(gpa, dev, .{
             .normalized_coordinates = true,
             .u_address = .repeat,
             .v_address = .repeat,
@@ -911,7 +911,7 @@ const IndexBuffer = struct {
             .size = @sizeOf(@TypeOf(cube.indices)),
             .usage = .{ .index_buffer = true, .transfer_dest = true },
         });
-        var mem = blk: {
+        const mem = blk: {
             errdefer buf.deinit(gpa, dev);
             const mem_reqs = buf.getMemoryRequirements(dev);
             var mem = try dev.alloc(gpa, .{
@@ -951,7 +951,7 @@ const VertexBuffer = struct {
             },
             .usage = .{ .vertex_buffer = true, .transfer_dest = true },
         });
-        var mem = blk: {
+        const mem = blk: {
             errdefer buf.deinit(gpa, dev);
             const mem_reqs = buf.getMemoryRequirements(dev);
             var mem = try dev.alloc(gpa, .{
@@ -991,7 +991,7 @@ const UniformBuffer = struct {
             .usage = .{ .uniform_buffer = true },
         });
         var data: []u8 = undefined;
-        var mem = blk: {
+        const mem = blk: {
             errdefer buf.deinit(gpa, dev);
             const mem_reqs = buf.getMemoryRequirements(dev);
             var mem = try dev.alloc(gpa, .{
@@ -1059,7 +1059,7 @@ const StagingBuffer = struct {
             .usage = .{ .transfer_source = true },
         });
         var data: []u8 = undefined;
-        var mem = blk: {
+        const mem = blk: {
             errdefer buf.deinit(gpa, dev);
             const mem_reqs = buf.getMemoryRequirements(dev);
             var mem = try dev.alloc(gpa, .{
@@ -1522,11 +1522,10 @@ const Pipeline = struct {
             var buf_writes = [_]ngl.DescriptorSet.Write.BufferWrite{undefined} **
                 (frame_n * (1 + materials.len + draws.len));
             var writes: [is_writes.len + buf_writes.len]ngl.DescriptorSet.Write = undefined;
-            var zero: usize = 0;
-            var iw = is_writes[zero..];
-            var bw = buf_writes[zero..];
-            var w = writes[zero..];
-            var s = sets[zero..];
+            var iw: []ngl.DescriptorSet.Write.ImageSamplerWrite = is_writes[0..];
+            var bw: []ngl.DescriptorSet.Write.BufferWrite = buf_writes[0..];
+            var w: []ngl.DescriptorSet.Write = writes[0..];
+            var s: []ngl.DescriptorSet = sets[0..];
             var off: u64 = 0;
             for (0..frame_n) |_| {
                 // Shadow image/sampler (set 0)
@@ -1675,7 +1674,7 @@ const Queue = struct {
             errdefer for (&pools) |*pool| pool.deinit(gpa, dev);
             var bufs: [frame_n]ngl.CommandBuffer = undefined;
             for (0..bufs.len) |i| {
-                var s = try pools[i].alloc(gpa, dev, .{ .level = .primary, .count = 1 });
+                const s = try pools[i].alloc(gpa, dev, .{ .level = .primary, .count = 1 });
                 bufs[i] = s[0];
                 gpa.free(s);
             }
@@ -1710,7 +1709,7 @@ const Queue = struct {
         errdefer for (&pools) |*pool| pool.deinit(gpa, dev);
         var bufs: [frame_n]ngl.CommandBuffer = undefined;
         for (0..bufs.len) |i| {
-            var s = try pools[i].alloc(gpa, dev, .{ .level = .primary, .count = 1 });
+            const s = try pools[i].alloc(gpa, dev, .{ .level = .primary, .count = 1 });
             bufs[i] = s[0];
             gpa.free(s);
         }

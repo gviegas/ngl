@@ -105,7 +105,7 @@ test "compute dispatch" {
     defer pl_layt.deinit(gpa, dev);
 
     var pl = blk: {
-        var s = try ngl.Pipeline.initCompute(gpa, dev, .{
+        const s = try ngl.Pipeline.initCompute(gpa, dev, .{
             .states = &.{.{
                 .stage = .{
                     .stage = .compute,
@@ -127,7 +127,7 @@ test "compute dispatch" {
     });
     defer desc_pool.deinit(gpa, dev);
     var desc_set = blk: {
-        var s = try desc_pool.alloc(gpa, dev, .{ .layouts = &.{&set_layt} });
+        const s = try desc_pool.alloc(gpa, dev, .{ .layouts = &.{&set_layt} });
         defer gpa.free(s);
         break :blk s[0];
     };
@@ -143,7 +143,7 @@ test "compute dispatch" {
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[queue_i] });
     defer cmd_pool.deinit(gpa, dev);
     var cmd_buf = blk: {
-        var s = try cmd_pool.alloc(gpa, dev, .{ .level = .primary, .count = 1 });
+        const s = try cmd_pool.alloc(gpa, dev, .{ .level = .primary, .count = 1 });
         defer gpa.free(s);
         break :blk s[0];
     };

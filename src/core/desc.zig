@@ -119,7 +119,7 @@ pub const DescriptorPool = struct {
         desc: DescriptorSet.Desc,
     ) Error![]DescriptorSet {
         std.debug.assert(desc.layouts.len > 0);
-        var desc_sets = try allocator.alloc(DescriptorSet, desc.layouts.len);
+        const desc_sets = try allocator.alloc(DescriptorSet, desc.layouts.len);
         errdefer allocator.free(desc_sets);
         // TODO: Update this when adding more fields to `DescriptorSet`
         if (@typeInfo(DescriptorSet).Struct.fields.len > 1) @compileError("Uninitialized field(s)");

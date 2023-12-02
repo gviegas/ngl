@@ -42,7 +42,7 @@ pub const Surface = struct {
         },
         .fields = blk: {
             const UnionField = std.builtin.Type.UnionField;
-            var fields: []const UnionField = switch (builtin.os.tag) {
+            const fields: []const UnionField = switch (builtin.os.tag) {
                 .linux => if (builtin.target.isAndroid()) &[_]UnionField{.{
                     .name = "android",
                     .type = Android,

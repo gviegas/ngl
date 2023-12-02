@@ -51,7 +51,7 @@ test "copyBuffer command" {
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[queue_i] });
     defer cmd_pool.deinit(gpa, dev);
     var cmd_buf = blk: {
-        var s = try cmd_pool.alloc(gpa, dev, .{ .level = .primary, .count = 1 });
+        const s = try cmd_pool.alloc(gpa, dev, .{ .level = .primary, .count = 1 });
         defer gpa.free(s);
         break :blk s[0];
     };

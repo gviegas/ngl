@@ -42,14 +42,14 @@ pub const RenderPass = packed struct {
         };
 
         // Attachment descriptions
-        var attach_descs = blk: {
+        const attach_descs = blk: {
             const attachs = desc.attachments orelse &.{};
             if (attachs.len == 0) {
                 create_info.attachmentCount = 0;
                 create_info.pAttachments = null;
                 break :blk null;
             }
-            var attach_descs = try allocator.alloc(c.VkAttachmentDescription, attachs.len);
+            const attach_descs = try allocator.alloc(c.VkAttachmentDescription, attachs.len);
             errdefer allocator.free(attach_descs);
             for (attach_descs, attachs) |*attach_desc, attach| {
                 attach_desc.* = .{
@@ -78,7 +78,7 @@ pub const RenderPass = packed struct {
         defer if (attach_descs) |x| allocator.free(x);
 
         // Subpass descriptions
-        var subp_descs = try allocator.alloc(c.VkSubpassDescription, desc.subpasses.len);
+        const subp_descs = try allocator.alloc(c.VkSubpassDescription, desc.subpasses.len);
         defer allocator.free(subp_descs);
         var attach_refs: ?[]c.VkAttachmentReference = undefined;
         var attach_inds: ?[]u32 = undefined;
@@ -186,9 +186,9 @@ pub const RenderPass = packed struct {
         }
 
         // Subpass dependencies
-        var subp_depends = blk: {
+        const subp_depends = blk: {
             if (desc.dependencies) |depends| {
-                var subp_depends = try allocator.alloc(c.VkSubpassDependency, depends.len);
+                const subp_depends = try allocator.alloc(c.VkSubpassDependency, depends.len);
                 for (subp_depends, depends) |*subp_depend, depend| {
                     subp_depend.* = .{
                         .srcSubpass = switch (depend.source_subpass) {
@@ -249,9 +249,9 @@ pub const FrameBuffer = packed struct {
         desc: ngl.FrameBuffer.Desc,
     ) Error!Impl.FrameBuffer {
         const attach_n: u32 = if (desc.attachments) |x| @intCast(x.len) else 0;
-        var attachs: ?[]c.VkImageView = blk: {
+        const attachs: ?[]c.VkImageView = blk: {
             if (attach_n == 0) break :blk null;
-            var handles = try allocator.alloc(c.VkImageView, attach_n);
+            const handles = try allocator.alloc(c.VkImageView, attach_n);
             for (handles, desc.attachments.?) |*handle, attach|
                 handle.* = ImageView.cast(attach.impl).handle;
             break :blk handles;

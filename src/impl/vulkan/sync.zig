@@ -41,7 +41,7 @@ pub const Fence = packed struct {
         fences: []const *ngl.Fence,
     ) Error!void {
         var fnc: [1]c.VkFence = undefined;
-        var fncs = if (fences.len > 1) try allocator.alloc(c.VkFence, fences.len) else &fnc;
+        const fncs = if (fences.len > 1) try allocator.alloc(c.VkFence, fences.len) else &fnc;
         defer if (fncs.len > 1) allocator.free(fncs);
 
         for (fncs, fences) |*handle, fence|
@@ -58,7 +58,7 @@ pub const Fence = packed struct {
         fences: []const *ngl.Fence,
     ) Error!void {
         var fnc: [1]c.VkFence = undefined;
-        var fncs = if (fences.len > 1) try allocator.alloc(c.VkFence, fences.len) else &fnc;
+        const fncs = if (fences.len > 1) try allocator.alloc(c.VkFence, fences.len) else &fnc;
         defer if (fncs.len > 1) allocator.free(fncs);
 
         for (fncs, fences) |*handle, fence|

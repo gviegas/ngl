@@ -160,7 +160,7 @@ pub const Platform = struct {
         });
         errdefer sc.deinit(allocator, &ctx.device);
 
-        var imgs = try sc.getImages(allocator, &ctx.device);
+        const imgs = try sc.getImages(allocator, &ctx.device);
         errdefer allocator.free(imgs);
 
         var views = try allocator.alloc(ngl.ImageView, imgs.len);

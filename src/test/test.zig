@@ -15,7 +15,7 @@ pub const Context = struct {
     pub fn initDefault(allocator: std.mem.Allocator) ngl.Error!Self {
         var inst = try ngl.Instance.init(allocator, .{});
         errdefer inst.deinit(allocator);
-        var descs = try inst.listDevices(allocator);
+        const descs = try inst.listDevices(allocator);
         defer allocator.free(descs);
         // TODO: Prioritize devices that support presentation
         var desc_i: usize = 0;

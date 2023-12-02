@@ -38,7 +38,7 @@ pub const CommandPool = struct {
         desc: CommandBuffer.Desc,
     ) Error![]CommandBuffer {
         std.debug.assert(desc.count > 0);
-        var cmd_bufs = try allocator.alloc(CommandBuffer, desc.count);
+        const cmd_bufs = try allocator.alloc(CommandBuffer, desc.count);
         errdefer allocator.free(cmd_bufs);
         // TODO: Update this when adding more fields to `CommandBuffer`
         if (@typeInfo(CommandBuffer).Struct.fields.len > 1) @compileError("Uninitialized field(s)");

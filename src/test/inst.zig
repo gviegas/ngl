@@ -13,7 +13,7 @@ test "Instance.listDevices" {
     var inst = try ngl.Instance.init(gpa, .{});
     defer inst.deinit(gpa);
 
-    var dev_descs = try inst.listDevices(gpa);
+    const dev_descs = try inst.listDevices(gpa);
     defer gpa.free(dev_descs);
 
     // Should have returned an error if no devices are available
