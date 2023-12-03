@@ -81,7 +81,7 @@ test "basic shading" {
     const upl_p = try d.upload.memory.map(dev, 0, null);
 
     const pixel: [4]u8 = .{ 255, 255, 255, 255 };
-    const v = util.lookAt(.{ 0, 0, 0 }, .{ 2, -3, -4 }, .{ 0, -1, 0 });
+    const v = util.lookAt(.{ 0, 0, 0 }, .{ 4, -4, 6 }, .{ 0, -1, 0 });
     const transform = blk: {
         const m = util.identity(4);
         const p = util.infPerspective(
@@ -91,24 +91,24 @@ test "basic shading" {
         );
         const mv = util.mulM(4, v, m);
         const mvp = util.mulM(4, p, mv);
-        const n = util.transpose(3, util.invert3(util.upperLeft(4, mv)));
+        const n = util.invert3(util.upperLeft(4, mv));
         var xform: Transform = undefined;
         @memcpy(xform[0..16], &mvp);
         @memcpy(xform[16..32], &mv);
-        @memcpy(xform[32..44], &[12]f32{
-            n[0], n[1], n[2], undefined,
-            n[3], n[4], n[5], undefined,
-            n[6], n[7], n[8], undefined,
+        @memcpy(xform[32..], &[12]f32{
+            n[0], n[3], n[6], undefined,
+            n[1], n[4], n[7], undefined,
+            n[2], n[5], n[8], undefined,
         });
         break :blk xform;
     };
     const light: Light =
-        util.mulMV(4, v, .{ 4.75, -6, -0.3, 1 }) // Position
-    ++ [3]f32{ 0.125, 0.125, 0.125 }; // Intensity
+        util.mulMV(4, v, .{ 2, -3, 4, 1 }) // Position
+    ++ [3]f32{ 0.25, 0.25, 0.25 }; // Intensity
     const material = Material{
-        0.0, 0.1, 0.0, undefined, // Ka
-        1.0, 0.0, 0.0, undefined, // Kd
-        0.0, 0.0, 0.1, undefined, // Ks
+        0, 0, 0.2, undefined, // Ka
+        0.9, 0, 0, undefined, // Kd
+        0, 0.1, 0, undefined, // Ks
         200, // Specular power
     };
 
