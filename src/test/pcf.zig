@@ -3,7 +3,6 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
-const queue_locks = &@import("test.zig").queue_locks;
 const Platform = @import("sf.zig").Platform;
 const platform = @import("sf.zig").platform;
 const cube = &@import("model.zig").cube;
@@ -45,7 +44,8 @@ const draws =
 }};
 
 fn do() !void {
-    const dev = &context().device;
+    const ctx = context();
+    const dev = &ctx.device;
     const plat = try platform();
 
     var shdw_map = try ShadowMap.init();
@@ -175,8 +175,8 @@ fn do() !void {
         if (!is_unified) @panic("TODO");
         try cmd.end();
 
-        queue_locks[queue.graphics].lock();
-        defer queue_locks[queue.graphics].unlock();
+        ctx.lockQueue(queue.graphics);
+        defer ctx.unlockQueue(queue.graphics);
 
         try dev.queues[queue.graphics].submit(gpa, dev, fence, &.{.{
             .commands = &.{.{ .command_buffer = cmd_buf }},
@@ -1090,7 +1090,8 @@ const StagingBuffer = struct {
         index_buffer: *IndexBuffer,
         vertex_buffer: *VertexBuffer,
     ) ngl.Error!void {
-        const dev = &context().device;
+        const ctx = context();
+        const dev = &ctx.device;
 
         const a = 256;
         var s = self.data;
@@ -1212,8 +1213,8 @@ const StagingBuffer = struct {
         });
         try cmd.end();
 
-        queue_locks[queue.graphics].lock();
-        defer queue_locks[queue.graphics].unlock();
+        ctx.lockQueue(queue.graphics);
+        defer ctx.unlockQueue(queue.graphics);
 
         try ngl.Fence.reset(gpa, dev, &.{&queue.fences[0]});
         try dev.queues[queue.graphics].submit(gpa, dev, &queue.fences[0], &.{.{

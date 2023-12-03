@@ -4,11 +4,11 @@ const testing = std.testing;
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
-const queue_locks = &@import("test.zig").queue_locks;
 const platform = @import("sf.zig").platform;
 
 test "Queue.submit" {
-    const dev = &context().device;
+    const ctx = context();
+    const dev = &ctx.device;
     const queue = &dev.queues[0];
 
     var semas: [3]ngl.Semaphore = undefined;
@@ -37,8 +37,8 @@ test "Queue.submit" {
     var cmd_bufs = try cmd_pool.alloc(gpa, dev, .{ .level = .primary, .count = 3 });
     defer gpa.free(cmd_bufs);
 
-    queue_locks[0].lock();
-    defer queue_locks[0].unlock();
+    ctx.lockQueue(0);
+    defer ctx.unlockQueue(0);
 
     {
         // Submission of empty command buffers is allowed
@@ -187,7 +187,8 @@ test "Queue.submit" {
 }
 
 test "Queue.present" {
-    const dev = &context().device;
+    const ctx = context();
+    const dev = &ctx.device;
     const plat = try platform();
 
     var semas = try gpa.alloc(ngl.Semaphore, plat.images.len);
@@ -220,8 +221,8 @@ test "Queue.present" {
     });
     defer gpa.free(cmd_bufs);
 
-    queue_locks[plat.queue_index].lock();
-    defer queue_locks[plat.queue_index].unlock();
+    ctx.lockQueue(plat.queue_index);
+    defer ctx.unlockQueue(plat.queue_index);
     plat.lock();
     defer plat.unlock();
 
@@ -272,11 +273,12 @@ test "Queue.present" {
 }
 
 test "Queue.wait" {
-    const dev = &context().device;
+    const ctx = context();
+    const dev = &ctx.device;
 
-    for (dev.queues[0..dev.queue_n], queue_locks[0..dev.queue_n]) |*queue, *lock| {
-        lock.lock();
-        defer lock.unlock();
+    for (dev.queues[0..dev.queue_n], 0..) |*queue, i| {
+        ctx.lockQueue(i);
+        defer ctx.unlockQueue(i);
         try queue.wait(dev);
     }
 }

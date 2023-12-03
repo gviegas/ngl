@@ -3,13 +3,13 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
-const queue_locks = &@import("test.zig").queue_locks;
 const platform = @import("sf.zig").platform;
 const cube = &@import("model.zig").cube;
 const util = @import("util.zig");
 
 test "basic shading" {
-    const dev = &context().device;
+    const ctx = context();
+    const dev = &ctx.device;
     const plat = try platform();
     plat.lock();
     defer plat.unlock();
@@ -241,8 +241,8 @@ test "basic shading" {
     try cmd.end();
 
     {
-        queue_locks[d.submit.queue_index].lock();
-        defer queue_locks[d.submit.queue_index].unlock();
+        ctx.lockQueue(d.submit.queue_index);
+        defer ctx.unlockQueue(d.submit.queue_index);
 
         try ngl.Fence.reset(gpa, dev, &.{&d.submit.fences[0]});
 
@@ -323,8 +323,8 @@ test "basic shading" {
             @panic("TODO");
         try cmd.end();
 
-        queue_locks[d.submit.queue_index].lock();
-        defer queue_locks[d.submit.queue_index].unlock();
+        ctx.lockQueue(d.submit.queue_index);
+        defer ctx.unlockQueue(d.submit.queue_index);
 
         try dev.queues[d.submit.queue_index].submit(gpa, dev, &d.submit.fences[frame], &.{.{
             .commands = &.{.{ .command_buffer = &d.submit.buffers[frame] }},

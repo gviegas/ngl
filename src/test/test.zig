@@ -9,6 +9,7 @@ pub const Context = struct {
     instance: ngl.Instance,
     device_desc: ngl.Device.Desc,
     device: ngl.Device,
+    mutexes: [ngl.Queue.max]std.Thread.Mutex,
 
     const Self = @This();
 
@@ -26,12 +27,29 @@ pub const Context = struct {
             }
             if (descs[i].type == .integrated_gpu) desc_i = i;
         }
+        const dev = try ngl.Device.init(allocator, &inst, descs[desc_i]);
+        const mus = blk: {
+            var mus: [ngl.Queue.max]std.Thread.Mutex = undefined;
+            for (0..dev.queue_n) |i| mus[i] = .{};
+            break :blk mus;
+        };
         return .{
             .instance_desc = .{},
             .instance = inst,
             .device_desc = descs[desc_i],
-            .device = try ngl.Device.init(allocator, &inst, descs[desc_i]),
+            .device = dev,
+            .mutexes = mus,
         };
+    }
+
+    pub fn lockQueue(self: *Self, index: usize) void {
+        std.debug.assert(index < self.device.queue_n);
+        self.mutexes[index].lock();
+    }
+
+    pub fn unlockQueue(self: *Self, index: usize) void {
+        std.debug.assert(index < self.device.queue_n);
+        self.mutexes[index].unlock();
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
@@ -58,8 +76,6 @@ pub fn context() *Context {
     Static.once.call();
     return &Static.ctx;
 }
-
-pub var queue_locks = [_]std.Thread.Mutex{.{}} ** ngl.Queue.max;
 
 // This can be set to `null` to suppress test output
 pub const writer: ?std.fs.File.Writer = null; //std.io.getStdErr().writer();

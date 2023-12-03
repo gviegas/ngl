@@ -4,10 +4,10 @@ const testing = std.testing;
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
-const queue_locks = &@import("test.zig").queue_locks;
 
 test "stencil test" {
-    const dev = &context().device;
+    const ctx = context();
+    const dev = &ctx.device;
     const queue_i = for (0..dev.queue_n) |i| {
         if (dev.queues[i].capabilities.graphics and dev.queues[i].capabilities.transfer) break i;
     } else return error.SkipZigTest;
@@ -482,8 +482,8 @@ test "stencil test" {
     try cmd.end();
 
     {
-        queue_locks[queue_i].lock();
-        defer queue_locks[queue_i].unlock();
+        ctx.lockQueue(queue_i);
+        defer ctx.unlockQueue(queue_i);
 
         try dev.queues[queue_i].submit(gpa, dev, &fence, &.{.{
             .commands = &.{.{ .command_buffer = &cmd_buf }},
