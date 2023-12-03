@@ -5,15 +5,14 @@ const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 const queue_locks = &@import("test.zig").queue_locks;
 const platform = @import("sf.zig").platform;
-const platform_lock = &@import("sf.zig").platform_lock;
 const cube = &@import("model.zig").cube;
 const util = @import("util.zig");
 
 test "basic shading" {
     const dev = &context().device;
     const plat = try platform();
-    platform_lock.lock();
-    defer platform_lock.unlock();
+    plat.lock();
+    defer plat.unlock();
 
     var d = try Data.init(dev, plat.queue_index, plat.format.format, plat.image_views);
     defer d.deinit(dev);

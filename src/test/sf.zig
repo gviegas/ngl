@@ -92,6 +92,7 @@ pub const Platform = struct {
     images: []ngl.Image,
     image_views: []ngl.ImageView,
     queue_index: usize,
+    mutex: std.Thread.Mutex = .{},
 
     pub const width = 960;
     pub const height = 540;
@@ -207,6 +208,14 @@ pub const Platform = struct {
         return self.impl.poll();
     }
 
+    pub fn lock(self: *Platform) void {
+        self.mutex.lock();
+    }
+
+    pub fn unlock(self: *Platform) void {
+        self.mutex.unlock();
+    }
+
     fn deinit(self: *Platform, allocator: std.mem.Allocator) void {
         const ctx = context();
         for (self.image_views) |*view| view.deinit(allocator, &ctx.device);
@@ -237,8 +246,6 @@ pub fn platform() !*Platform {
     Static.once.call();
     return &(try Static.plat);
 }
-
-pub var platform_lock = std.Thread.Mutex{};
 
 // TODO
 const PlatformAndroid = struct {

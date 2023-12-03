@@ -6,7 +6,6 @@ const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 const queue_locks = &@import("test.zig").queue_locks;
 const platform = @import("sf.zig").platform;
-const platform_lock = &@import("sf.zig").platform_lock;
 
 test "Queue.submit" {
     const dev = &context().device;
@@ -223,8 +222,8 @@ test "Queue.present" {
 
     queue_locks[plat.queue_index].lock();
     defer queue_locks[plat.queue_index].unlock();
-    platform_lock.lock();
-    defer platform_lock.unlock();
+    plat.lock();
+    defer plat.unlock();
 
     for (0..plat.images.len) |i| {
         const next = try plat.swap_chain.nextImage(dev, timeout, null, &fences[i]);

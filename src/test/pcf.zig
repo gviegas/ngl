@@ -6,7 +6,6 @@ const context = @import("test.zig").context;
 const queue_locks = &@import("test.zig").queue_locks;
 const Platform = @import("sf.zig").Platform;
 const platform = @import("sf.zig").platform;
-const platform_lock = &@import("sf.zig").platform_lock;
 const cube = &@import("model.zig").cube;
 const plane = &@import("model.zig").plane;
 const util = @import("util.zig");
@@ -149,8 +148,8 @@ fn do() !void {
 
     try stg_buf.copy(&queue, &tex, &idx_buf, &vert_buf);
 
-    platform_lock.lock();
-    defer platform_lock.unlock();
+    plat.lock();
+    defer plat.unlock();
 
     var frame: usize = 0;
     var timer = try std.time.Timer.start();
