@@ -112,4 +112,5 @@ test {
     _ = @import("sc.zig");
     _ = @import("ads.zig");
     _ = @import("pcf.zig");
+    _ = @import("pbr.zig");
 }
