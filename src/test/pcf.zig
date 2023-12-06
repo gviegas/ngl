@@ -161,7 +161,7 @@ fn do() !void {
         const cmd_pool = &queue.pools[frame];
         const cmd_buf = &queue.buffers[frame];
         const fence = &queue.fences[frame];
-        const semas = .{ &queue.semaphores[frame], &queue.semaphores[frame + 1] };
+        const semas = .{ &queue.semaphores[frame * 2], &queue.semaphores[frame * 2 + 1] };
 
         try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{fence});
         try ngl.Fence.reset(gpa, dev, &.{fence});
