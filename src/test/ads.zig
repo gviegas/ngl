@@ -269,7 +269,7 @@ test "basic shading" {
 
         // TODO: Confirm that reusing the 2nd semaphore is valid
         // since presentation is not waited for
-        const semas = .{ &d.submit.semaphores[frame], &d.submit.semaphores[frame + 1] };
+        const semas = .{ &d.submit.semaphores[frame * 2], &d.submit.semaphores[frame * 2 + 1] };
 
         const next = try plat.swap_chain.nextImage(dev, std.time.ns_per_s, semas[0], null);
 
