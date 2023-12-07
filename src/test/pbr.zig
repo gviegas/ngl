@@ -15,22 +15,44 @@ const frame_n = 2;
 const width = Platform.width;
 const height = Platform.height;
 
-const light = Light{ .lights = .{.{
-    .position = .{ -3, -3, -3 },
-    .color = .{ 1, 1, 1 },
-    .intensity = 60,
-}} };
+const light = Light{
+    .lights = .{.{
+        .position = .{ 0, -4, -3 },
+        .color = .{ 1, 1, 1 },
+        .intensity = 60,
+    }},
+};
 
-const materials: [2]Material = .{
+const materials = [_]Material{
     .{
         .metallic = 1,
-        .roughness = 0.2,
+        .roughness = 0.15,
+        .reflectance = 0,
+    },
+    .{
+        .metallic = 1,
+        .roughness = 1,
         .reflectance = 0,
     },
     .{
         .metallic = 0,
         .roughness = 0.7,
         .reflectance = 0.5,
+    },
+    .{
+        .metallic = 0,
+        .roughness = 0.1,
+        .reflectance = 0.5,
+    },
+    .{
+        .metallic = 0,
+        .roughness = 0.5,
+        .reflectance = 0.25,
+    },
+    .{
+        .metallic = 0,
+        .roughness = 0.5,
+        .reflectance = 1,
     },
 };
 
@@ -53,9 +75,6 @@ fn do() !void {
 
     var unif_buf = try UniformBuffer.init();
     defer unif_buf.deinit();
-
-    var idx_buf = try IndexBuffer.init();
-    defer idx_buf.deinit();
 
     var vert_buf = try VertexBuffer.init();
     defer vert_buf.deinit();
@@ -97,12 +116,7 @@ fn do() !void {
             ub_regs[i + 2 + j] = matl.copy(frame, j, &stg_buf, Texture.size);
     }
 
-    const ib_reg = IndexBuffer.copy(&stg_buf, Texture.size + UniformBuffer.size);
-
-    const vb_reg = VertexBuffer.copy(
-        &stg_buf,
-        Texture.size + UniformBuffer.size + IndexBuffer.size,
-    );
+    const vb_reg = VertexBuffer.copy(&stg_buf, Texture.size + UniformBuffer.size);
 
     var cmd = try queue.buffers[0].begin(gpa, dev, .{
         .one_time_submit = true,
@@ -163,11 +177,6 @@ fn do() !void {
         },
         .{
             .source = &stg_buf.buffer,
-            .dest = &idx_buf.buffer,
-            .regions = &.{ib_reg},
-        },
-        .{
-            .source = &stg_buf.buffer,
             .dest = &vert_buf.buffer,
             .regions = &.{vb_reg},
         },
@@ -191,14 +200,26 @@ fn do() !void {
 
     var frame: usize = 0;
     var material: usize = 0;
+    var auto: bool = true;
     var timer = try std.time.Timer.start();
+    var timer_2 = try std.time.Timer.start();
     const is_unified = queue.non_unified == null;
 
     while (timer.read() < std.time.ns_per_min) {
         const input = plat.poll();
         if (input.done) break;
-        if (input.right) material = @min(material + 1, materials.len - 1);
-        if (input.left) material -|= 1;
+        if (auto and timer_2.read() > std.time.ns_per_ms * 1500) {
+            material = (material + 1) % materials.len;
+            timer_2.reset();
+        }
+        if (input.right) {
+            auto = false;
+            material = @min(material + 1, materials.len - 1);
+        }
+        if (input.left) {
+            auto = false;
+            material -|= 1;
+        }
 
         const cmd_pool = &queue.pools[frame];
         const cmd_buf = &queue.buffers[frame];
@@ -215,7 +236,7 @@ fn do() !void {
             .one_time_submit = true,
             .inheritance = null,
         });
-        pass.record(&cmd, next, &pl, &desc, material, &idx_buf, &vert_buf, frame);
+        pass.record(&cmd, next, &pl, &desc, material, &vert_buf, frame);
         if (!is_unified) @panic("TODO");
         try cmd.end();
 
@@ -560,12 +581,11 @@ const Pass = struct {
         pipeline: *Pipeline,
         descriptor: *Descriptor,
         material: usize,
-        index_buffer: *IndexBuffer,
         vertex_buffer: *VertexBuffer,
         frame: usize,
     ) void {
         // TODO
-        const mdl = &@import("model.zig").cube;
+        const mdl = &@import("model.zig").sphere;
 
         cmd.beginRenderPass(
             .{
@@ -593,8 +613,6 @@ const Pass = struct {
             &descriptor.sets[frame_n + frame * materials.len + material],
         });
 
-        cmd.setIndexBuffer(mdl.index_type, &index_buffer.buffer, 0, @sizeOf(@TypeOf(mdl.indices)));
-
         cmd.setVertexBuffers(
             0,
             &[_]*ngl.Buffer{&vertex_buffer.buffer} ** 3,
@@ -610,7 +628,7 @@ const Pass = struct {
             },
         );
 
-        cmd.drawIndexed(mdl.indices.len, 1, 0, 0, 0);
+        cmd.draw(mdl.vertex_count, 1, 0, 0);
 
         cmd.endRenderPass(.{});
     }
@@ -816,72 +834,17 @@ const UniformBuffer = struct {
     }
 };
 
-const IndexBuffer = struct {
-    buffer: ngl.Buffer,
-    memory: ngl.Memory,
-
-    // TODO
-    const size = 1 << 12;
-
-    fn copy(staging_buffer: *StagingBuffer, offset: u64) ngl.CommandBuffer.Cmd.BufferCopy.Region {
-        std.debug.assert(offset & 3 == 0);
-        // TODO
-        const mdl = &@import("model.zig").cube;
-        const copy_sz = @sizeOf(@TypeOf(mdl.indices));
-        @memcpy(
-            staging_buffer.data[offset .. offset + copy_sz],
-            @as([*]const u8, @ptrCast(&mdl.indices))[0..copy_sz],
-        );
-        return .{
-            .source_offset = offset,
-            .dest_offset = 0,
-            .size = copy_sz,
-        };
-    }
-
-    fn init() ngl.Error!IndexBuffer {
-        const dev = &context().device;
-
-        var buf = try ngl.Buffer.init(gpa, dev, .{
-            .size = size,
-            .usage = .{ .index_buffer = true, .transfer_dest = true },
-        });
-        const mem = blk: {
-            errdefer buf.deinit(gpa, dev);
-            const mem_reqs = buf.getMemoryRequirements(dev);
-            var mem = try dev.alloc(gpa, .{
-                .size = mem_reqs.size,
-                .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
-            });
-            errdefer dev.free(gpa, &mem);
-            try buf.bindMemory(dev, &mem, 0);
-            break :blk mem;
-        };
-
-        return .{
-            .buffer = buf,
-            .memory = mem,
-        };
-    }
-
-    fn deinit(self: *IndexBuffer) void {
-        const dev = &context().device;
-        self.buffer.deinit(gpa, dev);
-        dev.free(gpa, &self.memory);
-    }
-};
-
 const VertexBuffer = struct {
     buffer: ngl.Buffer,
     memory: ngl.Memory,
 
     // TODO
-    const size = 1 << 16;
+    const size = 1 << 20;
 
     fn copy(staging_buffer: *StagingBuffer, offset: u64) ngl.CommandBuffer.Cmd.BufferCopy.Region {
         std.debug.assert(offset & 3 == 0);
         // TODO
-        const mdl = &@import("model.zig").cube;
+        const mdl = &@import("model.zig").sphere;
         const copy_sz = @sizeOf(@TypeOf(mdl.data));
         @memcpy(
             staging_buffer.data[offset .. offset + copy_sz],
@@ -931,7 +894,7 @@ const StagingBuffer = struct {
     memory: ngl.Memory,
     data: []u8,
 
-    const size = Texture.size + UniformBuffer.size + IndexBuffer.size + VertexBuffer.size;
+    const size = Texture.size + UniformBuffer.size + VertexBuffer.size;
 
     fn init() ngl.Error!StagingBuffer {
         const dev = &context().device;
@@ -1109,7 +1072,7 @@ const Pipeline = struct {
 
     fn init(pass: *Pass, descriptor: *Descriptor, samples: ngl.SampleCount) ngl.Error!Pipeline {
         // TODO
-        const mdl = &@import("model.zig").cube;
+        const mdl = &@import("model.zig").sphere;
 
         const stages = [2]ngl.ShaderStage.Desc{
             .{
