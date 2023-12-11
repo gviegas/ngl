@@ -2,7 +2,7 @@ const std = @import("std");
 
 const ngl = @import("../ngl.zig");
 const gpa = std.heap.c_allocator;
-const context = @import("../test/test.zig").context;
+const context = @import("ctx.zig").context;
 const Platform = @import("../test/sf.zig").Platform;
 const platform = @import("../test/sf.zig").platform;
 const cube = &@import("model.zig").cube;
