@@ -84,10 +84,11 @@ test "basic shading" {
     const v = util.lookAt(.{ 0, 0, 0 }, .{ 4, -4, 6 }, .{ 0, -1, 0 });
     const transform = blk: {
         const m = util.identity(4);
-        const p = util.infPerspective(
+        const p = util.perspective(
             std.math.pi / 4.0,
             @as(f32, @floatFromInt(Data.width)) / Data.height,
             0.01,
+            100,
         );
         const mv = util.mulM(4, v, m);
         const mvp = util.mulM(4, p, mv);
