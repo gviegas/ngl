@@ -110,7 +110,4 @@ test {
     _ = @import("pass_input.zig");
     _ = @import("sf.zig");
     _ = @import("sc.zig");
-    _ = @import("ads.zig");
-    _ = @import("pcf.zig");
-    _ = @import("pbr.zig");
 }

@@ -1,13 +1,13 @@
 const std = @import("std");
 
 const ngl = @import("../ngl.zig");
-const gpa = @import("test.zig").gpa;
-const context = @import("test.zig").context;
-const platform = @import("sf.zig").platform;
+const gpa = std.heap.c_allocator;
+const context = @import("../test/test.zig").context;
+const platform = @import("../test/sf.zig").platform;
 const cube = &@import("model.zig").cube;
 const util = @import("util.zig");
 
-test "basic shading" {
+pub fn main() !void {
     const ctx = context();
     const dev = &ctx.device;
     const plat = try platform();
@@ -363,8 +363,8 @@ test "basic shading" {
 
 const Data = struct {
     const frame_n = 2;
-    const width = @import("sf.zig").Platform.width;
-    const height = @import("sf.zig").Platform.height;
+    const width = @import("../test/sf.zig").Platform.width;
+    const height = @import("../test/sf.zig").Platform.height;
 
     depth: struct {
         image: ngl.Image,

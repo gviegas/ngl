@@ -3,8 +3,15 @@ const fs = std.fs;
 const builtin = @import("builtin");
 
 pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
+    addMainTests(b);
 
+    addStandalone(b, "ads.zig", b.step("ads", "Run basic shading standalone"));
+    addStandalone(b, "pcf.zig", b.step("pcf", "Run basic shadows standalone"));
+    addStandalone(b, "pbr.zig", b.step("pbr", "Run shading standalone"));
+}
+
+fn addMainTests(b: *std.Build) void {
+    const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
     const main_tests = b.addTest(.{
@@ -13,14 +20,32 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .link_libc = true,
     });
-
-    if (builtin.os.tag == .linux and !builtin.target.isAndroid())
-        main_tests.linkSystemLibrary2("xcb", .{});
+    linkPlatformSpecific(main_tests);
 
     const run_main_tests = b.addRunArtifact(main_tests);
-
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_main_tests.step);
+}
+
+fn addStandalone(b: *std.Build, comptime root_file_name: []const u8, step: *std.Build.Step) void {
+    const base_path = "src/standalone/";
+
+    const standalone = b.addExecutable(.{
+        .name = root_file_name[0..std.mem.indexOfScalar(u8, root_file_name, '.').?],
+        .root_source_file = .{ .path = base_path ++ root_file_name },
+        .link_libc = true,
+        .main_mod_path = .{ .path = "src/" },
+    });
+    linkPlatformSpecific(standalone);
+
+    const run_standalone = b.addRunArtifact(standalone);
+    step.dependOn(&run_standalone.step);
+}
+
+// TODO
+fn linkPlatformSpecific(compile_step: *std.Build.Step.Compile) void {
+    if (builtin.os.tag == .linux and !builtin.target.isAndroid())
+        compile_step.linkSystemLibrary2("xcb", .{});
 }
 
 /// Creates the module.

@@ -1,13 +1,13 @@
 const std = @import("std");
 
 const ngl = @import("../ngl.zig");
-const gpa = @import("test.zig").gpa;
-const context = @import("test.zig").context;
-const Platform = @import("sf.zig").Platform;
-const platform = @import("sf.zig").platform;
+const gpa = std.heap.c_allocator;
+const context = @import("../test/test.zig").context;
+const Platform = @import("../test/sf.zig").Platform;
+const platform = @import("../test/sf.zig").platform;
 const util = @import("util.zig");
 
-test "shading" {
+pub fn main() !void {
     try do();
 }
 
