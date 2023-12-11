@@ -71,11 +71,22 @@ pub const ShaderStage = enum {
 
     pub const Flags = ngl.Flags(ShaderStage);
 
+    pub const Specialization = struct {
+        constants: []const Constant,
+        data: []const u8,
+
+        pub const Constant = struct {
+            id: u32,
+            offset: u32,
+            size: u32,
+        };
+    };
+
     pub const Desc = struct {
         stage: ShaderStage,
         code: []align(4) const u8,
         name: [:0]const u8,
-        // TODO: Specialization constants
+        specialization: ?Specialization = null,
     };
 };
 
