@@ -3,7 +3,7 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 const gpa = std.heap.c_allocator;
 const context = @import("ctx.zig").context;
-const platform = @import("../test/sf.zig").platform;
+const platform = @import("plat.zig").platform;
 const cube = &@import("model.zig").cube;
 const util = @import("util.zig");
 
@@ -363,8 +363,8 @@ pub fn main() !void {
 
 const Data = struct {
     const frame_n = 2;
-    const width = @import("../test/sf.zig").Platform.width;
-    const height = @import("../test/sf.zig").Platform.height;
+    const width = @import("plat.zig").Platform.width;
+    const height = @import("plat.zig").Platform.height;
 
     depth: struct {
         image: ngl.Image,

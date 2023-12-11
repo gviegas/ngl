@@ -4,7 +4,7 @@ const testing = std.testing;
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
-const platform = @import("sf.zig").platform;
+const platform = @import("test.zig").platform;
 
 test "SwapChain.init/deinit" {
     const ctx = context();

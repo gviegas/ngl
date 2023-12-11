@@ -2,6 +2,7 @@ const std = @import("std");
 const testing = std.testing;
 pub const gpa = testing.allocator;
 pub const context = @import("../standalone/ctx.zig").context;
+pub const platform = @import("../standalone/plat.zig").platform;
 
 // This can be set to `null` to suppress test output
 pub const writer: ?std.fs.File.Writer = null; //std.io.getStdErr().writer();

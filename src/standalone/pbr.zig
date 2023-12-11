@@ -3,8 +3,8 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 const gpa = std.heap.c_allocator;
 const context = @import("ctx.zig").context;
-const Platform = @import("../test/sf.zig").Platform;
-const platform = @import("../test/sf.zig").platform;
+const Platform = @import("plat.zig").Platform;
+const platform = @import("plat.zig").platform;
 const util = @import("util.zig");
 
 pub fn main() !void {
