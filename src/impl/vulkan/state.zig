@@ -54,46 +54,59 @@ pub const Pipeline = struct {
         defer allocator.free(create_inner);
 
         var stages: []c.VkPipelineShaderStageCreateInfo = &.{};
+        var specs: []c.VkSpecializationInfo = &.{};
+        var spec_entries: []c.VkSpecializationMapEntry = &.{};
         var vert_binds: []c.VkVertexInputBindingDescription = &.{};
         var vert_attrs: []c.VkVertexInputAttributeDescription = &.{};
         var blend_attachs: []c.VkPipelineColorBlendAttachmentState = &.{};
         defer {
             if (stages.len > 0) allocator.free(stages);
+            if (specs.len > 0) allocator.free(specs);
+            if (spec_entries.len > 0) allocator.free(spec_entries);
             if (vert_binds.len > 0) allocator.free(vert_binds);
             if (vert_attrs.len > 0) allocator.free(vert_attrs);
             if (blend_attachs.len > 0) allocator.free(blend_attachs);
         }
         {
             var stage_n: usize = 0;
+            var spec_n: usize = 0;
+            var entries_n: usize = 0;
             var bind_n: usize = 0;
             var attr_n: usize = 0;
             var blend_n: usize = 0;
             for (desc.states) |state| {
                 stage_n += state.stages.len;
+                for (state.stages) |x| {
+                    if (x.specialization) |y| {
+                        spec_n += 1;
+                        entries_n += y.constants.len;
+                    }
+                }
                 if (state.primitive) |x| {
                     bind_n += x.bindings.len;
                     attr_n += x.attributes.len;
                 }
-                if (state.color_blend) |x| blend_n += x.attachments.len;
+                if (state.color_blend) |x|
+                    blend_n += x.attachments.len;
             }
-            if (stage_n > 0) stages = try allocator.alloc(
-                c.VkPipelineShaderStageCreateInfo,
-                stage_n,
-            ) else unreachable;
-            if (bind_n > 0) vert_binds = try allocator.alloc(
-                c.VkVertexInputBindingDescription,
-                bind_n,
-            );
-            if (attr_n > 0) vert_attrs = try allocator.alloc(
-                c.VkVertexInputAttributeDescription,
-                attr_n,
-            );
-            if (blend_n > 0) blend_attachs = try allocator.alloc(
-                c.VkPipelineColorBlendAttachmentState,
-                blend_n,
-            );
+            if (stage_n > 0)
+                stages = try allocator.alloc(c.VkPipelineShaderStageCreateInfo, stage_n)
+            else
+                unreachable;
+            if (spec_n > 0)
+                specs = try allocator.alloc(c.VkSpecializationInfo, spec_n);
+            if (entries_n > 0)
+                spec_entries = try allocator.alloc(c.VkSpecializationMapEntry, entries_n);
+            if (bind_n > 0)
+                vert_binds = try allocator.alloc(c.VkVertexInputBindingDescription, bind_n);
+            if (attr_n > 0)
+                vert_attrs = try allocator.alloc(c.VkVertexInputAttributeDescription, attr_n);
+            if (blend_n > 0)
+                blend_attachs = try allocator.alloc(c.VkPipelineColorBlendAttachmentState, blend_n);
         }
         var stages_ptr = stages.ptr;
+        var specs_ptr = specs.ptr;
+        var spec_entries_ptr = spec_entries.ptr;
         var vert_binds_ptr = vert_binds.ptr;
         var vert_attrs_ptr = vert_attrs.ptr;
         var blend_attachs_ptr = blend_attachs.ptr;
@@ -510,7 +523,25 @@ pub const Pipeline = struct {
                         .stage = conv.toVkShaderStage(stage.stage),
                         .module = undefined,
                         .pName = stage.name,
-                        .pSpecializationInfo = null, // TODO
+                        .pSpecializationInfo = blk: {
+                            const spec = if (stage.specialization) |*x| x else break :blk null;
+                            const n: u32 = @intCast(spec.constants.len);
+                            for (spec_entries_ptr[0..n], spec.constants) |*entry, s|
+                                entry.* = .{
+                                    .constantID = s.id,
+                                    .offset = s.offset,
+                                    .size = s.size,
+                                };
+                            specs_ptr[0] = .{
+                                .mapEntryCount = n,
+                                .pMapEntries = spec_entries_ptr,
+                                .dataSize = spec.data.len,
+                                .pData = spec.data.ptr,
+                            };
+                            spec_entries_ptr += n;
+                            defer specs_ptr += 1;
+                            break :blk specs_ptr;
+                        },
                     };
 
                     try check(dev.vkCreateShaderModule(&.{
@@ -581,6 +612,29 @@ pub const Pipeline = struct {
             };
         }
 
+        var specs: []c.VkSpecializationInfo = &.{};
+        var spec_entries: []c.VkSpecializationMapEntry = &.{};
+        defer {
+            if (specs.len > 0) allocator.free(specs);
+            if (spec_entries.len > 0) allocator.free(spec_entries);
+        }
+        {
+            var spec_n: usize = 0;
+            var entries_n: usize = 0;
+            for (desc.states) |state| {
+                if (state.stage.specialization) |x| {
+                    spec_n += 1;
+                    entries_n += x.constants.len;
+                }
+            }
+            if (spec_n > 0)
+                specs = try allocator.alloc(c.VkSpecializationInfo, spec_n);
+            if (entries_n > 0)
+                spec_entries = try allocator.alloc(c.VkSpecializationMapEntry, entries_n);
+        }
+        var specs_ptr = specs.ptr;
+        var spec_entries_ptr = spec_entries.ptr;
+
         const module_create_infos: []c.VkShaderModuleCreateInfo = &.{};
         defer if (module_create_infos.len > 0) allocator.free(module_create_infos);
 
@@ -613,7 +667,25 @@ pub const Pipeline = struct {
                     .stage = c.VK_SHADER_STAGE_COMPUTE_BIT,
                     .module = module.*,
                     .pName = state.stage.name,
-                    .pSpecializationInfo = null, // TODO
+                    .pSpecializationInfo = blk: {
+                        const spec = if (state.stage.specialization) |*x| x else break :blk null;
+                        const n: u32 = @intCast(spec.constants.len);
+                        for (spec_entries_ptr[0..n], spec.constants) |*entry, s|
+                            entry.* = .{
+                                .constantID = s.id,
+                                .offset = s.offset,
+                                .size = s.size,
+                            };
+                        specs_ptr[0] = .{
+                            .mapEntryCount = n,
+                            .pMapEntries = spec_entries_ptr,
+                            .dataSize = spec.data.len,
+                            .pData = spec.data.ptr,
+                        };
+                        spec_entries_ptr += n;
+                        defer specs_ptr += 1;
+                        break :blk specs_ptr;
+                    },
                 };
             }
         }
