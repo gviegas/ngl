@@ -128,7 +128,7 @@ pub const CommandBuffer = packed struct {
         _: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        desc: ngl.CommandBuffer.Cmd.Desc,
+        desc: ngl.Cmd.Desc,
     ) Error!void {
         const flags = blk: {
             var flags: c.VkCommandBufferUsageFlags = 0;
@@ -242,7 +242,7 @@ pub const CommandBuffer = packed struct {
         _: *anyopaque,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        index_type: ngl.CommandBuffer.Cmd.IndexType,
+        index_type: ngl.Cmd.IndexType,
         buffer: Impl.Buffer,
         offset: u64,
         _: u64, // Requires newer command
@@ -344,7 +344,7 @@ pub const CommandBuffer = packed struct {
         _: *anyopaque,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        stencil_face: ngl.CommandBuffer.Cmd.StencilFace,
+        stencil_face: ngl.Cmd.StencilFace,
         reference: u32,
     ) void {
         Device.cast(device).vkCmdSetStencilReference(
@@ -368,8 +368,8 @@ pub const CommandBuffer = packed struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        render_pass_begin: ngl.CommandBuffer.Cmd.RenderPassBegin,
-        subpass_begin: ngl.CommandBuffer.Cmd.SubpassBegin,
+        render_pass_begin: ngl.Cmd.RenderPassBegin,
+        subpass_begin: ngl.Cmd.SubpassBegin,
     ) void {
         const n = 16;
         var stk_clears: [n]c.VkClearValue = undefined;
@@ -411,8 +411,8 @@ pub const CommandBuffer = packed struct {
         _: *anyopaque,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        next_begin: ngl.CommandBuffer.Cmd.SubpassBegin,
-        _: ngl.CommandBuffer.Cmd.SubpassEnd,
+        next_begin: ngl.Cmd.SubpassBegin,
+        _: ngl.Cmd.SubpassEnd,
     ) void {
         Device.cast(device).vkCmdNextSubpass(
             cast(command_buffer).handle,
@@ -424,7 +424,7 @@ pub const CommandBuffer = packed struct {
         _: *anyopaque,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        _: ngl.CommandBuffer.Cmd.SubpassEnd,
+        _: ngl.Cmd.SubpassEnd,
     ) void {
         Device.cast(device).vkCmdEndRenderPass(cast(command_buffer).handle);
     }
@@ -562,7 +562,7 @@ pub const CommandBuffer = packed struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        copies: []const ngl.CommandBuffer.Cmd.BufferCopy,
+        copies: []const ngl.Cmd.BufferCopy,
     ) void {
         var region: [1]c.VkBufferCopy = undefined;
         var regions: []c.VkBufferCopy = &region;
@@ -611,7 +611,7 @@ pub const CommandBuffer = packed struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        copies: []const ngl.CommandBuffer.Cmd.ImageCopy,
+        copies: []const ngl.Cmd.ImageCopy,
     ) void {
         var region: [1]c.VkImageCopy = undefined;
         var regions: []c.VkImageCopy = &region;
@@ -692,7 +692,7 @@ pub const CommandBuffer = packed struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+        copies: []const ngl.Cmd.BufferImageCopy,
     ) void {
         var region: [1]c.VkBufferImageCopy = undefined;
         var regions: []c.VkBufferImageCopy = &region;
@@ -774,7 +774,7 @@ pub const CommandBuffer = packed struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+        copies: []const ngl.Cmd.BufferImageCopy,
     ) void {
         copyBufferToImageOrImageToBuffer(.bufferToImage, allocator, device, command_buffer, copies);
     }
@@ -784,7 +784,7 @@ pub const CommandBuffer = packed struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+        copies: []const ngl.Cmd.BufferImageCopy,
     ) void {
         copyBufferToImageOrImageToBuffer(.imageToBuffer, allocator, device, command_buffer, copies);
     }
@@ -794,7 +794,7 @@ pub const CommandBuffer = packed struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        dependencies: []const ngl.CommandBuffer.Cmd.Dependency,
+        dependencies: []const ngl.Cmd.Dependency,
     ) void {
         const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);

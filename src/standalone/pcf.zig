@@ -397,7 +397,7 @@ const ShadowPass = struct {
 
     fn record(
         self: *ShadowPass,
-        cmd: *ngl.CommandBuffer.Cmd,
+        cmd: *ngl.Cmd,
         pipeline: *Pipeline,
         index_buffer: *IndexBuffer,
         vertex_buffer: *VertexBuffer,
@@ -753,7 +753,7 @@ const LightPass = struct {
 
     fn record(
         self: *LightPass,
-        cmd: *ngl.CommandBuffer.Cmd,
+        cmd: *ngl.Cmd,
         next_image: ngl.SwapChain.Index,
         pipeline: *Pipeline,
         index_buffer: *IndexBuffer,
@@ -1153,7 +1153,7 @@ const StagingBuffer = struct {
             .image_layout = .transfer_dest_optimal,
             .image_type = .@"2d",
             .regions = blk: {
-                var regs: [materials.len]ngl.CommandBuffer.Cmd.BufferImageCopy.Region = undefined;
+                var regs: [materials.len]ngl.Cmd.BufferImageCopy.Region = undefined;
                 for (&regs, 0..) |*reg, i|
                     reg.* = .{
                         .buffer_offset = i * a,
@@ -1758,7 +1758,7 @@ const Draw = struct {
 
     fn draw(
         self: Draw,
-        cmd: *ngl.CommandBuffer.Cmd,
+        cmd: *ngl.Cmd,
         index_buffer: *IndexBuffer,
         vertex_buffer: *VertexBuffer,
     ) void {

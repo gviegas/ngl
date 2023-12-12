@@ -706,14 +706,14 @@ pub fn toVkBlendOp(blend_op: ngl.ColorBlend.BlendOp) c.VkBlendOp {
     };
 }
 
-pub fn toVkIndexType(index_type: ngl.CommandBuffer.Cmd.IndexType) c.VkIndexType {
+pub fn toVkIndexType(index_type: ngl.Cmd.IndexType) c.VkIndexType {
     return switch (index_type) {
         .u16 => c.VK_INDEX_TYPE_UINT16,
         .u32 => c.VK_INDEX_TYPE_UINT32,
     };
 }
 
-pub fn toVkStencilFaceFlags(stencil_face: ngl.CommandBuffer.Cmd.StencilFace) c.VkStencilFaceFlags {
+pub fn toVkStencilFaceFlags(stencil_face: ngl.Cmd.StencilFace) c.VkStencilFaceFlags {
     return switch (stencil_face) {
         .front => c.VK_STENCIL_FACE_FRONT_BIT,
         .back => c.VK_STENCIL_FACE_BACK_BIT,
@@ -721,16 +721,14 @@ pub fn toVkStencilFaceFlags(stencil_face: ngl.CommandBuffer.Cmd.StencilFace) c.V
     };
 }
 
-pub fn toVkSubpassContents(
-    subpass_contents: ngl.CommandBuffer.Cmd.SubpassContents,
-) c.VkSubpassContents {
+pub fn toVkSubpassContents(subpass_contents: ngl.Cmd.SubpassContents) c.VkSubpassContents {
     return switch (subpass_contents) {
         .inline_only => c.VK_SUBPASS_CONTENTS_INLINE,
         .secondary_command_buffers_only => c.VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS,
     };
 }
 
-pub fn toVkClearValue(clear_value: ngl.CommandBuffer.Cmd.ClearValue) c.VkClearValue {
+pub fn toVkClearValue(clear_value: ngl.Cmd.ClearValue) c.VkClearValue {
     return switch (clear_value) {
         .color_f32 => |x| .{ .color = .{ .float32 = x } },
         .color_i32 => |x| .{ .color = .{ .int32 = x } },

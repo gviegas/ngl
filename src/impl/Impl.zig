@@ -218,7 +218,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        desc: ngl.CommandBuffer.Cmd.Desc,
+        desc: ngl.Cmd.Desc,
     ) Error!void,
 
     setPipeline: *const fn (
@@ -254,7 +254,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         device: Device,
         command_buffer: CommandBuffer,
-        index_type: ngl.CommandBuffer.Cmd.IndexType,
+        index_type: ngl.Cmd.IndexType,
         buffer: Buffer,
         offset: u64,
         size: u64,
@@ -282,7 +282,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         device: Device,
         command_buffer: CommandBuffer,
-        stencil_face: ngl.CommandBuffer.Cmd.StencilFace,
+        stencil_face: ngl.Cmd.StencilFace,
         reference: u32,
     ) void,
 
@@ -298,23 +298,23 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        render_pass_begin: ngl.CommandBuffer.Cmd.RenderPassBegin,
-        subpass_begin: ngl.CommandBuffer.Cmd.SubpassBegin,
+        render_pass_begin: ngl.Cmd.RenderPassBegin,
+        subpass_begin: ngl.Cmd.SubpassBegin,
     ) void,
 
     nextSubpass: *const fn (
         ctx: *anyopaque,
         device: Device,
         command_buffer: CommandBuffer,
-        next_begin: ngl.CommandBuffer.Cmd.SubpassBegin,
-        current_end: ngl.CommandBuffer.Cmd.SubpassEnd,
+        next_begin: ngl.Cmd.SubpassBegin,
+        current_end: ngl.Cmd.SubpassEnd,
     ) void,
 
     endRenderPass: *const fn (
         ctx: *anyopaque,
         device: Device,
         command_buffer: CommandBuffer,
-        subpass_end: ngl.CommandBuffer.Cmd.SubpassEnd,
+        subpass_end: ngl.Cmd.SubpassEnd,
     ) void,
 
     draw: *const fn (
@@ -390,7 +390,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        copies: []const ngl.CommandBuffer.Cmd.BufferCopy,
+        copies: []const ngl.Cmd.BufferCopy,
     ) void,
 
     copyImage: *const fn (
@@ -398,7 +398,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        copies: []const ngl.CommandBuffer.Cmd.ImageCopy,
+        copies: []const ngl.Cmd.ImageCopy,
     ) void,
 
     copyBufferToImage: *const fn (
@@ -406,7 +406,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+        copies: []const ngl.Cmd.BufferImageCopy,
     ) void,
 
     copyImageToBuffer: *const fn (
@@ -414,7 +414,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+        copies: []const ngl.Cmd.BufferImageCopy,
     ) void,
 
     pipelineBarrier: *const fn (
@@ -422,7 +422,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        dependencies: []const ngl.CommandBuffer.Cmd.Dependency,
+        dependencies: []const ngl.Cmd.Dependency,
     ) void,
 
     executeCommands: *const fn (
@@ -1084,7 +1084,7 @@ pub fn beginCommandBuffer(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    desc: ngl.CommandBuffer.Cmd.Desc,
+    desc: ngl.Cmd.Desc,
 ) Error!void {
     return self.vtable.beginCommandBuffer(self.ptr, allocator, device, command_buffer, desc);
 }
@@ -1145,7 +1145,7 @@ pub fn setIndexBuffer(
     self: *Self,
     device: Device,
     command_buffer: CommandBuffer,
-    index_type: ngl.CommandBuffer.Cmd.IndexType,
+    index_type: ngl.Cmd.IndexType,
     buffer: Buffer,
     offset: u64,
     size: u64,
@@ -1188,7 +1188,7 @@ pub fn setStencilReference(
     self: *Self,
     device: Device,
     command_buffer: CommandBuffer,
-    stencil_face: ngl.CommandBuffer.Cmd.StencilFace,
+    stencil_face: ngl.Cmd.StencilFace,
     reference: u32,
 ) void {
     self.vtable.setStencilReference(self.ptr, device, command_buffer, stencil_face, reference);
@@ -1208,8 +1208,8 @@ pub fn beginRenderPass(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    render_pass_begin: ngl.CommandBuffer.Cmd.RenderPassBegin,
-    subpass_begin: ngl.CommandBuffer.Cmd.SubpassBegin,
+    render_pass_begin: ngl.Cmd.RenderPassBegin,
+    subpass_begin: ngl.Cmd.SubpassBegin,
 ) void {
     self.vtable.beginRenderPass(
         self.ptr,
@@ -1225,8 +1225,8 @@ pub fn nextSubpass(
     self: *Self,
     device: Device,
     command_buffer: CommandBuffer,
-    next_begin: ngl.CommandBuffer.Cmd.SubpassBegin,
-    current_end: ngl.CommandBuffer.Cmd.SubpassEnd,
+    next_begin: ngl.Cmd.SubpassBegin,
+    current_end: ngl.Cmd.SubpassEnd,
 ) void {
     self.vtable.nextSubpass(self.ptr, device, command_buffer, next_begin, current_end);
 }
@@ -1235,7 +1235,7 @@ pub fn endRenderPass(
     self: *Self,
     device: Device,
     command_buffer: CommandBuffer,
-    subpass_end: ngl.CommandBuffer.Cmd.SubpassEnd,
+    subpass_end: ngl.Cmd.SubpassEnd,
 ) void {
     self.vtable.endRenderPass(self.ptr, device, command_buffer, subpass_end);
 }
@@ -1359,7 +1359,7 @@ pub fn copyBuffer(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    copies: []const ngl.CommandBuffer.Cmd.BufferCopy,
+    copies: []const ngl.Cmd.BufferCopy,
 ) void {
     self.vtable.copyBuffer(self.ptr, allocator, device, command_buffer, copies);
 }
@@ -1369,7 +1369,7 @@ pub fn copyImage(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    copies: []const ngl.CommandBuffer.Cmd.ImageCopy,
+    copies: []const ngl.Cmd.ImageCopy,
 ) void {
     self.vtable.copyImage(self.ptr, allocator, device, command_buffer, copies);
 }
@@ -1379,7 +1379,7 @@ pub fn copyBufferToImage(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+    copies: []const ngl.Cmd.BufferImageCopy,
 ) void {
     self.vtable.copyBufferToImage(self.ptr, allocator, device, command_buffer, copies);
 }
@@ -1389,7 +1389,7 @@ pub fn copyImageToBuffer(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    copies: []const ngl.CommandBuffer.Cmd.BufferImageCopy,
+    copies: []const ngl.Cmd.BufferImageCopy,
 ) void {
     self.vtable.copyImageToBuffer(self.ptr, allocator, device, command_buffer, copies);
 }
@@ -1399,7 +1399,7 @@ pub fn pipelineBarrier(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    dependencies: []const ngl.CommandBuffer.Cmd.Dependency,
+    dependencies: []const ngl.Cmd.Dependency,
 ) void {
     self.vtable.pipelineBarrier(self.ptr, allocator, device, command_buffer, dependencies);
 }

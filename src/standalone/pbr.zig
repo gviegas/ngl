@@ -107,7 +107,7 @@ fn do() !void {
         .eye = eye,
     };
 
-    var ub_regs: [frame_n * (2 + materials.len)]ngl.CommandBuffer.Cmd.BufferCopy.Region = undefined;
+    var ub_regs: [frame_n * (2 + materials.len)]ngl.Cmd.BufferCopy.Region = undefined;
     for (0..frame_n) |frame| {
         const i = frame * (2 + materials.len);
         ub_regs[i] = globl.copy(frame, &stg_buf, Texture.size);
@@ -576,7 +576,7 @@ const Pass = struct {
 
     fn record(
         self: *Pass,
-        cmd: *ngl.CommandBuffer.Cmd,
+        cmd: *ngl.Cmd,
         next_image: ngl.SwapChain.Index,
         pipeline: *Pipeline,
         descriptor: *Descriptor,
@@ -656,10 +656,7 @@ const Texture = struct {
         break :blk lvls;
     };
 
-    fn copy(
-        staging_buffer: *StagingBuffer,
-        offset: u64,
-    ) [levels]ngl.CommandBuffer.Cmd.BufferImageCopy.Region {
+    fn copy(staging_buffer: *StagingBuffer, offset: u64) [levels]ngl.Cmd.BufferImageCopy.Region {
         std.debug.assert(offset & 3 == 0);
         // TODO
         const pixel = [4]u8{ 206, 200, 194, 255 };
@@ -667,7 +664,7 @@ const Texture = struct {
         for (0..extent) |i|
             @memcpy(row[i * 4 .. i * 4 + 4], &pixel);
 
-        var regions: [levels]ngl.CommandBuffer.Cmd.BufferImageCopy.Region = undefined;
+        var regions: [levels]ngl.Cmd.BufferImageCopy.Region = undefined;
 
         // LOD 0
         for (0..extent) |i|
@@ -841,7 +838,7 @@ const VertexBuffer = struct {
     // TODO
     const size = 1 << 20;
 
-    fn copy(staging_buffer: *StagingBuffer, offset: u64) ngl.CommandBuffer.Cmd.BufferCopy.Region {
+    fn copy(staging_buffer: *StagingBuffer, offset: u64) ngl.Cmd.BufferCopy.Region {
         std.debug.assert(offset & 3 == 0);
         // TODO
         const mdl = &@import("model.zig").sphere;
@@ -1314,7 +1311,7 @@ const Global = struct {
         frame: usize,
         staging_buffer: *StagingBuffer,
         offset: u64,
-    ) ngl.CommandBuffer.Cmd.BufferCopy.Region {
+    ) ngl.Cmd.BufferCopy.Region {
         std.debug.assert(offset & 255 == 0);
         const off = frame * 512;
         const data: [256 / 4]f32 =
@@ -1355,7 +1352,7 @@ const Light = struct {
         frame: usize,
         staging_buffer: *StagingBuffer,
         offset: u64,
-    ) ngl.CommandBuffer.Cmd.BufferCopy.Region {
+    ) ngl.Cmd.BufferCopy.Region {
         std.debug.assert(offset & 255 == 0);
         // Interleaved with `Global`
         const off = frame * 512 + 256;
@@ -1391,7 +1388,7 @@ const Material = struct {
         index: usize,
         staging_buffer: *StagingBuffer,
         offset: u64,
-    ) ngl.CommandBuffer.Cmd.BufferCopy.Region {
+    ) ngl.Cmd.BufferCopy.Region {
         std.debug.assert(offset & 255 == 0);
         // After all `Global`s and `Light`s
         const off = frame_n * 512 + frame * 256 * materials.len + index * 256;

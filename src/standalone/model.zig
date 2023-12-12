@@ -3,7 +3,7 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 
 pub const cube = struct {
-    pub const index_type = ngl.CommandBuffer.Cmd.IndexType.u16;
+    pub const index_type = ngl.Cmd.IndexType.u16;
     pub const topology = ngl.Primitive.Topology.triangle_list;
     pub const clockwise = true;
 

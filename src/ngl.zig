@@ -9,6 +9,7 @@ pub const Memory = @import("core/init.zig").Memory;
 pub const Feature = @import("core/init.zig").Feature;
 pub const CommandPool = @import("core/cmd.zig").CommandPool;
 pub const CommandBuffer = @import("core/cmd.zig").CommandBuffer;
+pub const Cmd = CommandBuffer.Cmd;
 pub const PipelineStage = @import("core/sync.zig").PipelineStage;
 pub const Access = @import("core/sync.zig").Access;
 pub const Fence = @import("core/sync.zig").Fence;
