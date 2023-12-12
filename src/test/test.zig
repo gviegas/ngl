@@ -5,7 +5,7 @@ pub const context = @import("../standalone/ctx.zig").context;
 pub const platform = @import("../standalone/plat.zig").platform;
 
 // This can be set to `null` to suppress test output
-pub const writer: ?std.fs.File.Writer = null; //std.io.getStdErr().writer();
+pub const writer: ?std.fs.File.Writer = std.io.getStdErr().writer();
 
 test {
     _ = @import("inst.zig");
@@ -35,6 +35,7 @@ test {
     _ = @import("depth.zig");
     _ = @import("sten.zig");
     _ = @import("pass_input.zig");
+    _ = @import("spec.zig");
     _ = @import("sf.zig");
     _ = @import("sc.zig");
 }
