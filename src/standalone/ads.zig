@@ -393,7 +393,7 @@ const Data = struct {
                     .type_index = mem_reqs.findType(device.*, .{ .device_local = true }, null).?,
                 });
                 errdefer device.free(gpa, &mem);
-                try self.image.bindMemory(device, &mem, 0);
+                try self.image.bind(device, &mem, 0);
                 break :blk mem;
             };
             self.view = ngl.ImageView.init(gpa, device, .{
@@ -450,7 +450,7 @@ const Data = struct {
                     .type_index = mem_reqs.findType(device.*, .{ .device_local = true }, null).?,
                 });
                 errdefer device.free(gpa, &mem);
-                try self.image.bindMemory(device, &mem, 0);
+                try self.image.bind(device, &mem, 0);
                 break :blk mem;
             };
             errdefer {
@@ -512,7 +512,7 @@ const Data = struct {
                     .type_index = mem_reqs.findType(device.*, .{ .device_local = true }, null).?,
                 });
                 errdefer device.free(gpa, &mem);
-                try self.buffer.bindMemory(device, &mem, 0);
+                try self.buffer.bind(device, &mem, 0);
                 break :blk mem;
             };
         }
@@ -541,7 +541,7 @@ const Data = struct {
                     .type_index = mem_reqs.findType(device.*, .{ .device_local = true }, null).?,
                 });
                 errdefer device.free(gpa, &mem);
-                try self.buffer.bindMemory(device, &mem, 0);
+                try self.buffer.bind(device, &mem, 0);
                 break :blk mem;
             };
         }
@@ -572,7 +572,7 @@ const Data = struct {
                     .type_index = mem_reqs.findType(device.*, .{ .device_local = true }, null).?,
                 });
                 errdefer device.free(gpa, &mem);
-                try self.buffer.bindMemory(device, &mem, 0);
+                try self.buffer.bind(device, &mem, 0);
                 break :blk mem;
             };
         }
@@ -605,7 +605,7 @@ const Data = struct {
                     }, null).?,
                 });
                 errdefer device.free(gpa, &mem);
-                try self.buffer.bindMemory(device, &mem, 0);
+                try self.buffer.bind(device, &mem, 0);
                 break :blk mem;
             };
         }

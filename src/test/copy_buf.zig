@@ -39,7 +39,7 @@ test "copyBuffer command" {
                 }, null).?,
             });
             errdefer dev.free(gpa, &mem);
-            try bufs[i].bindMemory(dev, &mem, 0);
+            try bufs[i].bind(dev, &mem, 0);
             break :blk mem;
         };
     }

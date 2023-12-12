@@ -75,7 +75,7 @@ test "draw primitive" {
             .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try image.bindMemory(dev, &mem, 0);
+        try image.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {
@@ -108,7 +108,7 @@ test "draw primitive" {
             .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try unif_buf.bindMemory(dev, &mem, 0);
+        try unif_buf.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {
@@ -128,7 +128,7 @@ test "draw primitive" {
             .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try vert_buf.bindMemory(dev, &mem, 0);
+        try vert_buf.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {
@@ -151,7 +151,7 @@ test "draw primitive" {
             }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try stg_buf.bindMemory(dev, &mem, 0);
+        try stg_buf.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {

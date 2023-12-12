@@ -32,7 +32,7 @@ test "shader specialization" {
             .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try stor_buf.bindMemory(dev, &mem, 0);
+        try stor_buf.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {
@@ -55,7 +55,7 @@ test "shader specialization" {
             }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try stg_buf.bindMemory(dev, &mem, 0);
+        try stg_buf.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {

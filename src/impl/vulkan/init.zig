@@ -2475,7 +2475,7 @@ const vtable = Impl.VTable{
 
     .initBuffer = @import("res.zig").Buffer.init,
     .getMemoryRequirementsBuffer = @import("res.zig").Buffer.getMemoryRequirements,
-    .bindMemoryBuffer = @import("res.zig").Buffer.bindMemory,
+    .bindBuffer = @import("res.zig").Buffer.bind,
     .deinitBuffer = @import("res.zig").Buffer.deinit,
 
     .initBufferView = @import("res.zig").BufferView.init,
@@ -2485,7 +2485,7 @@ const vtable = Impl.VTable{
     .getImageCapabilities = @import("res.zig").Image.getCapabilities,
     .getImageDataLayout = @import("res.zig").Image.getDataLayout,
     .getMemoryRequirementsImage = @import("res.zig").Image.getMemoryRequirements,
-    .bindMemoryImage = @import("res.zig").Image.bindMemory,
+    .bindImage = @import("res.zig").Image.bind,
     .deinitImage = @import("res.zig").Image.deinit,
 
     .initImageView = @import("res.zig").ImageView.init,

@@ -58,7 +58,7 @@ test "stencil test" {
             .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try col_img.bindMemory(dev, &mem, 0);
+        try col_img.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {
@@ -108,7 +108,7 @@ test "stencil test" {
             .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try ds_img.bindMemory(dev, &mem, 0);
+        try ds_img.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {
@@ -144,7 +144,7 @@ test "stencil test" {
             }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try stg_buf.bindMemory(dev, &mem, 0);
+        try stg_buf.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {
@@ -164,7 +164,7 @@ test "stencil test" {
             .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try vert_buf.bindMemory(dev, &mem, 0);
+        try vert_buf.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {

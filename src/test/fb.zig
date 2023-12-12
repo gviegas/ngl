@@ -163,7 +163,7 @@ test "FrameBuffer.init/deinit" {
             .type_index = mem_reqs.findType(dev.*, .{}, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try col_img.bindMemory(dev, &mem, 0);
+        try col_img.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {
@@ -218,7 +218,7 @@ test "FrameBuffer.init/deinit" {
             .type_index = mem_reqs.findType(dev.*, .{}, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try dep_img.bindMemory(dev, &mem, 0);
+        try dep_img.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {

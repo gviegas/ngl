@@ -516,7 +516,7 @@ pub const VTable = struct {
         buffer: Buffer,
     ) ngl.Memory.Requirements,
 
-    bindMemoryBuffer: *const fn (
+    bindBuffer: *const fn (
         ctx: *anyopaque,
         device: Device,
         buffer: Buffer,
@@ -582,7 +582,7 @@ pub const VTable = struct {
         image: Image,
     ) ngl.Memory.Requirements,
 
-    bindMemoryImage: *const fn (
+    bindImage: *const fn (
         ctx: *anyopaque,
         device: Device,
         image: Image,
@@ -1504,14 +1504,14 @@ pub fn getMemoryRequirementsBuffer(
     return self.vtable.getMemoryRequirementsBuffer(self.ptr, device, buffer);
 }
 
-pub fn bindMemoryBuffer(
+pub fn bindBuffer(
     self: *Self,
     device: Device,
     buffer: Buffer,
     memory: Memory,
     memory_offset: u64,
 ) Error!void {
-    return self.vtable.bindMemoryBuffer(self.ptr, device, buffer, memory, memory_offset);
+    return self.vtable.bindBuffer(self.ptr, device, buffer, memory, memory_offset);
 }
 
 pub fn deinitBuffer(
@@ -1586,14 +1586,14 @@ pub fn getMemoryRequirementsImage(
     return self.vtable.getMemoryRequirementsImage(self.ptr, device, image);
 }
 
-pub fn bindMemoryImage(
+pub fn bindImage(
     self: *Self,
     device: Device,
     image: Image,
     memory: Memory,
     memory_offset: u64,
 ) Error!void {
-    return self.vtable.bindMemoryImage(self.ptr, device, image, memory, memory_offset);
+    return self.vtable.bindImage(self.ptr, device, image, memory, memory_offset);
 }
 
 pub fn initImageView(

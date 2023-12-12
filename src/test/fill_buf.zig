@@ -39,7 +39,7 @@ test "fillBuffer command" {
             }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try buf.bindMemory(dev, &mem, 0);
+        try buf.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {

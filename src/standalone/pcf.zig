@@ -268,7 +268,7 @@ const ShadowMap = struct {
                 .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
             errdefer dev.free(gpa, &mem);
-            try image.bindMemory(dev, &mem, 0);
+            try image.bind(dev, &mem, 0);
             break :blk mem;
         };
         errdefer {
@@ -485,7 +485,7 @@ const ColorAttachment = struct {
                 }, null) orelse mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
             errdefer dev.free(gpa, &mem);
-            try image.bindMemory(dev, &mem, 0);
+            try image.bind(dev, &mem, 0);
             break :blk mem;
         };
         errdefer {
@@ -581,7 +581,7 @@ const DepthAttachment = struct {
                 }, null) orelse mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
             errdefer dev.free(gpa, &mem);
-            try image.bindMemory(dev, &mem, 0);
+            try image.bind(dev, &mem, 0);
             break :blk mem;
         };
         errdefer {
@@ -841,7 +841,7 @@ const Texture = struct {
                 .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
             errdefer dev.free(gpa, &mem);
-            try image.bindMemory(dev, &mem, 0);
+            try image.bind(dev, &mem, 0);
             break :blk mem;
         };
         errdefer {
@@ -918,7 +918,7 @@ const IndexBuffer = struct {
                 .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
             errdefer dev.free(gpa, &mem);
-            try buf.bindMemory(dev, &mem, 0);
+            try buf.bind(dev, &mem, 0);
             break :blk mem;
         };
 
@@ -958,7 +958,7 @@ const VertexBuffer = struct {
                 .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
             errdefer dev.free(gpa, &mem);
-            try buf.bindMemory(dev, &mem, 0);
+            try buf.bind(dev, &mem, 0);
             break :blk mem;
         };
 
@@ -1001,7 +1001,7 @@ const UniformBuffer = struct {
                 }, null).?,
             });
             errdefer dev.free(gpa, &mem);
-            try buf.bindMemory(dev, &mem, 0);
+            try buf.bind(dev, &mem, 0);
             data = (try mem.map(dev, 0, null))[0..mem_reqs.size];
             break :blk mem;
         };
@@ -1069,7 +1069,7 @@ const StagingBuffer = struct {
                 }, null).?,
             });
             errdefer dev.free(gpa, &mem);
-            try buf.bindMemory(dev, &mem, 0);
+            try buf.bind(dev, &mem, 0);
             data = (try mem.map(dev, 0, null))[0..mem_reqs.size];
             break :blk mem;
         };

@@ -125,7 +125,7 @@ pub const Buffer = packed struct {
         };
     }
 
-    pub fn bindMemory(
+    pub fn bind(
         _: *anyopaque,
         device: Impl.Device,
         buffer: Impl.Buffer,
@@ -313,7 +313,7 @@ pub const Image = packed struct {
         };
     }
 
-    pub fn bindMemory(
+    pub fn bind(
         _: *anyopaque,
         device: Impl.Device,
         image: Impl.Image,

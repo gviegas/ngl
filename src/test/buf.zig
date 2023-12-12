@@ -55,7 +55,7 @@ test "Buffer allocation" {
             .type_index = mem_reqs.findType(dev.*, .{}, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try buf.bindMemory(dev, &mem, 0);
+        try buf.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer dev.free(gpa, &mem);
@@ -65,7 +65,7 @@ test "Buffer allocation" {
     var new_buf = try ngl.Buffer.init(gpa, dev, buf_desc);
     defer new_buf.deinit(gpa, dev);
     try testing.expectEqual(new_buf.getMemoryRequirements(dev), mem_reqs);
-    try new_buf.bindMemory(dev, &mem, 0);
+    try new_buf.bind(dev, &mem, 0);
 }
 
 test "BufferView.init/deinit" {
@@ -84,7 +84,7 @@ test "BufferView.init/deinit" {
             .type_index = mem_reqs.findType(dev.*, .{}, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try tb.bindMemory(dev, &mem, 0);
+        try tb.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {

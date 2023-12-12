@@ -43,7 +43,7 @@ test "copy between resources" {
                 }, null).?,
             });
             errdefer dev.free(gpa, &mem);
-            try bufs[i].bindMemory(dev, &mem, 0);
+            try bufs[i].bind(dev, &mem, 0);
             break :blk mem;
         };
     }
@@ -84,7 +84,7 @@ test "copy between resources" {
                 .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
             errdefer dev.free(gpa, &mem);
-            try images[i].bindMemory(dev, &mem, 0);
+            try images[i].bind(dev, &mem, 0);
             break :blk mem;
         };
     }

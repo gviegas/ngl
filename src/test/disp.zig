@@ -45,7 +45,7 @@ test "compute dispatch" {
             .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try image.bindMemory(dev, &mem, 0);
+        try image.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {
@@ -81,7 +81,7 @@ test "compute dispatch" {
             }, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try buf.bindMemory(dev, &mem, 0);
+        try buf.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {

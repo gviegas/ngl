@@ -229,7 +229,7 @@ test "Image allocation" {
             .type_index = mem_reqs.findType(dev.*, .{}, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try image.bindMemory(dev, &mem, 0);
+        try image.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer dev.free(gpa, &mem);
@@ -239,7 +239,7 @@ test "Image allocation" {
     var new_img = try ngl.Image.init(gpa, dev, img_desc);
     defer new_img.deinit(gpa, dev);
     try testing.expectEqual(new_img.getMemoryRequirements(dev), mem_reqs);
-    try new_img.bindMemory(dev, &mem, 0);
+    try new_img.bind(dev, &mem, 0);
 }
 
 test "ImageView.init/deinit" {
@@ -267,7 +267,7 @@ test "ImageView.init/deinit" {
             .type_index = mem_reqs.findType(dev.*, .{}, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try rt.bindMemory(dev, &mem, 0);
+        try rt.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {
@@ -327,7 +327,7 @@ test "ImageView.init/deinit" {
             .type_index = mem_reqs.findType(dev.*, .{}, null).?,
         });
         errdefer dev.free(gpa, &mem);
-        try spld.bindMemory(dev, &mem, 0);
+        try spld.bind(dev, &mem, 0);
         break :blk mem;
     };
     defer {
