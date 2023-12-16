@@ -111,11 +111,14 @@ pub const Queue = struct {
     capabilities: Capabilities,
     priority: Priority,
 
+    pub const Index = u2;
     pub const max = 4;
 
     pub const Capabilities = packed struct {
         graphics: bool = false,
         compute: bool = false,
+        // This is guaranteed to be set on queues that support
+        // graphics and/or compute.
         transfer: bool = false,
     };
 

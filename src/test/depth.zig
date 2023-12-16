@@ -9,7 +9,7 @@ test "depth-only rendering" {
     const ctx = context();
     const dev = &ctx.device;
     const queue_i = for (0..dev.queue_n) |i| {
-        if (dev.queues[i].capabilities.graphics and dev.queues[i].capabilities.transfer) break i;
+        if (dev.queues[i].capabilities.graphics) break i;
     } else return error.SkipZigTest;
 
     var fence = try ngl.Fence.init(gpa, dev, .{});

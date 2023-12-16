@@ -11,11 +11,7 @@ test "fillBuffer command" {
     const queue_i = for (0..dev.queue_n) |i| {
         // TODO: Vulkan 1.0 doesn't allow this command in transfer-only queues
         //if (dev.queues[i].capabilities.transfer) break i;
-        if (dev.queues[i].capabilities.transfer and
-            (dev.queues[i].capabilities.graphics or dev.queues[i].capabilities.compute))
-        {
-            break i;
-        }
+        if (dev.queues[i].capabilities.graphics or dev.queues[i].capabilities.compute) break i;
     } else unreachable;
 
     var fence = try ngl.Fence.init(gpa, dev, .{});

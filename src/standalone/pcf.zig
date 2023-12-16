@@ -1632,13 +1632,13 @@ const Pipeline = struct {
 };
 
 const Queue = struct {
-    graphics: usize,
+    graphics: ngl.Queue.Index,
     pools: [frame_n]ngl.CommandPool,
     buffers: [frame_n]ngl.CommandBuffer,
     semaphores: [frame_n * 2]ngl.Semaphore,
     fences: [frame_n]ngl.Fence, // Signaled
     non_unified: ?struct {
-        present: usize, // Same as `Platform.queue_index`
+        present: ngl.Queue.Index, // Same as `Platform.queue_index`
         pools: [frame_n]ngl.CommandPool,
         buffers: [frame_n]ngl.CommandBuffer,
         semaphores: [frame_n]ngl.Semaphore,
@@ -1650,12 +1650,12 @@ const Queue = struct {
 
         const graph = blk: {
             const pres_queue = &dev.queues[plat.queue_index];
-            if (pres_queue.capabilities.graphics and pres_queue.capabilities.transfer)
+            if (pres_queue.capabilities.graphics)
                 break :blk plat.queue_index;
-            for (dev.queues[0..dev.queue_n], 0..) |q, i| {
-                if (q.capabilities.graphics and q.capabilities.transfer)
-                    break :blk i;
-            } else unreachable;
+            for (dev.queues[0..dev.queue_n], 0..) |q, i|
+                if (q.capabilities.graphics)
+                    break :blk @as(ngl.Queue.Index, @intCast(i));
+            unreachable;
         };
 
         const non_unified: @TypeOf((try init()).non_unified) = blk: {

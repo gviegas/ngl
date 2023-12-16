@@ -910,14 +910,14 @@ const Data = struct {
     },
 
     submit: struct {
-        queue_index: usize,
+        queue_index: ngl.Queue.Index,
         pools: [frame_n]ngl.CommandPool,
         buffers: [frame_n]ngl.CommandBuffer,
         // Signaled
         fences: [frame_n]ngl.Fence,
         semaphores: [frame_n * 2]ngl.Semaphore,
 
-        fn init(self: *@This(), device: *ngl.Device, queue_index: usize) ngl.Error!void {
+        fn init(self: *@This(), device: *ngl.Device, queue_index: ngl.Queue.Index) ngl.Error!void {
             self.queue_index = queue_index;
             var pool_i: usize = 0;
             errdefer for (self.pools[0..pool_i]) |*pool| pool.deinit(gpa, device);
@@ -957,7 +957,7 @@ const Data = struct {
     },
 
     present: struct {
-        queue_index: usize,
+        queue_index: ngl.Queue.Index,
         need_queue_transfer: bool,
         // The following are invalid if `!need_queue_transfer`
         pools: [frame_n]ngl.CommandPool,
@@ -967,7 +967,7 @@ const Data = struct {
         fn init(
             self: *@This(),
             device: *ngl.Device,
-            queue_index: usize,
+            queue_index: ngl.Queue.Index,
             need_queue_transfer: bool,
         ) ngl.Error!void {
             self.queue_index = queue_index;
@@ -1007,17 +1007,17 @@ const Data = struct {
 
     fn init(
         device: *ngl.Device,
-        present_queue_index: usize,
+        present_queue_index: ngl.Queue.Index,
         swap_chain_format: ngl.Format,
         swap_chain_views: []ngl.ImageView,
     ) ngl.Error!@This() {
         const present_queue = &device.queues[present_queue_index];
         const submit_queue_index = blk: {
-            if (present_queue.capabilities.graphics and present_queue.capabilities.transfer)
+            if (present_queue.capabilities.graphics)
                 break :blk present_queue_index;
             for (device.queues[0..device.queue_n], 0..) |*queue, i|
-                if (queue.capabilities.graphics and queue.capabilities.transfer)
-                    break :blk i;
+                if (queue.capabilities.graphics)
+                    break :blk @as(ngl.Queue.Index, @intCast(i));
             unreachable;
         };
         var self: @This() = undefined;

@@ -16,7 +16,7 @@ pub const Platform = struct {
     swap_chain: ngl.SwapChain,
     images: []ngl.Image,
     image_views: []ngl.ImageView,
-    queue_index: usize,
+    queue_index: ngl.Queue.Index,
     mutex: std.Thread.Mutex = .{},
 
     pub const width = 960;
@@ -115,7 +115,7 @@ pub const Platform = struct {
                 ctx.device_desc,
                 queue_desc orelse continue,
             ) catch continue;
-            if (is) break i;
+            if (is) break @as(ngl.Queue.Index, @intCast(i));
         } else return error.SkipZigTest;
 
         return .{

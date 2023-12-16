@@ -208,7 +208,7 @@ fn do() !void {
     while (timer.read() < std.time.ns_per_min) {
         const input = plat.poll();
         if (input.done) break;
-        if (auto and timer_2.read() > std.time.ns_per_ms * 1500) {
+        if (auto and timer_2.read() > std.time.ns_per_ms * 1200) {
             material = (material + 1) % materials.len;
             timer_2.reset();
         }
@@ -1178,7 +1178,7 @@ const Pipeline = struct {
 };
 
 const Queue = struct {
-    graphics: usize,
+    graphics: ngl.Queue.Index,
     pools: [frame_n]ngl.CommandPool,
     buffers: [frame_n]ngl.CommandBuffer,
     // Signaled
@@ -1194,17 +1194,12 @@ const Queue = struct {
         const dev = &context().device;
         const plat = platform() catch unreachable;
 
-        const queue_i = blk: {
-            if (dev.queues[plat.queue_index].capabilities.graphics and
-                dev.queues[plat.queue_index].capabilities.transfer)
-            {
-                break :blk plat.queue_index;
-            }
-            for (dev.queues[0..dev.queue_n], 0..) |queue, i| {
-                if (queue.capabilities.graphics and queue.capabilities.transfer)
-                    break :blk i;
-            } else unreachable;
-        };
+        const queue_i = if (dev.queues[plat.queue_index].capabilities.graphics)
+            plat.queue_index
+        else for (dev.queues[0..dev.queue_n], 0..) |queue, i| {
+            if (queue.capabilities.graphics)
+                break @as(ngl.Queue.Index, @intCast(i));
+        } else unreachable;
 
         var non_unified: @TypeOf((try init()).non_unified) = blk: {
             if (queue_i == plat.queue_index)

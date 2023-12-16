@@ -40,12 +40,12 @@ pub const Context = struct {
         };
     }
 
-    pub fn lockQueue(self: *Self, index: usize) void {
+    pub fn lockQueue(self: *Self, index: ngl.Queue.Index) void {
         std.debug.assert(index < self.device.queue_n);
         self.mutexes[index].lock();
     }
 
-    pub fn unlockQueue(self: *Self, index: usize) void {
+    pub fn unlockQueue(self: *Self, index: ngl.Queue.Index) void {
         std.debug.assert(index < self.device.queue_n);
         self.mutexes[index].unlock();
     }

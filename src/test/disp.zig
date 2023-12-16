@@ -9,7 +9,7 @@ test "compute dispatch" {
     const ctx = context();
     const dev = &ctx.device;
     const queue_i = for (0..dev.queue_n) |i| {
-        if (dev.queues[i].capabilities.compute and dev.queues[i].capabilities.transfer) break i;
+        if (dev.queues[i].capabilities.compute) break i;
     } else unreachable;
 
     var fence = try ngl.Fence.init(gpa, dev, .{});
