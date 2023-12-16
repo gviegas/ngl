@@ -1012,14 +1012,10 @@ const Data = struct {
         swap_chain_views: []ngl.ImageView,
     ) ngl.Error!@This() {
         const present_queue = &device.queues[present_queue_index];
-        const submit_queue_index = blk: {
-            if (present_queue.capabilities.graphics)
-                break :blk present_queue_index;
-            for (device.queues[0..device.queue_n], 0..) |*queue, i|
-                if (queue.capabilities.graphics)
-                    break :blk @as(ngl.Queue.Index, @intCast(i));
-            unreachable;
-        };
+        const submit_queue_index = if (present_queue.capabilities.graphics)
+            present_queue_index
+        else
+            device.findQueue(.{ .graphics = true }, null) orelse return error.NotSupported;
         var self: @This() = undefined;
         try self.depth.init(device);
         errdefer self.depth.deinit(device);

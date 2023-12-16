@@ -1648,15 +1648,10 @@ const Queue = struct {
         const dev = &context().device;
         const plat = platform() catch unreachable;
 
-        const graph = blk: {
-            const pres_queue = &dev.queues[plat.queue_index];
-            if (pres_queue.capabilities.graphics)
-                break :blk plat.queue_index;
-            for (dev.queues[0..dev.queue_n], 0..) |q, i|
-                if (q.capabilities.graphics)
-                    break :blk @as(ngl.Queue.Index, @intCast(i));
-            unreachable;
-        };
+        const graph = if (dev.queues[plat.queue_index].capabilities.graphics)
+            plat.queue_index
+        else
+            dev.findQueue(.{ .graphics = true }, null) orelse return error.NotSupported;
 
         const non_unified: @TypeOf((try init()).non_unified) = blk: {
             if (graph == plat.queue_index)

@@ -104,6 +104,58 @@ pub const Device = struct {
         Impl.get().deinitDevice(allocator, self.impl);
         self.* = undefined;
     }
+
+    /// It'll select the first queue whose capabilities are a superset
+    /// of what is being requested.
+    pub fn findQueue(
+        self: Self,
+        capabilities: Queue.Capabilities,
+        priority: ?Queue.Priority,
+    ) ?Queue.Index {
+        return self.findQueueOp(.mask, capabilities, priority);
+    }
+
+    /// It'll select the first queue whose capabilities are identical
+    /// to what is being requested.
+    pub fn findQueueExact(
+        self: Self,
+        capabilities: Queue.Capabilities,
+        priority: ?Queue.Priority,
+    ) ?Queue.Index {
+        return self.findQueueOp(.cmp, capabilities, priority);
+    }
+
+    fn findQueueOp(
+        self: Self,
+        comptime op: enum { mask, cmp },
+        capabilities: Queue.Capabilities,
+        priority: ?Queue.Priority,
+    ) ?Queue.Index {
+        const U = @typeInfo(Queue.Capabilities).Struct.backing_integer.?;
+        var idx: ?Queue.Index = null;
+        for (self.queues[0..self.queue_n], 0..) |q, i| {
+            const j: Queue.Index = @intCast(i);
+
+            const mask: U = @bitCast(q.capabilities);
+            const bits: U = @bitCast(capabilities);
+
+            switch (op) {
+                .mask => if (bits & mask != bits) continue,
+                .cmp => if (bits != mask) continue,
+            }
+            if (priority) |x| {
+                if (x == q.priority) {
+                    idx = j;
+                    break;
+                }
+            } else {
+                idx = j;
+                if (q.priority != .low)
+                    break;
+            }
+        }
+        return idx;
+    }
 };
 
 pub const Queue = struct {

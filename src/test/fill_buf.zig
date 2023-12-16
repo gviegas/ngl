@@ -8,11 +8,8 @@ const context = @import("test.zig").context;
 test "fillBuffer command" {
     const ctx = context();
     const dev = &ctx.device;
-    const queue_i = for (0..dev.queue_n) |i| {
-        // TODO: Vulkan 1.0 doesn't allow this command in transfer-only queues
-        //if (dev.queues[i].capabilities.transfer) break i;
-        if (dev.queues[i].capabilities.graphics or dev.queues[i].capabilities.compute) break i;
-    } else unreachable;
+    // TODO: Vulkan 1.0 doesn't allow this command in transfer-only queues
+    const queue_i = dev.findQueue(.{ .compute = true }, null) orelse unreachable;
 
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);

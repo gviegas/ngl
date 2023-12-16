@@ -1196,10 +1196,8 @@ const Queue = struct {
 
         const queue_i = if (dev.queues[plat.queue_index].capabilities.graphics)
             plat.queue_index
-        else for (dev.queues[0..dev.queue_n], 0..) |queue, i| {
-            if (queue.capabilities.graphics)
-                break @as(ngl.Queue.Index, @intCast(i));
-        } else unreachable;
+        else
+            dev.findQueue(.{ .graphics = true }, null) orelse return error.NotSupported;
 
         var non_unified: @TypeOf((try init()).non_unified) = blk: {
             if (queue_i == plat.queue_index)

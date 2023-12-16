@@ -8,9 +8,7 @@ const context = @import("test.zig").context;
 test "shader specialization" {
     const ctx = context();
     const dev = &ctx.device;
-    const queue_i = for (0..dev.queue_n) |i| {
-        if (dev.queues[i].capabilities.compute) break i;
-    } else unreachable;
+    const queue_i = dev.findQueue(.{ .compute = true }, null) orelse unreachable;
 
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);

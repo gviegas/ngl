@@ -277,8 +277,8 @@ test "Queue.wait" {
     const dev = &ctx.device;
 
     for (dev.queues[0..dev.queue_n], 0..) |*queue, i| {
-        ctx.lockQueue(i);
-        defer ctx.unlockQueue(i);
+        ctx.lockQueue(@intCast(i));
+        defer ctx.unlockQueue(@intCast(i));
         try queue.wait(dev);
     }
 }
