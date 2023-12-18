@@ -8,6 +8,7 @@ pub fn build(b: *std.Build) void {
     addStandalone(b, "ads.zig", b.step("ads", "Run basic shading standalone"));
     addStandalone(b, "pcf.zig", b.step("pcf", "Run basic shadows standalone"));
     addStandalone(b, "pbr.zig", b.step("pbr", "Run shading standalone"));
+    addStandalone(b, "srgb.zig", b.step("srgb", "Run sRGB standalone"));
 }
 
 fn addMainTests(b: *std.Build) void {
