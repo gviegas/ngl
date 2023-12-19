@@ -233,3 +233,358 @@ test "Device.wait" {
         thrd_2.join();
     }
 }
+
+test "Device.findQueue/findQueueExact" {
+    var dev: ngl.Device = undefined;
+
+    const g = ngl.Queue.Capabilities{ .graphics = true };
+    const c = ngl.Queue.Capabilities{ .compute = true };
+    const t = ngl.Queue.Capabilities{ .transfer = true };
+    const gc = ngl.Queue.Capabilities{ .graphics = true, .compute = true };
+    const gt = ngl.Queue.Capabilities{ .graphics = true, .transfer = true };
+    const ct = ngl.Queue.Capabilities{ .compute = true, .transfer = true };
+    const gct = ngl.Queue.Capabilities{ .graphics = true, .compute = true, .transfer = true };
+
+    const Case = struct { ngl.Queue.Capabilities, ?ngl.Queue.Priority, ?ngl.Queue.Index };
+
+    dev.queue_n = 1;
+    dev.queues[0] = .{
+        .impl = undefined,
+        .capabilities = gct,
+        .priority = .default,
+    };
+
+    for ([_]Case{
+        .{ g, null, 0 },
+        .{ g, .default, 0 },
+        .{ g, .low, null },
+        .{ g, .high, null },
+        .{ c, null, 0 },
+        .{ c, .default, 0 },
+        .{ c, .low, null },
+        .{ c, .high, null },
+        .{ t, null, 0 },
+        .{ t, .default, 0 },
+        .{ t, .low, null },
+        .{ t, .high, null },
+        .{ gc, null, 0 },
+        .{ gc, .default, 0 },
+        .{ gc, .low, null },
+        .{ gc, .high, null },
+        .{ gt, null, 0 },
+        .{ gt, .default, 0 },
+        .{ gt, .low, null },
+        .{ gt, .high, null },
+        .{ ct, null, 0 },
+        .{ ct, .default, 0 },
+        .{ ct, .low, null },
+        .{ ct, .high, null },
+        .{ gct, null, 0 },
+        .{ gct, .default, 0 },
+        .{ gct, .low, null },
+        .{ gct, .high, null },
+    }) |case|
+        try testing.expectEqual(dev.findQueue(case.@"0", case.@"1"), case.@"2");
+
+    for ([_]Case{
+        .{ g, null, null },
+        .{ g, .default, null },
+        .{ g, .low, null },
+        .{ g, .high, null },
+        .{ c, null, null },
+        .{ c, .default, null },
+        .{ c, .low, null },
+        .{ c, .high, null },
+        .{ t, null, null },
+        .{ t, .default, null },
+        .{ t, .low, null },
+        .{ t, .high, null },
+        .{ gc, null, null },
+        .{ gc, .default, null },
+        .{ gc, .low, null },
+        .{ gc, .high, null },
+        .{ gt, null, null },
+        .{ gt, .default, null },
+        .{ gt, .low, null },
+        .{ gt, .high, null },
+        .{ ct, null, null },
+        .{ ct, .default, null },
+        .{ ct, .low, null },
+        .{ ct, .high, null },
+        .{ gct, null, 0 },
+        .{ gct, .default, 0 },
+        .{ gct, .low, null },
+        .{ gct, .high, null },
+    }) |case|
+        try testing.expectEqual(dev.findQueueExact(case.@"0", case.@"1"), case.@"2");
+
+    dev.queue_n = 1;
+    dev.queues[0] = .{
+        .impl = undefined,
+        .capabilities = ct,
+        .priority = .default,
+    };
+
+    for ([_]Case{
+        .{ g, null, null },
+        .{ g, .default, null },
+        .{ g, .low, null },
+        .{ g, .high, null },
+        .{ c, null, 0 },
+        .{ c, .default, 0 },
+        .{ c, .low, null },
+        .{ c, .high, null },
+        .{ t, null, 0 },
+        .{ t, .default, 0 },
+        .{ t, .low, null },
+        .{ t, .high, null },
+        .{ gc, null, null },
+        .{ gc, .default, null },
+        .{ gc, .low, null },
+        .{ gc, .high, null },
+        .{ gt, null, null },
+        .{ gt, .default, null },
+        .{ gt, .low, null },
+        .{ gt, .high, null },
+        .{ ct, null, 0 },
+        .{ ct, .default, 0 },
+        .{ ct, .low, null },
+        .{ ct, .high, null },
+        .{ gct, null, null },
+        .{ gct, .default, null },
+        .{ gct, .low, null },
+        .{ gct, .high, null },
+    }) |case|
+        try testing.expectEqual(dev.findQueue(case.@"0", case.@"1"), case.@"2");
+
+    for ([_]Case{
+        .{ g, null, null },
+        .{ g, .default, null },
+        .{ g, .low, null },
+        .{ g, .high, null },
+        .{ c, null, null },
+        .{ c, .default, null },
+        .{ c, .low, null },
+        .{ c, .high, null },
+        .{ t, null, null },
+        .{ t, .default, null },
+        .{ t, .low, null },
+        .{ t, .high, null },
+        .{ gc, null, null },
+        .{ gc, .default, null },
+        .{ gc, .low, null },
+        .{ gc, .high, null },
+        .{ gt, null, null },
+        .{ gt, .default, null },
+        .{ gt, .low, null },
+        .{ gt, .high, null },
+        .{ ct, null, 0 },
+        .{ ct, .default, 0 },
+        .{ ct, .low, null },
+        .{ ct, .high, null },
+        .{ gct, null, null },
+        .{ gct, .default, null },
+        .{ gct, .low, null },
+        .{ gct, .high, null },
+    }) |case|
+        try testing.expectEqual(dev.findQueueExact(case.@"0", case.@"1"), case.@"2");
+
+    dev.queue_n = 1;
+    dev.queues[0] = .{
+        .impl = undefined,
+        .capabilities = t,
+        .priority = .default,
+    };
+
+    for ([_]Case{
+        .{ g, null, null },
+        .{ g, .default, null },
+        .{ g, .low, null },
+        .{ g, .high, null },
+        .{ c, null, null },
+        .{ c, .default, null },
+        .{ c, .low, null },
+        .{ c, .high, null },
+        .{ t, null, 0 },
+        .{ t, .default, 0 },
+        .{ t, .low, null },
+        .{ t, .high, null },
+        .{ gc, null, null },
+        .{ gc, .default, null },
+        .{ gc, .low, null },
+        .{ gc, .high, null },
+        .{ gt, null, null },
+        .{ gt, .default, null },
+        .{ gt, .low, null },
+        .{ gt, .high, null },
+        .{ ct, null, null },
+        .{ ct, .default, null },
+        .{ ct, .low, null },
+        .{ ct, .high, null },
+        .{ gct, null, null },
+        .{ gct, .default, null },
+        .{ gct, .low, null },
+        .{ gct, .high, null },
+    }) |case| {
+        try testing.expectEqual(dev.findQueue(case.@"0", case.@"1"), case.@"2");
+        try testing.expectEqual(dev.findQueueExact(case.@"0", case.@"1"), case.@"2");
+    }
+
+    // Check that default and high priorities are treated equally
+    // when none is specified
+
+    dev.queue_n = 2;
+    dev.queues[0] = .{
+        .impl = undefined,
+        .capabilities = ct,
+        .priority = .default,
+    };
+    dev.queues[1] = .{
+        .impl = undefined,
+        .capabilities = t,
+        .priority = .high,
+    };
+
+    for ([_]Case{
+        .{ g, null, null },
+        .{ g, .default, null },
+        .{ g, .low, null },
+        .{ g, .high, null },
+        .{ c, null, 0 },
+        .{ c, .default, 0 },
+        .{ c, .low, null },
+        .{ c, .high, null },
+        .{ t, null, 0 },
+        .{ t, .default, 0 },
+        .{ t, .low, null },
+        .{ t, .high, 1 },
+        .{ gc, null, null },
+        .{ gc, .default, null },
+        .{ gc, .low, null },
+        .{ gc, .high, null },
+        .{ gt, null, null },
+        .{ gt, .default, null },
+        .{ gt, .low, null },
+        .{ gt, .high, null },
+        .{ ct, null, 0 },
+        .{ ct, .default, 0 },
+        .{ ct, .low, null },
+        .{ ct, .high, null },
+        .{ gct, null, null },
+        .{ gct, .default, null },
+        .{ gct, .low, null },
+        .{ gct, .high, null },
+    }) |case|
+        try testing.expectEqual(dev.findQueue(case.@"0", case.@"1"), case.@"2");
+
+    for ([_]Case{
+        .{ g, null, null },
+        .{ g, .default, null },
+        .{ g, .low, null },
+        .{ g, .high, null },
+        .{ c, null, null },
+        .{ c, .default, null },
+        .{ c, .low, null },
+        .{ c, .high, null },
+        .{ t, null, 1 },
+        .{ t, .default, null },
+        .{ t, .low, null },
+        .{ t, .high, 1 },
+        .{ gc, null, null },
+        .{ gc, .default, null },
+        .{ gc, .low, null },
+        .{ gc, .high, null },
+        .{ gt, null, null },
+        .{ gt, .default, null },
+        .{ gt, .low, null },
+        .{ gt, .high, null },
+        .{ ct, null, 0 },
+        .{ ct, .default, 0 },
+        .{ ct, .low, null },
+        .{ ct, .high, null },
+        .{ gct, null, null },
+        .{ gct, .default, null },
+        .{ gct, .low, null },
+        .{ gct, .high, null },
+    }) |case|
+        try testing.expectEqual(dev.findQueueExact(case.@"0", case.@"1"), case.@"2");
+
+    // Check that default or high priority is selected in lieu of
+    // low priority when none is specified
+
+    dev.queue_n = 2;
+    dev.queues[0] = .{
+        .impl = undefined,
+        .capabilities = gt,
+        .priority = .low,
+    };
+    dev.queues[1] = .{
+        .impl = undefined,
+        .capabilities = gt,
+        .priority = .default,
+    };
+
+    for ([_]Case{
+        .{ g, null, 1 },
+        .{ g, .default, 1 },
+        .{ g, .low, 0 },
+        .{ g, .high, null },
+        .{ c, null, null },
+        .{ c, .default, null },
+        .{ c, .low, null },
+        .{ c, .high, null },
+        .{ t, null, 1 },
+        .{ t, .default, 1 },
+        .{ t, .low, 0 },
+        .{ t, .high, null },
+        .{ gc, null, null },
+        .{ gc, .default, null },
+        .{ gc, .low, null },
+        .{ gc, .high, null },
+        .{ gt, null, 1 },
+        .{ gt, .default, 1 },
+        .{ gt, .low, 0 },
+        .{ gt, .high, null },
+        .{ ct, null, null },
+        .{ ct, .default, null },
+        .{ ct, .low, null },
+        .{ ct, .high, null },
+        .{ gct, null, null },
+        .{ gct, .default, null },
+        .{ gct, .low, null },
+        .{ gct, .high, null },
+    }) |case|
+        try testing.expectEqual(dev.findQueue(case.@"0", case.@"1"), case.@"2");
+
+    for ([_]Case{
+        .{ g, null, null },
+        .{ g, .default, null },
+        .{ g, .low, null },
+        .{ g, .high, null },
+        .{ c, null, null },
+        .{ c, .default, null },
+        .{ c, .low, null },
+        .{ c, .high, null },
+        .{ t, null, null },
+        .{ t, .default, null },
+        .{ t, .low, null },
+        .{ t, .high, null },
+        .{ gc, null, null },
+        .{ gc, .default, null },
+        .{ gc, .low, null },
+        .{ gc, .high, null },
+        .{ gt, null, 1 },
+        .{ gt, .default, 1 },
+        .{ gt, .low, 0 },
+        .{ gt, .high, null },
+        .{ ct, null, null },
+        .{ ct, .default, null },
+        .{ ct, .low, null },
+        .{ ct, .high, null },
+        .{ gct, null, null },
+        .{ gct, .default, null },
+        .{ gct, .low, null },
+        .{ gct, .high, null },
+    }) |case|
+        try testing.expectEqual(dev.findQueueExact(case.@"0", case.@"1"), case.@"2");
+}
