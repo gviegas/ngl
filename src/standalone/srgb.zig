@@ -20,10 +20,27 @@ fn do() !void {
     const dev = &ctx.device;
     const plat = try platform();
 
-    var img_data = try idata.loadPng(gpa, image_path);
-    defer img_data.deinit(gpa);
+    const Dest = struct {
+        staging_buffer: ?StagingBuffer = null,
+        image_size: u64 = 0,
+
+        pub fn get(self: *@This(), size: u64) ![]u8 {
+            if (self.staging_buffer != null)
+                @panic("Dest.get called twice");
+            self.staging_buffer = try StagingBuffer.init(size +
+                (size + 255 & ~@as(u64, 255)) + @sizeOf(@TypeOf(VertexBuffer.vertices)));
+            self.image_size = size;
+            return self.staging_buffer.?.data;
+        }
+    };
+    var dest = Dest{};
+    defer if (dest.staging_buffer) |*x| x.deinit();
+
+    const img_data = try idata.loadPng(gpa, image_path, &dest);
     if (img_data.format != .rgba8_srgb)
         @panic("Unexpected image format from decoder");
+    if (img_data.width * img_data.height * 4 != dest.image_size)
+        @panic("Unexpected image size from decoder");
 
     const scale: [2]f32 = blk: {
         const iw: f32 = @floatFromInt(img_data.width);
@@ -52,17 +69,11 @@ fn do() !void {
     var vert_buf = try VertexBuffer.init();
     defer vert_buf.deinit();
 
+    var stg_buf = dest.staging_buffer orelse unreachable;
     const tex_copy_off = 0;
-    const tex_copy_size = img_data.width * img_data.height * 4;
+    const tex_copy_size = dest.image_size;
     const vert_copy_off = (tex_copy_size + 255) & ~@as(u64, 255);
     const vert_copy_size = @sizeOf(@TypeOf(VertexBuffer.vertices));
-    const stg_size = vert_copy_off + vert_copy_size;
-    var stg_buf = try StagingBuffer.init(stg_size);
-    defer stg_buf.deinit();
-    @memcpy(
-        stg_buf.data[tex_copy_off .. tex_copy_off + tex_copy_size],
-        img_data.data[0..tex_copy_size],
-    );
     @memcpy(
         stg_buf.data[vert_copy_off .. vert_copy_off + vert_copy_size],
         @as([*]const u8, @ptrCast(&VertexBuffer.vertices))[0..vert_copy_size],

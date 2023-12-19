@@ -208,10 +208,10 @@ pub const DataPng = struct {
             }
         }
 
-        fn decode(self: *Idat, gpa: std.mem.Allocator) !ngl.Format {
+        fn decode(self: *Idat, gpa: std.mem.Allocator, dest: anytype) !struct { ngl.Format, []u8 } {
             try self.decompress(gpa);
             try self.unfilter();
-            return self.convert(gpa);
+            return self.convert(dest);
         }
 
         // Called by `decode`
@@ -300,38 +300,36 @@ pub const DataPng = struct {
         // Called by `decode`
         // This is the final step
         // TODO: Currently this only handles rgb8/rgba8
-        fn convert(self: *Idat, gpa: std.mem.Allocator) !ngl.Format {
+        fn convert(self: *Idat, dest: anytype) !struct { ngl.Format, []u8 } {
             if (self.channels == 3 and self.bits_per_pixel == 24) {
                 const w = self.scanline_size / 3;
                 const h = self.image_height;
-                var data = try gpa.alloc(u8, w * h * 4);
+                var data = try dest.get(w * h * 4);
                 for (0..h) |i| {
-                    var source = self.data.items[w * 3 * i + i + 1 ..];
-                    var dest = data[w * 4 * i ..];
+                    var from = self.data.items[w * 3 * i + i + 1 ..];
+                    var to = data[w * 4 * i ..];
                     for (0..w) |j| {
-                        @memcpy(dest[j * 4 .. j * 4 + 3], source[j * 3 .. j * 3 + 3]);
-                        dest[j * 4 + 3] = 255;
+                        @memcpy(to[j * 4 .. j * 4 + 3], from[j * 3 .. j * 3 + 3]);
+                        to[j * 4 + 3] = 255;
                     }
                 }
-                self.data.deinit(gpa);
-                self.data = std.ArrayListUnmanaged(u8).fromOwnedSlice(data);
-                return .rgba8_srgb;
-            } else if (self.channels == 4 and self.bits_per_pixel == 32) {
+                return .{ .rgba8_srgb, data };
+            }
+
+            if (self.channels == 4 and self.bits_per_pixel == 32) {
                 const w = self.scanline_size / 4;
                 const h = self.image_height;
-                var data = try gpa.alloc(u8, w * h * 4);
+                var data = try dest.get(w * h * 4);
                 for (0..h) |i| {
-                    var source = self.data.items[w * 4 * i + i + 1 ..];
-                    var dest = data[w * 4 * i ..];
-                    @memcpy(dest[0 .. w * 4], source[0 .. w * 4]);
+                    var from = self.data.items[w * 4 * i + i + 1 ..];
+                    var to = data[w * 4 * i ..];
+                    @memcpy(to[0 .. w * 4], from[0 .. w * 4]);
                 }
-                self.data.deinit(gpa);
-                self.data = std.ArrayListUnmanaged(u8).fromOwnedSlice(data);
-                return .rgba8_srgb;
-            } else {
-                // TODO
-                return error.ConversionNotImplementedPng;
+                return .{ .rgba8_srgb, data };
             }
+
+            // TODO
+            return error.ConversionNotImplementedPng;
         }
 
         fn deinit(self: *Idat, gpa: std.mem.Allocator) void {
@@ -340,7 +338,10 @@ pub const DataPng = struct {
         }
     };
 
-    pub fn load(self: *DataPng, gpa: std.mem.Allocator, reader: anytype) !void {
+    /// The `DataPng.data` field will contain whatever `dest.get` returns.
+    pub fn load(gpa: std.mem.Allocator, reader: anytype, dest: anytype) !DataPng {
+        var self: DataPng = undefined;
+
         var brd = std.io.bufferedReader(reader);
         var rd = brd.reader();
 
@@ -381,11 +382,11 @@ pub const DataPng = struct {
                 var idat = Idat.init(ihdr);
                 defer idat.deinit(gpa);
                 _ = try idat.readChunks(gpa, &buf, chk_len, rd);
-                const format = try idat.decode(gpa);
-                self.format = format;
-                self.data = try idat.data.toOwnedSlice(gpa);
+                const dec = try idat.decode(gpa, dest);
+                self.format = dec[0];
+                self.data = dec[1];
                 // We have all we need
-                return;
+                return self;
             }
 
             if (chk_type.eql(ChunkType.plte)) {
@@ -401,26 +402,21 @@ pub const DataPng = struct {
             // TODO: Fail if the chunk is required
             try rd.skipBytes(chk_len + 4, .{});
         }
-    }
 
-    pub fn deinit(self: *DataPng, gpa: std.mem.Allocator) void {
-        if (self.data.len > 0)
-            gpa.free(self.data);
-        self.* = undefined;
+        return error.BadPng;
     }
 };
 
-pub fn loadPng(gpa: std.mem.Allocator, path: []const u8) !DataPng {
+/// `dest` must implement the following function:
+///
+///     `pub fn get(self: @TypeOf(dest) size: u64) ![]u8`
+///
+/// to provide the destination for the decoded data.
+/// The `size` parameter will be computed as follows:
+///
+///     `DataPng.width` * `DataPng.height` * <`DataPng.format`'s texel size>
+pub fn loadPng(gpa: std.mem.Allocator, path: []const u8, dest: anytype) !DataPng {
     var file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
-
-    var data = DataPng{
-        .width = undefined,
-        .height = undefined,
-        .format = undefined,
-        .data = &.{},
-    };
-    try data.load(gpa, file.reader());
-
-    return data;
+    return DataPng.load(gpa, file.reader(), dest);
 }
