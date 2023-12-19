@@ -87,6 +87,16 @@ test "multiple Device instances" {
             break :blk n;
         });
 
+        for (dev.queues[0..dev.queue_n]) |q| {
+            const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
+            try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
+        }
+
+        for (dev.queues[0..dev.queue_n]) |q| {
+            if (q.capabilities.graphics or q.capabilities.compute)
+                try testing.expect(q.capabilities.transfer);
+        }
+
         for (dev.mem_types[0..dev.mem_type_n]) |m| {
             if (m.properties.host_visible and m.properties.host_coherent) break;
         } else try testing.expect(false);
@@ -121,6 +131,16 @@ test "aliasing Device instances" {
         }
         break :blk n;
     });
+
+    for (devs[0].queues[0..devs[0].queue_n]) |q| {
+        const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
+        try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
+    }
+
+    for (devs[0].queues[0..devs[0].queue_n]) |q| {
+        if (q.capabilities.graphics or q.capabilities.compute)
+            try testing.expect(q.capabilities.transfer);
+    }
 
     for (devs[0].mem_types[0..devs[0].mem_type_n]) |m| {
         if (m.properties.host_visible and m.properties.host_coherent) break;
