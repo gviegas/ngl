@@ -89,6 +89,36 @@ pub const DataPng = struct {
                 .big => {},
             }
         }
+
+        // Must be called after `toNative`
+        fn validate(self: Ihdr) !void {
+            if (self.width == 0 or self.height == 0)
+                return error.ZeroExtentPng;
+
+            switch (self.bit_depth) {
+                1, 2, 4, 8, 16 => {},
+                else => return error.InvalidBitDepthPng,
+            }
+
+            if (switch (self.color_type) {
+                0 => false,
+                2, 4, 6 => self.bit_depth < 8,
+                3 => self.bit_depth == 16,
+                else => return error.InvalidColorTypePng,
+            }) return error.InvalidBitDepthForColorTypePng;
+
+            if (self.compression_method != 0)
+                return error.InvalidCompressionMethodPng;
+
+            if (self.filter_method != 0)
+                return error.InvalidFilterMethodPng;
+
+            switch (self.interlace_method) {
+                0 => {},
+                1 => return error.InterlacingNotImplementedPng,
+                else => return error.InvalidInterlaceMethodPng,
+            }
+        }
     };
 
     const Idat = struct {
@@ -101,11 +131,15 @@ pub const DataPng = struct {
 
         fn init(ihdr: Ihdr) Idat {
             const chans: u3 = switch (ihdr.color_type) {
+                // Grayscale w/o alpha, palette index
                 0, 3 => 1,
+                // Truecolor w/o alpha
                 2 => 3,
+                // Grayscale w/ alpha
                 4 => 2,
+                // Truecolor w/ alpha
                 6 => 4,
-                else => unreachable,
+                else => unreachable, // Assume that `ihdr.validate` was called
             };
             const bipp = chans * ihdr.bit_depth;
             const bypp = @max(bipp / 8, 1);
@@ -181,6 +215,7 @@ pub const DataPng = struct {
         }
 
         // Called by `decode`
+        // Must happen before `unfilter`
         fn decompress(self: *Idat, gpa: std.mem.Allocator) !void {
             var input = std.io.fixedBufferStream(self.data.items);
             var dec = try std.compress.zlib.decompressStream(gpa, input.reader());
@@ -193,6 +228,7 @@ pub const DataPng = struct {
         }
 
         // Called by `decode`
+        // Must happen before `convert`
         fn unfilter(self: *Idat) !void {
             var ln = self.data.items.ptr;
             switch (ln[0]) {
@@ -262,6 +298,7 @@ pub const DataPng = struct {
         }
 
         // Called by `decode`
+        // This is the final step
         // TODO: Currently this only handles rgb8/rgba8
         fn convert(self: *Idat, gpa: std.mem.Allocator) !ngl.Format {
             if (self.channels == 3 and self.bits_per_pixel == 24) {
@@ -293,7 +330,7 @@ pub const DataPng = struct {
                 return .rgba8_srgb;
             } else {
                 // TODO
-                return error.PngConversionNotImplemented;
+                return error.ConversionNotImplementedPng;
             }
         }
 
@@ -330,6 +367,7 @@ pub const DataPng = struct {
         var ihdr: Ihdr = undefined;
         @memcpy(@as([*]u8, @ptrCast(&ihdr)), buf.items[4..]);
         ihdr.toNative();
+        try ihdr.validate();
         self.width = ihdr.width;
         self.height = ihdr.height;
 
@@ -352,7 +390,7 @@ pub const DataPng = struct {
 
             if (chk_type.eql(ChunkType.plte)) {
                 // TODO
-                return error.PngPlteNotImplemented;
+                return error.PlteNotImplementedPng;
             }
 
             if (chk_type.eql(ChunkType.iend)) {
