@@ -214,6 +214,8 @@ pub const DataPng = struct {
                 const prev_ln = ln;
                 ln += self.scanline_size;
                 switch (ln[0]) {
+                    // None
+                    0 => {},
                     // Sub
                     1 => {
                         for (self.bytes_per_pixel + 1..self.scanline_size) |i|
