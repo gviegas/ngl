@@ -33,6 +33,21 @@ test "Device.init/deinit" {
         break :blk n;
     });
 
+    // Queues must be capable of something
+    for (dev.queues[0..dev.queue_n]) |q| {
+        const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
+        try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
+    }
+
+    // Queues supporting graphics and/or compute
+    // must also support transfer operations
+    // (and must indicate such by setting the
+    // `transfer` capability - it's not implicit)
+    for (dev.queues[0..dev.queue_n]) |q| {
+        if (q.capabilities.graphics or q.capabilities.compute)
+            try testing.expect(q.capabilities.transfer);
+    }
+
     // Visible coherent memory is required
     for (dev.mem_types[0..dev.mem_type_n]) |m| {
         if (m.properties.host_visible and m.properties.host_coherent) break;
