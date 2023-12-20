@@ -66,6 +66,11 @@ fn getProc(name: [:0]const u8) Error!c.PFN_vkVoidFunction {
     return if (getInstanceProcAddr.?(null, name)) |fp| fp else Error.InitializationFailed;
 }
 
+/// The minimum version we can support.
+pub const supported_version = c.VK_API_VERSION_1_0;
+/// The version we prefer to use.
+pub const preferred_version = c.VK_API_VERSION_1_3;
+
 pub fn init() Error!Impl {
     const sym = "vkGetInstanceProcAddr";
 
@@ -220,12 +225,26 @@ pub const Instance = struct {
         // TODO
         if (desc.debugging) log.warn("Instance.Desc.debugging ignored", .{});
 
-        // TODO: App info
+        var ver: u32 = undefined;
+        if (vkEnumerateInstanceVersion(&ver) != c.VK_SUCCESS)
+            ver = c.VK_API_VERSION_1_0;
+
         const create_info = c.VkInstanceCreateInfo{
             .sType = c.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             .pNext = null,
             .flags = 0,
-            .pApplicationInfo = null,
+            .pApplicationInfo = &.{
+                .sType = c.VK_STRUCTURE_TYPE_APPLICATION_INFO,
+                .pNext = null,
+                .pApplicationName = null, // TODO
+                .applicationVersion = 0, // TODO
+                .pEngineName = null, // TODO
+                .engineVersion = 0, // TODO
+                .apiVersion = if (ver >= c.VK_API_VERSION_1_1)
+                    preferred_version
+                else
+                    c.VK_API_VERSION_1_0,
+            },
             .enabledLayerCount = 0,
             .ppEnabledLayerNames = null,
             .enabledExtensionCount = @intCast(ext_names.items.len),
