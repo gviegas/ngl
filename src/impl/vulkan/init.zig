@@ -637,6 +637,7 @@ pub const Device = struct {
     instance: *Instance,
     physical_device: c.VkPhysicalDevice,
     handle: c.VkDevice,
+    version: u32,
     queues: [ngl.Queue.max]Queue,
     queue_n: u8,
 
@@ -895,6 +896,17 @@ pub const Device = struct {
             if (@as(c.PFN_vkDestroyDevice, @ptrCast(x))) |f| f(dev, null);
         } else |_| {};
 
+        // If the instance version is 1.0, then we can't use anything
+        // newer than that for the device
+        // Otherwise, we need to abide by what was requested during
+        // instance creation
+        const ver = if (inst.version < c.VK_API_VERSION_1_1)
+            c.VK_API_VERSION_1_0
+        else if (desc.impl.?.version & ~@as(u32, 0xfff) > preferred_version)
+            preferred_version
+        else
+            desc.impl.?.version;
+
         const get: c.PFN_vkGetDeviceProcAddr = @ptrCast(try Instance.getProc(
             inst.handle,
             "vkGetDeviceProcAddr",
@@ -907,6 +919,7 @@ pub const Device = struct {
             .instance = inst,
             .physical_device = phys_dev,
             .handle = dev,
+            .version = ver,
             .queues = undefined,
             .queue_n = 0,
             .getDeviceProcAddr = get,
