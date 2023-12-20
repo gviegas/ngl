@@ -7,6 +7,13 @@ const platform = @import("plat.zig").platform;
 const cube = &@import("model.zig").cube;
 const util = @import("util.zig");
 
+pub const ngl_options = struct {
+    pub const app_name = "My App";
+    pub const app_version = 1;
+    pub const engine_name = "🐐";
+    pub const engine_version = 2;
+};
+
 pub fn main() !void {
     const ctx = context();
     const dev = &ctx.device;

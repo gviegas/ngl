@@ -236,10 +236,10 @@ pub const Instance = struct {
             .pApplicationInfo = &.{
                 .sType = c.VK_STRUCTURE_TYPE_APPLICATION_INFO,
                 .pNext = null,
-                .pApplicationName = null, // TODO
-                .applicationVersion = 0, // TODO
-                .pEngineName = null, // TODO
-                .engineVersion = 0, // TODO
+                .pApplicationName = ngl.options.app_name,
+                .applicationVersion = ngl.options.app_version orelse 0,
+                .pEngineName = ngl.options.engine_name,
+                .engineVersion = ngl.options.engine_version orelse 0,
                 .apiVersion = if (ver >= c.VK_API_VERSION_1_1)
                     preferred_version
                 else

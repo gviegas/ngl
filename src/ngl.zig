@@ -98,6 +98,32 @@ pub inline fn allFlagsSet(flags: anytype) bool {
     return @as(U, @bitCast(flags)) == ~@as(U, 0);
 }
 
+/// This can be overriden by defining `ngl_options` in the root file.
+pub const options = struct {
+    const root = @import("root");
+    const override = if (@hasDecl(root, "ngl_options")) root.ngl_options else struct {};
+
+    pub const app_name: ?[*:0]const u8 = if (@hasDecl(override, "app_name"))
+        override.app_name
+    else
+        null;
+
+    pub const app_version: ?u32 = if (@hasDecl(override, "app_version"))
+        override.app_version
+    else
+        null;
+
+    pub const engine_name: ?[*:0]const u8 = if (@hasDecl(override, "engine_name"))
+        override.engine_name
+    else
+        null;
+
+    pub const engine_version: ?u32 = if (@hasDecl(override, "engine_version"))
+        override.engine_version
+    else
+        null;
+};
+
 test {
     _ = @import("test/test.zig");
 }
