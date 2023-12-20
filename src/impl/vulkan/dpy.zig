@@ -85,7 +85,7 @@ pub const Surface = packed struct {
         const inst = Instance.cast(instance);
         const sf = cast(surface);
         const phys_dev: c.VkPhysicalDevice =
-            @ptrFromInt(device_desc.impl orelse return Error.InvalidArgument);
+            if (device_desc.impl) |x| @ptrFromInt(x.impl) else return Error.InvalidArgument;
         const queue_fam: u32 = @intCast(queue_desc.impl orelse return Error.InvalidArgument);
 
         var supported: c.VkBool32 = undefined;
@@ -107,7 +107,7 @@ pub const Surface = packed struct {
         const inst = Instance.cast(instance);
         const sf = cast(surface);
         const phys_dev: c.VkPhysicalDevice =
-            @ptrFromInt(device_desc.impl orelse return Error.InvalidArgument);
+            if (device_desc.impl) |x| @ptrFromInt(x.impl) else return Error.InvalidArgument;
 
         var modes: [6]c.VkPresentModeKHR = undefined;
         var mode_n: u32 = undefined;
@@ -161,7 +161,7 @@ pub const Surface = packed struct {
         const inst = Instance.cast(instance);
         const sf = cast(surface);
         const phys_dev: c.VkPhysicalDevice =
-            @ptrFromInt(device_desc.impl orelse return Error.InvalidArgument);
+            if (device_desc.impl) |x| @ptrFromInt(x.impl) else return Error.InvalidArgument;
 
         const n = 16;
         var stk_fmts: [n]c.VkSurfaceFormatKHR = undefined;
@@ -211,7 +211,7 @@ pub const Surface = packed struct {
         const inst = Instance.cast(instance);
         const sf = cast(surface);
         const phys_dev: c.VkPhysicalDevice =
-            @ptrFromInt(device_desc.impl orelse return Error.InvalidArgument);
+            if (device_desc.impl) |x| @ptrFromInt(x.impl) else return Error.InvalidArgument;
 
         // TODO: Use get_surface_capabilities2/surface_maintenance1
 

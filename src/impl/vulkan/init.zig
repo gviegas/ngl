@@ -395,7 +395,10 @@ pub const Instance = struct {
                     else
                         false,
                 },
-                .impl = @intFromPtr(dev),
+                .impl = .{
+                    .impl = @intFromPtr(dev),
+                    .version = prop.apiVersion,
+                },
             };
         }
 
@@ -754,7 +757,7 @@ pub const Device = struct {
     ) Error!Impl.Device {
         const inst = Instance.cast(instance);
         const phys_dev: c.VkPhysicalDevice = if (desc.impl) |x|
-            @ptrFromInt(x)
+            @ptrFromInt(x.impl)
         else {
             // TODO: Consider supporting this
             log.warn("Device.init requires a description produced by Instance.listDevices", .{});
@@ -2283,7 +2286,7 @@ fn getFeature(
 ) Error!void {
     const inst = Instance.cast(instance);
     const phys_dev: c.VkPhysicalDevice =
-        @ptrFromInt(device_desc.impl orelse return Error.InvalidArgument);
+        if (device_desc.impl) |x| @ptrFromInt(x.impl) else return Error.InvalidArgument;
 
     const convSpls = conv.fromVkSampleCountFlags;
 

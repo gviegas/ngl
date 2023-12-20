@@ -53,7 +53,10 @@ pub const Device = struct {
         type: Type,
         queues: [Queue.max]?Queue.Desc,
         feature_set: Feature.Set,
-        impl: ?u64 = null,
+        impl: ?struct {
+            impl: u64,
+            version: u32,
+        } = null,
     };
 
     const Self = @This();
