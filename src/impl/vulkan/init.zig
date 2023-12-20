@@ -229,6 +229,10 @@ pub const Instance = struct {
         var ver: u32 = undefined;
         if (vkEnumerateInstanceVersion(&ver) != c.VK_SUCCESS)
             ver = c.VK_API_VERSION_1_0;
+        // An 1.0 instance won't support devices with different versions,
+        // so don't bother continuing if we need anything higher than that
+        if (ver < c.VK_VERSION_1_1 and supported_version >= c.VK_VERSION_1_1)
+            return Error.NotSupported;
 
         const create_info = c.VkInstanceCreateInfo{
             .sType = c.VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -336,7 +340,8 @@ pub const Instance = struct {
 
         var dev_n: u32 = undefined;
         try check(inst.vkEnumeratePhysicalDevices(&dev_n, null));
-        if (dev_n == 0) return Error.NotSupported; // TODO: Need a better error for this
+        if (dev_n == 0)
+            return Error.NotSupported;
         const devs = try allocator.alloc(c.VkPhysicalDevice, dev_n);
         defer allocator.free(devs);
         try check(inst.vkEnumeratePhysicalDevices(&dev_n, devs.ptr));
@@ -347,9 +352,13 @@ pub const Instance = struct {
         var queue_props = std.ArrayList(c.VkQueueFamilyProperties).init(allocator);
         defer queue_props.deinit();
 
-        for (devs, descs) |dev, *desc| {
+        var desc_n: usize = 0;
+        for (devs) |dev| {
             var prop: c.VkPhysicalDeviceProperties = undefined;
             inst.vkGetPhysicalDeviceProperties(dev, &prop);
+
+            if (prop.apiVersion < supported_version)
+                continue;
 
             var n: u32 = undefined;
             inst.vkGetPhysicalDeviceQueueFamilyProperties(dev, &n, null);
@@ -377,7 +386,7 @@ pub const Instance = struct {
             if (@typeInfo(ngl.Feature).Union.fields.len > 2)
                 @compileError("Set new feature(s)");
 
-            desc.* = .{
+            descs[desc_n] = .{
                 .type = switch (prop.deviceType) {
                     c.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU => .discrete_gpu,
                     c.VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU => .integrated_gpu,
@@ -400,9 +409,10 @@ pub const Instance = struct {
                     .version = prop.apiVersion,
                 },
             };
+            desc_n += 1;
         }
 
-        return descs;
+        return if (desc_n > 0) descs[0..desc_n] else error.NotSupported;
     }
 
     fn deinit(_: *anyopaque, allocator: std.mem.Allocator, instance: Impl.Instance) void {
