@@ -127,6 +127,7 @@ fn deinit(_: *anyopaque, _: std.mem.Allocator) void {
 
 pub const Instance = struct {
     handle: c.VkInstance,
+    version: u32,
 
     // v1.0
     destroyInstance: c.PFN_vkDestroyInstance,
@@ -261,6 +262,7 @@ pub const Instance = struct {
 
         ptr.* = .{
             .handle = inst,
+            .version = ver,
             .destroyInstance = @ptrCast(try Instance.getProc(inst, "vkDestroyInstance")),
             .enumeratePhysicalDevices = @ptrCast(try Instance.getProc(inst, "vkEnumeratePhysicalDevices")),
             .getPhysicalDeviceProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceProperties")),
