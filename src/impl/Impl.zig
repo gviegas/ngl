@@ -860,8 +860,6 @@ const Self = @This();
 var lock = std.Thread.Mutex{};
 var impl: ?Self = null;
 var dapi: ?DriverApi = null;
-// TODO: This isn't needed currently
-var gpa: ?std.mem.Allocator = null;
 
 /// Name of GPU backends that an implementation may use.
 pub const DriverApi = enum {
@@ -885,6 +883,7 @@ pub inline fn getDriverApi() DriverApi {
 
 // TODO: Parameters
 pub fn init(allocator: std.mem.Allocator) Error!void {
+    _ = allocator;
     lock.lock();
     defer lock.unlock();
     if (impl) |_| return;
@@ -895,21 +894,19 @@ pub fn init(allocator: std.mem.Allocator) Error!void {
         },
         else => return Error.NotSupported,
     }
-    gpa = allocator;
 }
 
-pub fn deinit(self: *Self) void {
+pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
     lock.lock();
     defer lock.unlock();
     if (impl == null) {
         log.warn("Multiple calls to Impl.deinit", .{});
         return;
     }
-    self.vtable.deinit(self.ptr, gpa.?);
+    self.vtable.deinit(self.ptr, allocator);
     self.* = undefined;
     impl = null;
     dapi = null;
-    gpa = null;
 }
 
 pub fn initInstance(

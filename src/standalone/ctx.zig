@@ -55,7 +55,7 @@ pub const Context = struct {
         self.instance.deinit(allocator);
         self.* = undefined;
         // TODO: Shouldn't do this here
-        @import("../impl/Impl.zig").get().deinit();
+        @import("../impl/Impl.zig").get().deinit(allocator);
     }
 };
 
