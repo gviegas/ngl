@@ -859,8 +859,14 @@ const Self = @This();
 
 var lock = std.Thread.Mutex{};
 var impl: ?Self = null;
+var dapi: ?DriverApi = null;
 // TODO: This isn't needed currently
 var gpa: ?std.mem.Allocator = null;
+
+/// Name of GPU backends that an implementation may use.
+pub const DriverApi = enum {
+    vulkan,
+};
 
 /// It's only valid to call this after `init()` succeeds.
 /// `deinit()` invalidates the `Impl`. Don't store it.
@@ -876,10 +882,13 @@ pub fn init(allocator: std.mem.Allocator) Error!void {
     lock.lock();
     defer lock.unlock();
     if (impl) |_| return;
-    impl = switch (builtin.os.tag) {
-        .linux, .windows => try @import("vulkan/init.zig").init(),
+    switch (builtin.os.tag) {
+        .linux, .windows => {
+            impl = try @import("vulkan/init.zig").init();
+            dapi = .vulkan;
+        },
         else => return Error.NotSupported,
-    };
+    }
     gpa = allocator;
 }
 
@@ -893,6 +902,7 @@ pub fn deinit(self: *Self) void {
     self.vtable.deinit(self.ptr, gpa.?);
     self.* = undefined;
     impl = null;
+    dapi = null;
     gpa = null;
 }
 
