@@ -140,6 +140,8 @@ pub const Instance = struct {
     getPhysicalDeviceFeatures: c.PFN_vkGetPhysicalDeviceFeatures,
     createDevice: c.PFN_vkCreateDevice,
     enumerateDeviceExtensionProperties: c.PFN_vkEnumerateDeviceExtensionProperties,
+    // v1.1
+    getPhysicalDeviceProperties2: c.PFN_vkGetPhysicalDeviceProperties2,
     // VK_KHR_surface
     destroySurface: c.PFN_vkDestroySurfaceKHR,
     getPhysicalDeviceSurfaceSupport: c.PFN_vkGetPhysicalDeviceSurfaceSupportKHR,
@@ -277,6 +279,11 @@ pub const Instance = struct {
             .getPhysicalDeviceFeatures = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceFeatures")),
             .createDevice = @ptrCast(try Instance.getProc(inst, "vkCreateDevice")),
             .enumerateDeviceExtensionProperties = @ptrCast(try Instance.getProc(inst, "vkEnumerateDeviceExtensionProperties")),
+
+            .getPhysicalDeviceProperties2 = if (ver >= c.VK_API_VERSION_1_1)
+                @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceProperties2"))
+            else
+                null,
 
             .destroySurface = if (desc.presentation)
                 @ptrCast(try Instance.getProc(inst, "vkDestroySurfaceKHR"))
@@ -577,6 +584,14 @@ pub const Instance = struct {
             property_count,
             properties,
         );
+    }
+
+    pub inline fn vkGetPhysicalDeviceProperties2(
+        self: *Instance,
+        device: c.VkPhysicalDevice,
+        properties: *c.VkPhysicalDeviceProperties2,
+    ) void {
+        self.getPhysicalDeviceProperties2.?(device, properties);
     }
 
     pub inline fn vkDestroySurfaceKHR(
@@ -2340,11 +2355,42 @@ fn getFeature(
 
     switch (feature.*) {
         .core => |*feat| {
-            const l = blk: {
+            var l: c.VkPhysicalDeviceLimits = undefined;
+            var mem_max_size: u64 = 1073741824;
+            var buf_max_size: u64 = 1073741824;
+            var fb_int_spl_cnts = ngl.SampleCount.Flags{ .@"1" = true };
+            if (inst.version < c.VK_API_VERSION_1_1) {
                 var props: c.VkPhysicalDeviceProperties = undefined;
                 inst.vkGetPhysicalDeviceProperties(phys_dev, &props);
-                break :blk props.limits;
-            };
+                l = props.limits;
+            } else {
+                // v1.3
+                var m4 = c.VkPhysicalDeviceMaintenance4Properties{
+                    .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES,
+                    .pNext = null,
+                };
+                // v1.2
+                var @"1.2" = c.VkPhysicalDeviceVulkan12Properties{
+                    .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES,
+                    .pNext = if (inst.version >= c.VK_API_VERSION_1_3) &m4 else null,
+                };
+                // v1.1
+                var m3 = c.VkPhysicalDeviceMaintenance3Properties{
+                    .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,
+                    .pNext = if (inst.version >= c.VK_API_VERSION_1_2) &@"1.2" else null,
+                };
+                var props = c.VkPhysicalDeviceProperties2{
+                    .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+                    .pNext = &m3,
+                };
+                inst.vkGetPhysicalDeviceProperties2(phys_dev, &props);
+                l = props.properties.limits;
+                mem_max_size = m3.maxMemoryAllocationSize;
+                if (inst.version >= c.VK_API_VERSION_1_2)
+                    fb_int_spl_cnts = convSpls(@"1.2".framebufferIntegerColorSampleCounts);
+                if (inst.version >= c.VK_API_VERSION_1_3)
+                    buf_max_size = m4.maxBufferSize;
+            }
             const f = blk: {
                 var feats: c.VkPhysicalDeviceFeatures = undefined;
                 inst.vkGetPhysicalDeviceFeatures(phys_dev, &feats);
@@ -2353,8 +2399,7 @@ fn getFeature(
             feat.* = .{
                 .memory = .{
                     .max_count = l.maxMemoryAllocationCount,
-                    // TODO: Requires v1.1
-                    //.max_size = 1073741824,
+                    .max_size = mem_max_size,
                     .min_map_alignment = l.minMemoryMapAlignment,
                 },
                 .sampler = .{
@@ -2377,8 +2422,7 @@ fn getFeature(
                     .cube_array = f.imageCubeArray == c.VK_TRUE,
                 },
                 .buffer = .{
-                    // TODO: Requires v1.3
-                    //.max_size = 1073741824,
+                    .max_size = buf_max_size,
                     .max_texel_elements = l.maxTexelBufferElements,
                     .min_texel_offset_alignment = l.minTexelBufferOffsetAlignment,
                 },
@@ -2414,8 +2458,7 @@ fn getFeature(
                     .max_height = l.maxFramebufferHeight,
                     .max_layers = l.maxFramebufferLayers,
                     .color_sample_counts = convSpls(l.framebufferColorSampleCounts),
-                    // TODO: Requires v1.2
-                    //.integer_sample_counts = .{ .@"1" = true },
+                    .integer_sample_counts = fb_int_spl_cnts,
                     .depth_sample_counts = convSpls(l.framebufferDepthSampleCounts),
                     .stencil_sample_counts = convSpls(l.framebufferStencilSampleCounts),
                     .no_attachment_sample_counts = convSpls(l.framebufferNoAttachmentsSampleCounts),
