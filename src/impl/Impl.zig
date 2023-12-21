@@ -875,6 +875,12 @@ pub inline fn get() *Self {
     return &impl.?;
 }
 
+/// Same restrictions as `get`.
+pub inline fn getDriverApi() DriverApi {
+    std.debug.assert(dapi != null);
+    return dapi.?;
+}
+
 // TODO: Debug-check inputs/outputs of these functions
 
 // TODO: Parameters

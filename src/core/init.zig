@@ -33,6 +33,13 @@ pub const Instance = struct {
         Impl.get().deinitInstance(allocator, self.impl);
         self.* = undefined;
     }
+
+    /// One can use this to find out which type of shader code
+    /// the implementation expects.
+    pub fn getDriverApi(self: Self) Impl.DriverApi {
+        _ = self;
+        return Impl.getDriverApi();
+    }
 };
 
 pub const Device = struct {

@@ -32,3 +32,14 @@ test "Instance.listDevices" {
             );
     }
 }
+
+test "Instance.getDriverApi" {
+    var inst = try ngl.Instance.init(gpa, .{});
+    defer inst.deinit(gpa);
+
+    const dapi = inst.getDriverApi();
+    try testing.expectEqual(dapi, inst.getDriverApi());
+
+    if (@import("test.zig").writer) |writer|
+        writer.print("{}\n", .{dapi}) catch {};
+}
