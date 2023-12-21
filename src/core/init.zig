@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const ngl = @import("../ngl.zig");
+const DriverApi = ngl.DriverApi;
 const CommandBuffer = ngl.CommandBuffer;
 const PipelineStage = ngl.PipelineStage;
 const Fence = ngl.Fence;
@@ -36,7 +37,7 @@ pub const Instance = struct {
 
     /// One can use this to find out which type of shader code
     /// the implementation expects.
-    pub fn getDriverApi(self: Self) Impl.DriverApi {
+    pub fn getDriverApi(self: Self) DriverApi {
         _ = self;
         return Impl.getDriverApi();
     }

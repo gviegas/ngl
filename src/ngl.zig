@@ -3,6 +3,7 @@ const std = @import("std");
 const Impl = @import("impl/Impl.zig");
 
 pub const Instance = @import("core/init.zig").Instance;
+pub const DriverApi = Impl.DriverApi;
 pub const Device = @import("core/init.zig").Device;
 pub const Queue = @import("core/init.zig").Queue;
 pub const Memory = @import("core/init.zig").Memory;
