@@ -365,7 +365,7 @@ pub const Instance = struct {
             try queue_props.resize(n);
             inst.vkGetPhysicalDeviceQueueFamilyProperties(dev, &n, queue_props.items.ptr);
 
-            // TODO: Other queues
+            // Graphics/compute/transfer
             var main_queue: ngl.Queue.Desc = undefined;
             for (queue_props.items, 0..n) |qp, fam| {
                 const mask = c.VK_QUEUE_GRAPHICS_BIT | c.VK_QUEUE_COMPUTE_BIT;
@@ -381,7 +381,32 @@ pub const Instance = struct {
                     };
                     break;
                 }
-            } else return Error.InitializationFailed; // TODO: This should never happen
+            } else continue;
+
+            // Transfer-only
+            var xfer_queue: ?ngl.Queue.Desc = null;
+            for (queue_props.items, 0..n) |qp, fam| {
+                const mask =
+                    c.VK_QUEUE_GRAPHICS_BIT |
+                    c.VK_QUEUE_COMPUTE_BIT |
+                    c.VK_QUEUE_TRANSFER_BIT;
+                const gran = [3]u32{
+                    qp.minImageTransferGranularity.width,
+                    qp.minImageTransferGranularity.height,
+                    qp.minImageTransferGranularity.depth,
+                };
+                // TODO: Expose image transfer granularity in the API
+                if (qp.queueFlags & mask == c.VK_QUEUE_TRANSFER_BIT and
+                    std.mem.eql(u32, &gran, &.{ 1, 1, 1 }))
+                {
+                    xfer_queue = .{
+                        .capabilities = .{ .transfer = true },
+                        .priority = .default,
+                        .impl = fam,
+                    };
+                    break;
+                }
+            }
 
             if (@typeInfo(ngl.Feature).Union.fields.len > 2)
                 @compileError("Set new feature(s)");
@@ -393,7 +418,7 @@ pub const Instance = struct {
                     c.VK_PHYSICAL_DEVICE_TYPE_CPU => .cpu,
                     else => .other,
                 },
-                .queues = .{ main_queue, null, null, null },
+                .queues = .{ main_queue, xfer_queue, null, null },
                 .feature_set = .{
                     .core = true,
                     // Don't expose this feature if the instance was created
