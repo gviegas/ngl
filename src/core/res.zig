@@ -124,7 +124,24 @@ pub const Format = enum {
     d24_unorm_s8_uint,
     d32_sfloat_s8_uint,
 
-    // TODO: Compressed formats
+    bc1_rgb_unorm,
+    bc1_rgb_srgb,
+    bc1_rgba_unorm,
+    bc1_rgba_srgb,
+    bc2_unorm,
+    bc2_srgb,
+    bc3_unorm,
+    bc3_srgb,
+    bc4_unorm,
+    bc4_snorm,
+    bc5_unorm,
+    bc5_snorm,
+    bc6h_ufloat,
+    bc6h_sfloat,
+    bc7_unorm,
+    bc7_srgb,
+
+    // TODO: Other compressed formats
 
     pub const Features = packed struct {
         sampled_image: bool = false,

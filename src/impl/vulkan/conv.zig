@@ -184,7 +184,24 @@ pub fn toVkFormat(format: ngl.Format) Error!c.VkFormat {
         .d24_unorm_s8_uint => c.VK_FORMAT_D24_UNORM_S8_UINT,
         .d32_sfloat_s8_uint => c.VK_FORMAT_D32_SFLOAT_S8_UINT,
 
-        // TODO: Compressed formats
+        .bc1_rgb_unorm => c.VK_FORMAT_BC1_RGB_UNORM_BLOCK,
+        .bc1_rgb_srgb => c.VK_FORMAT_BC1_RGB_SRGB_BLOCK,
+        .bc1_rgba_unorm => c.VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
+        .bc1_rgba_srgb => c.VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
+        .bc2_unorm => c.VK_FORMAT_BC2_UNORM_BLOCK,
+        .bc2_srgb => c.VK_FORMAT_BC2_SRGB_BLOCK,
+        .bc3_unorm => c.VK_FORMAT_BC3_UNORM_BLOCK,
+        .bc3_srgb => c.VK_FORMAT_BC3_SRGB_BLOCK,
+        .bc4_unorm => c.VK_FORMAT_BC4_UNORM_BLOCK,
+        .bc4_snorm => c.VK_FORMAT_BC4_SNORM_BLOCK,
+        .bc5_unorm => c.VK_FORMAT_BC5_UNORM_BLOCK,
+        .bc5_snorm => c.VK_FORMAT_BC5_SNORM_BLOCK,
+        .bc6h_ufloat => c.VK_FORMAT_BC6H_UFLOAT_BLOCK,
+        .bc6h_sfloat => c.VK_FORMAT_BC6H_SFLOAT_BLOCK,
+        .bc7_unorm => c.VK_FORMAT_BC7_UNORM_BLOCK,
+        .bc7_srgb => c.VK_FORMAT_BC7_SRGB_BLOCK,
+
+        // TODO: Other compressed formats
     };
 }
 
@@ -895,7 +912,24 @@ pub fn fromVkFormat(vk_format: c.VkFormat) Error!ngl.Format {
         c.VK_FORMAT_D24_UNORM_S8_UINT => .d24_unorm_s8_uint,
         c.VK_FORMAT_D32_SFLOAT_S8_UINT => .d32_sfloat_s8_uint,
 
-        // TODO: Compressed formats
+        c.VK_FORMAT_BC1_RGB_UNORM_BLOCK => .bc1_rgb_unorm,
+        c.VK_FORMAT_BC1_RGB_SRGB_BLOCK => .bc1_rgb_srgb,
+        c.VK_FORMAT_BC1_RGBA_UNORM_BLOCK => .bc1_rgba_unorm,
+        c.VK_FORMAT_BC1_RGBA_SRGB_BLOCK => .bc1_rgba_srgb,
+        c.VK_FORMAT_BC2_UNORM_BLOCK => .bc2_unorm,
+        c.VK_FORMAT_BC2_SRGB_BLOCK => .bc2_srgb,
+        c.VK_FORMAT_BC3_UNORM_BLOCK => .bc3_unorm,
+        c.VK_FORMAT_BC3_SRGB_BLOCK => .bc3_srgb,
+        c.VK_FORMAT_BC4_UNORM_BLOCK => .bc4_unorm,
+        c.VK_FORMAT_BC4_SNORM_BLOCK => .bc4_snorm,
+        c.VK_FORMAT_BC5_UNORM_BLOCK => .bc5_unorm,
+        c.VK_FORMAT_BC5_SNORM_BLOCK => .bc5_snorm,
+        c.VK_FORMAT_BC6H_UFLOAT_BLOCK => .bc6h_ufloat,
+        c.VK_FORMAT_BC6H_SFLOAT_BLOCK => .bc6h_sfloat,
+        c.VK_FORMAT_BC7_UNORM_BLOCK => .bc7_unorm,
+        c.VK_FORMAT_BC7_SRGB_BLOCK => .bc7_srgb,
+
+        // TODO: Other compressed formats
 
         else => error.NotSupported,
     };
