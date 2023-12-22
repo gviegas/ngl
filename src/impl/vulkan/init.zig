@@ -2386,8 +2386,26 @@ fn getFeature(
                 inst.vkGetPhysicalDeviceProperties2(phys_dev, &props);
                 l = props.properties.limits;
                 mem_max_size = m3.maxMemoryAllocationSize;
-                if (inst.version >= c.VK_API_VERSION_1_2)
-                    fb_int_spl_cnts = convSpls(@"1.2".framebufferIntegerColorSampleCounts);
+                if (inst.version >= c.VK_API_VERSION_1_2) {
+                    // Certain devices may lie about MS support
+                    // for signed integer formats
+                    var x: c.VkImageFormatProperties = undefined;
+                    const r = inst.vkGetPhysicalDeviceImageFormatProperties(
+                        phys_dev,
+                        c.VK_FORMAT_R8_SINT,
+                        c.VK_IMAGE_TYPE_2D,
+                        c.VK_IMAGE_TILING_OPTIMAL,
+                        c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                        0,
+                        &x,
+                    );
+                    const mask = @"1.2".framebufferIntegerColorSampleCounts;
+                    if (r != c.VK_SUCCESS or x.sampleCounts & mask != mask)
+                        // Use the default (no MS)
+                        log.warn("Defaulting Feature.core.frame_buffer.integer_sample_counts", .{})
+                    else
+                        fb_int_spl_cnts = convSpls(mask);
+                }
                 if (inst.version >= c.VK_API_VERSION_1_3)
                     buf_max_size = m4.maxBufferSize;
             }
