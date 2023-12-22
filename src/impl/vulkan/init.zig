@@ -142,6 +142,7 @@ pub const Instance = struct {
     enumerateDeviceExtensionProperties: c.PFN_vkEnumerateDeviceExtensionProperties,
     // v1.1
     getPhysicalDeviceProperties2: c.PFN_vkGetPhysicalDeviceProperties2,
+    getPhysicalDeviceFeatures2: c.PFN_vkGetPhysicalDeviceFeatures2,
     // VK_KHR_surface
     destroySurface: c.PFN_vkDestroySurfaceKHR,
     getPhysicalDeviceSurfaceSupport: c.PFN_vkGetPhysicalDeviceSurfaceSupportKHR,
@@ -282,6 +283,10 @@ pub const Instance = struct {
 
             .getPhysicalDeviceProperties2 = if (ver >= c.VK_API_VERSION_1_1)
                 @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceProperties2"))
+            else
+                null,
+            .getPhysicalDeviceFeatures2 = if (ver >= c.VK_API_VERSION_1_1)
+                @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceFeatures2"))
             else
                 null,
 
@@ -594,6 +599,14 @@ pub const Instance = struct {
         self.getPhysicalDeviceProperties2.?(device, properties);
     }
 
+    pub inline fn vkGetPhysicalDeviceFeatures2(
+        self: *Instance,
+        device: c.VkPhysicalDevice,
+        features: *c.VkPhysicalDeviceFeatures2,
+    ) void {
+        self.getPhysicalDeviceFeatures2.?(device, features);
+    }
+
     pub inline fn vkDestroySurfaceKHR(
         self: *Instance,
         surface: c.VkSurfaceKHR,
@@ -865,72 +878,114 @@ pub const Device = struct {
             }
         }
 
-        const feats: c.VkPhysicalDeviceFeatures = blk: {
-            var feats: c.VkPhysicalDeviceFeatures = undefined;
-            inst.vkGetPhysicalDeviceFeatures(phys_dev, &feats);
-            // TODO: Expose/enable more features
-            break :blk .{
-                .robustBufferAccess = c.VK_FALSE,
-                .fullDrawIndexUint32 = feats.fullDrawIndexUint32,
-                .imageCubeArray = feats.imageCubeArray,
-                .independentBlend = feats.independentBlend,
-                .geometryShader = c.VK_FALSE,
-                .tessellationShader = c.VK_FALSE,
-                .sampleRateShading = c.VK_FALSE,
-                .dualSrcBlend = c.VK_FALSE,
-                .logicOp = c.VK_FALSE,
-                .multiDrawIndirect = feats.multiDrawIndirect,
-                .drawIndirectFirstInstance = feats.drawIndirectFirstInstance,
-                .depthClamp = feats.depthClamp,
-                .depthBiasClamp = feats.depthBiasClamp,
-                .fillModeNonSolid = feats.fillModeNonSolid,
-                .depthBounds = c.VK_FALSE,
-                .wideLines = c.VK_FALSE,
-                .largePoints = c.VK_FALSE,
-                .alphaToOne = feats.alphaToOne,
-                .multiViewport = c.VK_FALSE,
-                .samplerAnisotropy = feats.samplerAnisotropy,
-                .textureCompressionETC2 = c.VK_FALSE,
-                .textureCompressionASTC_LDR = c.VK_FALSE,
-                .textureCompressionBC = c.VK_FALSE,
-                .occlusionQueryPrecise = c.VK_FALSE,
-                .pipelineStatisticsQuery = c.VK_FALSE,
-                .vertexPipelineStoresAndAtomics = feats.vertexPipelineStoresAndAtomics,
-                .fragmentStoresAndAtomics = feats.fragmentStoresAndAtomics,
-                .shaderTessellationAndGeometryPointSize = c.VK_FALSE,
-                .shaderImageGatherExtended = c.VK_FALSE,
-                .shaderStorageImageExtendedFormats = c.VK_FALSE,
-                .shaderStorageImageMultisample = feats.shaderStorageImageMultisample,
-                .shaderStorageImageReadWithoutFormat = c.VK_FALSE,
-                .shaderStorageImageWriteWithoutFormat = c.VK_FALSE,
-                .shaderUniformBufferArrayDynamicIndexing = c.VK_FALSE,
-                .shaderSampledImageArrayDynamicIndexing = c.VK_FALSE,
-                .shaderStorageBufferArrayDynamicIndexing = c.VK_FALSE,
-                .shaderStorageImageArrayDynamicIndexing = c.VK_FALSE,
-                .shaderClipDistance = c.VK_FALSE,
-                .shaderCullDistance = c.VK_FALSE,
-                .shaderFloat64 = c.VK_FALSE,
-                .shaderInt64 = c.VK_FALSE,
-                .shaderInt16 = c.VK_FALSE,
-                .shaderResourceResidency = c.VK_FALSE,
-                .shaderResourceMinLod = c.VK_FALSE,
-                .sparseBinding = c.VK_FALSE,
-                .sparseResidencyBuffer = c.VK_FALSE,
-                .sparseResidencyImage2D = c.VK_FALSE,
-                .sparseResidencyImage3D = c.VK_FALSE,
-                .sparseResidency2Samples = c.VK_FALSE,
-                .sparseResidency4Samples = c.VK_FALSE,
-                .sparseResidency8Samples = c.VK_FALSE,
-                .sparseResidency16Samples = c.VK_FALSE,
-                .sparseResidencyAliased = c.VK_FALSE,
-                .variableMultisampleRate = c.VK_FALSE,
-                .inheritedQueries = c.VK_FALSE,
-            };
+        // TODO: Expose/enable more features
+        var feats_2 = c.VkPhysicalDeviceFeatures2{
+            .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+            .pNext = null,
         };
+        // v1.2
+        var vk_1_2_feats = c.VkPhysicalDeviceVulkan12Features{
+            .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+            .pNext = null,
+        };
+        if (inst.version >= c.VK_API_VERSION_1_1) {
+            if (inst.version >= c.VK_API_VERSION_1_2) feats_2.pNext = &vk_1_2_feats;
+            inst.vkGetPhysicalDeviceFeatures2(phys_dev, &feats_2);
+        } else inst.vkGetPhysicalDeviceFeatures(phys_dev, &feats_2.features);
+        feats_2.features.robustBufferAccess = c.VK_FALSE;
+        feats_2.features.geometryShader = c.VK_FALSE;
+        feats_2.features.tessellationShader = c.VK_FALSE;
+        feats_2.features.sampleRateShading = c.VK_FALSE;
+        feats_2.features.dualSrcBlend = c.VK_FALSE;
+        feats_2.features.logicOp = c.VK_FALSE;
+        feats_2.features.depthBounds = c.VK_FALSE;
+        feats_2.features.wideLines = c.VK_FALSE;
+        feats_2.features.largePoints = c.VK_FALSE;
+        feats_2.features.multiViewport = c.VK_FALSE;
+        feats_2.features.textureCompressionETC2 = c.VK_FALSE;
+        feats_2.features.textureCompressionASTC_LDR = c.VK_FALSE;
+        feats_2.features.textureCompressionBC = c.VK_FALSE;
+        feats_2.features.occlusionQueryPrecise = c.VK_FALSE;
+        feats_2.features.pipelineStatisticsQuery = c.VK_FALSE;
+        feats_2.features.shaderTessellationAndGeometryPointSize = c.VK_FALSE;
+        feats_2.features.shaderImageGatherExtended = c.VK_FALSE;
+        feats_2.features.shaderStorageImageExtendedFormats = c.VK_FALSE;
+        feats_2.features.shaderStorageImageReadWithoutFormat = c.VK_FALSE;
+        feats_2.features.shaderStorageImageWriteWithoutFormat = c.VK_FALSE;
+        feats_2.features.shaderUniformBufferArrayDynamicIndexing = c.VK_FALSE;
+        feats_2.features.shaderSampledImageArrayDynamicIndexing = c.VK_FALSE;
+        feats_2.features.shaderStorageBufferArrayDynamicIndexing = c.VK_FALSE;
+        feats_2.features.shaderStorageImageArrayDynamicIndexing = c.VK_FALSE;
+        feats_2.features.shaderClipDistance = c.VK_FALSE;
+        feats_2.features.shaderCullDistance = c.VK_FALSE;
+        feats_2.features.shaderFloat64 = c.VK_FALSE;
+        feats_2.features.shaderInt64 = c.VK_FALSE;
+        feats_2.features.shaderInt16 = c.VK_FALSE;
+        feats_2.features.shaderResourceResidency = c.VK_FALSE;
+        feats_2.features.shaderResourceMinLod = c.VK_FALSE;
+        feats_2.features.sparseBinding = c.VK_FALSE;
+        feats_2.features.sparseResidencyBuffer = c.VK_FALSE;
+        feats_2.features.sparseResidencyImage2D = c.VK_FALSE;
+        feats_2.features.sparseResidencyImage3D = c.VK_FALSE;
+        feats_2.features.sparseResidency2Samples = c.VK_FALSE;
+        feats_2.features.sparseResidency4Samples = c.VK_FALSE;
+        feats_2.features.sparseResidency8Samples = c.VK_FALSE;
+        feats_2.features.sparseResidency16Samples = c.VK_FALSE;
+        feats_2.features.sparseResidencyAliased = c.VK_FALSE;
+        feats_2.features.variableMultisampleRate = c.VK_FALSE;
+        feats_2.features.inheritedQueries = c.VK_FALSE;
+        if (inst.version >= c.VK_API_VERSION_1_2) {
+            vk_1_2_feats.drawIndirectCount = c.VK_FALSE;
+            vk_1_2_feats.storageBuffer8BitAccess = c.VK_FALSE;
+            vk_1_2_feats.uniformAndStorageBuffer8BitAccess = c.VK_FALSE;
+            vk_1_2_feats.storagePushConstant8 = c.VK_FALSE;
+            vk_1_2_feats.shaderBufferInt64Atomics = c.VK_FALSE;
+            vk_1_2_feats.shaderSharedInt64Atomics = c.VK_FALSE;
+            vk_1_2_feats.shaderFloat16 = c.VK_FALSE;
+            vk_1_2_feats.shaderInt8 = c.VK_FALSE;
+            vk_1_2_feats.descriptorIndexing = c.VK_FALSE;
+            vk_1_2_feats.shaderInputAttachmentArrayDynamicIndexing = c.VK_FALSE;
+            vk_1_2_feats.shaderUniformTexelBufferArrayDynamicIndexing = c.VK_FALSE;
+            vk_1_2_feats.shaderStorageTexelBufferArrayDynamicIndexing = c.VK_FALSE;
+            vk_1_2_feats.shaderUniformBufferArrayNonUniformIndexing = c.VK_FALSE;
+            vk_1_2_feats.shaderSampledImageArrayNonUniformIndexing = c.VK_FALSE;
+            vk_1_2_feats.shaderStorageBufferArrayNonUniformIndexing = c.VK_FALSE;
+            vk_1_2_feats.shaderStorageImageArrayNonUniformIndexing = c.VK_FALSE;
+            vk_1_2_feats.shaderInputAttachmentArrayNonUniformIndexing = c.VK_FALSE;
+            vk_1_2_feats.shaderUniformTexelBufferArrayNonUniformIndexing = c.VK_FALSE;
+            vk_1_2_feats.shaderStorageTexelBufferArrayNonUniformIndexing = c.VK_FALSE;
+            vk_1_2_feats.descriptorBindingUniformBufferUpdateAfterBind = c.VK_FALSE;
+            vk_1_2_feats.descriptorBindingSampledImageUpdateAfterBind = c.VK_FALSE;
+            vk_1_2_feats.descriptorBindingStorageImageUpdateAfterBind = c.VK_FALSE;
+            vk_1_2_feats.descriptorBindingStorageBufferUpdateAfterBind = c.VK_FALSE;
+            vk_1_2_feats.descriptorBindingUniformTexelBufferUpdateAfterBind = c.VK_FALSE;
+            vk_1_2_feats.descriptorBindingStorageTexelBufferUpdateAfterBind = c.VK_FALSE;
+            vk_1_2_feats.descriptorBindingUpdateUnusedWhilePending = c.VK_FALSE;
+            vk_1_2_feats.descriptorBindingPartiallyBound = c.VK_FALSE;
+            vk_1_2_feats.descriptorBindingVariableDescriptorCount = c.VK_FALSE;
+            vk_1_2_feats.runtimeDescriptorArray = c.VK_FALSE;
+            vk_1_2_feats.samplerFilterMinmax = c.VK_FALSE;
+            vk_1_2_feats.scalarBlockLayout = c.VK_FALSE;
+            vk_1_2_feats.imagelessFramebuffer = c.VK_FALSE;
+            vk_1_2_feats.uniformBufferStandardLayout = c.VK_FALSE;
+            vk_1_2_feats.shaderSubgroupExtendedTypes = c.VK_FALSE;
+            vk_1_2_feats.separateDepthStencilLayouts = c.VK_FALSE;
+            vk_1_2_feats.hostQueryReset = c.VK_FALSE;
+            vk_1_2_feats.timelineSemaphore = c.VK_FALSE;
+            vk_1_2_feats.bufferDeviceAddress = c.VK_FALSE;
+            vk_1_2_feats.bufferDeviceAddressCaptureReplay = c.VK_FALSE;
+            vk_1_2_feats.bufferDeviceAddressMultiDevice = c.VK_FALSE;
+            vk_1_2_feats.vulkanMemoryModel = c.VK_FALSE;
+            vk_1_2_feats.vulkanMemoryModelDeviceScope = c.VK_FALSE;
+            vk_1_2_feats.vulkanMemoryModelAvailabilityVisibilityChains = c.VK_FALSE;
+            vk_1_2_feats.shaderOutputViewportIndex = c.VK_FALSE;
+            vk_1_2_feats.shaderOutputLayer = c.VK_FALSE;
+            vk_1_2_feats.subgroupBroadcastDynamicId = c.VK_FALSE;
+        }
 
         var create_info = c.VkDeviceCreateInfo{
             .sType = c.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext = null,
+            .pNext = if (inst.version < c.VK_API_VERSION_1_1) null else &feats_2,
             .flags = 0,
             .queueCreateInfoCount = queue_n,
             .pQueueCreateInfos = &queue_infos,
@@ -938,7 +993,10 @@ pub const Device = struct {
             .ppEnabledLayerNames = null,
             .enabledExtensionCount = @intCast(ext_names.items.len),
             .ppEnabledExtensionNames = if (ext_names.items.len > 0) ext_names.items.ptr else null,
-            .pEnabledFeatures = &feats,
+            .pEnabledFeatures = if (inst.version < c.VK_API_VERSION_1_1)
+                &feats_2.features
+            else
+                null,
         };
         var dev: c.VkDevice = undefined;
         try check(inst.vkCreateDevice(phys_dev, &create_info, null, &dev));
