@@ -201,6 +201,17 @@ pub fn toVkFormat(format: ngl.Format) Error!c.VkFormat {
         .bc7_unorm => c.VK_FORMAT_BC7_UNORM_BLOCK,
         .bc7_srgb => c.VK_FORMAT_BC7_SRGB_BLOCK,
 
+        .etc2_rgb8_unorm => c.VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
+        .etc2_rgb8_srgb => c.VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
+        .etc2_rgb8a1_unorm => c.VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
+        .etc2_rgb8a1_srgb => c.VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
+        .etc2_rgba8_unorm => c.VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
+        .etc2_rgba8_srgb => c.VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
+        .eac_r11_unorm => c.VK_FORMAT_EAC_R11_UNORM_BLOCK,
+        .eac_r11_snorm => c.VK_FORMAT_EAC_R11_SNORM_BLOCK,
+        .eac_rg11_unorm => c.VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
+        .eac_rg11_snorm => c.VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
+
         // TODO: Other compressed formats
     };
 }
@@ -928,6 +939,17 @@ pub fn fromVkFormat(vk_format: c.VkFormat) Error!ngl.Format {
         c.VK_FORMAT_BC6H_SFLOAT_BLOCK => .bc6h_sfloat,
         c.VK_FORMAT_BC7_UNORM_BLOCK => .bc7_unorm,
         c.VK_FORMAT_BC7_SRGB_BLOCK => .bc7_srgb,
+
+        c.VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK => .etc2_rgb8_unorm,
+        c.VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK => .etc2_rgb8_srgb,
+        c.VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK => .etc2_rgb8a1_unorm,
+        c.VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK => .etc2_rgb8a1_srgb,
+        c.VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK => .etc2_rgba8_unorm,
+        c.VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK => .etc2_rgba8_srgb,
+        c.VK_FORMAT_EAC_R11_UNORM_BLOCK => .eac_r11_unorm,
+        c.VK_FORMAT_EAC_R11_SNORM_BLOCK => .eac_r11_snorm,
+        c.VK_FORMAT_EAC_R11G11_UNORM_BLOCK => .eac_rg11_unorm,
+        c.VK_FORMAT_EAC_R11G11_SNORM_BLOCK => .eac_rg11_snorm,
 
         // TODO: Other compressed formats
 

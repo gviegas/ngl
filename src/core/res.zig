@@ -141,6 +141,17 @@ pub const Format = enum {
     bc7_unorm,
     bc7_srgb,
 
+    etc2_rgb8_unorm,
+    etc2_rgb8_srgb,
+    etc2_rgb8a1_unorm,
+    etc2_rgb8a1_srgb,
+    etc2_rgba8_unorm,
+    etc2_rgba8_srgb,
+    eac_r11_unorm,
+    eac_r11_snorm,
+    eac_rg11_unorm,
+    eac_rg11_snorm,
+
     // TODO: Other compressed formats
 
     pub const Features = packed struct {
