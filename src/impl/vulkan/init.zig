@@ -2417,61 +2417,80 @@ fn getFeature(
             var mem_max_size: u64 = 1073741824;
             var buf_max_size: u64 = 1073741824;
             var fb_int_spl_cnts = ngl.SampleCount.Flags{ .@"1" = true };
+            var f: c.VkPhysicalDeviceFeatures = undefined;
+            var splr_mirror_clamp_to_edge = false;
+
             if (inst.version < c.VK_API_VERSION_1_1) {
                 var props: c.VkPhysicalDeviceProperties = undefined;
                 inst.vkGetPhysicalDeviceProperties(phys_dev, &props);
                 l = props.limits;
+                inst.vkGetPhysicalDeviceFeatures(phys_dev, &f);
             } else {
-                // v1.3
-                var m4 = c.VkPhysicalDeviceMaintenance4Properties{
-                    .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES,
-                    .pNext = null,
-                };
-                // v1.2
-                var @"1.2" = c.VkPhysicalDeviceVulkan12Properties{
-                    .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES,
-                    .pNext = if (inst.version >= c.VK_API_VERSION_1_3) &m4 else null,
-                };
-                // v1.1
-                var m3 = c.VkPhysicalDeviceMaintenance3Properties{
-                    .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,
-                    .pNext = if (inst.version >= c.VK_API_VERSION_1_2) &@"1.2" else null,
-                };
-                var props = c.VkPhysicalDeviceProperties2{
-                    .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-                    .pNext = &m3,
-                };
-                inst.vkGetPhysicalDeviceProperties2(phys_dev, &props);
-                l = props.properties.limits;
-                mem_max_size = m3.maxMemoryAllocationSize;
-                if (inst.version >= c.VK_API_VERSION_1_2) {
-                    // Certain devices may lie about MS support
-                    // for signed integer formats
-                    var x: c.VkImageFormatProperties = undefined;
-                    const r = inst.vkGetPhysicalDeviceImageFormatProperties(
-                        phys_dev,
-                        c.VK_FORMAT_R8_SINT,
-                        c.VK_IMAGE_TYPE_2D,
-                        c.VK_IMAGE_TILING_OPTIMAL,
-                        c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                        0,
-                        &x,
-                    );
-                    const mask = @"1.2".framebufferIntegerColorSampleCounts;
-                    if (r != c.VK_SUCCESS or x.sampleCounts & mask != mask)
-                        // Use the default (no MS)
-                        log.warn("Defaulting Feature.core.frame_buffer.integer_sample_counts", .{})
-                    else
-                        fb_int_spl_cnts = convSpls(mask);
+                // Properties 2 ----------------------------
+                {
+                    // v1.3
+                    var m4 = c.VkPhysicalDeviceMaintenance4Properties{
+                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES,
+                        .pNext = null,
+                    };
+                    // v1.2
+                    var @"1.2" = c.VkPhysicalDeviceVulkan12Properties{
+                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES,
+                        .pNext = if (inst.version >= c.VK_API_VERSION_1_3) &m4 else null,
+                    };
+                    // v1.1
+                    var m3 = c.VkPhysicalDeviceMaintenance3Properties{
+                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,
+                        .pNext = if (inst.version >= c.VK_API_VERSION_1_2) &@"1.2" else null,
+                    };
+                    var props = c.VkPhysicalDeviceProperties2{
+                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+                        .pNext = &m3,
+                    };
+                    inst.vkGetPhysicalDeviceProperties2(phys_dev, &props);
+                    l = props.properties.limits;
+                    mem_max_size = m3.maxMemoryAllocationSize;
+                    if (inst.version >= c.VK_API_VERSION_1_2) {
+                        // Certain devices may lie about MS support
+                        // for signed integer formats
+                        var x: c.VkImageFormatProperties = undefined;
+                        const r = inst.vkGetPhysicalDeviceImageFormatProperties(
+                            phys_dev,
+                            c.VK_FORMAT_R8_SINT,
+                            c.VK_IMAGE_TYPE_2D,
+                            c.VK_IMAGE_TILING_OPTIMAL,
+                            c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                            0,
+                            &x,
+                        );
+                        const mask = @"1.2".framebufferIntegerColorSampleCounts;
+                        if (r != c.VK_SUCCESS or x.sampleCounts & mask != mask)
+                            // Use the default (no MS)
+                            log.warn("Feature.core.frame_buffer.integer_sample_counts workaround", .{})
+                        else
+                            fb_int_spl_cnts = convSpls(mask);
+                    }
+                    if (inst.version >= c.VK_API_VERSION_1_3)
+                        buf_max_size = m4.maxBufferSize;
                 }
-                if (inst.version >= c.VK_API_VERSION_1_3)
-                    buf_max_size = m4.maxBufferSize;
+                // Features 2 ------------------------------
+                {
+                    // v1.2
+                    var @"1.2" = c.VkPhysicalDeviceVulkan12Features{
+                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+                        .pNext = null,
+                    };
+                    var feats = c.VkPhysicalDeviceFeatures2{
+                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+                        .pNext = if (inst.version >= c.VK_API_VERSION_1_2) &@"1.2" else null,
+                    };
+                    inst.vkGetPhysicalDeviceFeatures2(phys_dev, &feats);
+                    f = feats.features;
+                    if (inst.version >= c.VK_API_VERSION_1_2)
+                        splr_mirror_clamp_to_edge = @"1.2".samplerMirrorClampToEdge == c.VK_TRUE;
+                }
             }
-            const f = blk: {
-                var feats: c.VkPhysicalDeviceFeatures = undefined;
-                inst.vkGetPhysicalDeviceFeatures(phys_dev, &feats);
-                break :blk feats;
-            };
+
             feat.* = .{
                 .memory = .{
                     .max_count = l.maxMemoryAllocationCount,
@@ -2481,8 +2500,7 @@ fn getFeature(
                 .sampler = .{
                     .max_count = l.maxSamplerAllocationCount,
                     .max_anisotropy = @intFromFloat(@min(16, @max(1, l.maxSamplerAnisotropy))),
-                    // TODO: Requires v1.2
-                    .address_mode_mirror_clamp_to_edge = false,
+                    .address_mode_mirror_clamp_to_edge = splr_mirror_clamp_to_edge,
                 },
                 .image = .{
                     .max_dimension_1d = l.maxImageDimension1D,
