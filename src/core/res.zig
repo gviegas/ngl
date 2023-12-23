@@ -489,7 +489,7 @@ pub const Format = enum {
         depth: struct { bits: u7 },
         stencil: struct { bits: u7 },
         combined: struct { depth_bits: u7, stencil_bits: u7 },
-        compressed, // TODO
+        compressed: struct { srgb: bool = false, bits: u8 },
     };
 
     fn getInfo(self: Self) Info {
@@ -1045,6 +1045,193 @@ pub const Format = enum {
                 .depth_bits = 32,
                 .stencil_bits = 8,
             } },
+
+            .bc1_rgb_unorm => .{ .compressed = .{
+                .bits = 64,
+            } },
+            .bc1_rgb_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 64,
+            } },
+            .bc1_rgba_unorm => .{ .compressed = .{
+                .bits = 64,
+            } },
+            .bc1_rgba_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 64,
+            } },
+            .bc2_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .bc2_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .bc3_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .bc3_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .bc4_unorm => .{ .compressed = .{
+                .bits = 64,
+            } },
+            .bc4_snorm => .{ .compressed = .{
+                .bits = 64,
+            } },
+            .bc5_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .bc5_snorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .bc6h_ufloat => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .bc6h_sfloat => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .bc7_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .bc7_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+
+            .etc2_rgb8_unorm => .{ .compressed = .{
+                .bits = 64,
+            } },
+            .etc2_rgb8_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 64,
+            } },
+            .etc2_rgb8a1_unorm => .{ .compressed = .{
+                .bits = 64,
+            } },
+            .etc2_rgb8a1_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 64,
+            } },
+            .etc2_rgba8_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .etc2_rgba8_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .eac_r11_unorm => .{ .compressed = .{
+                .bits = 64,
+            } },
+            .eac_r11_snorm => .{ .compressed = .{
+                .bits = 64,
+            } },
+            .eac_rg11_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .eac_rg11_snorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+
+            .astc_4x4_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_4x4_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_5x4_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_5x4_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_5x5_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_5x5_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_6x5_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_6x5_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_6x6_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_6x6_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_8x5_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_8x5_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_8x6_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_8x6_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_8x8_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_8x8_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_10x5_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_10x5_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_10x6_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_10x6_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_10x8_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_10x8_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_10x10_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_10x10_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_12x10_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_12x10_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
+            .astc_12x12_unorm => .{ .compressed = .{
+                .bits = 128,
+            } },
+            .astc_12x12_srgb => .{ .compressed = .{
+                .srgb = true,
+                .bits = 128,
+            } },
         };
     }
 
@@ -1072,7 +1259,6 @@ pub const Format = enum {
             return false;
         return switch (self.getInfo()) {
             .color => |x| x.non_float,
-            .compressed => @panic("TODO"),
             else => false,
         };
     }
@@ -1083,7 +1269,7 @@ pub const Format = enum {
             return false;
         return switch (self.getInfo()) {
             .color => |x| x.srgb,
-            .compressed => @panic("TODO"),
+            .compressed => |x| x.srgb,
             else => false,
         };
     }
