@@ -1181,8 +1181,7 @@ const Queue = struct {
     graphics: ngl.Queue.Index,
     pools: [frame_n]ngl.CommandPool,
     buffers: [frame_n]ngl.CommandBuffer,
-    // Signaled
-    fences: [frame_n]ngl.Fence,
+    fences: [frame_n]ngl.Fence, // Signaled
     semaphores: [frame_n * 2]ngl.Semaphore,
     non_unified: ?struct {
         pools: [frame_n]ngl.CommandPool,
@@ -1194,20 +1193,21 @@ const Queue = struct {
         const dev = &context().device;
         const plat = platform() catch unreachable;
 
-        const queue_i = if (dev.queues[plat.queue_index].capabilities.graphics)
-            plat.queue_index
+        const pres = plat.queue_index;
+        const graph = if (dev.queues[pres].capabilities.graphics)
+            pres
         else
             dev.findQueue(.{ .graphics = true }, null) orelse return error.NotSupported;
 
         var non_unified: @TypeOf((try init()).non_unified) = blk: {
-            if (queue_i == plat.queue_index)
+            if (graph == pres)
                 break :blk null;
             var pools: [frame_n]ngl.CommandPool = undefined;
             for (&pools, 0..) |*pool, i|
                 pool.* = ngl.CommandPool.init(
                     gpa,
                     dev,
-                    .{ .queue = &dev.queues[queue_i] },
+                    .{ .queue = &dev.queues[pres] },
                 ) catch |err| {
                     for (0..i) |j| pools[j].deinit(gpa, dev);
                     return err;
@@ -1238,11 +1238,7 @@ const Queue = struct {
 
         var pools: [frame_n]ngl.CommandPool = undefined;
         for (&pools, 0..) |*pool, i|
-            pool.* = ngl.CommandPool.init(
-                gpa,
-                dev,
-                .{ .queue = &dev.queues[queue_i] },
-            ) catch |err| {
+            pool.* = ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[graph] }) catch |err| {
                 for (0..i) |j| pools[j].deinit(gpa, dev);
                 return err;
             };
@@ -1268,7 +1264,7 @@ const Queue = struct {
             };
 
         return .{
-            .graphics = queue_i,
+            .graphics = graph,
             .pools = pools,
             .buffers = bufs,
             .fences = fences,

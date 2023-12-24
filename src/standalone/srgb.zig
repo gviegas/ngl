@@ -781,7 +781,7 @@ const Queue = struct {
     pools: [frame_n]ngl.CommandPool,
     buffers: [frame_n]ngl.CommandBuffer,
     semaphores: [frame_n * 2]ngl.Semaphore,
-    fences: [frame_n]ngl.Fence,
+    fences: [frame_n]ngl.Fence, // Signaled
     non_unified: ?struct {
         pools: [frame_n]ngl.CommandPool,
         buffers: [frame_n]ngl.CommandBuffer,
@@ -837,11 +837,7 @@ const Queue = struct {
 
         var pools: [frame_n]ngl.CommandPool = undefined;
         for (&pools, 0..) |*pool, i|
-            pool.* = ngl.CommandPool.init(
-                gpa,
-                dev,
-                .{ .queue = &dev.queues[graph] },
-            ) catch |err| {
+            pool.* = ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[graph] }) catch |err| {
                 for (0..i) |j| pools[j].deinit(gpa, dev);
                 return err;
             };

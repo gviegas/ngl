@@ -1648,20 +1648,21 @@ const Queue = struct {
         const dev = &context().device;
         const plat = platform() catch unreachable;
 
-        const graph = if (dev.queues[plat.queue_index].capabilities.graphics)
-            plat.queue_index
+        const pres = plat.queue_index;
+        const graph = if (dev.queues[pres].capabilities.graphics)
+            pres
         else
             dev.findQueue(.{ .graphics = true }, null) orelse return error.NotSupported;
 
         const non_unified: @TypeOf((try init()).non_unified) = blk: {
-            if (graph == plat.queue_index)
+            if (graph == pres)
                 break :blk null;
             var pools: [frame_n]ngl.CommandPool = undefined;
             for (0..pools.len) |i|
                 pools[i] = ngl.CommandPool.init(
                     gpa,
                     dev,
-                    .{ .queue = &dev.queues[plat.queue_index] },
+                    .{ .queue = &dev.queues[pres] },
                 ) catch |err| {
                     for (0..i) |j| pools[j].deinit(gpa, dev);
                     return err;
