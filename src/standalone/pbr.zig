@@ -566,8 +566,8 @@ const Pass = struct {
         errdefer rp.deinit(gpa, dev);
         const fbs = try gpa.alloc(ngl.FrameBuffer, plat.images.len);
         errdefer gpa.free(fbs);
-        for (fbs, plat.image_views) |*fb, *sc_view|
-            fb.* = try ngl.FrameBuffer.init(gpa, dev, .{
+        for (fbs, plat.image_views, 0..) |*fb, *sc_view, i|
+            fb.* = ngl.FrameBuffer.init(gpa, dev, .{
                 .render_pass = &rp,
                 .attachments = &.{
                     &color_attachment.view,
@@ -577,7 +577,10 @@ const Pass = struct {
                 .width = width,
                 .height = height,
                 .layers = 1,
-            });
+            }) catch |err| {
+                for (0..i) |j| fbs[j].deinit(gpa, dev);
+                return err;
+            };
 
         return .{
             .render_pass = rp,

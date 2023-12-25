@@ -743,12 +743,12 @@ const LightPass = struct {
         errdefer rp.deinit(gpa, dev);
         var fbs = try gpa.alloc(ngl.FrameBuffer, plat.images.len);
         errdefer gpa.free(fbs);
-        for (fbs, 0..) |*fb, i|
+        for (fbs, plat.image_views, 0..) |*fb, *sc_view, i|
             fb.* = ngl.FrameBuffer.init(gpa, dev, .{
                 .render_pass = &rp,
                 .attachments = &.{
                     &color_attachment.view,
-                    &plat.image_views[i],
+                    sc_view,
                     &depth_attachment.view,
                 },
                 .width = width,

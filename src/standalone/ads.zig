@@ -788,10 +788,10 @@ const Data = struct {
             });
             errdefer self.render_pass.deinit(gpa, device);
             self.frame_buffers = try gpa.alloc(ngl.FrameBuffer, swap_chain_views.len);
-            for (self.frame_buffers, swap_chain_views, 0..) |*fb, *view, i|
+            for (self.frame_buffers, swap_chain_views, 0..) |*fb, *sc_view, i|
                 fb.* = ngl.FrameBuffer.init(gpa, device, .{
                     .render_pass = &self.render_pass,
-                    .attachments = &.{ view, depth_view },
+                    .attachments = &.{ sc_view, depth_view },
                     .width = width,
                     .height = height,
                     .layers = 1,

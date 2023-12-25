@@ -488,10 +488,10 @@ const Pass = struct {
         });
         errdefer rp.deinit(gpa, dev);
         var fbs = try gpa.alloc(ngl.FrameBuffer, plat.images.len);
-        for (fbs, plat.image_views, 0..) |*fb, *view, i| {
+        for (fbs, plat.image_views, 0..) |*fb, *sc_view, i| {
             fb.* = ngl.FrameBuffer.init(gpa, dev, .{
                 .render_pass = &rp,
-                .attachments = &.{view},
+                .attachments = &.{sc_view},
                 .width = Platform.width,
                 .height = Platform.height,
                 .layers = 1,
