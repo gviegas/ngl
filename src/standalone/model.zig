@@ -11735,18 +11735,10 @@ const DataObj = struct {
     }
 
     fn deinit(self: *Self) void {
-        self.positions.deinit(
-            self.gpa,
-        );
-        self.tex_coords.deinit(
-            self.gpa,
-        );
-        self.normals.deinit(
-            self.gpa,
-        );
-        self.faces.deinit(
-            self.gpa,
-        );
+        self.positions.deinit(self.gpa);
+        self.tex_coords.deinit(self.gpa);
+        self.normals.deinit(self.gpa);
+        self.faces.deinit(self.gpa);
     }
 };
 
