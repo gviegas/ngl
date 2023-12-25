@@ -550,7 +550,18 @@ const DepthAttachment = struct {
             .d16_unorm,
             .d16_unorm_s8_uint,
         }) |x| {
-            const capabs = try ngl.Image.getCapabilities(dev, @"type", x, tiling, usage, misc);
+            const capabs = ngl.Image.getCapabilities(
+                dev,
+                @"type",
+                x,
+                tiling,
+                usage,
+                misc,
+            ) catch |err| {
+                if (err == ngl.Error.NotSupported)
+                    continue;
+                return err;
+            };
             const U = @typeInfo(ngl.SampleCount.Flags).Struct.backing_integer.?;
             const mask: U = @bitCast(capabs.sample_counts);
             if ((@as(U, 1) << @intFromEnum(spls)) & mask != 0)

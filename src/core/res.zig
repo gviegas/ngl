@@ -1448,6 +1448,8 @@ pub const Image = struct {
         return .{ .impl = try Impl.get().initImage(allocator, device.impl, desc) };
     }
 
+    /// It'll return `Error.NotSupported` to indicate that creating
+    /// an image with the given parameters isn't possible.
     pub fn getCapabilities(
         device: *Device,
         @"type": Type,
