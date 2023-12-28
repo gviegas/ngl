@@ -6,6 +6,7 @@ const context = @import("ctx.zig").context;
 const Platform = @import("plat.zig").Platform;
 const platform = @import("plat.zig").platform;
 const util = @import("util.zig");
+const model = @import("model.zig");
 
 pub fn main() !void {
     try do();
@@ -79,7 +80,8 @@ fn do() !void {
     var vert_buf = try VertexBuffer.init();
     defer vert_buf.deinit();
 
-    var stg_buf = try StagingBuffer.init();
+    const stg_size = Texture.size + UniformBuffer.size + vert_buf.model.vertexSize();
+    var stg_buf = try StagingBuffer.init(stg_size);
     defer stg_buf.deinit();
 
     var desc = try Descriptor.init();
@@ -93,7 +95,7 @@ fn do() !void {
 
     try desc.write(&tex, &unif_buf);
 
-    const tex_regs = Texture.copy(&stg_buf, 0);
+    const tex_regs = tex.copy(&stg_buf, 0);
 
     const eye = [3]f32{ -2, -3, -4 };
     const asp_ratio = @as(f32, width) / @as(f32, height);
@@ -116,7 +118,7 @@ fn do() !void {
             ub_regs[i + 2 + j] = matl.copy(frame, j, &stg_buf, Texture.size);
     }
 
-    const vb_reg = VertexBuffer.copy(&stg_buf, Texture.size + UniformBuffer.size);
+    const vb_reg = vert_buf.copy(&stg_buf, Texture.size + UniformBuffer.size);
 
     var cmd = try queue.buffers[0].begin(gpa, dev, .{
         .one_time_submit = true,
@@ -598,9 +600,6 @@ const Pass = struct {
         vertex_buffer: *VertexBuffer,
         frame: usize,
     ) void {
-        // TODO
-        const mdl = &@import("model.zig").sphere;
-
         cmd.beginRenderPass(
             .{
                 .render_pass = &self.render_pass,
@@ -631,18 +630,18 @@ const Pass = struct {
             0,
             &[_]*ngl.Buffer{&vertex_buffer.buffer} ** 3,
             &.{
-                @offsetOf(@TypeOf(mdl.data), "position"),
-                @offsetOf(@TypeOf(mdl.data), "normal"),
-                @offsetOf(@TypeOf(mdl.data), "tex_coord"),
+                0,
+                vertex_buffer.model.positionSize(),
+                vertex_buffer.model.positionSize() + vertex_buffer.model.normalSize(),
             },
             &.{
-                @sizeOf(@TypeOf(mdl.data.position)),
-                @sizeOf(@TypeOf(mdl.data.normal)),
-                @sizeOf(@TypeOf(mdl.data.tex_coord)),
+                vertex_buffer.model.positionSize(),
+                vertex_buffer.model.normalSize(),
+                vertex_buffer.model.texCoordSize(),
             },
         );
 
-        cmd.draw(mdl.vertex_count, 1, 0, 0);
+        cmd.draw(vertex_buffer.model.vertexCount(), 1, 0, 0);
 
         cmd.endRenderPass(.{});
     }
@@ -670,8 +669,13 @@ const Texture = struct {
         break :blk lvls;
     };
 
-    fn copy(staging_buffer: *StagingBuffer, offset: u64) [levels]ngl.Cmd.BufferImageCopy.Region {
+    fn copy(
+        _: Texture,
+        staging_buffer: *StagingBuffer,
+        offset: u64,
+    ) [levels]ngl.Cmd.BufferImageCopy.Region {
         std.debug.assert(offset & 3 == 0);
+
         // TODO
         const pixel = [4]u8{ 206, 200, 194, 255 };
         var row: [extent * 4]u8 = undefined;
@@ -810,8 +814,7 @@ const UniformBuffer = struct {
     buffer: ngl.Buffer,
     memory: ngl.Memory,
 
-    // TODO
-    const size = frame_n * (1 << 16);
+    const size = frame_n * (2 + materials.len) * 256;
 
     fn init() ngl.Error!UniformBuffer {
         const dev = &context().device;
@@ -848,31 +851,53 @@ const UniformBuffer = struct {
 const VertexBuffer = struct {
     buffer: ngl.Buffer,
     memory: ngl.Memory,
+    // TODO: This should be loaded into GPU memory directly
+    model: model.Model,
 
-    // TODO
-    const size = 1 << 20;
-
-    fn copy(staging_buffer: *StagingBuffer, offset: u64) ngl.Cmd.BufferCopy.Region {
+    fn copy(
+        self: VertexBuffer,
+        staging_buffer: *StagingBuffer,
+        offset: u64,
+    ) ngl.Cmd.BufferCopy.Region {
         std.debug.assert(offset & 3 == 0);
-        // TODO
-        const mdl = &@import("model.zig").sphere;
-        const copy_sz = @sizeOf(@TypeOf(mdl.data));
+
+        var off = offset;
+        var size = self.model.positionSize();
         @memcpy(
-            staging_buffer.data[offset .. offset + copy_sz],
-            @as([*]const u8, @ptrCast(&mdl.data))[0..copy_sz],
+            staging_buffer.data[off .. off + size],
+            @as([*]const u8, @ptrCast(self.model.positions.items.ptr))[0..size],
         );
+        off += size;
+        size = self.model.normalSize();
+        @memcpy(
+            staging_buffer.data[off .. off + size],
+            @as([*]const u8, @ptrCast(self.model.normals.items.ptr))[0..size],
+        );
+        off += size;
+        size = self.model.texCoordSize();
+        @memcpy(
+            staging_buffer.data[off .. off + size],
+            @as([*]const u8, @ptrCast(self.model.tex_coords.items.ptr))[0..size],
+        );
+
         return .{
             .source_offset = offset,
             .dest_offset = 0,
-            .size = copy_sz,
+            .size = self.model.vertexSize(),
         };
     }
 
     fn init() ngl.Error!VertexBuffer {
         const dev = &context().device;
 
+        var mdl = model.loadObj(gpa, "src/standalone/data/geometry/sphere.obj") catch |err| {
+            std.log.err("Failed to load model ({s})", .{@errorName(err)});
+            return error.Other;
+        };
+        errdefer mdl.deinit();
+
         var buf = try ngl.Buffer.init(gpa, dev, .{
-            .size = size,
+            .size = mdl.vertexSize(),
             .usage = .{ .vertex_buffer = true, .transfer_dest = true },
         });
         const mem = blk: {
@@ -890,6 +915,7 @@ const VertexBuffer = struct {
         return .{
             .buffer = buf,
             .memory = mem,
+            .model = mdl,
         };
     }
 
@@ -897,6 +923,7 @@ const VertexBuffer = struct {
         const dev = &context().device;
         self.buffer.deinit(gpa, dev);
         dev.free(gpa, &self.memory);
+        self.model.deinit();
     }
 };
 
@@ -905,9 +932,7 @@ const StagingBuffer = struct {
     memory: ngl.Memory,
     data: []u8,
 
-    const size = Texture.size + UniformBuffer.size + VertexBuffer.size;
-
-    fn init() ngl.Error!StagingBuffer {
+    fn init(size: u64) ngl.Error!StagingBuffer {
         const dev = &context().device;
 
         var buf = try ngl.Buffer.init(gpa, dev, .{
@@ -1085,9 +1110,6 @@ const Pipeline = struct {
     const frag_spv align(4) = @embedFile("shader/pbr/frag.spv").*;
 
     fn init(pass: *Pass, descriptor: *Descriptor, samples: ngl.SampleCount) ngl.Error!Pipeline {
-        // TODO
-        const mdl = &@import("model.zig").sphere;
-
         const stages = [2]ngl.ShaderStage.Desc{
             .{
                 .stage = .vertex,
@@ -1139,7 +1161,7 @@ const Pipeline = struct {
                     .offset = 0,
                 },
             },
-            .topology = mdl.topology,
+            .topology = .triangle_list,
         };
 
         const vport = ngl.Viewport{
@@ -1154,7 +1176,7 @@ const Pipeline = struct {
         const raster = ngl.Rasterization{
             .polygon_mode = .fill,
             .cull_mode = .back,
-            .clockwise = mdl.clockwise,
+            .clockwise = false,
             .samples = samples,
         };
 
