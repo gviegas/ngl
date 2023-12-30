@@ -19,8 +19,8 @@ pub const Platform = struct {
     queue_index: ngl.Queue.Index,
     mutex: std.Thread.Mutex = .{},
 
-    pub const width = 960;
-    pub const height = 540;
+    pub const width = 1280;
+    pub const height = 720;
 
     pub const Input = packed struct {
         done: bool = false,
