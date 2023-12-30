@@ -299,15 +299,15 @@ pub const DataPng = struct {
 
         // Called by `decode`
         // This is the final step
-        // TODO: Currently this only handles rgb8/rgba8
+        // TODO: Currently this only handles gray8/rgb8/rgba8
         fn convert(self: *Idat, dest: anytype) !struct { ngl.Format, []u8 } {
             if (self.channels == 3 and self.bits_per_pixel == 24) {
                 const w = self.scanline_size / 3;
                 const h = self.image_height;
                 var data = try dest.get(w * h * 4);
                 for (0..h) |i| {
-                    var from = self.data.items[w * 3 * i + i + 1 ..];
-                    var to = data[w * 4 * i ..];
+                    const from = self.data.items[w * 3 * i + i + 1 ..];
+                    const to = data[w * 4 * i ..];
                     for (0..w) |j| {
                         @memcpy(to[j * 4 .. j * 4 + 3], from[j * 3 .. j * 3 + 3]);
                         to[j * 4 + 3] = 255;
@@ -321,11 +321,23 @@ pub const DataPng = struct {
                 const h = self.image_height;
                 var data = try dest.get(w * h * 4);
                 for (0..h) |i| {
-                    var from = self.data.items[w * 4 * i + i + 1 ..];
-                    var to = data[w * 4 * i ..];
+                    const from = self.data.items[w * 4 * i + i + 1 ..];
+                    const to = data[w * 4 * i ..];
                     @memcpy(to[0 .. w * 4], from[0 .. w * 4]);
                 }
                 return .{ .rgba8_srgb, data };
+            }
+
+            if (self.channels == 1 and self.bits_per_pixel == 8) {
+                const w = self.scanline_size - 1;
+                const h = self.image_height;
+                var data = try dest.get(w * h);
+                for (0..h) |i| {
+                    const from = self.data.items[w * i + i + 1 ..];
+                    const to = data[w * i ..];
+                    @memcpy(to[0..w], from[0..w]);
+                }
+                return .{ .r8_srgb, data };
             }
 
             // TODO
