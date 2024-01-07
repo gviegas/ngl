@@ -276,6 +276,8 @@ fn do() !void {
         if (!is_unified) @panic("TODO");
         try cmd.end();
 
+        try ngl.Fence.reset(gpa, dev, &.{fence});
+
         ctx.lockQueue(queue.graph_comp);
         defer ctx.unlockQueue(queue.graph_comp);
 
