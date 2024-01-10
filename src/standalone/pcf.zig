@@ -108,18 +108,13 @@ fn do() !void {
     const shdw_v = util.lookAt(.{ 0, 0, 0 }, light_pos, .{ 0, -1, 0 });
     const shdw_p = util.frustum(-1, 1, -1, 1, 1, 100);
     const vps = util.mulM(4, .{
-        0.5, 0,   0,   0,
-        0,   0.5, 0,   0,
-        0,   0,   1.0, 0,
-        0.5, 0.5, 0,   1,
+        0.5, 0,   0, 0,
+        0,   0.5, 0, 0,
+        0,   0,   1, 0,
+        0.5, 0.5, 0, 1,
     }, util.mulM(4, shdw_p, shdw_v));
     const v = util.lookAt(.{ 4, 0, 0 }, .{ -2, -7, -7 }, .{ 0, -1, 0 });
-    const p = util.perspective(
-        std.math.pi / 3.0,
-        @as(f32, @floatFromInt(width)) / @as(f32, @floatFromInt(height)),
-        0.1,
-        100,
-    );
+    const p = util.perspective(std.math.pi / 3.0, @as(f32, width) / @as(f32, height), 0.01, 100);
     for (0..frame_n) |i| {
         unif_buf.updateLight(
             i,
