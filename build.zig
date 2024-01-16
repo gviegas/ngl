@@ -11,6 +11,7 @@ pub fn build(b: *std.Build) void {
     addStandalone(b, "srgb.zig", b.step("srgb", "Run sRGB standalone"));
     addStandalone(b, "cube.zig", b.step("cube", "Run cube map standalone"));
     addStandalone(b, "mag.zig", b.step("mag", "Run alpha test standalone"));
+    addStandalone(b, "vsm.zig", b.step("vsm", "Run shadows standalone"));
 }
 
 fn addMainTests(b: *std.Build) void {
