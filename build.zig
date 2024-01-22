@@ -5,13 +5,14 @@ const builtin = @import("builtin");
 pub fn build(b: *std.Build) void {
     addMainTests(b);
 
-    addStandalone(b, "ads.zig", b.step("ads", "Run basic shading standalone"));
-    addStandalone(b, "pcf.zig", b.step("pcf", "Run basic shadows standalone"));
-    addStandalone(b, "pbr.zig", b.step("pbr", "Run shading standalone"));
+    addStandalone(b, "ads.zig", b.step("ads", "Run ADS shading standalone"));
+    addStandalone(b, "pbr.zig", b.step("pbr", "Run PBR shading standalone"));
+    addStandalone(b, "pcf.zig", b.step("pcf", "Run PCF shadows standalone"));
+    addStandalone(b, "vsm.zig", b.step("vsm", "Run VSM shadows standalone"));
     addStandalone(b, "srgb.zig", b.step("srgb", "Run sRGB standalone"));
-    addStandalone(b, "cube.zig", b.step("cube", "Run cube map standalone"));
     addStandalone(b, "mag.zig", b.step("mag", "Run alpha test standalone"));
-    addStandalone(b, "vsm.zig", b.step("vsm", "Run shadows standalone"));
+    addStandalone(b, "cube.zig", b.step("cube", "Run cube map standalone"));
+    addStandalone(b, "ssao.zig", b.step("ssao", "Run SSAO standalone"));
 }
 
 fn addMainTests(b: *std.Build) void {

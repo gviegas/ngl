@@ -187,6 +187,59 @@ pub fn invert3(matrix: [3 * 3]f32) [3 * 3]f32 {
     };
 }
 
+pub fn invert4(matrix: [4 * 4]f32) [4 * 4]f32 {
+    const m00 = matrix[0];
+    const m01 = matrix[1];
+    const m02 = matrix[2];
+    const m03 = matrix[3];
+    const m10 = matrix[4];
+    const m11 = matrix[5];
+    const m12 = matrix[6];
+    const m13 = matrix[7];
+    const m20 = matrix[8];
+    const m21 = matrix[9];
+    const m22 = matrix[10];
+    const m23 = matrix[11];
+    const m30 = matrix[12];
+    const m31 = matrix[13];
+    const m32 = matrix[14];
+    const m33 = matrix[15];
+    const s0 = m00 * m11 - m01 * m10;
+    const s1 = m00 * m12 - m02 * m10;
+    const s2 = m00 * m13 - m03 * m10;
+    const s3 = m01 * m12 - m02 * m11;
+    const s4 = m01 * m13 - m03 * m11;
+    const s5 = m02 * m13 - m03 * m12;
+    const c0 = m20 * m31 - m21 * m30;
+    const c1 = m20 * m32 - m22 * m30;
+    const c2 = m20 * m33 - m23 * m30;
+    const c3 = m21 * m32 - m22 * m31;
+    const c4 = m21 * m33 - m23 * m31;
+    const c5 = m22 * m33 - m23 * m32;
+    const inv_det = 1 / (s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0);
+    return @as(@Vector(4 * 4, f32), @splat(inv_det)) * @Vector(4 * 4, f32){
+        c5 * m11 - c4 * m12 + c3 * m13,
+        -c5 * m01 + c4 * m02 - c3 * m03,
+        s5 * m31 - s4 * m32 + s3 * m33,
+        -s5 * m21 + s4 * m22 - s3 * m23,
+
+        -c5 * m10 + c2 * m12 - c1 * m13,
+        c5 * m00 - c2 * m02 + c1 * m03,
+        -s5 * m30 + s2 * m32 - s1 * m33,
+        s5 * m20 - s2 * m22 + s1 * m23,
+
+        c4 * m10 - c2 * m11 + c0 * m13,
+        -c4 * m00 + c2 * m01 - c0 * m03,
+        s4 * m30 - s2 * m31 + s0 * m33,
+        -s4 * m20 + s2 * m21 - s0 * m23,
+
+        -c3 * m10 + c1 * m11 - c0 * m12,
+        c3 * m00 - c1 * m01 + c0 * m02,
+        -s3 * m30 + s1 * m31 - s0 * m32,
+        s3 * m20 - s1 * m21 + s0 * m22,
+    };
+}
+
 pub fn transpose(comptime n: comptime_int, matrix: [n * n]f32) [n * n]f32 {
     const mask = comptime blk: {
         var m: @Vector(n * n, f32) = undefined;
