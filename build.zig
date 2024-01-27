@@ -13,6 +13,7 @@ pub fn build(b: *std.Build) void {
     addStandalone(b, "mag.zig", b.step("mag", "Run alpha test standalone"));
     addStandalone(b, "cube.zig", b.step("cube", "Run cube map standalone"));
     addStandalone(b, "ssao.zig", b.step("ssao", "Run SSAO standalone"));
+    addStandalone(b, "hdr.zig", b.step("hdr", "Run HDR standalone"));
 }
 
 fn addMainTests(b: *std.Build) void {
