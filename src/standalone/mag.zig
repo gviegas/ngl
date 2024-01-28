@@ -35,7 +35,7 @@ fn do() !void {
         }
     } = .{};
 
-    const tex_data = try idata.loadPng(gpa, "src/standalone/data/image/glyphs_4096.png", &dest);
+    const tex_data = try idata.loadPng(gpa, "src/standalone/data/image/glyphs.png", &dest);
     if (!tex_data.format.getFeatures(dev).optimal_tiling.sampled_image_filter_linear)
         @panic("TODO");
     if (tex_data.width != tex_data.height)
@@ -231,12 +231,12 @@ fn do() !void {
         const now = std.time.Instant.now() catch unreachable;
         const dt = now.since(delta);
         delta = now;
-        scale_fac += scale_dir * 0.2 * (@as(f32, @floatFromInt(dt)) / 1e9);
+        scale_fac += scale_dir * 0.0666 * (@as(f32, @floatFromInt(dt)) / 1e9);
         if (scale_fac < 0 or scale_fac > 1) {
             scale_fac = @min(1, @max(0, scale_fac));
             scale_dir *= -1;
         }
-        const scale = 1000.0 * @min(0.03, @max(0.0003, std.math.pow(f32, scale_fac, 6.0)));
+        const scale = 2000.0 * @min(0.03, @max(0.0003, std.math.pow(f32, scale_fac, 6.0)));
 
         const m = [16]f32{
             scale, 0,     0,     0,
@@ -515,7 +515,7 @@ const AlphaMap = struct {
     sampler: ngl.Sampler,
 
     const format = ngl.Format.rgba8_unorm;
-    const width = 128;
+    const width = 192;
     const height = width;
 
     fn init() ngl.Error!AlphaMap {
