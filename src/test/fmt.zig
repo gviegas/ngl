@@ -11,7 +11,7 @@ test "Format.getFeatures" {
 
     // This is allowed and should produce an empty set
     feat_set = ngl.Format.unknown.getFeatures(dev);
-    try testing.expectEqual(feat_set, .{
+    try testing.expectEqual(feat_set, ngl.Format.FeatureSet{
         .linear_tiling = .{},
         .optimal_tiling = .{},
         .buffer = .{},
@@ -477,19 +477,25 @@ test "Format.getAspectMask" {
             .astc_12x10_srgb,
             .astc_12x12_unorm,
             .astc_12x12_srgb,
-            => try testing.expectEqual(asp_mask, .{ .color = true }),
+            => try testing.expectEqual(asp_mask, ngl.Image.Aspect.Flags{ .color = true }),
 
             .d16_unorm,
             .x8_d24_unorm,
             .d32_sfloat,
-            => try testing.expectEqual(asp_mask, .{ .depth = true }),
+            => try testing.expectEqual(asp_mask, ngl.Image.Aspect.Flags{ .depth = true }),
 
-            .s8_uint => try testing.expectEqual(asp_mask, .{ .stencil = true }),
+            .s8_uint => try testing.expectEqual(
+                asp_mask,
+                ngl.Image.Aspect.Flags{ .stencil = true },
+            ),
 
             .d16_unorm_s8_uint,
             .d24_unorm_s8_uint,
             .d32_sfloat_s8_uint,
-            => try testing.expectEqual(asp_mask, .{ .depth = true, .stencil = true }),
+            => try testing.expectEqual(
+                asp_mask,
+                ngl.Image.Aspect.Flags{ .depth = true, .stencil = true },
+            ),
         }
     }
 
