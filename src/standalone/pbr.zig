@@ -18,9 +18,9 @@ const height = Platform.height;
 
 const light = Light{
     .lights = .{.{
-        .position = .{ 0, -4, -3 },
+        .position = .{ 0, -4, 3 },
         .color = .{ 1, 1, 1 },
-        .intensity = 60,
+        .intensity = 30,
     }},
 };
 
@@ -97,7 +97,7 @@ fn do() !void {
 
     const tex_regs = tex.copy(&stg_buf, 0);
 
-    const eye = [3]f32{ -2, -3, -4 };
+    const eye = [3]f32{ 3, -3, 3 };
     const asp_ratio = @as(f32, width) / @as(f32, height);
     const m = util.identity(4);
     const v = util.lookAt(.{ 0, 0, 0 }, eye, .{ 0, -1, 0 });
