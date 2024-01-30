@@ -1,0 +1,19 @@
+.{
+    .name = "sample",
+    .version = "0.1.0",
+    //.minimum_zig_version = "0.12.0",
+    .dependencies = .{
+        .ngl = .{
+            .url = "../ngl/",
+            .hash = "122011382da0134ec2e07983f1af6f7c04ddd15be971a5ce3f21cdb8e4090fc0d6ef",
+        },
+    },
+    .paths = .{
+        //"",
+        "build.zig",
+        "build.zig.zon",
+        "capture",
+        "data",
+        "src",
+    },
+}
