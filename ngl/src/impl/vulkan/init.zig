@@ -793,6 +793,8 @@ pub const Device = struct {
     destroyPipelineCache: c.PFN_vkDestroyPipelineCache,
     createShaderModule: c.PFN_vkCreateShaderModule,
     destroyShaderModule: c.PFN_vkDestroyShaderModule,
+    createQueryPool: c.PFN_vkCreateQueryPool,
+    destroyQueryPool: c.PFN_vkDestroyQueryPool,
     // VK_KHR_swapchain
     queuePresent: c.PFN_vkQueuePresentKHR,
     createSwapchain: c.PFN_vkCreateSwapchainKHR,
@@ -1114,6 +1116,8 @@ pub const Device = struct {
             .destroyPipelineCache = @ptrCast(try Device.getProc(get, dev, "vkDestroyPipelineCache")),
             .createShaderModule = @ptrCast(try Device.getProc(get, dev, "vkCreateShaderModule")),
             .destroyShaderModule = @ptrCast(try Device.getProc(get, dev, "vkDestroyShaderModule")),
+            .createQueryPool = @ptrCast(try Device.getProc(get, dev, "vkCreateQueryPool")),
+            .destroyQueryPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyQueryPool")),
 
             .queuePresent = if (desc.feature_set.presentation)
                 @ptrCast(try Device.getProc(get, dev, "vkQueuePresentKHR"))
@@ -2069,6 +2073,23 @@ pub const Device = struct {
         self.destroyShaderModule.?(self.handle, shader_module, vk_allocator);
     }
 
+    pub inline fn vkCreateQueryPool(
+        self: *Device,
+        create_info: *const c.VkQueryPoolCreateInfo,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        query_pool: *c.VkQueryPool,
+    ) c.VkResult {
+        return self.createQueryPool.?(self.handle, create_info, vk_allocator, query_pool);
+    }
+
+    pub inline fn vkDestroyQueryPool(
+        self: *Device,
+        query_pool: c.VkQueryPool,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroyQueryPool.?(self.handle, query_pool, vk_allocator);
+    }
+
     pub inline fn vkQueuePresentKHR(
         self: *Device,
         queue: c.VkQueue,
@@ -2726,6 +2747,9 @@ const vtable = Impl.VTable{
 
     .initPipelineCache = @import("state.zig").PipelineCache.init,
     .deinitPipelineCache = @import("state.zig").PipelineCache.deinit,
+
+    .initQueryPool = @import("query.zig").QueryPool.init,
+    .deinitQueryPool = @import("query.zig").QueryPool.deinit,
 
     .initSurface = @import("dpy.zig").Surface.init,
     .isSurfaceCompatible = @import("dpy.zig").Surface.isCompatible,
