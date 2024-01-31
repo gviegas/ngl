@@ -45,6 +45,7 @@ pub const DescriptorPool = Type(ngl.DescriptorPool);
 pub const DescriptorSet = Type(ngl.DescriptorSet);
 pub const Pipeline = Type(ngl.Pipeline);
 pub const PipelineCache = Type(ngl.PipelineCache);
+pub const QueryPool = Type(ngl.QueryPool);
 pub const Surface = Type(ngl.Surface);
 pub const SwapChain = Type(ngl.SwapChain);
 
@@ -773,6 +774,22 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         pipeline_cache: PipelineCache,
+    ) void,
+
+    // QueryPool -------------------------------------------
+
+    initQueryPool: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        desc: ngl.QueryPool.Desc,
+    ) Error!QueryPool,
+
+    deinitQueryPool: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        query_pool: QueryPool,
     ) void,
 
     // Surface ---------------------------------------------
@@ -1816,6 +1833,24 @@ pub fn deinitPipelineCache(
     pipeline_cache: PipelineCache,
 ) void {
     self.vtable.deinitPipelineCache(self.ptr, allocator, device, pipeline_cache);
+}
+
+pub fn initQueryPool(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    desc: ngl.QueryPool.Desc,
+) Error!QueryPool {
+    return self.vtable.initQueryPool(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitQueryPool(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    query_pool: QueryPool,
+) void {
+    self.vtable.deinitQueryPool(self.ptr, allocator, device, query_pool);
 }
 
 pub fn initSurface(
