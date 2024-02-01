@@ -444,6 +444,15 @@ pub const VTable = struct {
         query: u32,
     ) void,
 
+    writeTimestamp: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        pipeline_stage: ngl.PipelineStage,
+        query_pool: QueryPool,
+        query: u32,
+    ) void,
+
     pipelineBarrier: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1487,6 +1496,24 @@ pub fn endQuery(
     query: u32,
 ) void {
     self.vtable.endQuery(self.ptr, device, command_buffer, query_pool, query);
+}
+
+pub fn writeTimestamp(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    pipeline_stage: ngl.PipelineStage,
+    query_pool: QueryPool,
+    query: u32,
+) void {
+    self.vtable.writeTimestamp(
+        self.ptr,
+        device,
+        command_buffer,
+        pipeline_stage,
+        query_pool,
+        query,
+    );
 }
 
 pub fn pipelineBarrier(

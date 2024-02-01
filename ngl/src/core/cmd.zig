@@ -565,6 +565,21 @@ pub const CommandBuffer = struct {
             Impl.get().endQuery(self.device.impl, self.command_buffer.impl, query_pool.impl, query);
         }
 
+        pub fn writeTimestamp(
+            self: *Cmd,
+            pipeline_stage: PipelineStage,
+            query_pool: *QueryPool,
+            query: u32,
+        ) void {
+            Impl.get().writeTimestamp(
+                self.device.impl,
+                self.command_buffer.impl,
+                pipeline_stage,
+                query_pool.impl,
+                query,
+            );
+        }
+
         /// At least one of `global_dependencies`, `buffer_dependencies`
         /// or `image_dependencies` must be provided.
         pub const Dependency = struct {

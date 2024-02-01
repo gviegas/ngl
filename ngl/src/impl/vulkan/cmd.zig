@@ -839,6 +839,22 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn writeTimestamp(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        pipeline_stage: ngl.PipelineStage,
+        query_pool: Impl.QueryPool,
+        query: u32,
+    ) void {
+        Device.cast(device).vkCmdWriteTimestamp(
+            cast(command_buffer).handle,
+            conv.toVkPipelineStage(.source, pipeline_stage),
+            QueryPool.cast(query_pool).handle,
+            query,
+        );
+    }
+
     pub fn pipelineBarrier(
         _: *anyopaque,
         allocator: std.mem.Allocator,
