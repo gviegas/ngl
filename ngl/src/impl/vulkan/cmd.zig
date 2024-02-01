@@ -807,6 +807,38 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn beginQuery(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        query_pool: Impl.QueryPool,
+        query: u32,
+        control: ngl.Cmd.QueryControl,
+    ) void {
+        Device.cast(device).vkCmdBeginQuery(
+            cast(command_buffer).handle,
+            QueryPool.cast(query_pool).handle,
+            query,
+            // This assumes that `control.precise` will only be set to
+            // `true` for occlusion queries
+            if (control.precise) c.VK_QUERY_CONTROL_PRECISE_BIT else 0,
+        );
+    }
+
+    pub fn endQuery(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        query_pool: Impl.QueryPool,
+        query: u32,
+    ) void {
+        Device.cast(device).vkCmdEndQuery(
+            cast(command_buffer).handle,
+            QueryPool.cast(query_pool).handle,
+            query,
+        );
+    }
+
     pub fn pipelineBarrier(
         _: *anyopaque,
         allocator: std.mem.Allocator,

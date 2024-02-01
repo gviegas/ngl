@@ -427,6 +427,23 @@ pub const VTable = struct {
         query_count: u32,
     ) void,
 
+    beginQuery: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        query_pool: QueryPool,
+        query: u32,
+        control: ngl.Cmd.QueryControl,
+    ) void,
+
+    endQuery: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        query_pool: QueryPool,
+        query: u32,
+    ) void,
+
     pipelineBarrier: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1449,6 +1466,27 @@ pub fn resetQueryPool(
         first_query,
         query_count,
     );
+}
+
+pub fn beginQuery(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    query_pool: QueryPool,
+    query: u32,
+    control: ngl.Cmd.QueryControl,
+) void {
+    self.vtable.beginQuery(self.ptr, device, command_buffer, query_pool, query, control);
+}
+
+pub fn endQuery(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    query_pool: QueryPool,
+    query: u32,
+) void {
+    self.vtable.endQuery(self.ptr, device, command_buffer, query_pool, query);
 }
 
 pub fn pipelineBarrier(

@@ -533,6 +533,38 @@ pub const CommandBuffer = struct {
             );
         }
 
+        pub const QueryControl = struct {
+            // TODO: Expose support in `Feature.core`
+            precise: bool = false,
+        };
+
+        /// Calling it outside of a render pass is not valid.
+        // TODO: Need to relax the above requirement if non-graphics
+        // queries using this command are added
+        /// Must be paired with `endQuery`.
+        /// Not used for timestamp queries.
+        pub fn beginQuery(
+            self: *Cmd,
+            query_pool: *QueryPool,
+            query: u32,
+            control: QueryControl,
+        ) void {
+            Impl.get().beginQuery(
+                self.device.impl,
+                self.command_buffer.impl,
+                query_pool.impl,
+                query,
+                control,
+            );
+        }
+
+        /// It must be scoped to the the same subpass from which it
+        /// was begun (i.e., `beginQuery` + `endQuery` cannot span
+        /// across multiple subpasses).
+        pub fn endQuery(self: *Cmd, query_pool: *QueryPool, query: u32) void {
+            Impl.get().endQuery(self.device.impl, self.command_buffer.impl, query_pool.impl, query);
+        }
+
         /// At least one of `global_dependencies`, `buffer_dependencies`
         /// or `image_dependencies` must be provided.
         pub const Dependency = struct {
