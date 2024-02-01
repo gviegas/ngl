@@ -749,6 +749,11 @@ pub const Device = struct {
     cmdCopyImage: c.PFN_vkCmdCopyImage,
     cmdCopyBufferToImage: c.PFN_vkCmdCopyBufferToImage,
     cmdCopyImageToBuffer: c.PFN_vkCmdCopyImageToBuffer,
+    cmdResetQueryPool: c.PFN_vkCmdResetQueryPool,
+    cmdBeginQuery: c.PFN_vkCmdBeginQuery,
+    cmdEndQuery: c.PFN_vkCmdEndQuery,
+    cmdWriteTimestamp: c.PFN_vkCmdWriteTimestamp,
+    cmdCopyQueryPoolResults: c.PFN_vkCmdCopyQueryPoolResults,
     cmdPipelineBarrier: c.PFN_vkCmdPipelineBarrier,
     cmdExecuteCommands: c.PFN_vkCmdExecuteCommands,
     createFence: c.PFN_vkCreateFence,
@@ -1072,6 +1077,11 @@ pub const Device = struct {
             .cmdCopyImage = @ptrCast(try Device.getProc(get, dev, "vkCmdCopyImage")),
             .cmdCopyBufferToImage = @ptrCast(try Device.getProc(get, dev, "vkCmdCopyBufferToImage")),
             .cmdCopyImageToBuffer = @ptrCast(try Device.getProc(get, dev, "vkCmdCopyImageToBuffer")),
+            .cmdResetQueryPool = @ptrCast(try Device.getProc(get, dev, "vkCmdResetQueryPool")),
+            .cmdBeginQuery = @ptrCast(try Device.getProc(get, dev, "vkCmdBeginQuery")),
+            .cmdEndQuery = @ptrCast(try Device.getProc(get, dev, "vkCmdEndQuery")),
+            .cmdWriteTimestamp = @ptrCast(try Device.getProc(get, dev, "vkCmdWriteTimestamp")),
+            .cmdCopyQueryPoolResults = @ptrCast(try Device.getProc(get, dev, "vkCmdCopyQueryPoolResults")),
             .cmdPipelineBarrier = @ptrCast(try Device.getProc(get, dev, "vkCmdPipelineBarrier")),
             .cmdExecuteCommands = @ptrCast(try Device.getProc(get, dev, "vkCmdExecuteCommands")),
             .createFence = @ptrCast(try Device.getProc(get, dev, "vkCreateFence")),
@@ -1646,6 +1656,68 @@ pub const Device = struct {
             dest_buffer,
             region_count,
             regions,
+        );
+    }
+
+    pub inline fn vkCmdResetQueryPool(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        query_pool: c.VkQueryPool,
+        first_query: u32,
+        query_count: u32,
+    ) void {
+        self.cmdResetQueryPool.?(command_buffer, query_pool, first_query, query_count);
+    }
+
+    pub inline fn vkCmdBeginQuery(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        query_pool: c.VkQueryPool,
+        query: u32,
+        flags: c.VkQueryControlFlags,
+    ) void {
+        self.cmdBeginQuery.?(command_buffer, query_pool, query, flags);
+    }
+
+    pub inline fn vkCmdEndQuery(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        query_pool: c.VkQueryPool,
+        query: u32,
+    ) void {
+        self.cmdEndQuery.?(command_buffer, query_pool, query);
+    }
+
+    pub inline fn vkCmdWriteTimestamp(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        pipeline_stage: c.VkPipelineStageFlagBits,
+        query_pool: c.VkQueryPool,
+        query: u32,
+    ) void {
+        self.cmdWriteTimestamp.?(command_buffer, pipeline_stage, query_pool, query);
+    }
+
+    pub inline fn vkCmdCopyQueryPoolResults(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        query_pool: c.VkQueryPool,
+        first_query: u32,
+        query_count: u32,
+        dest_buffer: c.VkBuffer,
+        dest_offset: u64,
+        stride: u64,
+        flags: c.VkQueryResultFlags,
+    ) void {
+        self.cmdCopyQueryPoolResults.?(
+            command_buffer,
+            query_pool,
+            first_query,
+            query_count,
+            dest_buffer,
+            dest_offset,
+            stride,
+            flags,
         );
     }
 
