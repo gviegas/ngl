@@ -18,6 +18,7 @@ const FrameBuffer = @import("pass.zig").FrameBuffer;
 const PipelineLayout = @import("desc.zig").PipelineLayout;
 const DescriptorSet = @import("desc.zig").DescriptorSet;
 const Pipeline = @import("state.zig").Pipeline;
+const QueryPool = @import("query.zig").QueryPool;
 
 pub const CommandPool = packed struct {
     handle: c.VkCommandPool,
@@ -788,6 +789,22 @@ pub const CommandBuffer = packed struct {
         copies: []const ngl.Cmd.BufferImageCopy,
     ) void {
         copyBufferToImageOrImageToBuffer(.imageToBuffer, allocator, device, command_buffer, copies);
+    }
+
+    pub fn resetQueryPool(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        query_pool: Impl.QueryPool,
+        first_query: u32,
+        query_count: u32,
+    ) void {
+        Device.cast(device).vkCmdResetQueryPool(
+            cast(command_buffer).handle,
+            QueryPool.cast(query_pool).handle,
+            first_query,
+            query_count,
+        );
     }
 
     pub fn pipelineBarrier(

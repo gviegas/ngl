@@ -418,6 +418,15 @@ pub const VTable = struct {
         copies: []const ngl.Cmd.BufferImageCopy,
     ) void,
 
+    resetQueryPool: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        query_pool: QueryPool,
+        first_query: u32,
+        query_count: u32,
+    ) void,
+
     pipelineBarrier: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1422,6 +1431,24 @@ pub fn copyImageToBuffer(
     copies: []const ngl.Cmd.BufferImageCopy,
 ) void {
     self.vtable.copyImageToBuffer(self.ptr, allocator, device, command_buffer, copies);
+}
+
+pub fn resetQueryPool(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    query_pool: QueryPool,
+    first_query: u32,
+    query_count: u32,
+) void {
+    self.vtable.resetQueryPool(
+        self.ptr,
+        device,
+        command_buffer,
+        query_pool,
+        first_query,
+        query_count,
+    );
 }
 
 pub fn pipelineBarrier(

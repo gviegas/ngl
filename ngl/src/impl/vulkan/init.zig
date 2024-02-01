@@ -2758,6 +2758,7 @@ const vtable = Impl.VTable{
     .copyImage = @import("cmd.zig").CommandBuffer.copyImage,
     .copyBufferToImage = @import("cmd.zig").CommandBuffer.copyBufferToImage,
     .copyImageToBuffer = @import("cmd.zig").CommandBuffer.copyImageToBuffer,
+    .resetQueryPool = @import("cmd.zig").CommandBuffer.resetQueryPool,
     .pipelineBarrier = @import("cmd.zig").CommandBuffer.pipelineBarrier,
     .executeCommands = @import("cmd.zig").CommandBuffer.executeCommands,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,

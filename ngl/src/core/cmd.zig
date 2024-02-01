@@ -14,6 +14,7 @@ const DescriptorSet = ngl.DescriptorSet;
 const ShaderStage = ngl.ShaderStage;
 const Viewport = ngl.Viewport;
 const Pipeline = ngl.Pipeline;
+const QueryPool = ngl.QueryPool;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
@@ -111,6 +112,7 @@ pub const CommandBuffer = struct {
                 render_pass: ?*RenderPass,
                 subpass: RenderPass.Index,
                 frame_buffer: ?*FrameBuffer,
+                // TODO: Query-related fields
             },
         };
 
@@ -512,6 +514,22 @@ pub const CommandBuffer = struct {
                 self.device.impl,
                 self.command_buffer.impl,
                 copies,
+            );
+        }
+
+        /// Calling it in a render pass is not valid.
+        pub fn resetQueryPool(
+            self: *Cmd,
+            query_pool: *QueryPool,
+            first_query: u32,
+            query_count: u32,
+        ) void {
+            Impl.get().resetQueryPool(
+                self.device.impl,
+                self.command_buffer.impl,
+                query_pool.impl,
+                first_query,
+                query_count,
             );
         }
 
