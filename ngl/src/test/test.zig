@@ -22,6 +22,7 @@ test {
     _ = @import("fb.zig");
     _ = @import("pl_cache.zig");
     _ = @import("pl.zig");
+    _ = @import("query_pool.zig");
     _ = @import("mem.zig");
     _ = @import("fmt.zig");
     _ = @import("cmd_pool.zig");
