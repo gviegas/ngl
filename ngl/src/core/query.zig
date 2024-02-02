@@ -10,6 +10,22 @@ const Impl = @import("../impl/Impl.zig");
 pub const QueryType = enum {
     occlusion,
     timestamp,
+
+    pub const Layout = struct {
+        size: u64,
+        alignment: u64,
+    };
+
+    const Self = @This();
+
+    pub fn getLayout(
+        self: Self,
+        device: *Device,
+        query_count: u32,
+        with_availability: bool,
+    ) Layout {
+        return Impl.get().getQueryLayout(device.impl, self, query_count, with_availability);
+    }
 };
 
 pub const QueryPool = struct {

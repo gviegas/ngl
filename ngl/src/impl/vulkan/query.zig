@@ -9,6 +9,24 @@ const conv = @import("conv.zig");
 const check = conv.check;
 const Device = @import("init.zig").Device;
 
+pub fn getQueryLayout(
+    _: *anyopaque,
+    _: Impl.Device,
+    query_type: ngl.QueryType,
+    query_count: u32,
+    with_availability: bool,
+) ngl.QueryType.Layout {
+    // We always set VK_QUERY_RESULT_64_BIT when copying results
+    const result_size: u64 = switch (query_type) {
+        .occlusion, .timestamp => @sizeOf(u64),
+    };
+    const avail_size: u64 = if (with_availability) @sizeOf(u64) else 0;
+    return .{
+        .size = (result_size + avail_size) * query_count,
+        .alignment = 8,
+    };
+}
+
 pub const QueryPool = packed struct {
     handle: c.VkQueryPool,
 

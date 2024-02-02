@@ -811,6 +811,16 @@ pub const VTable = struct {
         pipeline_cache: PipelineCache,
     ) void,
 
+    // QueryType -------------------------------------------
+
+    getQueryLayout: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        query_type: ngl.QueryType,
+        query_count: u32,
+        with_availability: bool,
+    ) ngl.QueryType.Layout,
+
     // QueryPool -------------------------------------------
 
     initQueryPool: *const fn (
@@ -1925,6 +1935,16 @@ pub fn deinitPipelineCache(
     pipeline_cache: PipelineCache,
 ) void {
     self.vtable.deinitPipelineCache(self.ptr, allocator, device, pipeline_cache);
+}
+
+pub fn getQueryLayout(
+    self: *Self,
+    device: Device,
+    query_type: ngl.QueryType,
+    query_count: u32,
+    with_availability: bool,
+) ngl.QueryType.Layout {
+    return self.vtable.getQueryLayout(self.ptr, device, query_type, query_count, with_availability);
 }
 
 pub fn initQueryPool(

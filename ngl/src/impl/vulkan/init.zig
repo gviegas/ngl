@@ -2824,6 +2824,8 @@ const vtable = Impl.VTable{
     .initPipelineCache = @import("state.zig").PipelineCache.init,
     .deinitPipelineCache = @import("state.zig").PipelineCache.deinit,
 
+    .getQueryLayout = @import("query.zig").getQueryLayout,
+
     .initQueryPool = @import("query.zig").QueryPool.init,
     .deinitQueryPool = @import("query.zig").QueryPool.deinit,
 
