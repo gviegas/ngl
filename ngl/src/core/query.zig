@@ -30,6 +30,7 @@ pub const QueryType = enum {
 
 pub const QueryPool = struct {
     impl: Impl.QueryPool,
+    type: QueryType,
 
     pub const Desc = struct {
         query_type: QueryType,
@@ -39,7 +40,10 @@ pub const QueryPool = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
-        return .{ .impl = try Impl.get().initQueryPool(allocator, device.impl, desc) };
+        return .{
+            .impl = try Impl.get().initQueryPool(allocator, device.impl, desc),
+            .type = desc.query_type,
+        };
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
