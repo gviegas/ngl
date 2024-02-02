@@ -5,8 +5,6 @@ const Device = ngl.Device;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
-// TODO: Disclose which queries are supported in `Feature.core`
-
 pub const QueryType = enum {
     occlusion,
     timestamp,

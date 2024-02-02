@@ -534,7 +534,8 @@ pub const CommandBuffer = struct {
         }
 
         pub const QueryControl = struct {
-            // TODO: Expose support in `Feature.core`
+            /// Must be `false` if `Feature.core.query.occlusion_precise`
+            /// isn't supported or the query type isn't `.occlusion`.
             precise: bool = false,
         };
 

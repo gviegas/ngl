@@ -485,6 +485,9 @@ pub const Feature = union(enum) {
             max_local_size_y: u32 = 128,
             max_local_size_z: u32 = 64,
         },
+        query: struct {
+            occlusion_precise: bool,
+        },
     },
 
     /// Allow the creation of swap chains.

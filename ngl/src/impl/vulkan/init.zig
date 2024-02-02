@@ -910,7 +910,6 @@ pub const Device = struct {
         feats_2.features.wideLines = c.VK_FALSE;
         feats_2.features.largePoints = c.VK_FALSE;
         feats_2.features.multiViewport = c.VK_FALSE;
-        feats_2.features.occlusionQueryPrecise = c.VK_FALSE;
         feats_2.features.pipelineStatisticsQuery = c.VK_FALSE;
         feats_2.features.shaderTessellationAndGeometryPointSize = c.VK_FALSE;
         feats_2.features.shaderImageGatherExtended = c.VK_FALSE;
@@ -2693,6 +2692,9 @@ fn getFeature(
                     .max_local_size_x = l.maxComputeWorkGroupSize[0],
                     .max_local_size_y = l.maxComputeWorkGroupSize[1],
                     .max_local_size_z = l.maxComputeWorkGroupSize[2],
+                },
+                .query = .{
+                    .occlusion_precise = f.occlusionQueryPrecise == c.VK_TRUE,
                 },
             };
         },
