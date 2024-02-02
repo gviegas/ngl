@@ -812,6 +812,7 @@ pub const CommandBuffer = packed struct {
         _: *anyopaque,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
+        _: ngl.QueryType,
         query_pool: Impl.QueryPool,
         query: u32,
         control: ngl.Cmd.QueryControl,
@@ -830,6 +831,7 @@ pub const CommandBuffer = packed struct {
         _: *anyopaque,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
+        _: ngl.QueryType,
         query_pool: Impl.QueryPool,
         query: u32,
     ) void {

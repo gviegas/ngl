@@ -552,6 +552,7 @@ pub const CommandBuffer = struct {
             Impl.get().beginQuery(
                 self.device.impl,
                 self.command_buffer.impl,
+                query_pool.type,
                 query_pool.impl,
                 query,
                 control,
@@ -562,7 +563,13 @@ pub const CommandBuffer = struct {
         /// was begun (i.e., `beginQuery` + `endQuery` cannot span
         /// across multiple subpasses).
         pub fn endQuery(self: *Cmd, query_pool: *QueryPool, query: u32) void {
-            Impl.get().endQuery(self.device.impl, self.command_buffer.impl, query_pool.impl, query);
+            Impl.get().endQuery(
+                self.device.impl,
+                self.command_buffer.impl,
+                query_pool.type,
+                query_pool.impl,
+                query,
+            );
         }
 
         pub fn writeTimestamp(

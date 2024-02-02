@@ -431,6 +431,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         device: Device,
         command_buffer: CommandBuffer,
+        query_type: ngl.QueryType,
         query_pool: QueryPool,
         query: u32,
         control: ngl.Cmd.QueryControl,
@@ -440,6 +441,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         device: Device,
         command_buffer: CommandBuffer,
+        query_type: ngl.QueryType,
         query_pool: QueryPool,
         query: u32,
     ) void,
@@ -1504,21 +1506,31 @@ pub fn beginQuery(
     self: *Self,
     device: Device,
     command_buffer: CommandBuffer,
+    query_type: ngl.QueryType,
     query_pool: QueryPool,
     query: u32,
     control: ngl.Cmd.QueryControl,
 ) void {
-    self.vtable.beginQuery(self.ptr, device, command_buffer, query_pool, query, control);
+    self.vtable.beginQuery(
+        self.ptr,
+        device,
+        command_buffer,
+        query_type,
+        query_pool,
+        query,
+        control,
+    );
 }
 
 pub fn endQuery(
     self: *Self,
     device: Device,
     command_buffer: CommandBuffer,
+    query_type: ngl.QueryType,
     query_pool: QueryPool,
     query: u32,
 ) void {
-    self.vtable.endQuery(self.ptr, device, command_buffer, query_pool, query);
+    self.vtable.endQuery(self.ptr, device, command_buffer, query_type, query_pool, query);
 }
 
 pub fn writeTimestamp(
