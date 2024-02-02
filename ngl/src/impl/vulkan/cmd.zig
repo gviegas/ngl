@@ -18,6 +18,7 @@ const FrameBuffer = @import("pass.zig").FrameBuffer;
 const PipelineLayout = @import("desc.zig").PipelineLayout;
 const DescriptorSet = @import("desc.zig").DescriptorSet;
 const Pipeline = @import("state.zig").Pipeline;
+const getQueryLayout = @import("query.zig").getQueryLayout;
 const QueryPool = @import("query.zig").QueryPool;
 
 pub const CommandPool = packed struct {
@@ -852,6 +853,47 @@ pub const CommandBuffer = packed struct {
             conv.toVkPipelineStage(.source, pipeline_stage),
             QueryPool.cast(query_pool).handle,
             query,
+        );
+    }
+
+    pub fn copyQueryPoolResults(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        query_type: ngl.QueryType,
+        query_pool: Impl.QueryPool,
+        first_query: u32,
+        query_count: u32,
+        dest: Impl.Buffer,
+        dest_offset: u64,
+        result: ngl.Cmd.QueryResult,
+    ) void {
+        const stride = getQueryLayout(
+            undefined,
+            device, //undefined,
+            query_type,
+            1,
+            result.with_availability,
+        ).size;
+
+        const flags = blk: {
+            var flags: c.VkQueryResultFlags = c.VK_QUERY_RESULT_64_BIT;
+            if (result.wait)
+                flags |= c.VK_QUERY_RESULT_WAIT_BIT;
+            if (result.with_availability)
+                flags |= c.VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+            break :blk flags;
+        };
+
+        Device.cast(device).vkCmdCopyQueryPoolResults(
+            cast(command_buffer).handle,
+            QueryPool.cast(query_pool).handle,
+            first_query,
+            query_count,
+            Buffer.cast(dest).handle,
+            dest_offset,
+            stride,
+            flags,
         );
     }
 

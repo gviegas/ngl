@@ -453,6 +453,19 @@ pub const VTable = struct {
         query: u32,
     ) void,
 
+    copyQueryPoolResults: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        query_type: ngl.QueryType,
+        query_pool: QueryPool,
+        first_query: u32,
+        query_count: u32,
+        dest: Buffer,
+        dest_offset: u64,
+        result: ngl.Cmd.QueryResult,
+    ) void,
+
     pipelineBarrier: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1523,6 +1536,32 @@ pub fn writeTimestamp(
         pipeline_stage,
         query_pool,
         query,
+    );
+}
+
+pub fn copyQueryPoolResults(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    query_type: ngl.QueryType,
+    query_pool: QueryPool,
+    first_query: u32,
+    query_count: u32,
+    dest: Buffer,
+    dest_offset: u64,
+    result: ngl.Cmd.QueryResult,
+) void {
+    self.vtable.copyQueryPoolResults(
+        self.ptr,
+        device,
+        command_buffer,
+        query_type,
+        query_pool,
+        first_query,
+        query_count,
+        dest,
+        dest_offset,
+        result,
     );
 }
 

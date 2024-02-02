@@ -2762,6 +2762,7 @@ const vtable = Impl.VTable{
     .beginQuery = @import("cmd.zig").CommandBuffer.beginQuery,
     .endQuery = @import("cmd.zig").CommandBuffer.endQuery,
     .writeTimestamp = @import("cmd.zig").CommandBuffer.writeTimestamp,
+    .copyQueryPoolResults = @import("cmd.zig").CommandBuffer.copyQueryPoolResults,
     .pipelineBarrier = @import("cmd.zig").CommandBuffer.pipelineBarrier,
     .executeCommands = @import("cmd.zig").CommandBuffer.executeCommands,
     .endCommandBuffer = @import("cmd.zig").CommandBuffer.end,

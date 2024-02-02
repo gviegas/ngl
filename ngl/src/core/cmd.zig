@@ -580,6 +580,36 @@ pub const CommandBuffer = struct {
             );
         }
 
+        pub const QueryResult = struct {
+            /// Wait that query results be available.
+            wait: bool = true,
+            /// Store whether results are available for each query
+            /// (alongside the results themselves).
+            with_availability: bool = false,
+        };
+
+        pub fn copyQueryPoolResults(
+            self: *Cmd,
+            query_pool: *QueryPool,
+            first_query: u32,
+            query_count: u32,
+            dest: *Buffer,
+            dest_offset: u64,
+            result: QueryResult,
+        ) void {
+            Impl.get().copyQueryPoolResults(
+                self.device.impl,
+                self.command_buffer.impl,
+                query_pool.type,
+                query_pool.impl,
+                first_query,
+                query_count,
+                dest.impl,
+                dest_offset,
+                result,
+            );
+        }
+
         /// At least one of `global_dependencies`, `buffer_dependencies`
         /// or `image_dependencies` must be provided.
         pub const Dependency = struct {
