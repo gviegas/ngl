@@ -704,6 +704,7 @@ pub const Device = struct {
     version: u32,
     queues: [ngl.Queue.max]Queue,
     queue_n: u8,
+    timestamp_period: f32,
 
     getDeviceProcAddr: c.PFN_vkGetDeviceProcAddr,
 
@@ -1019,6 +1020,10 @@ pub const Device = struct {
         else
             desc.impl.?.version;
 
+        var dev_props: c.VkPhysicalDeviceProperties = undefined;
+        inst.vkGetPhysicalDeviceProperties(phys_dev, &dev_props);
+        const tms_period: f32 = dev_props.limits.timestampPeriod;
+
         const get: c.PFN_vkGetDeviceProcAddr = @ptrCast(try Instance.getProc(
             inst.handle,
             "vkGetDeviceProcAddr",
@@ -1034,6 +1039,7 @@ pub const Device = struct {
             .version = ver,
             .queues = undefined,
             .queue_n = 0,
+            .timestamp_period = tms_period,
             .getDeviceProcAddr = get,
             .destroyDevice = @ptrCast(try Device.getProc(get, dev, "vkDestroyDevice")),
             .deviceWaitIdle = @ptrCast(try Device.getProc(get, dev, "vkDeviceWaitIdle")),
