@@ -7,6 +7,7 @@ const Impl = @import("../impl/Impl.zig");
 
 pub const QueryType = enum {
     occlusion,
+    /// `Feature.core.query.timestamp`.
     timestamp,
 
     pub const Layout = struct {

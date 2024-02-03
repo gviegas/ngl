@@ -2708,6 +2708,21 @@ fn getFeature(
                 },
                 .query = .{
                     .occlusion_precise = f.occlusionQueryPrecise == c.VK_TRUE,
+                    .timestamp = blk: {
+                        // I didn't found documented anywhere that this
+                        // isn't allowed, so assume that it is
+                        if (l.timestampPeriod == 0)
+                            break :blk [_]bool{false} ** ngl.Queue.max;
+                        var supported: [ngl.Queue.max]bool = undefined;
+                        for (device_desc.queues, 0..) |queue, i| {
+                            const q = queue orelse {
+                                supported[i] = false;
+                                continue;
+                            };
+                            supported[i] = if (q.impl) |x| x.info != 0 else false;
+                        }
+                        break :blk supported;
+                    },
                 },
             };
         },
