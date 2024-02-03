@@ -390,7 +390,10 @@ pub const Instance = struct {
                             .transfer = true,
                         },
                         .priority = .default,
-                        .impl = fam,
+                        .impl = .{
+                            .impl = fam,
+                            .info = qp.timestampValidBits,
+                        },
                     };
                     break;
                 }
@@ -415,7 +418,10 @@ pub const Instance = struct {
                     xfer_queue = .{
                         .capabilities = .{ .transfer = true },
                         .priority = .default,
-                        .impl = fam,
+                        .impl = .{
+                            .impl = fam,
+                            .info = qp.timestampValidBits,
+                        },
                     };
                     break;
                 }
@@ -843,13 +849,14 @@ pub const Device = struct {
             var n: u32 = 0;
             for (desc.queues) |queue| {
                 const q = queue orelse continue;
+                const fam: u32 = if (q.impl) |x| @intCast(x.impl) else return Error.InvalidArgument;
                 // Don't distinguish between default and high priority
                 queue_prios[n] = if (q.priority == .low) 0 else 1;
                 queue_infos[n] = .{
                     .sType = c.VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                     .pNext = null,
                     .flags = 0,
-                    .queueFamilyIndex = @intCast(q.impl orelse return Error.InvalidArgument),
+                    .queueFamilyIndex = fam,
                     .queueCount = 1,
                     .pQueuePriorities = &queue_prios[n],
                 };

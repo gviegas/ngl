@@ -194,7 +194,10 @@ pub const Queue = struct {
     pub const Desc = struct {
         capabilities: Capabilities,
         priority: Priority = .default,
-        impl: ?u64 = null,
+        impl: ?struct {
+            impl: u64,
+            info: u32,
+        },
     };
 
     pub const Submit = struct {

@@ -87,7 +87,8 @@ pub const Surface = packed struct {
         const sf = cast(surface);
         const phys_dev: c.VkPhysicalDevice =
             if (device_desc.impl) |x| @ptrFromInt(x.impl) else return Error.InvalidArgument;
-        const queue_fam: u32 = @intCast(queue_desc.impl orelse return Error.InvalidArgument);
+        const queue_fam: u32 =
+            if (queue_desc.impl) |x| @intCast(x.impl) else return Error.InvalidArgument;
 
         var supported: c.VkBool32 = undefined;
         try (check(inst.vkGetPhysicalDeviceSurfaceSupportKHR(
