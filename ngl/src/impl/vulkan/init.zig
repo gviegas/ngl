@@ -945,7 +945,6 @@ pub const Device = struct {
         feats_2.features.sparseResidency16Samples = c.VK_FALSE;
         feats_2.features.sparseResidencyAliased = c.VK_FALSE;
         feats_2.features.variableMultisampleRate = c.VK_FALSE;
-        feats_2.features.inheritedQueries = c.VK_FALSE;
         if (inst.version >= c.VK_API_VERSION_1_2) {
             vk_1_2_feats.drawIndirectCount = c.VK_FALSE;
             vk_1_2_feats.storageBuffer8BitAccess = c.VK_FALSE;
@@ -2723,6 +2722,7 @@ fn getFeature(
                         }
                         break :blk supported;
                     },
+                    .inherited = f.inheritedQueries == c.VK_TRUE,
                 },
             };
         },

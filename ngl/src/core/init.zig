@@ -491,6 +491,7 @@ pub const Feature = union(enum) {
         query: struct {
             occlusion_precise: bool,
             timestamp: [Queue.max]bool,
+            inherited: bool,
         },
     },
 
