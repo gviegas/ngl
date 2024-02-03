@@ -137,23 +137,37 @@ pub const CommandBuffer = packed struct {
             var flags: c.VkCommandBufferUsageFlags = 0;
             if (desc.one_time_submit)
                 flags |= c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            if (desc.inheritance != null and desc.inheritance.?.render_pass_continue)
+            if (desc.inheritance != null and desc.inheritance.?.render_pass_continue != null)
                 flags |= c.VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
             // Disallow simultaneous use
             break :blk flags;
         };
 
-        const inher_info = if (desc.inheritance) |x| &c.VkCommandBufferInheritanceInfo{
-            .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
-            .pNext = null,
-            .renderPass = if (x.render_pass) |p| RenderPass.cast(p.impl).handle else null_handle,
-            .subpass = x.subpass,
-            .framebuffer = if (x.frame_buffer) |f| FrameBuffer.cast(f.impl).handle else null_handle,
-            // TODO: Expose these
-            .occlusionQueryEnable = c.VK_FALSE,
-            .queryFlags = 0,
-            .pipelineStatistics = 0,
-        } else null;
+        const inher_info = blk: {
+            const inher = desc.inheritance orelse break :blk null;
+            var info = c.VkCommandBufferInheritanceInfo{
+                .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+                .pNext = null,
+                .renderPass = null_handle,
+                .subpass = 0,
+                .framebuffer = null_handle,
+                .occlusionQueryEnable = c.VK_FALSE,
+                .queryFlags = 0,
+                .pipelineStatistics = 0,
+            };
+            if (inher.render_pass_continue) |x| {
+                info.renderPass = RenderPass.cast(x.render_pass.impl).handle;
+                info.subpass = x.subpass;
+                info.framebuffer = FrameBuffer.cast(x.frame_buffer.impl).handle;
+            }
+            if (inher.query_continue) |x| {
+                if (x.occlusion)
+                    info.occlusionQueryEnable = c.VK_TRUE;
+                if (x.control.precise)
+                    info.queryFlags = c.VK_QUERY_CONTROL_PRECISE_BIT;
+            }
+            break :blk &info;
+        };
 
         return check(Device.cast(device).vkBeginCommandBuffer(cast(command_buffer).handle, &.{
             .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,

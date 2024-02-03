@@ -104,15 +104,27 @@ pub const CommandBuffer = struct {
 
         pub const Desc = struct {
             one_time_submit: bool,
-            // This field applies to secondary command
-            // buffers only - it must be `null` when
-            // beginning a primary command buffer
+            /// This field applies only to secondary command
+            /// buffers - it must be `null` when beginning a
+            /// primary command buffer.
             inheritance: ?struct {
-                render_pass_continue: bool,
-                render_pass: ?*RenderPass,
-                subpass: RenderPass.Index,
-                frame_buffer: ?*FrameBuffer,
-                // TODO: Query-related fields
+                /// Constrains the secondary command buffer
+                /// to a specific subpass of a render pass.
+                /// If set to `null`, then it must only be
+                /// executed from outside of render passes.
+                render_pass_continue: ?struct {
+                    render_pass: *RenderPass,
+                    subpass: RenderPass.Index,
+                    frame_buffer: *FrameBuffer,
+                },
+                /// `Feature.core.query.inherited`.
+                /// If set to `null`, then there must not be
+                /// any queries active when the secondary
+                /// command buffer executes.
+                query_continue: ?struct {
+                    occlusion: bool,
+                    control: QueryControl,
+                },
             },
         };
 
