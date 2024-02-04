@@ -852,6 +852,26 @@ pub const VTable = struct {
         query_pool: QueryPool,
     ) void,
 
+    // QueryResolve ----------------------------------------
+
+    resolveQueryOcclusion: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        first_query: u32,
+        with_availability: bool,
+        source: []const u8,
+        dest: @TypeOf((ngl.QueryResolve(.occlusion){}).resolved_results),
+    ) Error!void,
+
+    resolveQueryTimestamp: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        first_query: u32,
+        with_availability: bool,
+        source: []const u8,
+        dest: @TypeOf((ngl.QueryResolve(.timestamp){}).resolved_results),
+    ) Error!void,
+
     // Surface ---------------------------------------------
 
     initSurface: *const fn (
@@ -2014,6 +2034,42 @@ pub fn deinitQueryPool(
     query_pool: QueryPool,
 ) void {
     self.vtable.deinitQueryPool(self.ptr, allocator, device, query_pool);
+}
+
+pub fn resolveQueryOcclusion(
+    self: *Self,
+    device: Device,
+    first_query: u32,
+    with_availability: bool,
+    source: []const u8,
+    dest: @TypeOf((ngl.QueryResolve(.occlusion){}).resolved_results),
+) Error!void {
+    return self.vtable.resolveQueryOcclusion(
+        self.ptr,
+        device,
+        first_query,
+        with_availability,
+        source,
+        dest,
+    );
+}
+
+pub fn resolveQueryTimestamp(
+    self: *Self,
+    device: Device,
+    first_query: u32,
+    with_availability: bool,
+    source: []const u8,
+    dest: @TypeOf((ngl.QueryResolve(.timestamp){}).resolved_results),
+) Error!void {
+    return self.vtable.resolveQueryTimestamp(
+        self.ptr,
+        device,
+        first_query,
+        with_availability,
+        source,
+        dest,
+    );
 }
 
 pub fn initSurface(

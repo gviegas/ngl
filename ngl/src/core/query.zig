@@ -77,14 +77,20 @@ pub fn QueryResolve(comptime query_type: QueryType) type {
             with_availability: bool,
             unresolved_results: []const u8,
         ) Error!void {
-            // TODO
-            _ = self;
-            _ = allocator;
-            _ = device;
-            _ = first_query;
-            _ = query_count;
-            _ = with_availability;
-            _ = unresolved_results;
+            if (query_count != self.resolved_results.len)
+                self.resolved_results = try allocator.realloc(self.resolved_results, query_count);
+            const impl_fn = switch (query_type) {
+                .occlusion => Impl.resolveQueryOcclusion,
+                .timestamp => Impl.resolveQueryTimestamp,
+            };
+            try @call(.auto, impl_fn, .{
+                Impl.get(),
+                device.impl,
+                first_query,
+                with_availability,
+                unresolved_results,
+                self.resolved_results,
+            });
         }
 
         pub fn free(self: *Self, allocator: std.mem.Allocator) void {
