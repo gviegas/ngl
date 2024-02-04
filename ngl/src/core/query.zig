@@ -50,3 +50,47 @@ pub const QueryPool = struct {
         self.* = undefined;
     }
 };
+
+pub fn QueryResolve(comptime query_type: QueryType) type {
+    return struct {
+        /// `null` means the given result wasn't available.
+        resolved_results: switch (query_type) {
+            .occlusion => []struct { samples_passed: ?u64 },
+            .timestamp => []struct { ns: ?u64 },
+        } = &.{},
+
+        const Self = @This();
+
+        /// Resolves results obtained from `Cmd.copyQueryPoolResults`.
+        /// `unresolved_results` must be aligned as required by
+        /// `QueryType.getLayout`, and must refer to the beginning of
+        /// the data copied by the aforementioned command.
+        /// `with_availability` must match what was specified in the
+        /// command's `Cmd.QueryResult`.
+        /// One must use the same `allocator` until `free` is called.
+        pub fn resolve(
+            self: *Self,
+            allocator: std.mem.Allocator,
+            device: *Device,
+            first_query: u32,
+            query_count: u32,
+            with_availability: bool,
+            unresolved_results: []const u8,
+        ) Error!void {
+            // TODO
+            _ = self;
+            _ = allocator;
+            _ = device;
+            _ = first_query;
+            _ = query_count;
+            _ = with_availability;
+            _ = unresolved_results;
+        }
+
+        pub fn free(self: *Self, allocator: std.mem.Allocator) void {
+            //if (self.len == 0) return;
+            allocator.free(self.resolved_results);
+            self.resolved_results = &.{};
+        }
+    };
+}
