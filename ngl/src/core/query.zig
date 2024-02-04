@@ -67,6 +67,8 @@ pub fn QueryResolve(comptime query_type: QueryType) type {
         /// the data copied by the aforementioned command.
         /// `with_availability` must match what was specified in the
         /// command's `Cmd.QueryResult`.
+        /// Note that `first_result` is relative to what was copied,
+        /// so it might differ from `QueryPool` indices.
         /// One must use the same `allocator` until `free` is called.
         pub fn resolve(
             self: *Self,
@@ -79,18 +81,18 @@ pub fn QueryResolve(comptime query_type: QueryType) type {
         ) Error!void {
             if (result_count != self.resolved_results.len)
                 self.resolved_results = try allocator.realloc(self.resolved_results, result_count);
-            const impl_fn = switch (query_type) {
+            const callable = switch (query_type) {
                 .occlusion => Impl.resolveQueryOcclusion,
                 .timestamp => Impl.resolveQueryTimestamp,
             };
-            try @call(.auto, impl_fn, .{
+            try callable(
                 Impl.get(),
                 device.impl,
                 first_result,
                 with_availability,
                 unresolved_results,
                 self.resolved_results,
-            });
+            );
         }
 
         pub fn free(self: *Self, allocator: std.mem.Allocator) void {

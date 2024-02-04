@@ -65,3 +65,57 @@ pub const QueryPool = packed struct {
         Device.cast(device).vkDestroyQueryPool(cast(query_pool).handle, null);
     }
 };
+
+pub fn resolveQueryOcclusion(
+    _: *anyopaque,
+    _: Impl.Device,
+    first_result: u32,
+    with_availability: bool,
+    source: []const u8,
+    dest: @TypeOf((ngl.QueryResolve(.occlusion){}).resolved_results),
+) Error!void {
+    if (@intFromPtr(source.ptr) & 7 != 0) return Error.InvalidArgument;
+
+    var source_64 = @as([*]const u64, @ptrCast(@alignCast(source)))[0 .. source.len / 8];
+
+    if (with_availability) {
+        source_64 = source_64[first_result * 2 ..];
+        for (dest) |*r| {
+            r.samples_passed = if (source_64[1] != 0) source_64[0] else null;
+            source_64 = source_64[2..];
+        }
+    } else {
+        source_64 = source_64[first_result..];
+        for (dest, source_64[0..dest.len]) |*r, u|
+            r.samples_passed = u;
+    }
+}
+
+pub fn resolveQueryTimestamp(
+    _: *anyopaque,
+    device: Impl.Device,
+    first_result: u32,
+    with_availability: bool,
+    source: []const u8,
+    dest: @TypeOf((ngl.QueryResolve(.timestamp){}).resolved_results),
+) Error!void {
+    if (@intFromPtr(source.ptr) & 7 != 0) return Error.InvalidArgument;
+
+    var source_64 = @as([*]const u64, @ptrCast(@alignCast(source)))[0 .. source.len / 8];
+    const period: f64 = Device.cast(device).timestamp_period;
+
+    if (with_availability) {
+        source_64 = source_64[first_result * 2 ..];
+        for (dest) |*r| {
+            r.ns = if (source_64[1] != 0)
+                @intFromFloat(@as(f64, @floatFromInt(source_64[0])) * period)
+            else
+                null;
+            source_64 = source_64[2..];
+        }
+    } else {
+        source_64 = source_64[first_result..];
+        for (dest, source_64[0..dest.len]) |*r, u|
+            r.ns = @intFromFloat(@as(f64, @floatFromInt(u)) * period);
+    }
+}

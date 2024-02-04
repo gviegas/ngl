@@ -2860,6 +2860,9 @@ const vtable = Impl.VTable{
     .initQueryPool = @import("query.zig").QueryPool.init,
     .deinitQueryPool = @import("query.zig").QueryPool.deinit,
 
+    .resolveQueryOcclusion = @import("query.zig").resolveQueryOcclusion,
+    .resolveQueryTimestamp = @import("query.zig").resolveQueryTimestamp,
+
     .initSurface = @import("dpy.zig").Surface.init,
     .isSurfaceCompatible = @import("dpy.zig").Surface.isCompatible,
     .getSurfacePresentModes = @import("dpy.zig").Surface.getPresentModes,
