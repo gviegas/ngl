@@ -1008,7 +1008,7 @@ pub fn fromVkFormat(vk_format: c.VkFormat) Error!ngl.Format {
         c.VK_FORMAT_ASTC_12x12_UNORM_BLOCK => .astc_12x12_unorm,
         c.VK_FORMAT_ASTC_12x12_SRGB_BLOCK => .astc_12x12_srgb,
 
-        else => error.NotSupported,
+        else => Error.NotSupported,
     };
 }
 

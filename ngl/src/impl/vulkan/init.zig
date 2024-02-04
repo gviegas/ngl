@@ -456,7 +456,7 @@ pub const Instance = struct {
             desc_n += 1;
         }
 
-        return if (desc_n > 0) descs[0..desc_n] else error.NotSupported;
+        return if (desc_n > 0) descs[0..desc_n] else Error.NotSupported;
     }
 
     fn deinit(_: *anyopaque, allocator: std.mem.Allocator, instance: Impl.Instance) void {
