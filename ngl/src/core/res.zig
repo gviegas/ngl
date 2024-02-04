@@ -1306,7 +1306,7 @@ pub const Buffer = struct {
     }
 
     pub fn bind(self: *Self, device: *Device, memory: *Memory, memory_offset: u64) Error!void {
-        return Impl.get().bindBuffer(device.impl, self.impl, memory.impl, memory_offset);
+        try Impl.get().bindBuffer(device.impl, self.impl, memory.impl, memory_offset);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
@@ -1477,7 +1477,7 @@ pub const Image = struct {
     }
 
     pub fn bind(self: *Self, device: *Device, memory: *Memory, memory_offset: u64) Error!void {
-        return Impl.get().bindImage(device.impl, self.impl, memory.impl, memory_offset);
+        try Impl.get().bindImage(device.impl, self.impl, memory.impl, memory_offset);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {

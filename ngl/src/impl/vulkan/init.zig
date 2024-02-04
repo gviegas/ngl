@@ -1246,7 +1246,7 @@ pub const Device = struct {
     }
 
     fn wait(_: *anyopaque, device: Impl.Device) Error!void {
-        return check(cast(device).vkDeviceWaitIdle());
+        try check(cast(device).vkDeviceWaitIdle());
     }
 
     fn deinit(_: *anyopaque, allocator: std.mem.Allocator, device: Impl.Device) void {
@@ -2401,7 +2401,7 @@ pub const Queue = struct {
     }
 
     fn wait(_: *anyopaque, device: Impl.Device, queue: Impl.Queue) Error!void {
-        return check(Device.cast(device).vkQueueWaitIdle(cast(queue).handle));
+        try check(Device.cast(device).vkQueueWaitIdle(cast(queue).handle));
     }
 };
 
@@ -2485,7 +2485,7 @@ pub const Memory = packed struct {
         offsets: []const u64,
         sizes: ?[]const u64,
     ) Error!void {
-        return flushOrInvalidateMapped(.flush, allocator, device, memory, offsets, sizes);
+        try flushOrInvalidateMapped(.flush, allocator, device, memory, offsets, sizes);
     }
 
     fn invalidateMapped(
@@ -2496,7 +2496,7 @@ pub const Memory = packed struct {
         offsets: []const u64,
         sizes: ?[]const u64,
     ) Error!void {
-        return flushOrInvalidateMapped(.invalidate, allocator, device, memory, offsets, sizes);
+        try flushOrInvalidateMapped(.invalidate, allocator, device, memory, offsets, sizes);
     }
 };
 

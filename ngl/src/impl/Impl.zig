@@ -1066,7 +1066,7 @@ pub fn freeMemory(
 }
 
 pub fn waitDevice(self: *Self, device: Device) Error!void {
-    return self.vtable.waitDevice(self.ptr, device);
+    try self.vtable.waitDevice(self.ptr, device);
 }
 
 pub fn deinitDevice(self: *Self, allocator: std.mem.Allocator, device: Device) void {
@@ -1081,7 +1081,7 @@ pub fn submit(
     fence: ?Fence,
     submits: []const ngl.Queue.Submit,
 ) Error!void {
-    return self.vtable.submit(self.ptr, allocator, device, queue, fence, submits);
+    try self.vtable.submit(self.ptr, allocator, device, queue, fence, submits);
 }
 
 pub fn present(
@@ -1092,11 +1092,11 @@ pub fn present(
     wait_semaphores: []const *ngl.Semaphore,
     presents: []const ngl.Queue.Present,
 ) Error!void {
-    return self.vtable.present(self.ptr, allocator, device, queue, wait_semaphores, presents);
+    try self.vtable.present(self.ptr, allocator, device, queue, wait_semaphores, presents);
 }
 
 pub fn waitQueue(self: *Self, device: Device, queue: Queue) Error!void {
-    return self.vtable.waitQueue(self.ptr, device, queue);
+    try self.vtable.waitQueue(self.ptr, device, queue);
 }
 
 pub fn mapMemory(self: *Self, device: Device, memory: Memory, offset: u64, size: ?u64) Error![*]u8 {
@@ -1115,7 +1115,7 @@ pub fn flushMappedMemory(
     offsets: []const u64,
     sizes: ?[]const u64,
 ) Error!void {
-    return self.vtable.flushMappedMemory(self.ptr, allocator, device, memory, offsets, sizes);
+    try self.vtable.flushMappedMemory(self.ptr, allocator, device, memory, offsets, sizes);
 }
 
 pub fn invalidateMappedMemory(
@@ -1126,7 +1126,7 @@ pub fn invalidateMappedMemory(
     offsets: []const u64,
     sizes: ?[]const u64,
 ) Error!void {
-    return self.vtable.invalidateMappedMemory(self.ptr, allocator, device, memory, offsets, sizes);
+    try self.vtable.invalidateMappedMemory(self.ptr, allocator, device, memory, offsets, sizes);
 }
 
 pub fn getFeature(
@@ -1136,7 +1136,7 @@ pub fn getFeature(
     device_desc: ngl.Device.Desc,
     feature: *ngl.Feature,
 ) Error!void {
-    return self.vtable.getFeature(self.ptr, allocator, instance, device_desc, feature);
+    try self.vtable.getFeature(self.ptr, allocator, instance, device_desc, feature);
 }
 
 pub fn initCommandPool(
@@ -1156,7 +1156,7 @@ pub fn allocCommandBuffers(
     desc: ngl.CommandBuffer.Desc,
     command_buffers: []ngl.CommandBuffer,
 ) Error!void {
-    return self.vtable.allocCommandBuffers(
+    try self.vtable.allocCommandBuffers(
         self.ptr,
         allocator,
         device,
@@ -1167,7 +1167,7 @@ pub fn allocCommandBuffers(
 }
 
 pub fn resetCommandPool(self: *Self, device: Device, command_pool: CommandPool) Error!void {
-    return self.vtable.resetCommandPool(self.ptr, device, command_pool);
+    try self.vtable.resetCommandPool(self.ptr, device, command_pool);
 }
 
 pub fn freeCommandBuffers(
@@ -1196,7 +1196,7 @@ pub fn beginCommandBuffer(
     command_buffer: CommandBuffer,
     desc: ngl.Cmd.Desc,
 ) Error!void {
-    return self.vtable.beginCommandBuffer(self.ptr, allocator, device, command_buffer, desc);
+    try self.vtable.beginCommandBuffer(self.ptr, allocator, device, command_buffer, desc);
 }
 
 pub fn setPipeline(
@@ -1629,7 +1629,7 @@ pub fn endCommandBuffer(
     device: Device,
     command_buffer: CommandBuffer,
 ) Error!void {
-    return self.vtable.endCommandBuffer(self.ptr, allocator, device, command_buffer);
+    try self.vtable.endCommandBuffer(self.ptr, allocator, device, command_buffer);
 }
 
 pub fn initFence(
@@ -1647,7 +1647,7 @@ pub fn resetFences(
     device: Device,
     fences: []const *ngl.Fence,
 ) Error!void {
-    return self.vtable.resetFences(self.ptr, allocator, device, fences);
+    try self.vtable.resetFences(self.ptr, allocator, device, fences);
 }
 
 pub fn waitFences(
@@ -1657,7 +1657,7 @@ pub fn waitFences(
     timeout: u64,
     fences: []const *ngl.Fence,
 ) Error!void {
-    return self.vtable.waitFences(self.ptr, allocator, device, timeout, fences);
+    try self.vtable.waitFences(self.ptr, allocator, device, timeout, fences);
 }
 
 pub fn getFenceStatus(self: *Self, device: Device, fence: Fence) Error!ngl.Fence.Status {
@@ -1714,7 +1714,7 @@ pub fn bindBuffer(
     memory: Memory,
     memory_offset: u64,
 ) Error!void {
-    return self.vtable.bindBuffer(self.ptr, device, buffer, memory, memory_offset);
+    try self.vtable.bindBuffer(self.ptr, device, buffer, memory, memory_offset);
 }
 
 pub fn deinitBuffer(
@@ -1796,7 +1796,7 @@ pub fn bindImage(
     memory: Memory,
     memory_offset: u64,
 ) Error!void {
-    return self.vtable.bindImage(self.ptr, device, image, memory, memory_offset);
+    try self.vtable.bindImage(self.ptr, device, image, memory, memory_offset);
 }
 
 pub fn initImageView(
@@ -1924,7 +1924,7 @@ pub fn allocDescriptorSets(
     desc: ngl.DescriptorSet.Desc,
     descriptor_sets: []ngl.DescriptorSet,
 ) Error!void {
-    return self.vtable.allocDescriptorSets(
+    try self.vtable.allocDescriptorSets(
         self.ptr,
         allocator,
         device,
@@ -1939,7 +1939,7 @@ pub fn resetDescriptorPool(
     device: Device,
     descriptor_pool: DescriptorPool,
 ) Error!void {
-    return self.vtable.resetDescriptorPool(self.ptr, device, descriptor_pool);
+    try self.vtable.resetDescriptorPool(self.ptr, device, descriptor_pool);
 }
 
 pub fn deinitDescriptorPool(
@@ -1957,7 +1957,7 @@ pub fn writeDescriptorSets(
     device: Device,
     writes: []const ngl.DescriptorSet.Write,
 ) Error!void {
-    return self.vtable.writeDescriptorSets(self.ptr, allocator, device, writes);
+    try self.vtable.writeDescriptorSets(self.ptr, allocator, device, writes);
 }
 
 pub fn initPipelinesGraphics(
@@ -1967,7 +1967,7 @@ pub fn initPipelinesGraphics(
     desc: ngl.Pipeline.Desc(ngl.GraphicsState),
     pipelines: []ngl.Pipeline,
 ) Error!void {
-    return self.vtable.initPipelinesGraphics(self.ptr, allocator, device, desc, pipelines);
+    try self.vtable.initPipelinesGraphics(self.ptr, allocator, device, desc, pipelines);
 }
 
 pub fn initPipelinesCompute(
@@ -1977,7 +1977,7 @@ pub fn initPipelinesCompute(
     desc: ngl.Pipeline.Desc(ngl.ComputeState),
     pipelines: []ngl.Pipeline,
 ) Error!void {
-    return self.vtable.initPipelinesCompute(self.ptr, allocator, device, desc, pipelines);
+    try self.vtable.initPipelinesCompute(self.ptr, allocator, device, desc, pipelines);
 }
 
 pub fn deinitPipeline(
@@ -2044,7 +2044,7 @@ pub fn resolveQueryOcclusion(
     source: []const u8,
     dest: @TypeOf((ngl.QueryResolve(.occlusion){}).resolved_results),
 ) Error!void {
-    return self.vtable.resolveQueryOcclusion(
+    try self.vtable.resolveQueryOcclusion(
         self.ptr,
         device,
         first_result,
@@ -2062,7 +2062,7 @@ pub fn resolveQueryTimestamp(
     source: []const u8,
     dest: @TypeOf((ngl.QueryResolve(.timestamp){}).resolved_results),
 ) Error!void {
-    return self.vtable.resolveQueryTimestamp(
+    try self.vtable.resolveQueryTimestamp(
         self.ptr,
         device,
         first_result,

@@ -129,7 +129,7 @@ pub const DescriptorPool = struct {
 
     /// Invalidates all descriptor sets allocated from the pool.
     pub fn reset(self: *Self, device: *Device) Error!void {
-        return Impl.get().resetDescriptorPool(device.impl, self.impl);
+        try Impl.get().resetDescriptorPool(device.impl, self.impl);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
@@ -184,6 +184,6 @@ pub const DescriptorSet = struct {
     const Self = @This();
 
     pub fn write(allocator: std.mem.Allocator, device: *Device, writes: []const Write) Error!void {
-        return Impl.get().writeDescriptorSets(allocator, device.impl, writes);
+        try Impl.get().writeDescriptorSets(allocator, device.impl, writes);
     }
 };

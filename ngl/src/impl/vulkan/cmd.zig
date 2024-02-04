@@ -80,7 +80,7 @@ pub const CommandPool = packed struct {
     pub fn reset(_: *anyopaque, device: Impl.Device, command_pool: Impl.CommandPool) Error!void {
         // TODO: Maybe expose flags
         const flags: c.VkCommandPoolResetFlags = 0;
-        return check(Device.cast(device).vkResetCommandPool(cast(command_pool).handle, flags));
+        try check(Device.cast(device).vkResetCommandPool(cast(command_pool).handle, flags));
     }
 
     pub fn free(
@@ -169,7 +169,7 @@ pub const CommandBuffer = packed struct {
             break :blk &info;
         };
 
-        return check(Device.cast(device).vkBeginCommandBuffer(cast(command_buffer).handle, &.{
+        try check(Device.cast(device).vkBeginCommandBuffer(cast(command_buffer).handle, &.{
             .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .pNext = null,
             .flags = flags,
@@ -1145,6 +1145,6 @@ pub const CommandBuffer = packed struct {
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
     ) Error!void {
-        return check(Device.cast(device).vkEndCommandBuffer(cast(command_buffer).handle));
+        try check(Device.cast(device).vkEndCommandBuffer(cast(command_buffer).handle));
     }
 };

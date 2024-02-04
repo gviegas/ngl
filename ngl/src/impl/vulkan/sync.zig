@@ -48,7 +48,7 @@ pub const Fence = packed struct {
         for (fncs, fences) |*handle, fence|
             handle.* = cast(fence.impl).handle;
 
-        return check(Device.cast(device).vkResetFences(@intCast(fncs.len), fncs.ptr));
+        try check(Device.cast(device).vkResetFences(@intCast(fncs.len), fncs.ptr));
     }
 
     pub fn wait(
@@ -65,7 +65,7 @@ pub const Fence = packed struct {
         for (fncs, fences) |*handle, fence|
             handle.* = cast(fence.impl).handle;
 
-        return check(Device.cast(device).vkWaitForFences(
+        try check(Device.cast(device).vkWaitForFences(
             @intCast(fncs.len),
             fncs.ptr,
             c.VK_TRUE, // TODO: Maybe expose this

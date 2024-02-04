@@ -48,7 +48,7 @@ pub const CommandPool = struct {
     }
 
     pub fn reset(self: *Self, device: *Device) Error!void {
-        return Impl.get().resetCommandPool(device.impl, self.impl);
+        try Impl.get().resetCommandPool(device.impl, self.impl);
     }
 
     pub fn free(
@@ -700,7 +700,7 @@ pub const CommandBuffer = struct {
         /// Invalidates `self`.
         pub fn end(self: *Cmd) Error!void {
             defer self.* = undefined;
-            return Impl.get().endCommandBuffer(
+            try Impl.get().endCommandBuffer(
                 self.allocator,
                 self.device.impl,
                 self.command_buffer.impl,

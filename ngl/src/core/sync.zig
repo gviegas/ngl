@@ -68,7 +68,7 @@ pub const Fence = struct {
     }
 
     pub fn reset(allocator: std.mem.Allocator, device: *Device, fences: []const *Self) Error!void {
-        return Impl.get().resetFences(allocator, device.impl, fences);
+        try Impl.get().resetFences(allocator, device.impl, fences);
     }
 
     pub fn wait(
@@ -77,7 +77,7 @@ pub const Fence = struct {
         timeout: u64,
         fences: []const *Self,
     ) Error!void {
-        return Impl.get().waitFences(allocator, device.impl, timeout, fences);
+        try Impl.get().waitFences(allocator, device.impl, timeout, fences);
     }
 
     pub fn getStatus(self: *Self, device: *Device) Error!Status {

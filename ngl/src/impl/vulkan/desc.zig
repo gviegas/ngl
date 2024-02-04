@@ -227,10 +227,7 @@ pub const DescriptorPool = packed struct {
     ) Error!void {
         // Unused in v1.3
         const flags: c.VkDescriptorPoolResetFlags = 0;
-        return check(Device.cast(device).vkResetDescriptorPool(
-            cast(descriptor_pool).handle,
-            flags,
-        ));
+        try check(Device.cast(device).vkResetDescriptorPool(cast(descriptor_pool).handle, flags));
     }
 
     pub fn deinit(

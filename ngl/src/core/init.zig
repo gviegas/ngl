@@ -108,7 +108,7 @@ pub const Device = struct {
     }
 
     pub fn wait(self: *Self) Error!void {
-        return Impl.get().waitDevice(self.impl);
+        try Impl.get().waitDevice(self.impl);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
@@ -229,7 +229,7 @@ pub const Queue = struct {
         fence: ?*Fence,
         submits: []const Submit,
     ) Error!void {
-        return Impl.get().submit(
+        try Impl.get().submit(
             allocator,
             device.impl,
             self.impl,
@@ -248,11 +248,11 @@ pub const Queue = struct {
         wait_semaphores: []const *Semaphore,
         presents: []const Present,
     ) Error!void {
-        return Impl.get().present(allocator, device.impl, self.impl, wait_semaphores, presents);
+        try Impl.get().present(allocator, device.impl, self.impl, wait_semaphores, presents);
     }
 
     pub fn wait(self: *Self, device: *Device) Error!void {
-        return Impl.get().waitQueue(device.impl, self.impl);
+        try Impl.get().waitQueue(device.impl, self.impl);
     }
 };
 
@@ -362,7 +362,7 @@ pub const Memory = struct {
         offsets: []const u64,
         sizes: ?[]const u64,
     ) Error!void {
-        return Impl.get().flushMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
+        try Impl.get().flushMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
     }
 
     pub fn invalidateMapped(
@@ -372,7 +372,7 @@ pub const Memory = struct {
         offsets: []const u64,
         sizes: ?[]const u64,
     ) Error!void {
-        return Impl.get().invalidateMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
+        try Impl.get().invalidateMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
     }
 };
 
