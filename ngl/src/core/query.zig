@@ -72,13 +72,13 @@ pub fn QueryResolve(comptime query_type: QueryType) type {
             self: *Self,
             allocator: std.mem.Allocator,
             device: *Device,
-            first_query: u32,
-            query_count: u32,
+            first_result: u32,
+            result_count: u32,
             with_availability: bool,
             unresolved_results: []const u8,
         ) Error!void {
-            if (query_count != self.resolved_results.len)
-                self.resolved_results = try allocator.realloc(self.resolved_results, query_count);
+            if (result_count != self.resolved_results.len)
+                self.resolved_results = try allocator.realloc(self.resolved_results, result_count);
             const impl_fn = switch (query_type) {
                 .occlusion => Impl.resolveQueryOcclusion,
                 .timestamp => Impl.resolveQueryTimestamp,
@@ -86,7 +86,7 @@ pub fn QueryResolve(comptime query_type: QueryType) type {
             try @call(.auto, impl_fn, .{
                 Impl.get(),
                 device.impl,
-                first_query,
+                first_result,
                 with_availability,
                 unresolved_results,
                 self.resolved_results,

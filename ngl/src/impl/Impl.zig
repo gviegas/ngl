@@ -857,7 +857,7 @@ pub const VTable = struct {
     resolveQueryOcclusion: *const fn (
         ctx: *anyopaque,
         device: Device,
-        first_query: u32,
+        first_result: u32,
         with_availability: bool,
         source: []const u8,
         dest: @TypeOf((ngl.QueryResolve(.occlusion){}).resolved_results),
@@ -866,7 +866,7 @@ pub const VTable = struct {
     resolveQueryTimestamp: *const fn (
         ctx: *anyopaque,
         device: Device,
-        first_query: u32,
+        first_result: u32,
         with_availability: bool,
         source: []const u8,
         dest: @TypeOf((ngl.QueryResolve(.timestamp){}).resolved_results),
@@ -2039,7 +2039,7 @@ pub fn deinitQueryPool(
 pub fn resolveQueryOcclusion(
     self: *Self,
     device: Device,
-    first_query: u32,
+    first_result: u32,
     with_availability: bool,
     source: []const u8,
     dest: @TypeOf((ngl.QueryResolve(.occlusion){}).resolved_results),
@@ -2047,7 +2047,7 @@ pub fn resolveQueryOcclusion(
     return self.vtable.resolveQueryOcclusion(
         self.ptr,
         device,
-        first_query,
+        first_result,
         with_availability,
         source,
         dest,
@@ -2057,7 +2057,7 @@ pub fn resolveQueryOcclusion(
 pub fn resolveQueryTimestamp(
     self: *Self,
     device: Device,
-    first_query: u32,
+    first_result: u32,
     with_availability: bool,
     source: []const u8,
     dest: @TypeOf((ngl.QueryResolve(.timestamp){}).resolved_results),
@@ -2065,7 +2065,7 @@ pub fn resolveQueryTimestamp(
     return self.vtable.resolveQueryTimestamp(
         self.ptr,
         device,
-        first_query,
+        first_result,
         with_availability,
         source,
         dest,
