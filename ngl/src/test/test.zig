@@ -37,6 +37,7 @@ test {
     _ = @import("sten.zig");
     _ = @import("pass_input.zig");
     _ = @import("spec.zig");
+    _ = @import("occ_query.zig");
     _ = @import("sf.zig");
     _ = @import("sc.zig");
 }
