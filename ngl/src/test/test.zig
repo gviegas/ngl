@@ -1,5 +1,6 @@
 const std = @import("std");
 const testing = std.testing;
+
 pub const gpa = testing.allocator;
 pub const context = @import("ctx.zig").context;
 pub const platform = @import("plat.zig").platform;
@@ -38,6 +39,7 @@ test {
     _ = @import("pass_input.zig");
     _ = @import("spec.zig");
     _ = @import("occ_query.zig");
+    _ = @import("tms_query.zig");
     _ = @import("sf.zig");
     _ = @import("sc.zig");
 }
