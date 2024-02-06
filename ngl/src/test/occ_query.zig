@@ -127,8 +127,21 @@ test "occlusion query without draws" {
 }
 
 test "occlusion query" {
-    const dev = &context().device;
+    try testOcclusionQuery(false);
+}
+
+test "occlusion query precise" {
+    try testOcclusionQuery(true);
+}
+
+fn testOcclusionQuery(comptime precise: bool) !void {
+    const ctx = context();
+    const dev = &ctx.device;
     const queue_i = dev.findQueue(.{ .graphics = true }, null) orelse return error.SkipZigTest;
+    if (precise) {
+        const core_feat = ngl.Feature.get(gpa, &ctx.instance, ctx.device_desc, .core).?;
+        if (!core_feat.query.occlusion_precise) return error.SkipZigTest;
+    }
 
     const query_count = 4;
     var query_pool = try ngl.QueryPool.init(gpa, dev, .{
@@ -165,7 +178,7 @@ test "occlusion query" {
         const topology = ngl.Primitive.Topology.triangle_list;
         const clockwise = true;
 
-        // Each will cover one half of the render area
+        // Each triangle will cover half the render area
         const data: struct {
             left: [3 * 3]f32 = .{
                 0,  -3, 0,
@@ -205,6 +218,7 @@ test "occlusion query" {
 
     const width = 256;
     const height = 192;
+    comptime if (width & 1 != 0) unreachable;
 
     var color_img = try ngl.Image.init(gpa, dev, .{
         .type = .@"2d",
@@ -435,7 +449,7 @@ test "occlusion query" {
     cmd.setPipeline(&pl[0]);
 
     // samples_passed == width / 2 * height (or > 0)
-    cmd.beginQuery(&query_pool, 0, .{});
+    cmd.beginQuery(&query_pool, 0, .{ .precise = precise });
     cmd.setVertexBuffers(
         0,
         &.{&vert_buf},
@@ -446,12 +460,12 @@ test "occlusion query" {
     cmd.endQuery(&query_pool, 0);
 
     // samples_passed == 0
-    cmd.beginQuery(&query_pool, 1, .{});
+    cmd.beginQuery(&query_pool, 1, .{ .precise = precise });
     cmd.draw(3, 1, 0, 0);
     cmd.endQuery(&query_pool, 1);
 
     // samples_passed == width / 2 * height (or > 0)
-    cmd.beginQuery(&query_pool, 2, .{});
+    cmd.beginQuery(&query_pool, 2, .{ .precise = precise });
     cmd.setVertexBuffers(
         0,
         &.{&vert_buf},
@@ -469,7 +483,7 @@ test "occlusion query" {
     cmd.endQuery(&query_pool, 2);
 
     // samples_passed == 0
-    cmd.beginQuery(&query_pool, 3, .{});
+    cmd.beginQuery(&query_pool, 3, .{ .precise = precise });
     cmd.draw(3, 1, 0, 0);
     cmd.setVertexBuffers(
         0,
@@ -502,10 +516,15 @@ test "occlusion query" {
     defer query_resolve.free(gpa);
     try query_resolve.resolve(gpa, dev, 0, query_count, false, query_data);
 
-    const expected = [query_count]struct {
+    const expected: [query_count]struct {
         op: enum { equal, greater },
         value: u64,
-    }{
+    } = if (precise) .{
+        .{ .op = .equal, .value = width / 2 * height },
+        .{ .op = .equal, .value = 0 },
+        .{ .op = .equal, .value = width / 2 * height },
+        .{ .op = .equal, .value = 0 },
+    } else .{
         .{ .op = .greater, .value = 0 },
         .{ .op = .equal, .value = 0 },
         .{ .op = .greater, .value = 0 },
