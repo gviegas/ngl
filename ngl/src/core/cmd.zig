@@ -271,8 +271,8 @@ pub const CommandBuffer = struct {
 
         pub const SubpassEnd = struct {};
 
-        /// It must not be called from within another render pass
-        /// and it must be paired with `endRenderPass`.
+        /// It must not be called within another render pass and
+        /// must be paired with `endRenderPass`.
         pub fn beginRenderPass(
             self: *Cmd,
             render_pass_begin: RenderPassBegin,
@@ -287,7 +287,7 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// Not used on render passes that have a single subpass.
+        /// Not used with render passes that have a single subpass.
         pub fn nextSubpass(self: *Cmd, next_begin: SubpassBegin, current_end: SubpassEnd) void {
             Impl.get().nextSubpass(
                 self.device.impl,
@@ -297,8 +297,8 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// It must only be called from within the last subpass of
-        /// a render pass.
+        /// Called in the last subpass of a render pass.
+        /// Note that it replaces the call to `nextSubpass`.
         pub fn endRenderPass(self: *Cmd, subpass_end: SubpassEnd) void {
             Impl.get().endRenderPass(self.device.impl, self.command_buffer.impl, subpass_end);
         }
@@ -422,7 +422,7 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// Filled range must be 4-byte aligned.
+        /// Filled range must be aligned to 4 bytes.
         pub fn fillBuffer(self: *Cmd, buffer: *Buffer, offset: u64, size: ?u64, value: u8) void {
             Impl.get().fillBuffer(
                 self.device.impl,
@@ -551,9 +551,10 @@ pub const CommandBuffer = struct {
             precise: bool = false,
         };
 
-        /// Calling it outside of a render pass is not valid.
-        // TODO: Need to relax the above requirement if non-graphics
-        // queries using this command are added
+        /// If called outside of a render pass, then it must also end
+        /// outside of a render pass, and must not contain multiple
+        /// render passes. When called within a render pass, it must
+        /// end in the same subpass.
         /// Must be paired with `endQuery`.
         /// Not used for timestamp queries.
         pub fn beginQuery(
@@ -572,9 +573,9 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// It must be scoped to the the same subpass from which it
-        /// was begun (i.e., `beginQuery` + `endQuery` cannot span
-        /// across multiple subpasses).
+        /// It must be scoped as described in `beginQuery`.
+        /// It's not valid to call it in a different command buffer
+        /// than that of its pairing `beginQuery`.
         pub fn endQuery(self: *Cmd, query_pool: *QueryPool, query: u32) void {
             Impl.get().endQuery(
                 self.device.impl,
@@ -684,7 +685,7 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// It must only be called on a primary command buffer.
+        /// It must only be called in a primary command buffer.
         /// The secondary command buffers must not be reused until
         /// `self.command_buffer` itself completes execution or is
         /// invalidated by `CommandPool.reset`.
