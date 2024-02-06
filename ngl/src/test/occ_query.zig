@@ -125,3 +125,476 @@ test "occlusion query without draws" {
     for (query_resolve_2.resolved_results, query_resolve.resolved_results[1..]) |x, y|
         try testing.expectEqual(x, y);
 }
+
+test "occlusion query" {
+    const dev = &context().device;
+    const queue_i = dev.findQueue(.{ .graphics = true }, null) orelse return error.SkipZigTest;
+
+    const query_count = 4;
+    var query_pool = try ngl.QueryPool.init(gpa, dev, .{
+        .query_type = .occlusion,
+        .query_count = query_count,
+    });
+    defer query_pool.deinit(gpa, dev);
+
+    const query_buf_size = query_pool.type.getLayout(dev, query_count, false).size;
+    var query_buf = try ngl.Buffer.init(gpa, dev, .{
+        .size = query_buf_size,
+        .usage = .{ .transfer_dest = true },
+    });
+    defer query_buf.deinit(gpa, dev);
+    var query_mem = blk: {
+        const mem_reqs = query_buf.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{
+                .host_visible = true,
+                .host_coherent = true,
+            }, null).?,
+        });
+        errdefer dev.free(gpa, &mem);
+        try query_buf.bind(dev, &mem, 0);
+        break :blk mem;
+    };
+    defer dev.free(gpa, &query_mem);
+    const query_data = (try query_mem.map(dev, 0, null))[0..query_buf_size];
+    @memset(query_data, 255);
+
+    const triangle = struct {
+        const format = ngl.Format.rgb32_sfloat;
+        const topology = ngl.Primitive.Topology.triangle_list;
+        const clockwise = true;
+
+        // Each will cover one half of the render area
+        const data: struct {
+            left: [3 * 3]f32 = .{
+                0,  -3, 0,
+                0,  1,  0,
+                -2, 1,  0,
+            },
+            right: [3 * 3]f32 = .{
+                0, -3, 0,
+                2, 1,  0,
+                0, 1,  0,
+            },
+        } = .{};
+    };
+
+    const vert_buf_size = @sizeOf(@TypeOf(triangle.data));
+    var vert_buf = try ngl.Buffer.init(gpa, dev, .{
+        .size = vert_buf_size,
+        .usage = .{ .vertex_buffer = true },
+    });
+    defer vert_buf.deinit(gpa, dev);
+    var vert_mem = blk: {
+        const mem_reqs = vert_buf.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{
+                .host_visible = true,
+                .host_coherent = true,
+            }, null).?,
+        });
+        errdefer dev.free(gpa, &mem);
+        try vert_buf.bind(dev, &mem, 0);
+        break :blk mem;
+    };
+    defer dev.free(gpa, &vert_mem);
+    const vert_data = (try vert_mem.map(dev, 0, null))[0..vert_buf_size];
+    @memcpy(vert_data, @as([*]const u8, @ptrCast(&triangle.data))[0..vert_buf_size]);
+
+    const width = 256;
+    const height = 192;
+
+    var color_img = try ngl.Image.init(gpa, dev, .{
+        .type = .@"2d",
+        .format = .rgba8_unorm,
+        .width = width,
+        .height = height,
+        .depth_or_layers = 1,
+        .levels = 1,
+        .samples = .@"1",
+        .tiling = .optimal,
+        .usage = .{ .color_attachment = true },
+        .misc = .{},
+        .initial_layout = .unknown,
+    });
+    defer color_img.deinit(gpa, dev);
+    var color_mem = blk: {
+        const mem_reqs = color_img.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
+        });
+        errdefer dev.free(gpa, &mem);
+        try color_img.bind(dev, &mem, 0);
+        break :blk mem;
+    };
+    defer dev.free(gpa, &color_mem);
+    var color_view = try ngl.ImageView.init(gpa, dev, .{
+        .image = &color_img,
+        .type = .@"2d",
+        .format = .rgba8_unorm,
+        .range = .{
+            .aspect_mask = .{ .color = true },
+            .base_level = 0,
+            .levels = 1,
+            .base_layer = 0,
+            .layers = 1,
+        },
+    });
+    defer color_view.deinit(gpa, dev);
+
+    var depth_img = try ngl.Image.init(gpa, dev, .{
+        .type = .@"2d",
+        .format = .d16_unorm,
+        .width = width,
+        .height = height,
+        .depth_or_layers = 1,
+        .levels = 1,
+        .samples = .@"1",
+        .tiling = .optimal,
+        .usage = .{ .depth_stencil_attachment = true },
+        .misc = .{},
+        .initial_layout = .unknown,
+    });
+    defer depth_img.deinit(gpa, dev);
+    var depth_mem = blk: {
+        const mem_reqs = depth_img.getMemoryRequirements(dev);
+        var mem = try dev.alloc(gpa, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
+        });
+        errdefer dev.free(gpa, &mem);
+        try depth_img.bind(dev, &mem, 0);
+        break :blk mem;
+    };
+    defer dev.free(gpa, &depth_mem);
+    var depth_view = try ngl.ImageView.init(gpa, dev, .{
+        .image = &depth_img,
+        .type = .@"2d",
+        .format = .d16_unorm,
+        .range = .{
+            .aspect_mask = .{ .depth = true },
+            .base_level = 0,
+            .levels = 1,
+            .base_layer = 0,
+            .layers = 1,
+        },
+    });
+    defer depth_view.deinit(gpa, dev);
+
+    var rp = try ngl.RenderPass.init(gpa, dev, .{
+        .attachments = &.{
+            .{
+                .format = .rgba8_unorm,
+                .samples = .@"1",
+                .load_op = .dont_care,
+                .store_op = .dont_care,
+                .initial_layout = .unknown,
+                .final_layout = .color_attachment_optimal,
+                .resolve_mode = null,
+                .combined = null,
+                .may_alias = false,
+            },
+            .{
+                .format = .d16_unorm,
+                .samples = .@"1",
+                .load_op = .clear,
+                .store_op = .dont_care,
+                .initial_layout = .unknown,
+                .final_layout = .depth_stencil_attachment_optimal,
+                .resolve_mode = null,
+                .combined = null,
+                .may_alias = false,
+            },
+        },
+        .subpasses = &.{.{
+            .pipeline_type = .graphics,
+            .input_attachments = null,
+            .color_attachments = &.{.{
+                .index = 0,
+                .layout = .color_attachment_optimal,
+                .aspect_mask = .{ .color = true },
+                .resolve = null,
+            }},
+            .depth_stencil_attachment = .{
+                .index = 1,
+                .layout = .depth_stencil_attachment_optimal,
+                .aspect_mask = .{ .depth = true },
+                .resolve = null,
+            },
+            .preserve_attachments = null,
+        }},
+        .dependencies = null,
+    });
+    defer rp.deinit(gpa, dev);
+
+    var fb = try ngl.FrameBuffer.init(gpa, dev, .{
+        .render_pass = &rp,
+        .attachments = &.{ &color_view, &depth_view },
+        .width = width,
+        .height = height,
+        .layers = 1,
+    });
+    defer fb.deinit(gpa, dev);
+
+    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
+        .descriptor_set_layouts = null,
+        .push_constant_ranges = null,
+    });
+    defer pl_layt.deinit(gpa, dev);
+
+    const pl = try ngl.Pipeline.initGraphics(gpa, dev, .{
+        .states = &.{.{
+            .stages = &.{
+                .{
+                    .stage = .vertex,
+                    .code = &vert_spv,
+                    .name = "main",
+                },
+                .{
+                    .stage = .fragment,
+                    .code = &frag_spv,
+                    .name = "main",
+                },
+            },
+            .layout = &pl_layt,
+            .primitive = &.{
+                .bindings = &.{.{
+                    .binding = 0,
+                    .stride = 12,
+                    .step_rate = .vertex,
+                }},
+                .attributes = &.{.{
+                    .location = 0,
+                    .binding = 0,
+                    .format = triangle.format,
+                    .offset = 0,
+                }},
+                .topology = triangle.topology,
+            },
+            .viewport = &.{
+                .x = 0,
+                .y = 0,
+                .width = width,
+                .height = height,
+                .near = 0,
+                .far = 1,
+            },
+            .rasterization = &.{
+                .polygon_mode = .fill,
+                .cull_mode = .back,
+                .clockwise = triangle.clockwise,
+                .samples = .@"1",
+            },
+            .depth_stencil = &.{
+                .depth_compare = .less,
+                .depth_write = true,
+                .stencil_front = null,
+                .stencil_back = null,
+            },
+            .color_blend = &.{
+                .attachments = &.{.{ .blend = null, .write = .all }},
+                .constants = .unused,
+            },
+            .render_pass = &rp,
+            .subpass = 0,
+        }},
+        .cache = null,
+    });
+    defer {
+        pl[0].deinit(gpa, dev);
+        gpa.free(pl);
+    }
+
+    var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[queue_i] });
+    defer cmd_pool.deinit(gpa, dev);
+    var cmd_buf = blk: {
+        const s = try cmd_pool.alloc(gpa, dev, .{ .level = .primary, .count = 1 });
+        defer gpa.free(s);
+        break :blk s[0];
+    };
+
+    var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
+    cmd.resetQueryPool(&query_pool, 0, query_count);
+    cmd.beginRenderPass(
+        .{
+            .render_pass = &rp,
+            .frame_buffer = &fb,
+            .render_area = .{
+                .x = 0,
+                .y = 0,
+                .width = width,
+                .height = height,
+            },
+            .clear_values = &.{ null, .{ .depth_stencil = .{ 1, undefined } } },
+        },
+        .{ .contents = .inline_only },
+    );
+    cmd.setPipeline(&pl[0]);
+
+    // samples_passed == width / 2 * height (or > 0)
+    cmd.beginQuery(&query_pool, 0, .{});
+    cmd.setVertexBuffers(
+        0,
+        &.{&vert_buf},
+        &.{@offsetOf(@TypeOf(triangle.data), "left")},
+        &.{@sizeOf(@TypeOf(triangle.data.left))},
+    );
+    cmd.draw(3, 1, 0, 0);
+    cmd.endQuery(&query_pool, 0);
+
+    // samples_passed == 0
+    cmd.beginQuery(&query_pool, 1, .{});
+    cmd.draw(3, 1, 0, 0);
+    cmd.endQuery(&query_pool, 1);
+
+    // samples_passed == width / 2 * height (or > 0)
+    cmd.beginQuery(&query_pool, 2, .{});
+    cmd.setVertexBuffers(
+        0,
+        &.{&vert_buf},
+        &.{@offsetOf(@TypeOf(triangle.data), "right")},
+        &.{@sizeOf(@TypeOf(triangle.data.right))},
+    );
+    cmd.draw(3, 1, 0, 0);
+    cmd.setVertexBuffers(
+        0,
+        &.{&vert_buf},
+        &.{@offsetOf(@TypeOf(triangle.data), "left")},
+        &.{@sizeOf(@TypeOf(triangle.data.left))},
+    );
+    cmd.draw(3, 1, 0, 0);
+    cmd.endQuery(&query_pool, 2);
+
+    // samples_passed == 0
+    cmd.beginQuery(&query_pool, 3, .{});
+    cmd.draw(3, 1, 0, 0);
+    cmd.setVertexBuffers(
+        0,
+        &.{&vert_buf},
+        &.{@offsetOf(@TypeOf(triangle.data), "right")},
+        &.{@sizeOf(@TypeOf(triangle.data.right))},
+    );
+    cmd.draw(3, 1, 0, 0);
+    cmd.endQuery(&query_pool, 3);
+
+    cmd.endRenderPass(.{});
+    cmd.copyQueryPoolResults(&query_pool, 0, query_count, &query_buf, 0, .{});
+    try cmd.end();
+
+    var fence = try ngl.Fence.init(gpa, dev, .{});
+    defer fence.deinit(gpa, dev);
+    {
+        context().lockQueue(queue_i);
+        defer context().unlockQueue(queue_i);
+
+        try dev.queues[queue_i].submit(gpa, dev, &fence, &.{.{
+            .commands = &.{.{ .command_buffer = &cmd_buf }},
+            .wait = &.{},
+            .signal = &.{},
+        }});
+    }
+    try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&fence});
+
+    var query_resolve = ngl.QueryResolve(.occlusion){};
+    defer query_resolve.free(gpa);
+    try query_resolve.resolve(gpa, dev, 0, query_count, false, query_data);
+
+    const expected = [query_count]struct {
+        op: enum { equal, greater },
+        value: u64,
+    }{
+        .{ .op = .greater, .value = 0 },
+        .{ .op = .equal, .value = 0 },
+        .{ .op = .greater, .value = 0 },
+        .{ .op = .equal, .value = 0 },
+    };
+
+    for (query_resolve.resolved_results, expected) |r, e| {
+        const spls_passed = r.samples_passed orelse unreachable;
+        switch (e.op) {
+            .greater => try testing.expect(spls_passed > e.value),
+            .equal => try testing.expectEqual(spls_passed, e.value),
+        }
+    }
+}
+
+// #version 460 core
+//
+// layout(location = 0) in vec3 position;
+//
+// void main() {
+//     gl_Position = vec4(position, 1.0);
+// }
+const vert_spv align(4) = [636]u8{
+    0x3,  0x2, 0x23, 0x7, 0x0,  0x0,  0x1,  0x0,  0xb,  0x0,  0x8,  0x0,  0x1b, 0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x11, 0x0,  0x2,  0x0,  0x1,  0x0,  0x0,  0x0,  0xb,  0x0,  0x6,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x47, 0x4c, 0x53, 0x4c, 0x2e, 0x73, 0x74, 0x64, 0x2e, 0x34, 0x35, 0x30,
+    0x0,  0x0, 0x0,  0x0, 0xe,  0x0,  0x3,  0x0,  0x0,  0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0xf,  0x0, 0x7,  0x0, 0x0,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x6d, 0x61, 0x69, 0x6e,
+    0x0,  0x0, 0x0,  0x0, 0xd,  0x0,  0x0,  0x0,  0x12, 0x0,  0x0,  0x0,  0x48, 0x0,  0x5,  0x0,
+    0xb,  0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0xb,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x48, 0x0, 0x5,  0x0, 0xb,  0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,  0xb,  0x0,  0x0,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x48, 0x0,  0x5,  0x0,  0xb,  0x0,  0x0,  0x0,  0x2,  0x0,  0x0,  0x0,
+    0xb,  0x0, 0x0,  0x0, 0x3,  0x0,  0x0,  0x0,  0x48, 0x0,  0x5,  0x0,  0xb,  0x0,  0x0,  0x0,
+    0x3,  0x0, 0x0,  0x0, 0xb,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x47, 0x0,  0x3,  0x0,
+    0xb,  0x0, 0x0,  0x0, 0x2,  0x0,  0x0,  0x0,  0x47, 0x0,  0x4,  0x0,  0x12, 0x0,  0x0,  0x0,
+    0x1e, 0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x13, 0x0,  0x2,  0x0,  0x2,  0x0,  0x0,  0x0,
+    0x21, 0x0, 0x3,  0x0, 0x3,  0x0,  0x0,  0x0,  0x2,  0x0,  0x0,  0x0,  0x16, 0x0,  0x3,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x20, 0x0,  0x0,  0x0,  0x17, 0x0,  0x4,  0x0,  0x7,  0x0,  0x0,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x4,  0x0,  0x0,  0x0,  0x15, 0x0,  0x4,  0x0,  0x8,  0x0,  0x0,  0x0,
+    0x20, 0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x2b, 0x0,  0x4,  0x0,  0x8,  0x0,  0x0,  0x0,
+    0x9,  0x0, 0x0,  0x0, 0x1,  0x0,  0x0,  0x0,  0x1c, 0x0,  0x4,  0x0,  0xa,  0x0,  0x0,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x9,  0x0,  0x0,  0x0,  0x1e, 0x0,  0x6,  0x0,  0xb,  0x0,  0x0,  0x0,
+    0x7,  0x0, 0x0,  0x0, 0x6,  0x0,  0x0,  0x0,  0xa,  0x0,  0x0,  0x0,  0xa,  0x0,  0x0,  0x0,
+    0x20, 0x0, 0x4,  0x0, 0xc,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,  0xb,  0x0,  0x0,  0x0,
+    0x3b, 0x0, 0x4,  0x0, 0xc,  0x0,  0x0,  0x0,  0xd,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,
+    0x15, 0x0, 0x4,  0x0, 0xe,  0x0,  0x0,  0x0,  0x20, 0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0x2b, 0x0, 0x4,  0x0, 0xe,  0x0,  0x0,  0x0,  0xf,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x17, 0x0, 0x4,  0x0, 0x10, 0x0,  0x0,  0x0,  0x6,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,
+    0x20, 0x0, 0x4,  0x0, 0x11, 0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,  0x10, 0x0,  0x0,  0x0,
+    0x3b, 0x0, 0x4,  0x0, 0x11, 0x0,  0x0,  0x0,  0x12, 0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0x2b, 0x0, 0x4,  0x0, 0x6,  0x0,  0x0,  0x0,  0x14, 0x0,  0x0,  0x0,  0x0,  0x0,  0x80, 0x3f,
+    0x20, 0x0, 0x4,  0x0, 0x19, 0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,  0x7,  0x0,  0x0,  0x0,
+    0x36, 0x0, 0x5,  0x0, 0x2,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x3,  0x0, 0x0,  0x0, 0xf8, 0x0,  0x2,  0x0,  0x5,  0x0,  0x0,  0x0,  0x3d, 0x0,  0x4,  0x0,
+    0x10, 0x0, 0x0,  0x0, 0x13, 0x0,  0x0,  0x0,  0x12, 0x0,  0x0,  0x0,  0x51, 0x0,  0x5,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x15, 0x0,  0x0,  0x0,  0x13, 0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x51, 0x0, 0x5,  0x0, 0x6,  0x0,  0x0,  0x0,  0x16, 0x0,  0x0,  0x0,  0x13, 0x0,  0x0,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x51, 0x0,  0x5,  0x0,  0x6,  0x0,  0x0,  0x0,  0x17, 0x0,  0x0,  0x0,
+    0x13, 0x0, 0x0,  0x0, 0x2,  0x0,  0x0,  0x0,  0x50, 0x0,  0x7,  0x0,  0x7,  0x0,  0x0,  0x0,
+    0x18, 0x0, 0x0,  0x0, 0x15, 0x0,  0x0,  0x0,  0x16, 0x0,  0x0,  0x0,  0x17, 0x0,  0x0,  0x0,
+    0x14, 0x0, 0x0,  0x0, 0x41, 0x0,  0x5,  0x0,  0x19, 0x0,  0x0,  0x0,  0x1a, 0x0,  0x0,  0x0,
+    0xd,  0x0, 0x0,  0x0, 0xf,  0x0,  0x0,  0x0,  0x3e, 0x0,  0x3,  0x0,  0x1a, 0x0,  0x0,  0x0,
+    0x18, 0x0, 0x0,  0x0, 0xfd, 0x0,  0x1,  0x0,  0x38, 0x0,  0x1,  0x0,
+};
+
+// #version 460 core
+//
+// layout(location = 0) out vec4 color_0;
+//
+// void main() {
+//     color_0 = vec4(1.0);
+// }
+const frag_spv align(4) = [288]u8{
+    0x3,  0x2, 0x23, 0x7,  0x0,  0x0,  0x1,  0x0,  0xb,  0x0,  0x8,  0x0,  0xc,  0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0,  0x11, 0x0,  0x2,  0x0,  0x1,  0x0,  0x0,  0x0,  0xb,  0x0,  0x6,  0x0,
+    0x1,  0x0, 0x0,  0x0,  0x47, 0x4c, 0x53, 0x4c, 0x2e, 0x73, 0x74, 0x64, 0x2e, 0x34, 0x35, 0x30,
+    0x0,  0x0, 0x0,  0x0,  0xe,  0x0,  0x3,  0x0,  0x0,  0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0xf,  0x0, 0x6,  0x0,  0x4,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x6d, 0x61, 0x69, 0x6e,
+    0x0,  0x0, 0x0,  0x0,  0x9,  0x0,  0x0,  0x0,  0x10, 0x0,  0x3,  0x0,  0x4,  0x0,  0x0,  0x0,
+    0x7,  0x0, 0x0,  0x0,  0x47, 0x0,  0x4,  0x0,  0x9,  0x0,  0x0,  0x0,  0x1e, 0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0,  0x13, 0x0,  0x2,  0x0,  0x2,  0x0,  0x0,  0x0,  0x21, 0x0,  0x3,  0x0,
+    0x3,  0x0, 0x0,  0x0,  0x2,  0x0,  0x0,  0x0,  0x16, 0x0,  0x3,  0x0,  0x6,  0x0,  0x0,  0x0,
+    0x20, 0x0, 0x0,  0x0,  0x17, 0x0,  0x4,  0x0,  0x7,  0x0,  0x0,  0x0,  0x6,  0x0,  0x0,  0x0,
+    0x4,  0x0, 0x0,  0x0,  0x20, 0x0,  0x4,  0x0,  0x8,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,
+    0x7,  0x0, 0x0,  0x0,  0x3b, 0x0,  0x4,  0x0,  0x8,  0x0,  0x0,  0x0,  0x9,  0x0,  0x0,  0x0,
+    0x3,  0x0, 0x0,  0x0,  0x2b, 0x0,  0x4,  0x0,  0x6,  0x0,  0x0,  0x0,  0xa,  0x0,  0x0,  0x0,
+    0x0,  0x0, 0x80, 0x3f, 0x2c, 0x0,  0x7,  0x0,  0x7,  0x0,  0x0,  0x0,  0xb,  0x0,  0x0,  0x0,
+    0xa,  0x0, 0x0,  0x0,  0xa,  0x0,  0x0,  0x0,  0xa,  0x0,  0x0,  0x0,  0xa,  0x0,  0x0,  0x0,
+    0x36, 0x0, 0x5,  0x0,  0x2,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x3,  0x0, 0x0,  0x0,  0xf8, 0x0,  0x2,  0x0,  0x5,  0x0,  0x0,  0x0,  0x3e, 0x0,  0x3,  0x0,
+    0x9,  0x0, 0x0,  0x0,  0xb,  0x0,  0x0,  0x0,  0xfd, 0x0,  0x1,  0x0,  0x38, 0x0,  0x1,  0x0,
+};
