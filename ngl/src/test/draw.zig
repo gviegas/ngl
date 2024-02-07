@@ -6,6 +6,14 @@ const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 
 test "draw command" {
+    try testDrawCommand(false, @src().fn_name);
+}
+
+test "drawIndexed command" {
+    try testDrawCommand(true, @src().fn_name);
+}
+
+fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void {
     const ctx = context();
     const dev = &ctx.device;
     const queue_i = dev.findQueue(.{ .graphics = true }, null) orelse return error.SkipZigTest;
@@ -50,7 +58,11 @@ test "draw command" {
         break :blk (sz + 255) & ~@as(u64, 255);
     };
 
-    const size = @max(w * h * 4, unif_size + vert_size);
+    // Invert the winding order for indexed draw
+    const idx_data = if (indexed) [3]u16{ 2, 1, 0 } else {};
+    const idx_size = @sizeOf(@TypeOf(idx_data));
+
+    const size = @max(w * h * 4, unif_size + vert_size + idx_size);
 
     var image = try ngl.Image.init(gpa, dev, .{
         .type = .@"2d",
@@ -134,6 +146,30 @@ test "draw command" {
         dev.free(gpa, &vert_buf_mem);
     }
 
+    var idx_buf: ngl.Buffer = undefined;
+    var idx_buf_mem: ngl.Memory = undefined;
+    if (indexed) {
+        idx_buf = try ngl.Buffer.init(gpa, dev, .{
+            .size = idx_size,
+            .usage = .{ .index_buffer = true, .transfer_dest = true },
+        });
+        idx_buf_mem = blk: {
+            errdefer idx_buf.deinit(gpa, dev);
+            const mem_reqs = idx_buf.getMemoryRequirements(dev);
+            var mem = try dev.alloc(gpa, .{
+                .size = mem_reqs.size,
+                .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
+            });
+            errdefer dev.free(gpa, &mem);
+            try idx_buf.bind(dev, &mem, 0);
+            break :blk mem;
+        };
+    }
+    defer if (indexed) {
+        idx_buf.deinit(gpa, dev);
+        dev.free(gpa, &idx_buf_mem);
+    };
+
     var stg_buf = try ngl.Buffer.init(gpa, dev, .{
         .size = size,
         .usage = .{ .transfer_source = true, .transfer_dest = true },
@@ -202,8 +238,16 @@ test "draw command" {
                 .dest_subpass = .{ .index = 0 },
                 .source_stage_mask = .{ .copy = true },
                 .source_access_mask = .{ .transfer_write = true },
-                .dest_stage_mask = .{ .vertex_attribute_input = true, .vertex_shader = true },
-                .dest_access_mask = .{ .vertex_attribute_read = true, .uniform_read = true },
+                .dest_stage_mask = .{
+                    .index_input = indexed,
+                    .vertex_attribute_input = true,
+                    .vertex_shader = true,
+                },
+                .dest_access_mask = .{
+                    .index_read = indexed,
+                    .vertex_attribute_read = true,
+                    .uniform_read = true,
+                },
                 .by_region = false,
             },
             .{
@@ -267,7 +311,7 @@ test "draw command" {
     const raster = ngl.Rasterization{
         .polygon_mode = .fill,
         .cull_mode = .front, // Due to the uniform's transform
-        .clockwise = true,
+        .clockwise = !indexed,
         .samples = .@"1",
     };
 
@@ -343,6 +387,12 @@ test "draw command" {
         const dest = p[unif_size .. unif_size + len];
         @memcpy(dest, source);
     }
+    if (indexed) {
+        const len = @sizeOf(@TypeOf(idx_data));
+        const source = @as([*]const u8, @ptrCast(&idx_data))[0..len];
+        const dest = p[size - len .. size];
+        @memcpy(dest, source);
+    }
 
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[queue_i] });
     defer cmd_pool.deinit(gpa, dev);
@@ -352,14 +402,14 @@ test "draw command" {
         break :blk s[0];
     };
 
-    // Update uniform and vertex buffers using a staging buffer,
+    // Update uniform/vertex/index buffers using a staging buffer,
     // then record a render pass instance that draws to a single
     // color attachment, then copy this attachment back to the
     // staging buffer
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
-    cmd.copyBuffer(&.{
+    cmd.copyBuffer(&[_]ngl.Cmd.BufferCopy{
         .{
             .source = &stg_buf,
             .dest = &unif_buf,
@@ -378,7 +428,15 @@ test "draw command" {
                 .size = vert_size, // Note `vert_size`
             }},
         },
-    });
+    } ++ if (indexed) &[_]ngl.Cmd.BufferCopy{.{
+        .source = &stg_buf,
+        .dest = &idx_buf,
+        .regions = &.{.{
+            .source_offset = size - idx_size,
+            .dest_offset = 0,
+            .size = idx_size, // This one matches the data size
+        }},
+    }} else &[_]ngl.Cmd.BufferCopy{});
 
     // No memory barrier necessary here
 
@@ -396,7 +454,12 @@ test "draw command" {
     cmd.setPipeline(&pl);
     cmd.setDescriptors(.graphics, &pl_layt, 0, &.{&desc_set});
     cmd.setVertexBuffers(0, &.{&vert_buf}, &.{0}, &.{vert_size}); // Note `vert_size`
-    cmd.draw(3, 1, 0, 0);
+    if (!indexed) {
+        cmd.draw(3, 1, 0, 0);
+    } else {
+        cmd.setIndexBuffer(.u16, &idx_buf, 0, idx_size);
+        cmd.drawIndexed(3, 1, 0, 0, 0);
+    }
     cmd.endRenderPass(.{});
 
     // No memory barrier necessary here
@@ -472,10 +535,12 @@ test "draw command" {
         if (w & 1 == 0 and h & 1 == 0) 0 else 0.1,
     );
 
+    if (indexed) return;
+
     if (@import("test.zig").writer) |writer| {
         var str = std.ArrayList(u8).init(gpa);
         defer str.deinit();
-        try str.appendSlice("\n" ++ @src().fn_name ++ "\n");
+        try str.appendSlice("\n" ++ test_name ++ "\n");
         for (0..h) |y| {
             for (0..w) |x| {
                 const i = (x + w * y) * 4;
