@@ -82,6 +82,7 @@ pub const CommandBuffer = struct {
 
     const Self = @This();
 
+    /// The command buffer must not be recording or pending execution.
     /// It must be paired with `Cmd.end`.
     pub fn begin(
         self: *Self,
@@ -129,6 +130,14 @@ pub const CommandBuffer = struct {
         };
 
         /// Pipelines of different `Pipeline.Type`s can coexist.
+        ///
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [ ] Transfer queue
         pub fn setPipeline(self: *Cmd, pipeline: *Pipeline) void {
             Impl.get().setPipeline(
                 self.device.impl,
@@ -138,6 +147,13 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [ ] Transfer queue
         pub fn setDescriptors(
             self: *Cmd,
             pipeline_type: Pipeline.Type,
@@ -156,6 +172,13 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [ ] Transfer queue
         pub fn setPushConstants(
             self: *Cmd,
             pipeline_layout: *PipelineLayout,
@@ -178,6 +201,13 @@ pub const CommandBuffer = struct {
             u32,
         };
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn setIndexBuffer(
             self: *Cmd,
             index_type: IndexType,
@@ -196,6 +226,14 @@ pub const CommandBuffer = struct {
         }
 
         /// The slices must have the same length.
+        ///
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn setVertexBuffers(
             self: *Cmd,
             first_binding: u32,
@@ -215,6 +253,14 @@ pub const CommandBuffer = struct {
         }
 
         /// Only valid for pipelines with unspecified viewport state.
+        ///
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn setViewport(self: *Cmd, viewport: Viewport) void {
             Impl.get().setViewport(self.device.impl, self.command_buffer.impl, viewport);
         }
@@ -226,6 +272,14 @@ pub const CommandBuffer = struct {
         };
 
         /// Only valid for pipelines with unspecified stencil reference.
+        ///
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn setStencilReference(self: *Cmd, stencil_face: StencilFace, reference: u32) void {
             Impl.get().setStencilReference(
                 self.device.impl,
@@ -236,6 +290,14 @@ pub const CommandBuffer = struct {
         }
 
         /// Only valid for pipelines with unspecified blend constants.
+        ///
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn setBlendConstants(self: *Cmd, constants: [4]f32) void {
             Impl.get().setBlendConstants(self.device.impl, self.command_buffer.impl, constants);
         }
@@ -256,7 +318,7 @@ pub const CommandBuffer = struct {
                 width: u32,
                 height: u32,
             },
-            // One clear value per attachment
+            /// One clear value per attachment.
             clear_values: []const ?ClearValue,
         };
 
@@ -271,8 +333,15 @@ pub const CommandBuffer = struct {
 
         pub const SubpassEnd = struct {};
 
-        /// It must not be called within another render pass and
-        /// must be paired with `endRenderPass`.
+        /// It must be paired with `endRenderPass`.
+        ///
+        /// [x] Primary command buffer
+        /// [ ] Secondary command buffer
+        /// [x] Global scope
+        /// [ ] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn beginRenderPass(
             self: *Cmd,
             render_pass_begin: RenderPassBegin,
@@ -288,6 +357,14 @@ pub const CommandBuffer = struct {
         }
 
         /// Not used with render passes that have a single subpass.
+        ///
+        /// [x] Primary command buffer
+        /// [ ] Secondary command buffer
+        /// [ ] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn nextSubpass(self: *Cmd, next_begin: SubpassBegin, current_end: SubpassEnd) void {
             Impl.get().nextSubpass(
                 self.device.impl,
@@ -299,10 +376,25 @@ pub const CommandBuffer = struct {
 
         /// Called in the last subpass of a render pass.
         /// Note that it replaces the call to `nextSubpass`.
+        ///
+        /// [x] Primary command buffer
+        /// [ ] Secondary command buffer
+        /// [ ] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn endRenderPass(self: *Cmd, subpass_end: SubpassEnd) void {
             Impl.get().endRenderPass(self.device.impl, self.command_buffer.impl, subpass_end);
         }
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [ ] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn draw(
             self: *Cmd,
             vertex_count: u32,
@@ -320,6 +412,13 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [ ] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn drawIndexed(
             self: *Cmd,
             index_count: u32,
@@ -348,6 +447,13 @@ pub const CommandBuffer = struct {
             first_instance: u32,
         };
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [ ] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn drawIndirect(
             self: *Cmd,
             buffer: *Buffer,
@@ -375,6 +481,13 @@ pub const CommandBuffer = struct {
             first_instance: u32,
         };
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [ ] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [ ] Compute queue
+        /// [ ] Transfer queue
         pub fn drawIndexedIndirect(
             self: *Cmd,
             buffer: *Buffer,
@@ -392,6 +505,13 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [ ] Render pass scope
+        /// [ ] Graphics queue
+        /// [x] Compute queue
+        /// [ ] Transfer queue
         pub fn dispatch(
             self: *Cmd,
             group_count_x: u32,
@@ -413,6 +533,13 @@ pub const CommandBuffer = struct {
             group_count_z: u32,
         };
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [ ] Render pass scope
+        /// [ ] Graphics queue
+        /// [x] Compute queue
+        /// [ ] Transfer queue
         pub fn dispatchIndirect(self: *Cmd, buffer: *Buffer, offset: u64) void {
             Impl.get().dispatchIndirect(
                 self.device.impl,
@@ -423,6 +550,14 @@ pub const CommandBuffer = struct {
         }
 
         /// Filled range must be aligned to 4 bytes.
+        ///
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [ ] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [x] Transfer queue
         pub fn fillBuffer(self: *Cmd, buffer: *Buffer, offset: u64, size: ?u64, value: u8) void {
             Impl.get().fillBuffer(
                 self.device.impl,
@@ -446,6 +581,13 @@ pub const CommandBuffer = struct {
             };
         };
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [ ] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [x] Transfer queue
         pub fn copyBuffer(self: *Cmd, copies: []const BufferCopy) void {
             Impl.get().copyBuffer(
                 self.allocator,
@@ -480,6 +622,13 @@ pub const CommandBuffer = struct {
             };
         };
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [ ] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [x] Transfer queue
         pub fn copyImage(self: *Cmd, copies: []const ImageCopy) void {
             Impl.get().copyImage(
                 self.allocator,
@@ -511,6 +660,13 @@ pub const CommandBuffer = struct {
             };
         };
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [ ] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [x] Transfer queue
         pub fn copyBufferToImage(self: *Cmd, copies: []const BufferImageCopy) void {
             Impl.get().copyBufferToImage(
                 self.allocator,
@@ -520,6 +676,13 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [ ] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [x] Transfer queue
         pub fn copyImageToBuffer(self: *Cmd, copies: []const BufferImageCopy) void {
             Impl.get().copyImageToBuffer(
                 self.allocator,
@@ -529,7 +692,17 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// Calling it in a render pass is not valid.
+        /// It must be called before a newly created query pool is
+        /// used in other query-related commands.
+        /// It must also be called between uses of the same query.
+        ///
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [ ] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [ ] Transfer queue
         pub fn resetQueryPool(
             self: *Cmd,
             query_pool: *QueryPool,
@@ -552,11 +725,19 @@ pub const CommandBuffer = struct {
         };
 
         /// If called outside of a render pass, then it must also end
-        /// outside of a render pass, and must not contain multiple
+        /// outside of a render pass, and must not span across multiple
         /// render passes. When called within a render pass, it must
         /// end in the same subpass.
-        /// Must be paired with `endQuery`.
-        /// Not used for timestamp queries.
+        /// The type of the query must not be `.timestamp`.
+        /// It must be paired with `endQuery`.
+        ///
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [ ] Transfer queue
         pub fn beginQuery(
             self: *Cmd,
             query_pool: *QueryPool,
@@ -575,7 +756,15 @@ pub const CommandBuffer = struct {
 
         /// It must be scoped as described in `beginQuery`.
         /// It's not valid to call it in a different command buffer
-        /// than that of its pairing `beginQuery`.
+        /// than that of the corresponding `beginQuery`.
+        ///
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [ ] Transfer queue
         pub fn endQuery(self: *Cmd, query_pool: *QueryPool, query: u32) void {
             Impl.get().endQuery(
                 self.device.impl,
@@ -586,6 +775,15 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// The type of the query must be `.timestamp`.
+        ///
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [x] Transfer queue
         pub fn writeTimestamp(
             self: *Cmd,
             pipeline_stage: PipelineStage,
@@ -609,6 +807,13 @@ pub const CommandBuffer = struct {
             with_availability: bool = false,
         };
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [ ] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [ ] Transfer queue
         pub fn copyQueryPoolResults(
             self: *Cmd,
             query_pool: *QueryPool,
@@ -676,6 +881,13 @@ pub const CommandBuffer = struct {
             };
         };
 
+        /// [x] Primary command buffer
+        /// [x] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [x] Transfer queue
         pub fn pipelineBarrier(self: *Cmd, dependencies: []const Dependency) void {
             Impl.get().pipelineBarrier(
                 self.allocator,
@@ -685,10 +897,17 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// It must only be called in a primary command buffer.
         /// The secondary command buffers must not be reused until
         /// `self.command_buffer` itself completes execution or is
         /// invalidated by `CommandPool.reset`.
+        ///
+        /// [x] Primary command buffer
+        /// [ ] Secondary command buffer
+        /// [x] Global scope
+        /// [x] Render pass scope
+        /// [x] Graphics queue
+        /// [x] Compute queue
+        /// [x] Transfer queue
         pub fn executeCommands(self: *Cmd, secondary_command_buffers: []const *CommandBuffer) void {
             Impl.get().executeCommands(
                 self.allocator,
@@ -698,7 +917,11 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// Invalidates `self`.
+        /// Finishes recording and invalidates `self`.
+        /// One must ensure that `endRenderPass` and `endQuery`
+        /// have been called for any active render pass and query,
+        /// respectively.
+        /// Note that this isn't a command.
         pub fn end(self: *Cmd) Error!void {
             defer self.* = undefined;
             try Impl.get().endCommandBuffer(
