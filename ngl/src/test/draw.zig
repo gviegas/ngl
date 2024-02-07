@@ -115,7 +115,7 @@ test "draw command" {
     }
 
     var vert_buf = try ngl.Buffer.init(gpa, dev, .{
-        .size = unif_size,
+        .size = vert_size,
         .usage = .{ .vertex_buffer = true, .transfer_dest = true },
     });
     var vert_buf_mem = blk: {
