@@ -5,7 +5,7 @@ const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 
-test "dispatch" {
+test "dispatch command" {
     const ctx = context();
     const dev = &ctx.device;
     const queue_i = dev.findQueue(.{ .compute = true }, null) orelse unreachable;

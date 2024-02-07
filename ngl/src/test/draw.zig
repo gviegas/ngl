@@ -5,7 +5,7 @@ const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 
-test "draw" {
+test "draw command" {
     const ctx = context();
     const dev = &ctx.device;
     const queue_i = dev.findQueue(.{ .graphics = true }, null) orelse return error.SkipZigTest;
