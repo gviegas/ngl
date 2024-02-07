@@ -444,8 +444,13 @@ pub const Feature = union(enum) {
         },
         draw: struct {
             max_index_value: u32 = 16777215,
+            indirect_command: bool,
+            indexed_indirect_command: bool,
             max_indirect_count: u32 = 1,
             indirect_first_instance: bool,
+        },
+        dispatch: struct {
+            indirect_command: bool,
         },
         primitive: struct {
             max_bindings: u32 = 8,

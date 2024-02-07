@@ -2661,8 +2661,13 @@ fn getFeature(
                 },
                 .draw = .{
                     .max_index_value = l.maxDrawIndexedIndexValue,
+                    .indirect_command = true,
+                    .indexed_indirect_command = true,
                     .max_indirect_count = l.maxDrawIndirectCount,
                     .indirect_first_instance = f.drawIndirectFirstInstance == c.VK_TRUE,
+                },
+                .dispatch = .{
+                    .indirect_command = true,
                 },
                 .primitive = .{
                     .max_bindings = l.maxVertexInputBindings,

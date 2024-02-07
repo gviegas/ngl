@@ -438,6 +438,7 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// The layout of indirect draws.
         pub const DrawIndirectCommand = packed struct {
             vertex_count: u32,
             instance_count: u32,
@@ -447,6 +448,8 @@ pub const CommandBuffer = struct {
             first_instance: u32,
         };
 
+        /// `Feature.core.draw.indirect_command`.
+        ///
         /// [x] Primary command buffer
         /// [x] Secondary command buffer
         /// [ ] Global scope
@@ -471,6 +474,7 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// The layout of indexed indirect draws.
         pub const DrawIndexedIndirectCommand = packed struct {
             index_count: u32,
             instance_count: u32,
@@ -481,6 +485,8 @@ pub const CommandBuffer = struct {
             first_instance: u32,
         };
 
+        /// `Feature.core.draw.indexed_indirect_command`.
+        ///
         /// [x] Primary command buffer
         /// [x] Secondary command buffer
         /// [ ] Global scope
@@ -527,12 +533,15 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// The layout of indirect dispatches.
         pub const DispatchIndirectCommand = packed struct {
             group_count_x: u32,
             group_count_y: u32,
             group_count_z: u32,
         };
 
+        /// `Feature.core.dispatch.indirect_command`.
+        ///
         /// [x] Primary command buffer
         /// [x] Secondary command buffer
         /// [x] Global scope
