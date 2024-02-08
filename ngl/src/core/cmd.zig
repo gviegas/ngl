@@ -439,7 +439,7 @@ pub const CommandBuffer = struct {
         }
 
         /// The layout of indirect draws.
-        pub const DrawIndirectCommand = packed struct {
+        pub const DrawIndirectCommand = extern struct {
             vertex_count: u32,
             instance_count: u32,
             first_vertex: u32,
@@ -475,7 +475,7 @@ pub const CommandBuffer = struct {
         }
 
         /// The layout of indexed indirect draws.
-        pub const DrawIndexedIndirectCommand = packed struct {
+        pub const DrawIndexedIndirectCommand = extern struct {
             index_count: u32,
             instance_count: u32,
             first_index: u32,
@@ -534,7 +534,7 @@ pub const CommandBuffer = struct {
         }
 
         /// The layout of indirect dispatches.
-        pub const DispatchIndirectCommand = packed struct {
+        pub const DispatchIndirectCommand = extern struct {
             group_count_x: u32,
             group_count_y: u32,
             group_count_z: u32,
