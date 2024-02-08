@@ -21,7 +21,7 @@ test "Surface.init/deinit" {
         .linux => if (builtin.target.isAndroid()) {
             @compileError("TODO");
         } else {
-            var plat = try @import("plat.zig").PlatformXcb.init();
+            var plat = try @import("test.zig").PlatformXcb.init();
             defer plat.deinit();
             var sf = try ngl.Surface.init(gpa, &inst, .{
                 .platform = .{ .xcb = .{

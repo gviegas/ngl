@@ -3,7 +3,7 @@ const testing = std.testing;
 
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
-const context = @import("ctx.zig").context;
+const context = @import("test.zig").context;
 
 test "QueryPool.init/deinit" {
     const ctx = context();

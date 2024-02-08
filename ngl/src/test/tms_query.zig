@@ -3,7 +3,7 @@ const testing = std.testing;
 
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
-const context = @import("ctx.zig").context;
+const context = @import("test.zig").context;
 
 test "timestamp query on empty command buffer" {
     const ctx = context();
