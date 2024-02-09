@@ -140,6 +140,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
 
     const width = 32;
     const height = 24;
+    comptime if (width & 1 != 0 or height & 1 != 0) unreachable;
 
     var color_img = try ngl.Image.init(gpa, dev, .{
         .type = .@"2d",
