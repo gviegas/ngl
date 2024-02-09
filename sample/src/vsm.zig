@@ -1379,19 +1379,11 @@ const Smoothing = struct {
         const pls = try ngl.Pipeline.initCompute(gpa, &context().device, .{
             .states = &.{
                 .{
-                    .stage = .{
-                        .stage = .compute,
-                        .code = &v_comp_spv,
-                        .name = "main",
-                    },
+                    .stage = .{ .code = &v_comp_spv, .name = "main" },
                     .layout = &descriptor.pipeline_layout,
                 },
                 .{
-                    .stage = .{
-                        .stage = .compute,
-                        .code = &h_comp_spv,
-                        .name = "main",
-                    },
+                    .stage = .{ .code = &h_comp_spv, .name = "main" },
                     .layout = &descriptor.pipeline_layout,
                 },
             },

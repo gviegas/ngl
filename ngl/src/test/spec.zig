@@ -128,7 +128,6 @@ test "shader specialization" {
             .states = &.{
                 .{
                     .stage = .{
-                        .stage = .compute,
                         .code = &comp_spv,
                         .name = "main",
                         .specialization = spec,
@@ -137,7 +136,6 @@ test "shader specialization" {
                 },
                 .{
                     .stage = .{
-                        .stage = .compute,
                         .code = &comp_spv,
                         .name = "main",
                         .specialization = spec_2,

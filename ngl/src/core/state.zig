@@ -267,7 +267,14 @@ pub const GraphicsState = struct {
 };
 
 pub const ComputeState = struct {
-    stage: ShaderStage.Desc,
+    /// This is `ShaderStage.Desc` without the `stage` field
+    /// (implicit `.compute`).
+    stage: @Type(.{ .Struct = .{
+        .layout = .Auto,
+        .fields = @typeInfo(ShaderStage.Desc).Struct.fields[1..],
+        .decls = &.{},
+        .is_tuple = false,
+    } }),
     layout: *PipelineLayout,
 };
 

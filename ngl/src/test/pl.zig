@@ -186,11 +186,7 @@ test "Pipeline.initCompute/deinit" {
 
     var pl = try ngl.Pipeline.initCompute(gpa, dev, .{
         .states = &.{.{
-            .stage = .{
-                .stage = .compute,
-                .code = &comp_spv,
-                .name = "main",
-            },
+            .stage = .{ .code = &comp_spv, .name = "main" },
             .layout = &pl_layt,
         }},
         .cache = null,

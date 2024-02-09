@@ -2070,7 +2070,6 @@ const Pipeline = struct {
 
         states[0] = .{
             .stage = .{
-                .stage = .compute,
                 .code = &bloom_comp_spv,
                 .name = "main",
                 .specialization = bloom_spec,
@@ -2079,19 +2078,11 @@ const Pipeline = struct {
         };
 
         states[1] = .{
-            .stage = .{
-                .stage = .compute,
-                .code = &blur_comp_spv,
-                .name = "main",
-            },
+            .stage = .{ .code = &blur_comp_spv, .name = "main" },
             .layout = &descriptor.pipeline_layout,
         };
         states[2] = .{
-            .stage = .{
-                .stage = .compute,
-                .code = &blur_2_comp_spv,
-                .name = "main",
-            },
+            .stage = .{ .code = &blur_2_comp_spv, .name = "main" },
             .layout = &descriptor.pipeline_layout,
         };
 
@@ -2116,7 +2107,6 @@ const Pipeline = struct {
 
         states[3] = .{
             .stage = .{
-                .stage = .compute,
                 .code = &tm_comp_spv,
                 .name = "main",
                 .specialization = tm_spec,
@@ -2154,7 +2144,6 @@ const Pipeline = struct {
         for (states[4 .. 4 + ToneMap.downsamples.len - 1], tm_rw_specs, 0..) |*state, spec, i|
             state.* = .{
                 .stage = .{
-                    .stage = .compute,
                     .code = if (i & 1 == 0) &tm_r0w1_comp_spv else &tm_r1w0_comp_spv,
                     .name = "main",
                     .specialization = spec,

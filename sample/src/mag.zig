@@ -798,7 +798,6 @@ const Generation = struct {
         const pl = try ngl.Pipeline.initCompute(gpa, dev, .{
             .states = &.{.{
                 .stage = .{
-                    .stage = .compute,
                     .code = &comp_spv,
                     .name = "main",
                     .specialization = .{
