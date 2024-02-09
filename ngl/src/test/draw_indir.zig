@@ -13,6 +13,7 @@ test "drawIndexedIndirect command" {
     try testDrawIndirectCommand(true, @src().fn_name);
 }
 
+// TODO: Test `draw_count` greater than one in indirect command calls
 fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u8) !void {
     const ctx = context();
     const dev = &ctx.device;
@@ -76,7 +77,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         };
 
         const top_left_color = [4]f32{ 1, 0, 0, 1 };
-        const bottom_right_color = [4]f32{ 0, 1, 0, 1 };
+        const bottom_right_color = [4]f32{ 0, 0, 1, 1 };
 
         // Each triangle will cover one quadrant of the render area
         const data: struct {
