@@ -8,7 +8,7 @@ const context = @import("test.zig").context;
 test "dispatch command" {
     const ctx = context();
     const dev = &ctx.device;
-    const queue_i = dev.findQueue(.{ .compute = true }, null) orelse unreachable;
+    const queue_i = dev.findQueue(.{ .compute = true }, null) orelse return error.SkipZigTest;
 
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);

@@ -8,6 +8,7 @@ const context = @import("test.zig").context;
 test "dispatchIndirect command" {
     const ctx = context();
     const dev = &ctx.device;
+    const queue_i = dev.findQueue(.{ .compute = true }, null) orelse return error.SkipZigTest;
     if (!ngl.Feature.get(gpa, &ctx.instance, ctx.device_desc, .core).?.dispatch.indirect_command)
         return error.SkipZigTest;
 
@@ -117,8 +118,6 @@ test "dispatchIndirect command" {
         break :blk s[0];
     };
     defer pl.deinit(gpa, dev);
-
-    const queue_i = dev.findQueue(.{ .compute = true }, null).?;
 
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[queue_i] });
     defer cmd_pool.deinit(gpa, dev);

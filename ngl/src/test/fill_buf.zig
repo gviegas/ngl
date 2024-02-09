@@ -9,7 +9,9 @@ test "fillBuffer command" {
     const ctx = context();
     const dev = &ctx.device;
     // TODO: Vulkan 1.0 doesn't allow this command in transfer-only queues
-    const queue_i = dev.findQueue(.{ .compute = true }, null) orelse unreachable;
+    const queue_i = dev.findQueue(.{ .compute = true }, null) orelse
+        dev.findQueue(.{ .graphics = true }, null) orelse
+        return error.SkipZigTest;
 
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);
