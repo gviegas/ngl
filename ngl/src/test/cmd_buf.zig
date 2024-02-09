@@ -1,5 +1,4 @@
 const std = @import("std");
-const testing = std.testing;
 const builtin = @import("builtin");
 
 const ngl = @import("../ngl.zig");

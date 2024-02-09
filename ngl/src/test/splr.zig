@@ -1,5 +1,4 @@
 const std = @import("std");
-const testing = std.testing;
 
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
