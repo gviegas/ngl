@@ -44,6 +44,7 @@ test {
     _ = @import("draw_indir.zig");
     _ = @import("occ_query.zig");
     _ = @import("tms_query.zig");
+    _ = @import("blend.zig");
     _ = @import("sf.zig");
     _ = @import("sc.zig");
 }
