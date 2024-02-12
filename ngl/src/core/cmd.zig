@@ -907,7 +907,8 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// The secondary command buffers must not be reused until
+        /// The secondary command buffers must have been ended and
+        /// must not be empty. They must not be reused until
         /// `self.command_buffer` itself completes execution or is
         /// invalidated by `CommandPool.reset`.
         ///
