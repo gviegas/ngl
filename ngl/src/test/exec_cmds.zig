@@ -369,7 +369,443 @@ test "executeCommands command (dispatching)" {
                 .layers = 1,
             },
         }},
-        .by_region = true,
+        .by_region = false,
+    }});
+    cmd.copyImageToBuffer(&.{.{
+        .buffer = &t.stg_buf,
+        .image = &image,
+        .image_layout = .transfer_source_optimal,
+        .image_type = .@"2d",
+        .regions = &.{.{
+            .buffer_offset = 0,
+            .buffer_row_length = @TypeOf(t).width,
+            .buffer_image_height = @TypeOf(t).height,
+            .image_aspect = .color,
+            .image_level = 0,
+            .image_x = 0,
+            .image_y = 0,
+            .image_z_or_layer = 0,
+            .image_width = @TypeOf(t).width,
+            .image_height = @TypeOf(t).height,
+            .image_depth_or_layers = 1,
+        }},
+    }});
+    try cmd.end();
+    {
+        ctx.lockQueue(t.queue_i);
+        defer ctx.unlockQueue(t.queue_i);
+        try t.queue.submit(gpa, dev, &t.fence, &.{.{
+            .commands = &.{.{ .command_buffer = &t.cmd_bufs[0] }},
+            .wait = &.{},
+            .signal = &.{},
+        }});
+    }
+    try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&t.fence});
+
+    try t.validate();
+}
+
+test "executeCommands command (drawing)" {
+    const ctx = context();
+    const dev = &ctx.device;
+
+    var t = try T(3).init(.{ .graphics = true });
+    defer t.deinit();
+
+    var image = try ngl.Image.init(gpa, dev, .{
+        .type = .@"2d",
+        .format = @TypeOf(t).format,
+        .width = @TypeOf(t).width,
+        .height = @TypeOf(t).height,
+        .depth_or_layers = 1,
+        .levels = 1,
+        .samples = .@"1",
+        .tiling = .optimal,
+        .usage = .{ .color_attachment = true, .transfer_source = true },
+        .misc = .{},
+        .initial_layout = .unknown,
+    });
+    defer image.deinit(gpa, dev);
+    const img_reqs = image.getMemoryRequirements(dev);
+    var img_mem = try dev.alloc(gpa, .{
+        .size = img_reqs.size,
+        .type_index = img_reqs.findType(dev.*, .{ .device_local = true }, null).?,
+    });
+    defer dev.free(gpa, &img_mem);
+    try image.bind(dev, &img_mem, 0);
+    var view = try ngl.ImageView.init(gpa, dev, .{
+        .image = &image,
+        .type = .@"2d",
+        .format = @TypeOf(t).format,
+        .range = .{
+            .aspect_mask = .{ .color = true },
+            .base_level = 0,
+            .levels = 1,
+            .base_layer = 0,
+            .layers = 1,
+        },
+    });
+    defer view.deinit(gpa, dev);
+
+    var rp = try ngl.RenderPass.init(gpa, dev, .{
+        .attachments = &.{.{
+            .format = @TypeOf(t).format,
+            .samples = .@"1",
+            .load_op = .dont_care,
+            .store_op = .store,
+            .initial_layout = .unknown,
+            .final_layout = .transfer_source_optimal,
+            .resolve_mode = null,
+            .combined = null,
+            .may_alias = false,
+        }},
+        .subpasses = &.{.{
+            .pipeline_type = .graphics,
+            .input_attachments = null,
+            .color_attachments = &.{.{
+                .index = 0,
+                .layout = .color_attachment_optimal,
+                .aspect_mask = .{ .color = true },
+                .resolve = null,
+            }},
+            .depth_stencil_attachment = null,
+            .preserve_attachments = null,
+        }},
+        .dependencies = null,
+    });
+    defer rp.deinit(gpa, dev);
+    var fb = try ngl.FrameBuffer.init(gpa, dev, .{
+        .render_pass = &rp,
+        .attachments = &.{&view},
+        .width = @TypeOf(t).width,
+        .height = @TypeOf(t).height,
+        .layers = 1,
+    });
+    defer fb.deinit(gpa, dev);
+
+    const triangle = struct {
+        const format = ngl.Format.rg32_sfloat;
+        const topology = ngl.Primitive.Topology.triangle_list;
+        const clockwise = true;
+
+        const data: struct {
+            topl: [3 * 2]f32 = .{
+                0,  0,
+                -2, 0,
+                0,  -2,
+            },
+            topr: [3 * 2]f32 = .{
+                0, 0,
+                0, -2,
+                2, 0,
+            },
+            botr: [3 * 2]f32 = .{
+                0, 0,
+                2, 0,
+                0, 2,
+            },
+            botl: [3 * 2]f32 = .{
+                0,  0,
+                0,  2,
+                -2, 0,
+            },
+        } = .{};
+    };
+
+    comptime if (@TypeOf(t).size < @sizeOf(@TypeOf(triangle.data))) unreachable;
+
+    var buf = try ngl.Buffer.init(gpa, dev, .{
+        .size = @sizeOf(@TypeOf(triangle.data)),
+        .usage = .{ .vertex_buffer = true, .transfer_dest = true },
+    });
+    defer buf.deinit(gpa, dev);
+    const buf_reqs = buf.getMemoryRequirements(dev);
+    var buf_mem = try dev.alloc(gpa, .{
+        .size = buf_reqs.size,
+        .type_index = buf_reqs.findType(dev.*, .{ .device_local = true }, null).?,
+    });
+    defer dev.free(gpa, &buf_mem);
+    try buf.bind(dev, &buf_mem, 0);
+
+    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
+        .descriptor_set_layouts = null,
+        .push_constant_ranges = null,
+    });
+    defer pl_layt.deinit(gpa, dev);
+
+    var stages = [_][2]ngl.ShaderStage.Desc{.{
+        .{
+            .stage = .vertex,
+            .code = &vert_spv,
+            .name = "main",
+        },
+        .{
+            .stage = .fragment,
+            .code = &frag_spv,
+            .name = "main",
+            .specialization = .{
+                .constants = &.{.{
+                    .id = 0,
+                    .offset = 0,
+                    .size = 4,
+                }},
+                .data = undefined,
+            },
+        },
+    }} ** 2;
+    stages[0][1].specialization.?.data = @as([*]const u8, @ptrCast(&@TypeOf(t).top_val))[0..4];
+    stages[1][1].specialization.?.data = @as([*]const u8, @ptrCast(&@TypeOf(t).bot_val))[0..4];
+
+    const prim = ngl.Primitive{
+        .bindings = &.{.{
+            .binding = 0,
+            .stride = 8,
+            .step_rate = .vertex,
+        }},
+        .attributes = &.{.{
+            .location = 0,
+            .binding = 0,
+            .format = triangle.format,
+            .offset = 0,
+        }},
+        .topology = triangle.topology,
+    };
+
+    const raster = ngl.Rasterization{
+        .polygon_mode = .fill,
+        .cull_mode = .back,
+        .clockwise = triangle.clockwise,
+        .samples = .@"1",
+    };
+
+    const col_blend = ngl.ColorBlend{
+        .attachments = &.{.{ .blend = null, .write = .all }},
+        .constants = .unused,
+    };
+
+    const pls = try ngl.Pipeline.initGraphics(gpa, dev, .{
+        .states = &.{
+            .{
+                .stages = &stages[0],
+                .layout = &pl_layt,
+                .primitive = &prim,
+                .viewport = null,
+                .rasterization = &raster,
+                .depth_stencil = null,
+                .color_blend = &col_blend,
+                .render_pass = &rp,
+                .subpass = 0,
+            },
+            .{
+                .stages = &stages[1],
+                .layout = &pl_layt,
+                .primitive = &prim,
+                .viewport = null,
+                .rasterization = &raster,
+                .depth_stencil = null,
+                .color_blend = &col_blend,
+                .render_pass = &rp,
+                .subpass = 0,
+            },
+        },
+        .cache = null,
+    });
+    defer {
+        for (pls) |*pl| pl.deinit(gpa, dev);
+        gpa.free(pls);
+    }
+
+    var done: u3 = 0;
+
+    const rec: [3]struct {
+        dev: *ngl.Device,
+        rp: *ngl.RenderPass,
+        fb: *ngl.FrameBuffer,
+        buf: *ngl.Buffer,
+        pl: *ngl.Pipeline,
+        cmd_buf: *ngl.CommandBuffer,
+        done: *u3,
+
+        fn cmdBuf1(self: @This()) void {
+            errdefer |err| @panic(@errorName(err));
+            var cmd = try self.cmd_buf.begin(gpa, self.dev, .{
+                .one_time_submit = true,
+                .inheritance = .{
+                    .render_pass_continue = .{
+                        .render_pass = self.rp,
+                        .subpass = 0,
+                        .frame_buffer = self.fb,
+                    },
+                    .query_continue = null,
+                },
+            });
+            cmd.setPipeline(self.pl);
+            cmd.setViewport(.{
+                .x = 0,
+                .y = 0,
+                .width = @TypeOf(t).width,
+                .height = @TypeOf(t).height,
+                .near = 0,
+                .far = 0,
+            });
+            cmd.setVertexBuffers(
+                0,
+                &.{self.buf},
+                &.{@offsetOf(@TypeOf(triangle.data), "botr")},
+                &.{@sizeOf(@TypeOf(triangle.data.botr))},
+            );
+            cmd.draw(3, 1, 0, 0);
+            cmd.setVertexBuffers(
+                0,
+                &.{self.buf},
+                &.{@offsetOf(@TypeOf(triangle.data), "botl")},
+                &.{@sizeOf(@TypeOf(triangle.data.botl))},
+            );
+            cmd.draw(3, 1, 0, 0);
+            try cmd.end();
+            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 1, .AcqRel);
+        }
+
+        fn cmdBuf2(self: @This()) void {
+            self.cmdBufs23(.@"2");
+            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 2, .AcqRel);
+        }
+
+        fn cmdBuf3(self: @This()) void {
+            self.cmdBufs23(.@"3");
+            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 4, .AcqRel);
+        }
+
+        fn cmdBufs23(self: @This(), comptime cb: enum { @"2", @"3" }) void {
+            errdefer |err| @panic(@errorName(err));
+            var cmd = try self.cmd_buf.begin(gpa, self.dev, .{
+                .one_time_submit = true,
+                .inheritance = .{
+                    .render_pass_continue = .{
+                        .render_pass = self.rp,
+                        .subpass = 0,
+                        .frame_buffer = self.fb,
+                    },
+                    .query_continue = null,
+                },
+            });
+            cmd.setPipeline(self.pl);
+            cmd.setViewport(.{
+                .x = 0,
+                .y = 0,
+                .width = @TypeOf(t).width,
+                .height = @TypeOf(t).height,
+                .near = 0,
+                .far = 0,
+            });
+            switch (cb) {
+                .@"2" => cmd.setVertexBuffers(
+                    0,
+                    &.{self.buf},
+                    &.{@offsetOf(@TypeOf(triangle.data), "topl")},
+                    &.{@sizeOf(@TypeOf(triangle.data.topl))},
+                ),
+                .@"3" => cmd.setVertexBuffers(
+                    0,
+                    &.{self.buf},
+                    &.{@offsetOf(@TypeOf(triangle.data), "topr")},
+                    &.{@sizeOf(@TypeOf(triangle.data.topr))},
+                ),
+            }
+            cmd.draw(3, 1, 0, 0);
+            try cmd.end();
+        }
+    } = .{
+        .{
+            .dev = dev,
+            .rp = &rp,
+            .fb = &fb,
+            .buf = &buf,
+            .pl = &pls[1],
+            .cmd_buf = &t.cmd_bufs[1],
+            .done = &done,
+        },
+        .{
+            .dev = dev,
+            .rp = &rp,
+            .fb = &fb,
+            .buf = &buf,
+            .pl = &pls[0],
+            .cmd_buf = &t.cmd_bufs[2],
+            .done = &done,
+        },
+        .{
+            .dev = dev,
+            .rp = &rp,
+            .fb = &fb,
+            .buf = &buf,
+            .pl = &pls[0],
+            .cmd_buf = &t.cmd_bufs[3],
+            .done = &done,
+        },
+    };
+
+    const thrds = [3]std.Thread{
+        try std.Thread.spawn(.{ .allocator = gpa }, @TypeOf(rec[0]).cmdBuf1, .{rec[0]}),
+        try std.Thread.spawn(.{ .allocator = gpa }, @TypeOf(rec[1]).cmdBuf2, .{rec[1]}),
+        try std.Thread.spawn(.{ .allocator = gpa }, @TypeOf(rec[2]).cmdBuf3, .{rec[2]}),
+    };
+    defer for (thrds) |thrd| thrd.join();
+
+    @memcpy(
+        t.stg_data[0..@sizeOf(@TypeOf(triangle.data))],
+        @as([*]const u8, @ptrCast(&triangle.data))[0..@sizeOf(@TypeOf(triangle.data))],
+    );
+
+    var cmd = try t.cmd_bufs[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
+    cmd.copyBuffer(&.{.{
+        .source = &t.stg_buf,
+        .dest = &buf,
+        .regions = &.{.{
+            .source_offset = 0,
+            .dest_offset = 0,
+            .size = @sizeOf(@TypeOf(triangle.data)),
+        }},
+    }});
+    cmd.pipelineBarrier(&.{.{
+        .global_dependencies = &.{.{
+            .source_stage_mask = .{ .copy = true },
+            .source_access_mask = .{ .transfer_read = true, .transfer_write = true },
+            .dest_stage_mask = .{ .vertex_attribute_input = true },
+            .dest_access_mask = .{ .vertex_attribute_read = true },
+        }},
+        .by_region = false,
+    }});
+    cmd.beginRenderPass(
+        .{
+            .render_pass = &rp,
+            .frame_buffer = &fb,
+            .render_area = .{
+                .x = 0,
+                .y = 0,
+                .width = @TypeOf(t).width,
+                .height = @TypeOf(t).height,
+            },
+            .clear_values = &.{null},
+        },
+        // Only `Cmd.executeCommands` allowed in this subpass
+        .{ .contents = .secondary_command_buffers_only },
+    );
+    while (@atomicLoad(@TypeOf(done), &done, .Acquire) != (1 << rec.len) - 1) {}
+    cmd.executeCommands(blk: {
+        var ptrs: [rec.len]*ngl.CommandBuffer = undefined;
+        for (&ptrs, t.cmd_bufs[1..]) |*p, *c| p.* = c;
+        break :blk &ptrs;
+    });
+    cmd.endRenderPass(.{});
+    cmd.pipelineBarrier(&.{.{
+        .global_dependencies = &.{.{
+            .source_stage_mask = .{ .color_attachment_output = true },
+            .source_access_mask = .{ .color_attachment_write = true },
+            .dest_stage_mask = .{ .copy = true },
+            .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+        }},
+        .by_region = false,
     }});
     cmd.copyImageToBuffer(&.{.{
         .buffer = &t.stg_buf,
@@ -568,4 +1004,83 @@ const comp_spv align(4) = [740]u8{
     0x19, 0x0, 0x0,  0x0, 0x1a, 0x0,  0x0,  0x0,  0x17, 0x0,  0x0,  0x0,  0x63, 0x0,  0x4,  0x0,
     0x12, 0x0, 0x0,  0x0, 0x1a, 0x0,  0x0,  0x0,  0x1d, 0x0,  0x0,  0x0,  0xfd, 0x0,  0x1,  0x0,
     0x38, 0x0, 0x1,  0x0,
+};
+
+// #version 460 core
+//
+// layout(location = 0) in vec2 position;
+//
+// void main() {
+//     gl_Position = vec4(position, 0.0, 1.0);
+// }
+const vert_spv align(4) = [632]u8{
+    0x3,  0x2, 0x23, 0x7, 0x0,  0x0,  0x1,  0x0,  0xb,  0x0,  0x8,  0x0,  0x1b, 0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x11, 0x0,  0x2,  0x0,  0x1,  0x0,  0x0,  0x0,  0xb,  0x0,  0x6,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x47, 0x4c, 0x53, 0x4c, 0x2e, 0x73, 0x74, 0x64, 0x2e, 0x34, 0x35, 0x30,
+    0x0,  0x0, 0x0,  0x0, 0xe,  0x0,  0x3,  0x0,  0x0,  0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0xf,  0x0, 0x7,  0x0, 0x0,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x6d, 0x61, 0x69, 0x6e,
+    0x0,  0x0, 0x0,  0x0, 0xd,  0x0,  0x0,  0x0,  0x12, 0x0,  0x0,  0x0,  0x48, 0x0,  0x5,  0x0,
+    0xb,  0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0xb,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x48, 0x0, 0x5,  0x0, 0xb,  0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,  0xb,  0x0,  0x0,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x48, 0x0,  0x5,  0x0,  0xb,  0x0,  0x0,  0x0,  0x2,  0x0,  0x0,  0x0,
+    0xb,  0x0, 0x0,  0x0, 0x3,  0x0,  0x0,  0x0,  0x48, 0x0,  0x5,  0x0,  0xb,  0x0,  0x0,  0x0,
+    0x3,  0x0, 0x0,  0x0, 0xb,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x47, 0x0,  0x3,  0x0,
+    0xb,  0x0, 0x0,  0x0, 0x2,  0x0,  0x0,  0x0,  0x47, 0x0,  0x4,  0x0,  0x12, 0x0,  0x0,  0x0,
+    0x1e, 0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x13, 0x0,  0x2,  0x0,  0x2,  0x0,  0x0,  0x0,
+    0x21, 0x0, 0x3,  0x0, 0x3,  0x0,  0x0,  0x0,  0x2,  0x0,  0x0,  0x0,  0x16, 0x0,  0x3,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x20, 0x0,  0x0,  0x0,  0x17, 0x0,  0x4,  0x0,  0x7,  0x0,  0x0,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x4,  0x0,  0x0,  0x0,  0x15, 0x0,  0x4,  0x0,  0x8,  0x0,  0x0,  0x0,
+    0x20, 0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x2b, 0x0,  0x4,  0x0,  0x8,  0x0,  0x0,  0x0,
+    0x9,  0x0, 0x0,  0x0, 0x1,  0x0,  0x0,  0x0,  0x1c, 0x0,  0x4,  0x0,  0xa,  0x0,  0x0,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x9,  0x0,  0x0,  0x0,  0x1e, 0x0,  0x6,  0x0,  0xb,  0x0,  0x0,  0x0,
+    0x7,  0x0, 0x0,  0x0, 0x6,  0x0,  0x0,  0x0,  0xa,  0x0,  0x0,  0x0,  0xa,  0x0,  0x0,  0x0,
+    0x20, 0x0, 0x4,  0x0, 0xc,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,  0xb,  0x0,  0x0,  0x0,
+    0x3b, 0x0, 0x4,  0x0, 0xc,  0x0,  0x0,  0x0,  0xd,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,
+    0x15, 0x0, 0x4,  0x0, 0xe,  0x0,  0x0,  0x0,  0x20, 0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0x2b, 0x0, 0x4,  0x0, 0xe,  0x0,  0x0,  0x0,  0xf,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x17, 0x0, 0x4,  0x0, 0x10, 0x0,  0x0,  0x0,  0x6,  0x0,  0x0,  0x0,  0x2,  0x0,  0x0,  0x0,
+    0x20, 0x0, 0x4,  0x0, 0x11, 0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,  0x10, 0x0,  0x0,  0x0,
+    0x3b, 0x0, 0x4,  0x0, 0x11, 0x0,  0x0,  0x0,  0x12, 0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0x2b, 0x0, 0x4,  0x0, 0x6,  0x0,  0x0,  0x0,  0x14, 0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x2b, 0x0, 0x4,  0x0, 0x6,  0x0,  0x0,  0x0,  0x15, 0x0,  0x0,  0x0,  0x0,  0x0,  0x80, 0x3f,
+    0x20, 0x0, 0x4,  0x0, 0x19, 0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,  0x7,  0x0,  0x0,  0x0,
+    0x36, 0x0, 0x5,  0x0, 0x2,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x3,  0x0, 0x0,  0x0, 0xf8, 0x0,  0x2,  0x0,  0x5,  0x0,  0x0,  0x0,  0x3d, 0x0,  0x4,  0x0,
+    0x10, 0x0, 0x0,  0x0, 0x13, 0x0,  0x0,  0x0,  0x12, 0x0,  0x0,  0x0,  0x51, 0x0,  0x5,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x16, 0x0,  0x0,  0x0,  0x13, 0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x51, 0x0, 0x5,  0x0, 0x6,  0x0,  0x0,  0x0,  0x17, 0x0,  0x0,  0x0,  0x13, 0x0,  0x0,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x50, 0x0,  0x7,  0x0,  0x7,  0x0,  0x0,  0x0,  0x18, 0x0,  0x0,  0x0,
+    0x16, 0x0, 0x0,  0x0, 0x17, 0x0,  0x0,  0x0,  0x14, 0x0,  0x0,  0x0,  0x15, 0x0,  0x0,  0x0,
+    0x41, 0x0, 0x5,  0x0, 0x19, 0x0,  0x0,  0x0,  0x1a, 0x0,  0x0,  0x0,  0xd,  0x0,  0x0,  0x0,
+    0xf,  0x0, 0x0,  0x0, 0x3e, 0x0,  0x3,  0x0,  0x1a, 0x0,  0x0,  0x0,  0x18, 0x0,  0x0,  0x0,
+    0xfd, 0x0, 0x1,  0x0, 0x38, 0x0,  0x1,  0x0,
+};
+
+// #version 460 core
+//
+// layout(constant_id = 0) const uint value = 0;
+//
+// layout(location = 0) out uint color_0;
+//
+// void main() {
+//     color_0 = value;
+// }
+const frag_spv align(4) = [264]u8{
+    0x3,  0x2, 0x23, 0x7, 0x0,  0x0,  0x1,  0x0,  0xb,  0x0,  0x8,  0x0,  0xa,  0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x11, 0x0,  0x2,  0x0,  0x1,  0x0,  0x0,  0x0,  0xb,  0x0,  0x6,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x47, 0x4c, 0x53, 0x4c, 0x2e, 0x73, 0x74, 0x64, 0x2e, 0x34, 0x35, 0x30,
+    0x0,  0x0, 0x0,  0x0, 0xe,  0x0,  0x3,  0x0,  0x0,  0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0xf,  0x0, 0x6,  0x0, 0x4,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x6d, 0x61, 0x69, 0x6e,
+    0x0,  0x0, 0x0,  0x0, 0x8,  0x0,  0x0,  0x0,  0x10, 0x0,  0x3,  0x0,  0x4,  0x0,  0x0,  0x0,
+    0x7,  0x0, 0x0,  0x0, 0x47, 0x0,  0x4,  0x0,  0x8,  0x0,  0x0,  0x0,  0x1e, 0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x47, 0x0,  0x4,  0x0,  0x9,  0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x13, 0x0,  0x2,  0x0,  0x2,  0x0,  0x0,  0x0,  0x21, 0x0,  0x3,  0x0,
+    0x3,  0x0, 0x0,  0x0, 0x2,  0x0,  0x0,  0x0,  0x15, 0x0,  0x4,  0x0,  0x6,  0x0,  0x0,  0x0,
+    0x20, 0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x20, 0x0,  0x4,  0x0,  0x7,  0x0,  0x0,  0x0,
+    0x3,  0x0, 0x0,  0x0, 0x6,  0x0,  0x0,  0x0,  0x3b, 0x0,  0x4,  0x0,  0x7,  0x0,  0x0,  0x0,
+    0x8,  0x0, 0x0,  0x0, 0x3,  0x0,  0x0,  0x0,  0x32, 0x0,  0x4,  0x0,  0x6,  0x0,  0x0,  0x0,
+    0x9,  0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x36, 0x0,  0x5,  0x0,  0x2,  0x0,  0x0,  0x0,
+    0x4,  0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,  0xf8, 0x0,  0x2,  0x0,
+    0x5,  0x0, 0x0,  0x0, 0x3e, 0x0,  0x3,  0x0,  0x8,  0x0,  0x0,  0x0,  0x9,  0x0,  0x0,  0x0,
+    0xfd, 0x0, 0x1,  0x0, 0x38, 0x0,  0x1,  0x0,
 };
