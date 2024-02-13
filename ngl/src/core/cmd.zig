@@ -324,7 +324,10 @@ pub const CommandBuffer = struct {
         };
 
         pub const SubpassContents = enum {
+            /// Calling `executeCommands` in the subpass is disallowed.
             inline_only,
+            /// Calling any commands other than `executeCommands`,
+            /// `nextSubpass` and `endRenderPass` is disallowed.
             secondary_command_buffers_only,
         };
 
