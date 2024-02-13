@@ -222,6 +222,9 @@ pub const Queue = struct {
 
     const Self = @This();
 
+    /// Every submitted command buffer must have been ended,
+    /// and must not be pending execution.
+    /// Only allowed for command buffers whose level is `.primary`.
     pub fn submit(
         self: *Self,
         allocator: std.mem.Allocator,
