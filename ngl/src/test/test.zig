@@ -46,6 +46,7 @@ test {
     _ = @import("tms_query.zig");
     _ = @import("blend.zig");
     _ = @import("exec_cmds.zig");
+    _ = @import("subm_again.zig");
     _ = @import("sf.zig");
     _ = @import("sc.zig");
 }
