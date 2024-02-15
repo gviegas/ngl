@@ -689,6 +689,12 @@ pub const VTable = struct {
         desc: ngl.RenderPass.Desc,
     ) Error!RenderPass,
 
+    getRenderAreaGranularity: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        render_pass: RenderPass,
+    ) [2]u32,
+
     deinitRenderPass: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1842,6 +1848,10 @@ pub fn initRenderPass(
     desc: ngl.RenderPass.Desc,
 ) Error!RenderPass {
     return self.vtable.initRenderPass(self.ptr, allocator, device, desc);
+}
+
+pub fn getRenderAreaGranularity(self: *Self, device: Device, render_pass: RenderPass) [2]u32 {
+    return self.vtable.getRenderAreaGranularity(self.ptr, device, render_pass);
 }
 
 pub fn deinitRenderPass(
