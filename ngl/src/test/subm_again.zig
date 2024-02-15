@@ -58,7 +58,7 @@ test "re-submission of command buffer recording" {
         cmd.fillBuffer(&res[i].buf, 0, size, values[i]);
         cmd.pipelineBarrier(&.{.{
             .global_dependencies = &.{.{
-                .source_stage_mask = .{ .copy = true },
+                .source_stage_mask = .{ .clear = true },
                 .source_access_mask = .{ .transfer_write = true },
                 .dest_stage_mask = .{ .copy = true },
                 .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },

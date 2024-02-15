@@ -290,7 +290,7 @@ test "timestamp query" {
             cmd.fillBuffer(&copy_buf, 0, null, @intCast((x ^ y) & 255));
             cmd.pipelineBarrier(&.{.{
                 .global_dependencies = &.{.{
-                    .source_stage_mask = .{ .copy = true },
+                    .source_stage_mask = .{ .clear = true },
                     .source_access_mask = .{ .transfer_read = true, .transfer_write = true },
                     .dest_stage_mask = .{ .copy = true },
                     .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
