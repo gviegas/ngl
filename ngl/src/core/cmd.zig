@@ -574,16 +574,18 @@ pub const CommandBuffer = struct {
         }
 
         /// Filled range must be aligned to 4 bytes.
+        /// Executes in `PipelineStage.clear`.
         ///
-        /// BUG: Currently, this command may require a graphics queue.
+        /// BUG: Currently, this command may require a graphics or
+        /// compute queue.
         ///
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope
         /// ✘ Render pass scope
         /// ✔ Graphics queue
-        /// [⚠] Compute queue
-        /// [⚠] Transfer queue
+        /// ✔ Compute queue
+        /// ⚠ Transfer queue
         pub fn fillBuffer(self: *Cmd, buffer: *Buffer, offset: u64, size: ?u64, value: u8) void {
             Impl.get().fillBuffer(
                 self.device.impl,
