@@ -314,8 +314,8 @@ pub const CommandBuffer = struct {
             render_pass: *RenderPass,
             frame_buffer: *FrameBuffer,
             render_area: struct {
-                x: u32,
-                y: u32,
+                x: u32 = 0,
+                y: u32 = 0,
                 width: u32,
                 height: u32,
             },
