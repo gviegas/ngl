@@ -164,7 +164,7 @@ fn do() !void {
 
         const next = try plat.swap_chain.nextImage(dev, std.time.ns_per_s, semas[0], null);
 
-        try cmd_pool.reset(dev);
+        try cmd_pool.reset(dev, .keep);
         var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
         shdw_pass.record(&cmd, &pl, &idx_buf, &vert_buf, draw_xforms);
         light_pass.record(&cmd, next, &pl, &idx_buf, &vert_buf, frame);
@@ -1129,7 +1129,7 @@ const StagingBuffer = struct {
         @memcpy(s[0..vertices[1].len], vertices[1]);
         s = s[(vertices[1].len + a - 1) & ~@as(u64, a - 1) ..];
 
-        try queue.pools[0].reset(dev);
+        try queue.pools[0].reset(dev, .keep);
         var cmd = try queue.buffers[0].begin(gpa, dev, .{
             .one_time_submit = true,
             .inheritance = null,

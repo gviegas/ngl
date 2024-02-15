@@ -64,7 +64,7 @@ test "Queue.submit" {
     }
 
     {
-        try cmd_pool.reset(dev);
+        try cmd_pool.reset(dev, .keep);
 
         for (cmd_bufs) |*cmd_buf| {
             var cmd = try cmd_buf.begin(
@@ -103,7 +103,7 @@ test "Queue.submit" {
     }
 
     {
-        try cmd_pool.reset(dev);
+        try cmd_pool.reset(dev, .keep);
         try ngl.Fence.reset(gpa, dev, &.{ &fences[0], &fences[1] });
 
         for (cmd_bufs) |*cmd_buf| {
@@ -145,7 +145,7 @@ test "Queue.submit" {
     }
 
     {
-        try cmd_pool.reset(dev);
+        try cmd_pool.reset(dev, .keep);
         try ngl.Fence.reset(gpa, dev, &.{ &fences[0], &fences[1] });
 
         // We should be able to re-submit this command buffer

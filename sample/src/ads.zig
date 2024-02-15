@@ -282,7 +282,7 @@ pub fn main() !void {
 
         const next = try plat.swap_chain.nextImage(dev, std.time.ns_per_s, semas[0], null);
 
-        try d.submit.pools[frame].reset(dev);
+        try d.submit.pools[frame].reset(dev, .keep);
         cmd = try d.submit.buffers[frame].begin(gpa, dev, .{
             .one_time_submit = true,
             .inheritance = null,

@@ -20,7 +20,7 @@ test "CommandBuffer.begin/Cmd.end" {
 
     // It shouldn't be necessary to submit an ended command buffer
     // The pool must be reset however (no implicit reset on `begin`)
-    try cmd_pool.reset(dev);
+    try cmd_pool.reset(dev, .keep);
     cmd = try cmd_bufs[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
     var cmd_2 = try cmd_bufs[1].begin(gpa, dev, .{ .one_time_submit = false, .inheritance = null });
@@ -30,7 +30,7 @@ test "CommandBuffer.begin/Cmd.end" {
     // The pool can be reset during recording, which invalidates
     // the command buffer
     cmd = try cmd_bufs[0].begin(gpa, dev, .{ .one_time_submit = false, .inheritance = null });
-    try cmd_pool.reset(dev);
+    try cmd_pool.reset(dev, .release);
     cmd = try cmd_bufs[0].begin(gpa, dev, .{ .one_time_submit = false, .inheritance = null });
     try cmd.end();
 

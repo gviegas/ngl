@@ -77,10 +77,19 @@ pub const CommandPool = packed struct {
             cmd_buf.impl = .{ .val = @bitCast(CommandBuffer{ .handle = handle }) };
     }
 
-    pub fn reset(_: *anyopaque, device: Impl.Device, command_pool: Impl.CommandPool) Error!void {
-        // TODO: Maybe expose flags
-        const flags: c.VkCommandPoolResetFlags = 0;
-        try check(Device.cast(device).vkResetCommandPool(cast(command_pool).handle, flags));
+    pub fn reset(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_pool: Impl.CommandPool,
+        mode: ngl.CommandPool.ResetMode,
+    ) Error!void {
+        try check(Device.cast(device).vkResetCommandPool(
+            cast(command_pool).handle,
+            switch (mode) {
+                .keep => 0,
+                .release => c.VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT,
+            },
+        ));
     }
 
     pub fn free(

@@ -25,6 +25,13 @@ pub const CommandPool = struct {
         queue: *Queue,
     };
 
+    pub const ResetMode = enum {
+        /// Don't release resources back to the system.
+        keep,
+        /// Do release resources back to the system.
+        release,
+    };
+
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
@@ -48,8 +55,8 @@ pub const CommandPool = struct {
     }
 
     /// Invalidates all command buffers allocated from `self`.
-    pub fn reset(self: *Self, device: *Device) Error!void {
-        try Impl.get().resetCommandPool(device.impl, self.impl);
+    pub fn reset(self: *Self, device: *Device, mode: ResetMode) Error!void {
+        try Impl.get().resetCommandPool(device.impl, self.impl, mode);
     }
 
     /// Need not be called before `self` is deinitialized.

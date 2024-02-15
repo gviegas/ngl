@@ -476,7 +476,7 @@ test "submission of multiple command buffers" {
 
             try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&fence});
             try ngl.Fence.reset(gpa, dev, &.{&fence});
-            try cmd_pool.reset(dev);
+            try cmd_pool.reset(dev, .keep);
 
             try testing.expect(data[0] >= col -| deviation and data[0] <= col +| deviation);
             try testing.expect(std.mem.allEqual(u8, data, data[0]));

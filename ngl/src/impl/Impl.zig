@@ -195,6 +195,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         device: Device,
         command_pool: CommandPool,
+        mode: ngl.CommandPool.ResetMode,
     ) Error!void,
 
     freeCommandBuffers: *const fn (
@@ -1172,8 +1173,13 @@ pub fn allocCommandBuffers(
     );
 }
 
-pub fn resetCommandPool(self: *Self, device: Device, command_pool: CommandPool) Error!void {
-    try self.vtable.resetCommandPool(self.ptr, device, command_pool);
+pub fn resetCommandPool(
+    self: *Self,
+    device: Device,
+    command_pool: CommandPool,
+    mode: ngl.CommandPool.ResetMode,
+) Error!void {
+    try self.vtable.resetCommandPool(self.ptr, device, command_pool, mode);
 }
 
 pub fn freeCommandBuffers(

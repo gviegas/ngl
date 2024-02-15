@@ -426,7 +426,7 @@ const T = struct {
         const ctx = context();
         const dev = &ctx.device;
 
-        try self.cmd_pool.reset(dev);
+        try self.cmd_pool.reset(dev, .keep);
         var cmd = try self.cmd_buf.begin(gpa, dev, .{
             .one_time_submit = true,
             .inheritance = null,

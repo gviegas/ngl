@@ -227,7 +227,7 @@ fn do() !void {
 
         const next = try plat.swap_chain.nextImage(dev, std.time.ns_per_s, semas[0], null);
 
-        try cmd_pool.reset(dev);
+        try cmd_pool.reset(dev, .keep);
         cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
         const set_0 = &desc.sets[frame * (1 + draw_n)];
