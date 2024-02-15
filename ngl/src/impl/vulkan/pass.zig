@@ -226,6 +226,16 @@ pub const RenderPass = packed struct {
         return .{ .val = @bitCast(RenderPass{ .handle = rp }) };
     }
 
+    pub fn getRenderAreaGranularity(
+        _: *anyopaque,
+        device: Impl.Device,
+        render_pass: Impl.RenderPass,
+    ) [2]u32 {
+        var gran: c.VkExtent2D = undefined;
+        Device.cast(device).vkGetRenderAreaGranularity(cast(render_pass).handle, &gran);
+        return .{ gran.width, gran.height };
+    }
+
     pub fn deinit(
         _: *anyopaque,
         _: std.mem.Allocator,

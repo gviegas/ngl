@@ -787,6 +787,7 @@ pub const Device = struct {
     destroySampler: c.PFN_vkDestroySampler,
     createRenderPass: c.PFN_vkCreateRenderPass,
     destroyRenderPass: c.PFN_vkDestroyRenderPass,
+    getRenderAreaGranularity: c.PFN_vkGetRenderAreaGranularity,
     createFramebuffer: c.PFN_vkCreateFramebuffer,
     destroyFramebuffer: c.PFN_vkDestroyFramebuffer,
     createDescriptorSetLayout: c.PFN_vkCreateDescriptorSetLayout,
@@ -1119,6 +1120,7 @@ pub const Device = struct {
             .destroySampler = @ptrCast(try Device.getProc(get, dev, "vkDestroySampler")),
             .createRenderPass = @ptrCast(try Device.getProc(get, dev, "vkCreateRenderPass")),
             .destroyRenderPass = @ptrCast(try Device.getProc(get, dev, "vkDestroyRenderPass")),
+            .getRenderAreaGranularity = @ptrCast(try Device.getProc(get, dev, "vkGetRenderAreaGranularity")),
             .createFramebuffer = @ptrCast(try Device.getProc(get, dev, "vkCreateFramebuffer")),
             .destroyFramebuffer = @ptrCast(try Device.getProc(get, dev, "vkDestroyFramebuffer")),
             .createDescriptorSetLayout = @ptrCast(try Device.getProc(get, dev, "vkCreateDescriptorSetLayout")),
@@ -1971,6 +1973,14 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.destroyRenderPass.?(self.handle, render_pass, vk_allocator);
+    }
+
+    pub inline fn vkGetRenderAreaGranularity(
+        self: *Device,
+        render_pass: c.VkRenderPass,
+        granularity: *c.VkExtent2D,
+    ) void {
+        self.getRenderAreaGranularity.?(self.handle, render_pass, granularity);
     }
 
     pub inline fn vkCreateFramebuffer(
@@ -2835,6 +2845,7 @@ const vtable = Impl.VTable{
     .deinitSampler = @import("res.zig").Sampler.deinit,
 
     .initRenderPass = @import("pass.zig").RenderPass.init,
+    .getRenderAreaGranularity = @import("pass.zig").RenderPass.getRenderAreaGranularity,
     .deinitRenderPass = @import("pass.zig").RenderPass.deinit,
 
     .initFrameBuffer = @import("pass.zig").FrameBuffer.init,
