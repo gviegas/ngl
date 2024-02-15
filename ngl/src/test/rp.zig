@@ -1,4 +1,5 @@
 const std = @import("std");
+const testing = std.testing;
 
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
@@ -401,4 +402,47 @@ test "RenderPass.init/deinit" {
         });
         rp.deinit(gpa, dev);
     }
+}
+
+test "RenderPass.getRenderAreaGranularity" {
+    const dev = &context().device;
+
+    const desc = ngl.RenderPass.Desc{
+        .attachments = &.{.{
+            .format = .rgba8_unorm,
+            .samples = .@"1",
+            .load_op = .clear,
+            .store_op = .store,
+            .initial_layout = .unknown,
+            .final_layout = .general,
+            .resolve_mode = null,
+            .combined = null,
+            .may_alias = false,
+        }},
+        .subpasses = &.{.{
+            .pipeline_type = .graphics,
+            .input_attachments = null,
+            .color_attachments = &.{.{
+                .index = 0,
+                .layout = .color_attachment_optimal,
+                .aspect_mask = .{ .color = true },
+                .resolve = null,
+            }},
+            .depth_stencil_attachment = null,
+            .preserve_attachments = null,
+        }},
+        .dependencies = null,
+    };
+
+    var rp = try ngl.RenderPass.init(gpa, dev, desc);
+    defer rp.deinit(gpa, dev);
+
+    const gran = rp.getRenderAreaGranularity(dev);
+    try testing.expect(!std.mem.eql(u32, &gran, &.{ 0, 0 }));
+    try testing.expect(std.mem.eql(u32, &gran, &rp.getRenderAreaGranularity(dev)));
+
+    var rp_2 = try ngl.RenderPass.init(gpa, dev, desc);
+    defer rp_2.deinit(gpa, dev);
+
+    try testing.expect(std.mem.eql(u32, &gran, &rp_2.getRenderAreaGranularity(dev)));
 }
