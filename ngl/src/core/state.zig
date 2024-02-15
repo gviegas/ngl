@@ -122,8 +122,8 @@ pub const Primitive = struct {
 };
 
 pub const Viewport = struct {
-    x: f32,
-    y: f32,
+    x: f32 = 0,
+    y: f32 = 0,
     width: f32,
     height: f32,
     near: f32,
