@@ -34,6 +34,7 @@ test {
     _ = @import("clear_buf.zig");
     _ = @import("copy_buf.zig");
     _ = @import("copy_buf_img.zig");
+    _ = @import("lin_tiling.zig");
     _ = @import("disp.zig");
     _ = @import("draw.zig");
     _ = @import("depth.zig");
