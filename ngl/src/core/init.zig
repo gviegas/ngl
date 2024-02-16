@@ -63,7 +63,7 @@ pub const Device = struct {
         feature_set: Feature.Set,
         impl: ?struct {
             impl: u64,
-            version: u32,
+            info: [4]u64,
         } = null,
     };
 
@@ -196,7 +196,7 @@ pub const Queue = struct {
         priority: Priority = .default,
         impl: ?struct {
             impl: u64,
-            info: u32,
+            info: [4]u64,
         },
     };
 

@@ -392,7 +392,7 @@ pub const Instance = struct {
                         .priority = .default,
                         .impl = .{
                             .impl = fam,
-                            .info = qp.timestampValidBits,
+                            .info = .{ qp.timestampValidBits, 0, 0, 0 },
                         },
                     };
                     break;
@@ -420,7 +420,7 @@ pub const Instance = struct {
                         .priority = .default,
                         .impl = .{
                             .impl = fam,
-                            .info = qp.timestampValidBits,
+                            .info = .{ qp.timestampValidBits, 0, 0, 0 },
                         },
                     };
                     break;
@@ -450,7 +450,7 @@ pub const Instance = struct {
                 },
                 .impl = .{
                     .impl = @intFromPtr(dev),
-                    .version = prop.apiVersion,
+                    .info = .{ prop.apiVersion, 0, 0, 0 },
                 },
             };
             desc_n += 1;
@@ -1022,10 +1022,10 @@ pub const Device = struct {
         // instance creation
         const ver = if (inst.version < c.VK_API_VERSION_1_1)
             c.VK_API_VERSION_1_0
-        else if (desc.impl.?.version & ~@as(u32, 0xfff) > preferred_version)
+        else if (desc.impl.?.info[0] & ~@as(u32, 0xfff) > preferred_version)
             preferred_version
         else
-            desc.impl.?.version;
+            desc.impl.?.info[0];
 
         var dev_props: c.VkPhysicalDeviceProperties = undefined;
         inst.vkGetPhysicalDeviceProperties(phys_dev, &dev_props);
@@ -1043,7 +1043,7 @@ pub const Device = struct {
             .instance = inst,
             .physical_device = phys_dev,
             .handle = dev,
-            .version = ver,
+            .version = @intCast(ver),
             .queues = undefined,
             .queue_n = 0,
             .timestamp_period = tms_period,
@@ -2733,7 +2733,7 @@ fn getFeature(
                                 supported[i] = false;
                                 continue;
                             };
-                            supported[i] = if (q.impl) |x| x.info != 0 else false;
+                            supported[i] = if (q.impl) |x| x.info[0] != 0 else false;
                         }
                         break :blk supported;
                     },
