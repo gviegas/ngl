@@ -8,7 +8,10 @@ const context = @import("test.zig").context;
 test "copy between resources" {
     const ctx = context();
     const dev = &ctx.device;
-    const queue_i = dev.findQueue(.{ .transfer = true }, null) orelse unreachable;
+    const queue_i = for (dev.queues[0..dev.queue_n], 0..) |queue, i| {
+        if (queue.capabilities.transfer and queue.image_transfer_granularity == .one)
+            break @as(ngl.Queue.Index, @intCast(i));
+    } else return error.SkipZigTest;
 
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);
@@ -357,8 +360,8 @@ test "copy between resources" {
         try buf_mems[2].map(dev, 0, null),
     };
 
-    // We filled the top and bottom halves of the staging buffer
-    // with different values
+    // The top and bottom halves of the staging buffer were cleared
+    // using different values
     for (0..size / 2) |i| try testing.expectEqual(ps[0][i], 0x9d);
     for (size / 2..size) |i| try testing.expectEqual(ps[0][i], 0xfa);
 
