@@ -5,7 +5,7 @@ const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 
-test "fillBuffer command" {
+test "clearBuffer command" {
     const ctx = context();
     const dev = &ctx.device;
     // TODO: Vulkan 1.0 doesn't allow this command in transfer-only queues
@@ -51,8 +51,8 @@ test "fillBuffer command" {
     };
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
-    cmd.fillBuffer(&buf, 0, off, 0x89);
-    cmd.fillBuffer(&buf, off, null, 0xc1);
+    cmd.clearBuffer(&buf, 0, off, 0x89);
+    cmd.clearBuffer(&buf, off, null, 0xc1);
     try cmd.end();
 
     {

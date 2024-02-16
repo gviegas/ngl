@@ -377,7 +377,7 @@ pub const VTable = struct {
         offset: u64,
     ) void,
 
-    fillBuffer: *const fn (
+    clearBuffer: *const fn (
         ctx: *anyopaque,
         device: Device,
         command_buffer: CommandBuffer,
@@ -1464,7 +1464,7 @@ pub fn dispatchIndirect(
     self.vtable.dispatchIndirect(self.ptr, device, command_buffer, buffer, offset);
 }
 
-pub fn fillBuffer(
+pub fn clearBuffer(
     self: *Self,
     device: Device,
     command_buffer: CommandBuffer,
@@ -1473,7 +1473,7 @@ pub fn fillBuffer(
     size: ?u64,
     value: u8,
 ) void {
-    self.vtable.fillBuffer(self.ptr, device, command_buffer, buffer, offset, size, value);
+    self.vtable.clearBuffer(self.ptr, device, command_buffer, buffer, offset, size, value);
 }
 
 pub fn copyBuffer(

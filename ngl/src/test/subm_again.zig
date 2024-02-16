@@ -55,7 +55,7 @@ test "re-submission of command buffer recording" {
             .one_time_submit = false,
             .inheritance = null,
         });
-        cmd.fillBuffer(&res[i].buf, 0, size, values[i]);
+        cmd.clearBuffer(&res[i].buf, 0, size, values[i]);
         cmd.pipelineBarrier(&.{.{
             .global_dependencies = &.{.{
                 .source_stage_mask = .{ .clear = true },

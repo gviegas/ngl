@@ -105,8 +105,8 @@ test "copy between resources" {
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
-    cmd.fillBuffer(&bufs[0], 0, size / 2, 0x9d);
-    cmd.fillBuffer(&bufs[0], size / 2, size / 2, 0xfa);
+    cmd.clearBuffer(&bufs[0], 0, size / 2, 0x9d);
+    cmd.clearBuffer(&bufs[0], size / 2, size / 2, 0xfa);
 
     cmd.pipelineBarrier(&.{.{
         .buffer_dependencies = &.{.{

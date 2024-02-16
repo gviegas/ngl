@@ -580,7 +580,7 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// Filled range must be aligned to 4 bytes.
+        /// Cleared range must be aligned to 4 bytes.
         /// Executes in `PipelineStage.clear`.
         ///
         /// BUG: Currently, this command may require a graphics or
@@ -593,8 +593,8 @@ pub const CommandBuffer = struct {
         /// ✔ Graphics queue
         /// ✔ Compute queue
         /// ⚠ Transfer queue
-        pub fn fillBuffer(self: *Cmd, buffer: *Buffer, offset: u64, size: ?u64, value: u8) void {
-            Impl.get().fillBuffer(
+        pub fn clearBuffer(self: *Cmd, buffer: *Buffer, offset: u64, size: ?u64, value: u8) void {
+            Impl.get().clearBuffer(
                 self.device.impl,
                 self.command_buffer.impl,
                 buffer.impl,

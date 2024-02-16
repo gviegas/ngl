@@ -287,7 +287,7 @@ test "timestamp query" {
     // This should take a while
     for (0..extent / tile) |x| {
         for (0..extent / tile) |y| {
-            cmd.fillBuffer(&copy_buf, 0, null, @intCast((x ^ y) & 255));
+            cmd.clearBuffer(&copy_buf, 0, null, @intCast((x ^ y) & 255));
             cmd.pipelineBarrier(&.{.{
                 .global_dependencies = &.{.{
                     .source_stage_mask = .{ .clear = true },

@@ -31,7 +31,7 @@ test {
     _ = @import("cmd_pool.zig");
     _ = @import("cmd_buf.zig");
     _ = @import("queue.zig");
-    _ = @import("fill_buf.zig");
+    _ = @import("clear_buf.zig");
     _ = @import("copy_buf.zig");
     _ = @import("copy_buf_img.zig");
     _ = @import("disp.zig");

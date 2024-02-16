@@ -559,7 +559,7 @@ pub const CommandBuffer = packed struct {
         );
     }
 
-    pub fn fillBuffer(
+    pub fn clearBuffer(
         _: *anyopaque,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
