@@ -412,14 +412,14 @@ pub const Instance = struct {
                     qp.minImageTransferGranularity.height,
                     qp.minImageTransferGranularity.depth,
                 };
-                // TODO: Config to accept `whole_level` granularity
-                if (qp.queueFlags & mask == c.VK_QUEUE_TRANSFER_BIT and
-                    std.mem.eql(u32, &gran, &.{ 1, 1, 1 }))
-                {
+                if (qp.queueFlags & mask == c.VK_QUEUE_TRANSFER_BIT) {
                     xfer_queue = .{
                         .capabilities = .{ .transfer = true },
                         .priority = .default,
-                        .image_transfer_granularity = .one,
+                        .image_transfer_granularity = if (std.mem.eql(u32, &gran, &.{ 1, 1, 1 }))
+                            .one
+                        else
+                            .whole_level,
                         .impl = .{
                             .impl = fam,
                             .info = .{ qp.timestampValidBits, 0, 0, 0 },
