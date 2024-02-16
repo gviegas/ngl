@@ -48,6 +48,14 @@ test "Device.init/deinit" {
             try testing.expect(q.capabilities.transfer);
     }
 
+    // Queues supporting graphics and/or compute
+    // must not impose any granularity restriction
+    // on image transfers
+    for (dev.queues[0..dev.queue_n]) |q| {
+        if (q.capabilities.graphics or q.capabilities.compute)
+            try testing.expectEqual(q.image_transfer_granularity, .one);
+    }
+
     // Visible coherent memory is required
     for (dev.mem_types[0..dev.mem_type_n]) |m| {
         if (m.properties.host_visible and m.properties.host_coherent) break;
