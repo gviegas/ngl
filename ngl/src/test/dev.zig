@@ -252,6 +252,7 @@ test "Device.findQueue/findQueueExact" {
         .impl = undefined,
         .capabilities = gct,
         .priority = .default,
+        .image_transfer_granularity = .one,
     };
 
     for ([_]Case{
@@ -323,6 +324,7 @@ test "Device.findQueue/findQueueExact" {
         .impl = undefined,
         .capabilities = ct,
         .priority = .default,
+        .image_transfer_granularity = .one,
     };
 
     for ([_]Case{
@@ -394,6 +396,7 @@ test "Device.findQueue/findQueueExact" {
         .impl = undefined,
         .capabilities = t,
         .priority = .default,
+        .image_transfer_granularity = .whole_level,
     };
 
     for ([_]Case{
@@ -438,11 +441,13 @@ test "Device.findQueue/findQueueExact" {
         .impl = undefined,
         .capabilities = ct,
         .priority = .default,
+        .image_transfer_granularity = .one,
     };
     dev.queues[1] = .{
         .impl = undefined,
         .capabilities = t,
         .priority = .high,
+        .image_transfer_granularity = .whole_level,
     };
 
     for ([_]Case{
@@ -517,11 +522,13 @@ test "Device.findQueue/findQueueExact" {
         .impl = undefined,
         .capabilities = gt,
         .priority = .low,
+        .image_transfer_granularity = .one,
     };
     dev.queues[1] = .{
         .impl = undefined,
         .capabilities = gt,
         .priority = .default,
+        .image_transfer_granularity = .one,
     };
 
     for ([_]Case{

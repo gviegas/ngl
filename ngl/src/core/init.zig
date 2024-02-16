@@ -90,6 +90,7 @@ pub const Device = struct {
                 .impl = impl,
                 .capabilities = desc.queues[queue_i].?.capabilities,
                 .priority = desc.queues[queue_i].?.priority,
+                .image_transfer_granularity = desc.queues[queue_i].?.image_transfer_granularity,
             };
             queue_i += 1;
         }
@@ -173,6 +174,7 @@ pub const Queue = struct {
     impl: Impl.Queue,
     capabilities: Capabilities,
     priority: Priority,
+    image_transfer_granularity: ImageTransferGranularity,
 
     pub const Index = u2;
     pub const max = 4;
@@ -191,9 +193,17 @@ pub const Queue = struct {
         high,
     };
 
+    /// This is only meaningful for transfer-only queues,
+    /// as graphics/compute queues will always report `.one`.
+    pub const ImageTransferGranularity = enum {
+        whole_level,
+        one,
+    };
+
     pub const Desc = struct {
         capabilities: Capabilities,
-        priority: Priority = .default,
+        priority: Priority,
+        image_transfer_granularity: ImageTransferGranularity,
         impl: ?struct {
             impl: u64,
             info: [4]u64,
