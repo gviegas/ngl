@@ -4,9 +4,14 @@ const ngl = @import("ngl");
 
 const gpa = std.heap.c_allocator;
 const context = @import("ctx.zig").context;
+const Platform = @import("plat.zig").Platform;
 const platform = @import("plat.zig").platform;
 const cube = &@import("model.zig").cube;
 const util = @import("util.zig");
+
+pub fn main() !void {
+    try do();
+}
 
 pub const ngl_options = struct {
     pub const app_name = "My App";
@@ -15,7 +20,7 @@ pub const ngl_options = struct {
     pub const engine_version = 2;
 };
 
-pub fn main() !void {
+fn do() !void {
     const ctx = context();
     const dev = &ctx.device;
     const plat = try platform();
@@ -371,8 +376,8 @@ pub fn main() !void {
 
 const Data = struct {
     const frame_n = 2;
-    const width = @import("plat.zig").Platform.width;
-    const height = @import("plat.zig").Platform.height;
+    const width = Platform.width;
+    const height = Platform.height;
 
     depth: struct {
         image: ngl.Image,
