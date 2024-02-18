@@ -94,7 +94,7 @@ pub const plane = struct {
     } = .{};
 };
 
-// -y up; z forward; ccw; triangulated
+// -y up; z forward; ccw
 // Must have normals and texture coordinates
 pub fn loadObj(gpa: std.mem.Allocator, file_name: []const u8) !Model {
     const dir = std.fs.cwd();
@@ -150,16 +150,36 @@ const DataObj = struct {
 
     fn parseV(self: *Self, str: []const u8) !void {
         var it = std.mem.tokenizeScalar(u8, str[2..], ' ');
-        const x = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseV);
-        const y = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseV);
-        const z = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseV);
+        const x = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVXCoord);
+        const y = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVYCoord);
+        const z = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVZCoord);
+        if (it.next()) |n| {
+            if (n[0] != '#') {
+                const w = try std.fmt.parseFloat(f32, n);
+                if (w != 1) return error.ParseVWCoord;
+            }
+        }
         try self.positions.append(self.gpa, .{ x, y, z });
     }
 
     fn parseVt(self: *Self, str: []const u8) !void {
         var it = std.mem.tokenizeScalar(u8, str[3..], ' ');
-        const u = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVt);
-        const v = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVt);
+        const u = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVtUCoord);
+        const v = blk: {
+            var v: f32 = 0;
+            if (it.next()) |n| {
+                if (n[0] != '#') {
+                    v = try std.fmt.parseFloat(f32, n);
+                    if (it.next()) |m| {
+                        if (m[0] != '#') {
+                            const w = try std.fmt.parseFloat(f32, m);
+                            if (w != 0) return error.ParseVtWCoord;
+                        }
+                    }
+                }
+            }
+            break :blk v;
+        };
         try self.tex_coords.append(self.gpa, .{ u, v });
     }
 
@@ -173,27 +193,46 @@ const DataObj = struct {
 
     fn parseF(self: *Self, str: []const u8) !void {
         var it = std.mem.tokenizeScalar(u8, str[2..], ' ');
+
         var it_2 = std.mem.tokenizeScalar(u8, it.next() orelse return error.ParseF, '/');
+        const pa = (try std.fmt.parseInt(u32, it_2.next() orelse return error.ParseFP, 10));
+        const ta = (try std.fmt.parseInt(u32, it_2.next() orelse return error.ParseFPt, 10));
+        const na = (try std.fmt.parseInt(u32, it_2.next() orelse return error.ParseFPn, 10));
+
         var it_3 = std.mem.tokenizeScalar(u8, it.next() orelse return error.ParseF, '/');
+        const pb = (try std.fmt.parseInt(u32, it_3.next() orelse return error.ParseFP, 10));
+        const tb = (try std.fmt.parseInt(u32, it_3.next() orelse return error.ParseFPt, 10));
+        const nb = (try std.fmt.parseInt(u32, it_3.next() orelse return error.ParseFPn, 10));
+
         var it_4 = std.mem.tokenizeScalar(u8, it.next() orelse return error.ParseF, '/');
-
-        const pa = (try std.fmt.parseInt(u32, it_2.next() orelse return error.ParseF, 10));
-        const ta = (try std.fmt.parseInt(u32, it_2.next() orelse return error.ParseF, 10));
-        const na = (try std.fmt.parseInt(u32, it_2.next() orelse return error.ParseF, 10));
-
-        const pb = (try std.fmt.parseInt(u32, it_3.next() orelse return error.ParseF, 10));
-        const tb = (try std.fmt.parseInt(u32, it_3.next() orelse return error.ParseF, 10));
-        const nb = (try std.fmt.parseInt(u32, it_3.next() orelse return error.ParseF, 10));
-
-        const pc = (try std.fmt.parseInt(u32, it_4.next() orelse return error.ParseF, 10));
-        const tc = (try std.fmt.parseInt(u32, it_4.next() orelse return error.ParseF, 10));
-        const nc = (try std.fmt.parseInt(u32, it_4.next() orelse return error.ParseF, 10));
+        var pc = (try std.fmt.parseInt(u32, it_4.next() orelse return error.ParseFP, 10));
+        var tc = (try std.fmt.parseInt(u32, it_4.next() orelse return error.ParseFPt, 10));
+        var nc = (try std.fmt.parseInt(u32, it_4.next() orelse return error.ParseFPn, 10));
 
         try self.faces.append(self.gpa, .{
             pa - 1, ta - 1, na - 1,
             pb - 1, tb - 1, nb - 1,
             pc - 1, tc - 1, nc - 1,
         });
+
+        while (it.next()) |n| {
+            if (n[0] == '#') break;
+
+            var it_5 = std.mem.tokenizeScalar(u8, n, '/');
+            const pd = (try std.fmt.parseInt(u32, it_5.next() orelse return error.ParseFP, 10));
+            const td = (try std.fmt.parseInt(u32, it_5.next() orelse return error.ParseFPt, 10));
+            const nd = (try std.fmt.parseInt(u32, it_5.next() orelse return error.ParseFPn, 10));
+
+            try self.faces.append(self.gpa, .{
+                pa - 1, ta - 1, na - 1,
+                pc - 1, tc - 1, nc - 1,
+                pd - 1, td - 1, nd - 1,
+            });
+
+            pc = pd;
+            tc = td;
+            nc = nd;
+        }
     }
 
     fn deinit(self: *Self) void {
