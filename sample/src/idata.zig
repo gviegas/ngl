@@ -218,13 +218,11 @@ pub const DataPng = struct {
         // Must happen before `unfilter`
         fn decompress(self: *Idat, gpa: std.mem.Allocator) !void {
             var input = std.io.fixedBufferStream(self.data.items);
-            var dec = try std.compress.zlib.decompressStream(gpa, input.reader());
-            defer dec.deinit();
-            // TODO
-            const max_size = std.math.maxInt(usize);
-            const output = try dec.reader().readAllAlloc(gpa, max_size);
+            var output = std.ArrayListUnmanaged(u8){};
+            errdefer output.deinit(gpa);
+            try std.compress.flate.inflate.decompress(.zlib, input.reader(), output.writer(gpa));
             self.data.deinit(gpa);
-            self.data = std.ArrayListUnmanaged(u8).fromOwnedSlice(output);
+            self.data = output;
         }
 
         // Called by `decode`
