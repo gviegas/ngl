@@ -57,7 +57,7 @@ test "Image.init/deinit" {
 test "Image capabilities" {
     const ctx = context();
     const dev = &ctx.device;
-    const core = ngl.Feature.get(gpa, &ctx.instance, ctx.device_desc, .core).?;
+    const core = ngl.Feature.get(gpa, &ctx.gpu, .core).?;
     const CoreFeat = @TypeOf(core);
 
     const expect = struct {

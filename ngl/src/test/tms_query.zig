@@ -8,7 +8,7 @@ const context = @import("test.zig").context;
 test "timestamp query on empty command buffer" {
     const ctx = context();
     const dev = &ctx.device;
-    const core_feat = ngl.Feature.get(gpa, &ctx.instance, ctx.device_desc, .core).?;
+    const core_feat = ngl.Feature.get(gpa, &ctx.gpu, .core).?;
     if (std.mem.eql(bool, &core_feat.query.timestamp, &[_]bool{false} ** ngl.Queue.max))
         return error.SkipZigTest;
     // We won't record anything other than the queries themselves
@@ -135,7 +135,7 @@ test "timestamp query on empty command buffer" {
 test "timestamp query" {
     const ctx = context();
     const dev = &ctx.device;
-    const core_feat = ngl.Feature.get(gpa, &ctx.instance, ctx.device_desc, .core).?;
+    const core_feat = ngl.Feature.get(gpa, &ctx.gpu, .core).?;
     if (std.mem.eql(bool, &core_feat.query.timestamp, &[_]bool{false} ** ngl.Queue.max))
         return error.SkipZigTest;
     var queue_i: ngl.Queue.Index = undefined;

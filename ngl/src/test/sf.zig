@@ -10,12 +10,7 @@ const context = @import("test.zig").context;
 const platform = @import("test.zig").platform;
 
 test "Surface.init/deinit" {
-    var inst = ngl.Instance.init(gpa, .{ .presentation = true }) catch |err| {
-        if (err == ngl.Error.NotPresent) return error.SkipZigTest;
-        try testing.expect(false);
-        unreachable;
-    };
-    defer inst.deinit(gpa);
+    // TODO: Skip if presentation is not supported.
 
     switch (builtin.os.tag) {
         .linux => if (builtin.target.isAndroid()) {
@@ -23,13 +18,13 @@ test "Surface.init/deinit" {
         } else {
             var plat = try @import("test.zig").PlatformXcb.init();
             defer plat.deinit();
-            var sf = try ngl.Surface.init(gpa, &inst, .{
+            var sf = try ngl.Surface.init(gpa, .{
                 .platform = .{ .xcb = .{
                     .connection = plat.connection,
                     .window = plat.window,
                 } },
             });
-            sf.deinit(gpa, &inst);
+            sf.deinit(gpa);
         },
         .windows => @compileError("TODO"),
         else => @compileError("OS not supported"),
@@ -40,29 +35,26 @@ test "Surface queries" {
     const ctx = context();
     const sf = &(try platform()).surface;
 
-    for (ctx.device_desc.queues) |queue_desc| {
-        const is_compatible = try sf.isCompatible(
-            &ctx.instance,
-            ctx.device_desc,
-            queue_desc orelse continue,
-        );
+    for (ctx.gpu.queues, 0..) |queue_desc, i| {
+        if (queue_desc == null) continue;
+        const is_compatible = try sf.isCompatible(&ctx.gpu, @as(ngl.Queue.Index, @intCast(i)));
         if (is_compatible) break;
     } else {
         // NOTE: This could happen but shouldn't
         try testing.expect(false);
     }
 
-    const pres_modes = try sf.getPresentModes(&ctx.instance, ctx.device_desc);
+    const pres_modes = try sf.getPresentModes(&ctx.gpu);
     // FIFO support is mandatory
     try testing.expect(pres_modes.fifo);
 
     // NOTE: Currently this may return no formats at all
-    const fmts = try sf.getFormats(gpa, &ctx.instance, ctx.device_desc);
+    const fmts = try sf.getFormats(gpa, &ctx.gpu);
     defer gpa.free(fmts);
     for (fmts) |fmt|
         try testing.expect(fmt.format.getFeatures(&ctx.device).optimal_tiling.color_attachment);
 
-    const capab = try sf.getCapabilities(&ctx.instance, ctx.device_desc, .fifo);
+    const capab = try sf.getCapabilities(&ctx.gpu, .fifo);
     try testing.expect(capab.min_count > 0);
     // This differs from Vulkan
     try testing.expect(capab.max_count >= capab.min_count);

@@ -139,7 +139,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     const dev = &ctx.device;
     const queue_i = dev.findQueue(.{ .graphics = true }, null) orelse return error.SkipZigTest;
     if (precise) {
-        const core_feat = ngl.Feature.get(gpa, &ctx.instance, ctx.device_desc, .core).?;
+        const core_feat = ngl.Feature.get(gpa, &ctx.gpu, .core).?;
         if (!core_feat.query.occlusion_precise) return error.SkipZigTest;
     }
 

@@ -17,7 +17,7 @@ test "drawIndexedIndirect command" {
 fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u8) !void {
     const ctx = context();
     const dev = &ctx.device;
-    const core_feat = ngl.Feature.get(gpa, &ctx.instance, ctx.device_desc, .core).?;
+    const core_feat = ngl.Feature.get(gpa, &ctx.gpu, .core).?;
     const queue_i = dev.findQueue(.{ .graphics = true }, null) orelse return error.SkipZigTest;
     if (!indexed and !core_feat.draw.indirect_command)
         return error.SkipZigTest;

@@ -9,7 +9,7 @@ test "dispatchIndirect command" {
     const ctx = context();
     const dev = &ctx.device;
     const queue_i = dev.findQueue(.{ .compute = true }, null) orelse return error.SkipZigTest;
-    if (!ngl.Feature.get(gpa, &ctx.instance, ctx.device_desc, .core).?.dispatch.indirect_command)
+    if (!ngl.Feature.get(gpa, &ctx.gpu, .core).?.dispatch.indirect_command)
         return error.SkipZigTest;
 
     var indir_buf = try ngl.Buffer.init(gpa, dev, .{

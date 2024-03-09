@@ -19,12 +19,10 @@ test "SwapChain.init/deinit" {
     var sema_2 = try ngl.Semaphore.init(gpa, &ctx.device, .{});
     defer sema_2.deinit(gpa, &ctx.device);
 
-    const pres_modes: ngl.Surface.PresentMode.Flags = plat.surface.getPresentModes(
-        &ctx.instance,
-        ctx.device_desc,
-    ) catch .{};
+    const pres_modes: ngl.Surface.PresentMode.Flags =
+        plat.surface.getPresentModes(&ctx.gpu) catch .{};
 
-    const fmts = try plat.surface.getFormats(gpa, &ctx.instance, ctx.device_desc);
+    const fmts = try plat.surface.getFormats(gpa, &ctx.gpu);
     defer gpa.free(fmts);
     // TODO: Need to fix this somehow
     if (fmts.len == 0) {
@@ -32,7 +30,7 @@ test "SwapChain.init/deinit" {
         return error.SkipZigTest;
     }
 
-    const capab = try plat.surface.getCapabilities(&ctx.instance, ctx.device_desc, .fifo);
+    const capab = try plat.surface.getCapabilities(&ctx.gpu, .fifo);
     const comp_alpha = inline for (@typeInfo(ngl.Surface.CompositeAlpha.Flags).Struct.fields) |f| {
         if (@field(capab.supported_composite_alpha, f.name))
             break @field(ngl.Surface.CompositeAlpha, f.name);

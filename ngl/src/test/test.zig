@@ -10,9 +10,9 @@ pub const gpa = std.testing.allocator;
 // This can be set to `null` to suppress test output.
 pub const writer: ?std.fs.File.Writer = std.io.getStdErr().writer();
 
+// TODO: Test `Gpu` and fix commented out tests in `dev.zig`.
 test {
     _ = @import("flags.zig");
-    _ = @import("inst.zig");
     _ = @import("dev.zig");
     _ = @import("fence.zig");
     _ = @import("sema.zig");
@@ -55,41 +55,15 @@ test {
 }
 
 pub const Context = struct {
-    instance_desc: ngl.Instance.Desc,
-    instance: ngl.Instance,
-    device_desc: ngl.Device.Desc,
+    gpu: ngl.Gpu,
     device: ngl.Device,
     mutexes: [ngl.Queue.max]std.Thread.Mutex,
 
     const Self = @This();
 
     pub fn initDefault(allocator: std.mem.Allocator) ngl.Error!Self {
-        var inst = try ngl.Instance.init(allocator, .{});
-        errdefer inst.deinit(allocator);
-        const descs = try inst.listDevices(allocator);
-        defer allocator.free(descs);
-        // TODO: Prioritize devices that support presentation
-        var desc_i: usize = 0;
-        for (0..descs.len) |i| {
-            if (descs[i].type == .discrete_gpu) {
-                desc_i = i;
-                break;
-            }
-            if (descs[i].type == .integrated_gpu) desc_i = i;
-        }
-        const dev = try ngl.Device.init(allocator, &inst, descs[desc_i]);
-        const mus = blk: {
-            var mus: [ngl.Queue.max]std.Thread.Mutex = undefined;
-            for (0..dev.queue_n) |i| mus[i] = .{};
-            break :blk mus;
-        };
-        return .{
-            .instance_desc = .{},
-            .instance = inst,
-            .device_desc = descs[desc_i],
-            .device = dev,
-            .mutexes = mus,
-        };
+        _ = allocator;
+        return ngl.Error.InitializationFailed;
     }
 
     pub fn lockQueue(self: *Self, index: ngl.Queue.Index) void {
@@ -104,7 +78,6 @@ pub const Context = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
         self.device.deinit(allocator);
-        self.instance.deinit(allocator);
         self.* = undefined;
     }
 };
@@ -115,7 +88,7 @@ pub fn context() *Context {
         var once = std.once(init);
 
         fn init() void {
-            // Let it leak
+            // Let it leak.
             const allocator = std.heap.c_allocator;
             ctx = Context.initDefault(allocator) catch |err| @panic(@errorName(err));
         }
@@ -146,7 +119,7 @@ pub const Platform = struct {
 
     fn init(allocator: std.mem.Allocator) !Platform {
         const ctx = context();
-        if (!ctx.instance_desc.presentation or !ctx.device_desc.feature_set.presentation)
+        if (!ctx.gpu.feature_set.presentation)
             return error.SkipZigTest;
 
         var impl = try @typeInfo(Platform).Struct.fields[0].type.init();
@@ -156,7 +129,7 @@ pub const Platform = struct {
             .linux => if (builtin.target.isAndroid())
                 @compileError("TODO")
             else
-                ngl.Surface.init(allocator, &ctx.instance, .{
+                ngl.Surface.init(allocator, .{
                     .platform = .{ .xcb = .{
                         .connection = impl.connection,
                         .window = impl.window,
@@ -165,16 +138,16 @@ pub const Platform = struct {
             .windows => @compileError("TODO"),
             else => @compileError("OS not supported"),
         };
-        errdefer sf.deinit(allocator, &ctx.instance);
+        errdefer sf.deinit(allocator);
 
-        const fmts = try sf.getFormats(allocator, &ctx.instance, ctx.device_desc);
+        const fmts = try sf.getFormats(allocator, &ctx.gpu);
         defer allocator.free(fmts);
         const fmt_i = for (fmts, 0..) |fmt, i| {
             // TODO
             _ = fmt;
             break i;
         } else unreachable;
-        const capab = try sf.getCapabilities(&ctx.instance, ctx.device_desc, .fifo);
+        const capab = try sf.getCapabilities(&ctx.gpu, .fifo);
 
         var sc = try ngl.SwapChain.init(allocator, &ctx.device, .{
             .surface = &sf,
@@ -221,13 +194,11 @@ pub const Platform = struct {
             };
         }
 
-        const queue_i = for (ctx.device_desc.queues, 0..) |queue_desc, i| {
-            const is = sf.isCompatible(
-                &ctx.instance,
-                ctx.device_desc,
-                queue_desc orelse continue,
-            ) catch continue;
-            if (is) break @as(ngl.Queue.Index, @intCast(i));
+        const queue_i = for (&ctx.gpu.queues, 0..) |queue_desc, i| {
+            if (queue_desc == null) continue;
+            const queue_i = @as(ngl.Queue.Index, @intCast(i));
+            const is = sf.isCompatible(&ctx.gpu, queue_i) catch continue;
+            if (is) break queue_i;
         } else return error.SkipZigTest;
 
         return .{
@@ -259,7 +230,7 @@ pub const Platform = struct {
         allocator.free(self.image_views);
         allocator.free(self.images);
         self.swap_chain.deinit(allocator, &ctx.device);
-        self.surface.deinit(allocator, &ctx.instance);
+        self.surface.deinit(allocator);
         self.impl.deinit();
         self.* = undefined;
     }
