@@ -24,7 +24,7 @@ fn Type(comptime T: type) type {
     };
 }
 
-pub const Instance = Type(ngl.Instance);
+pub const Gpu = Type(ngl.Gpu);
 pub const Device = Type(ngl.Device);
 pub const Queue = Type(ngl.Queue);
 pub const Memory = Type(ngl.Memory);
@@ -52,32 +52,12 @@ pub const SwapChain = Type(ngl.SwapChain);
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
 
-    // Instance --------------------------------------------
-
-    initInstance: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        desc: ngl.Instance.Desc,
-    ) Error!Instance,
-
-    listDevices: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        instance: Instance,
-    ) Error![]ngl.Device.Desc,
-
-    deinitInstance: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        instance: Instance,
-    ) void,
-
     // Device ----------------------------------------------
 
     initDevice: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: Instance,
+        gpu: Gpu,
         desc: ngl.Device.Desc,
     ) Error!Device,
 
@@ -168,8 +148,7 @@ pub const VTable = struct {
     getFeature: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: Instance,
-        device_desc: ngl.Device.Desc,
+        gpu: Gpu,
         feature: *ngl.Feature,
     ) Error!void,
 
@@ -884,45 +863,39 @@ pub const VTable = struct {
     initSurface: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: Instance,
         desc: ngl.Surface.Desc,
     ) Error!Surface,
 
     isSurfaceCompatible: *const fn (
         ctx: *anyopaque,
-        instance: Instance,
         surface: Surface,
-        device_desc: ngl.Device.Desc,
-        queue_desc: ngl.Queue.Desc,
+        gpu: Gpu,
+        queue: ngl.Queue.Index,
     ) Error!bool,
 
     getSurfacePresentModes: *const fn (
         ctx: *anyopaque,
-        instance: Instance,
         surface: Surface,
-        device_desc: ngl.Device.Desc,
+        gpu: Gpu,
     ) Error!ngl.Surface.PresentMode.Flags,
 
     getSurfaceFormats: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: Instance,
         surface: Surface,
-        device_desc: ngl.Device.Desc,
+        gpu: Gpu,
     ) Error![]ngl.Surface.Format,
 
     getSurfaceCapabilities: *const fn (
         ctx: *anyopaque,
-        instance: Instance,
         surface: Surface,
-        device_desc: ngl.Device.Desc,
+        gpu: Gpu,
         present_mode: ngl.Surface.PresentMode,
     ) Error!ngl.Surface.Capabilities,
 
     deinitSurface: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: Instance,
         surface: Surface,
     ) void,
 
@@ -983,9 +956,9 @@ pub inline fn getDriverApi() DriverApi {
     return dapi.?;
 }
 
-// TODO: Debug-check inputs/outputs of these functions
+// TODO: Debug-check inputs/outputs of these functions.
 
-// TODO: Parameters
+// TODO: Parameters.
 pub fn init(allocator: std.mem.Allocator) Error!void {
     _ = allocator;
     lock.lock();
@@ -1013,33 +986,13 @@ pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
     dapi = null;
 }
 
-pub fn initInstance(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    desc: ngl.Instance.Desc,
-) Error!Instance {
-    return self.vtable.initInstance(self.ptr, allocator, desc);
-}
-
-pub fn listDevices(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    instance: Instance,
-) Error![]ngl.Device.Desc {
-    return self.vtable.listDevices(self.ptr, allocator, instance);
-}
-
-pub fn deinitInstance(self: *Self, allocator: std.mem.Allocator, instance: Instance) void {
-    self.vtable.deinitInstance(self.ptr, allocator, instance);
-}
-
 pub fn initDevice(
     self: *Self,
     allocator: std.mem.Allocator,
-    instance: Instance,
+    gpu: Gpu,
     desc: ngl.Device.Desc,
 ) Error!Device {
-    return self.vtable.initDevice(self.ptr, allocator, instance, desc);
+    return self.vtable.initDevice(self.ptr, allocator, gpu, desc);
 }
 
 pub fn getQueues(self: *Self, allocation: *[ngl.Queue.max]Queue, device: Device) []Queue {
@@ -1139,11 +1092,10 @@ pub fn invalidateMappedMemory(
 pub fn getFeature(
     self: *Self,
     allocator: std.mem.Allocator,
-    instance: Instance,
-    device_desc: ngl.Device.Desc,
+    gpu: Gpu,
     feature: *ngl.Feature,
 ) Error!void {
-    try self.vtable.getFeature(self.ptr, allocator, instance, device_desc, feature);
+    try self.vtable.getFeature(self.ptr, allocator, gpu, feature);
 }
 
 pub fn initCommandPool(
@@ -2091,64 +2043,53 @@ pub fn resolveQueryTimestamp(
 pub fn initSurface(
     self: *Self,
     allocator: std.mem.Allocator,
-    instance: Instance,
     desc: ngl.Surface.Desc,
 ) Error!Surface {
-    return self.vtable.initSurface(self.ptr, allocator, instance, desc);
+    return self.vtable.initSurface(self.ptr, allocator, desc);
 }
 
 pub fn isSurfaceCompatible(
     self: *Self,
-    instance: Instance,
     surface: Surface,
-    device_desc: ngl.Device.Desc,
-    queue_desc: ngl.Queue.Desc,
+    gpu: Gpu,
+    queue: ngl.Queue.Index,
 ) Error!bool {
-    return self.vtable.isSurfaceCompatible(self.ptr, instance, surface, device_desc, queue_desc);
+    return self.vtable.isSurfaceCompatible(self.ptr, surface, gpu, queue);
 }
 
 pub fn getSurfacePresentModes(
     self: *Self,
-    instance: Instance,
     surface: Surface,
-    device_desc: ngl.Device.Desc,
+    gpu: Gpu,
 ) Error!ngl.Surface.PresentMode.Flags {
-    return self.vtable.getSurfacePresentModes(self.ptr, instance, surface, device_desc);
+    return self.vtable.getSurfacePresentModes(self.ptr, surface, gpu);
 }
 
 pub fn getSurfaceFormats(
     self: *Self,
     allocator: std.mem.Allocator,
-    instance: Instance,
     surface: Surface,
-    device_desc: ngl.Device.Desc,
+    gpu: Gpu,
 ) Error![]ngl.Surface.Format {
-    return self.vtable.getSurfaceFormats(self.ptr, allocator, instance, surface, device_desc);
+    return self.vtable.getSurfaceFormats(self.ptr, allocator, surface, gpu);
 }
 
 pub fn getSurfaceCapabilities(
     self: *Self,
-    instance: Instance,
     surface: Surface,
-    device_desc: ngl.Device.Desc,
+    gpu: Gpu,
     present_mode: ngl.Surface.PresentMode,
 ) Error!ngl.Surface.Capabilities {
     return self.vtable.getSurfaceCapabilities(
         self.ptr,
-        instance,
         surface,
-        device_desc,
+        gpu,
         present_mode,
     );
 }
 
-pub fn deinitSurface(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    instance: Instance,
-    surface: Surface,
-) void {
-    self.vtable.deinitSurface(self.ptr, allocator, instance, surface);
+pub fn deinitSurface(self: *Self, allocator: std.mem.Allocator, surface: Surface) void {
+    self.vtable.deinitSurface(self.ptr, allocator, surface);
 }
 
 pub fn initSwapChain(
