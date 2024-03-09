@@ -10,6 +10,12 @@ const SwapChain = ngl.SwapChain;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
+/// The caller is responsible for freeing the returned slice.
+pub fn getGpus(allocator: std.mem.Allocator) Error![]Gpu {
+    try Impl.init(allocator);
+    return Impl.get().getGpus(allocator);
+}
+
 pub const Gpu = struct {
     impl: Impl.Gpu,
     info: [4]u64, // TODO: See if this can be removed.
@@ -524,7 +530,7 @@ pub const Feature = union(enum) {
     } });
 
     /// It returns `null` if the requested feature isn't supported
-    /// by the device (note that `core` is always supported).
+    /// by the gpu (note that `core` is always supported).
     pub fn get(
         allocator: std.mem.Allocator,
         gpu: *Gpu,

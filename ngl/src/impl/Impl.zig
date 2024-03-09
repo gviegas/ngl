@@ -52,6 +52,8 @@ pub const SwapChain = Type(ngl.SwapChain);
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
 
+    getGpus: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) Error![]ngl.Gpu,
+
     // Device ----------------------------------------------
 
     initDevice: *const fn (
@@ -984,6 +986,10 @@ pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
     self.* = undefined;
     impl = null;
     dapi = null;
+}
+
+pub fn getGpus(self: *Self, allocator: std.mem.Allocator) Error![]ngl.Gpu {
+    return self.vtable.getGpus(self.ptr, allocator);
 }
 
 pub fn initDevice(

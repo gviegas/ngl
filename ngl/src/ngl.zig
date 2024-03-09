@@ -1,6 +1,7 @@
 const std = @import("std");
 
 pub const DriverApi = @import("impl/Impl.zig").DriverApi;
+pub const getGpus = @import("core/init.zig").getGpus;
 pub const Gpu = @import("core/init.zig").Gpu;
 pub const Device = @import("core/init.zig").Device;
 pub const Queue = @import("core/init.zig").Queue;
