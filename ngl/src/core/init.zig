@@ -10,30 +10,21 @@ const SwapChain = ngl.SwapChain;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
-pub const Instance = struct {
-    impl: Impl.Instance,
+pub const Gpu = struct {
+    impl: Impl.Gpu,
+    info: [4]u64, // TODO: See if this can be removed.
+    type: Type,
+    queues: [Queue.max]?Queue.Desc,
+    feature_set: Feature.Set,
 
-    pub const Desc = struct {
-        presentation: bool = true,
-        debugging: bool = false,
+    pub const Type = enum {
+        discrete,
+        integrated,
+        cpu,
+        other,
     };
 
     const Self = @This();
-
-    pub fn init(allocator: std.mem.Allocator, desc: Desc) Error!Self {
-        try Impl.init(allocator);
-        return .{ .impl = try Impl.get().initInstance(allocator, desc) };
-    }
-
-    /// Caller is responsible for freeing the returned slice.
-    pub fn listDevices(self: *Self, allocator: std.mem.Allocator) Error![]Device.Desc {
-        return Impl.get().listDevices(allocator, self.impl);
-    }
-
-    pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
-        Impl.get().deinitInstance(allocator, self.impl);
-        self.* = undefined;
-    }
 
     /// One can use this to find out which type of shader code
     /// the implementation expects.
@@ -50,41 +41,29 @@ pub const Device = struct {
     mem_types: [Memory.max_type]Memory.Type,
     mem_type_n: u8,
 
-    pub const Type = enum {
-        discrete_gpu,
-        integrated_gpu,
-        cpu,
-        other,
-    };
-
     pub const Desc = struct {
-        type: Type,
         queues: [Queue.max]?Queue.Desc,
         feature_set: Feature.Set,
-        impl: ?struct {
-            impl: u64,
-            info: [4]u64,
-        } = null,
     };
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, instance: *Instance, desc: Desc) Error!Self {
+    pub fn init(allocator: std.mem.Allocator, gpu: *Gpu, desc: Desc) Error!Self {
         var self = Self{
-            .impl = try Impl.get().initDevice(allocator, instance.impl, desc),
+            .impl = try Impl.get().initDevice(allocator, gpu.impl, desc),
             .queues = undefined,
             .queue_n = 0,
             .mem_types = undefined,
             .mem_type_n = 0,
         };
         // Track the current element in `desc.queues` since it
-        // might be interspersed with `null`s
+        // might be interspersed with `null`s.
         var queue_i: usize = 0;
         var queue_alloc: [Queue.max]Impl.Queue = undefined;
         const queues = Impl.get().getQueues(&queue_alloc, self.impl);
         for (self.queues[0..queues.len], queues) |*queue, impl| {
             // This assumes that implementations won't reorder
-            // the queues - the order must match `desc`'s
+            // the queues - the order must match `desc`'s.
             while (desc.queues[queue_i] == null) : (queue_i += 1) {}
             queue.* = .{
                 .impl = impl,
@@ -389,7 +368,7 @@ pub const Memory = struct {
     }
 };
 
-// TODO: Other optional features
+// TODO: Other optional features.
 pub const Feature = union(enum) {
     /// The `core` feature is always supported.
     core: struct {
@@ -513,9 +492,7 @@ pub const Feature = union(enum) {
         },
     },
 
-    /// Allow the creation of swap chains.
-    /// This feature is only meaningful when the instance used to
-    /// create the device also supports presentation.
+    /// Can create swap chains.
     presentation,
 
     pub const Set = @Type(.{ .Struct = .{
@@ -548,16 +525,13 @@ pub const Feature = union(enum) {
 
     /// It returns `null` if the requested feature isn't supported
     /// by the device (note that `core` is always supported).
-    /// `device_desc` must have been obtained through a call to
-    /// `instance.listDevices`.
     pub fn get(
         allocator: std.mem.Allocator,
-        instance: *Instance,
-        device_desc: Device.Desc,
+        gpu: *Gpu,
         comptime tag: @typeInfo(Feature).Union.tag_type.?,
     ) ?@typeInfo(Feature).Union.fields[@intFromEnum(tag)].type {
         var feat = @unionInit(Feature, @tagName(tag), undefined);
-        return if (Impl.get().getFeature(allocator, instance.impl, device_desc, &feat)) |_|
+        return if (Impl.get().getFeature(allocator, gpu.impl, &feat)) |_|
             @field(feat, @tagName(tag))
         else |_|
             null;
