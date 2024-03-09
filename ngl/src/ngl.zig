@@ -72,15 +72,14 @@ pub fn Flags(comptime E: type) type {
     var fields: []const StructField = &[_]StructField{};
     switch (@typeInfo(E)) {
         .Enum => |e| {
-            for (e.fields) |f| {
-                fields = fields ++ &[1]StructField{.{
+            for (e.fields) |f|
+                fields = fields ++ &[_]StructField{.{
                     .name = f.name,
                     .type = bool,
                     .default_value = @ptrCast(&false),
                     .is_comptime = false,
                     .alignment = 0,
                 }};
-            }
         },
         else => @compileError("E must be an enum type"),
     }
@@ -100,6 +99,34 @@ pub inline fn noFlagsSet(flags: anytype) bool {
 pub inline fn allFlagsSet(flags: anytype) bool {
     const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
     return @as(U, @bitCast(flags)) == ~@as(U, 0);
+}
+
+pub inline fn eqlFlags(flags: anytype, other: anytype) bool {
+    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+    return @as(U, @bitCast(flags)) == @as(U, @bitCast(other));
+}
+
+pub inline fn andFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
+    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+    const masked = @as(U, @bitCast(flags)) & @as(U, @bitCast(mask));
+    return @bitCast(masked);
+}
+
+pub inline fn orFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
+    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+    const masked = @as(U, @bitCast(flags)) | @as(U, @bitCast(mask));
+    return @bitCast(masked);
+}
+
+pub inline fn xorFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
+    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+    const masked = @as(U, @bitCast(flags)) ^ @as(U, @bitCast(mask));
+    return @bitCast(masked);
+}
+
+pub inline fn notFlags(flags: anytype) @TypeOf(flags) {
+    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+    return @bitCast(~@as(U, @bitCast(flags)));
 }
 
 /// This can be overriden by defining `ngl_options` in the root file.
