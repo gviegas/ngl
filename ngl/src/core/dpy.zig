@@ -4,7 +4,7 @@ const builtin = @import("builtin");
 const c = @import("c");
 
 const ngl = @import("../ngl.zig");
-const Instance = ngl.Instance;
+const Gpu = ngl.Gpu;
 const Device = ngl.Device;
 const Queue = ngl.Queue;
 const Format = ngl.Format;
@@ -33,7 +33,7 @@ pub const Surface = struct {
         window: c.xcb_window_t,
     };
 
-    // TODO: OS-agnostic platform
+    // TODO: OS-agnostic platform.
     pub const Platform = @Type(.{ .Union = .{
         .layout = .Auto,
         .tag_type = switch (builtin.os.tag) {
@@ -76,7 +76,7 @@ pub const Surface = struct {
         platform: Platform,
     };
 
-    // TODO: Other color spaces
+    // TODO: Other color spaces.
     pub const ColorSpace = enum {
         srgb_non_linear,
     };
@@ -136,60 +136,35 @@ pub const Surface = struct {
 
     const Self = @This();
 
-    /// It's only valid to call this function if the instance was created
-    /// with `Instance.Desc.presentation` set to `true`.
-    pub fn init(allocator: std.mem.Allocator, instance: *Instance, desc: Desc) Error!Self {
-        return .{ .impl = try Impl.get().initSurface(allocator, instance.impl, desc) };
+    pub fn init(allocator: std.mem.Allocator, desc: Desc) Error!Self {
+        return .{ .impl = try Impl.get().initSurface(allocator, desc) };
     }
 
-    /// Returns whether the given queue of the given device can present
+    /// Returns whether the given queue of the given gpu can present
     /// to the surface.
-    /// `device_desc` must have been obtained through a call to
-    /// `instance.listDevices`.
-    /// `queue_desc` must refer to an element of `device_desc.queues`.
-    pub fn isCompatible(
-        self: *Self,
-        instance: *Instance,
-        device_desc: Device.Desc,
-        queue_desc: Queue.Desc,
-    ) Error!bool {
-        return Impl.get().isSurfaceCompatible(instance.impl, self.impl, device_desc, queue_desc);
+    pub fn isCompatible(self: *Self, gpu: *Gpu, queue: Queue.Index) Error!bool {
+        return Impl.get().isSurfaceCompatible(self.impl, gpu.impl, queue);
     }
 
-    pub fn getPresentModes(
-        self: *Self,
-        instance: *Instance,
-        device_desc: Device.Desc,
-    ) Error!PresentMode.Flags {
-        return Impl.get().getSurfacePresentModes(instance.impl, self.impl, device_desc);
+    pub fn getPresentModes(self: *Self, gpu: *Gpu) Error!PresentMode.Flags {
+        return Impl.get().getSurfacePresentModes(self.impl, gpu.impl);
     }
 
     /// Caller is responsible for freeing the returned slice.
-    pub fn getFormats(
-        self: *Self,
-        allocator: std.mem.Allocator,
-        instance: *Instance,
-        device_desc: Device.Desc,
-    ) Error![]Self.Format {
-        return Impl.get().getSurfaceFormats(allocator, instance.impl, self.impl, device_desc);
+    pub fn getFormats(self: *Self, allocator: std.mem.Allocator, gpu: *Gpu) Error![]Self.Format {
+        return Impl.get().getSurfaceFormats(allocator, self.impl, gpu.impl);
     }
 
     pub fn getCapabilities(
         self: *Self,
-        instance: *Instance,
-        device_desc: Device.Desc,
+        gpu: *Gpu,
         present_mode: PresentMode,
     ) Error!Capabilities {
-        return Impl.get().getSurfaceCapabilities(
-            instance.impl,
-            self.impl,
-            device_desc,
-            present_mode,
-        );
+        return Impl.get().getSurfaceCapabilities(self.impl, gpu.impl, present_mode);
     }
 
-    pub fn deinit(self: *Self, allocator: std.mem.Allocator, instance: *Instance) void {
-        Impl.get().deinitSurface(allocator, instance.impl, self.impl);
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
+        Impl.get().deinitSurface(allocator, self.impl);
         self.* = undefined;
     }
 };
