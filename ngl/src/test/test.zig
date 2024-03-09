@@ -7,10 +7,11 @@ const ngl = @import("../ngl.zig");
 
 pub const gpa = std.testing.allocator;
 
-// This can be set to `null` to suppress test output
+// This can be set to `null` to suppress test output.
 pub const writer: ?std.fs.File.Writer = std.io.getStdErr().writer();
 
 test {
+    _ = @import("flags.zig");
     _ = @import("inst.zig");
     _ = @import("dev.zig");
     _ = @import("fence.zig");
