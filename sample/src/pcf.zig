@@ -1268,8 +1268,7 @@ const Pipeline = struct {
         uniform_buffer: *UniformBuffer,
     ) ngl.Error!Pipeline {
         const ctx = context();
-        const inst = &ctx.instance;
-        const dev_desc = ctx.device_desc;
+        const gpu = ctx.gpu;
         const dev = &ctx.device;
 
         var set_layts: [3]ngl.DescriptorSetLayout = undefined;
@@ -1386,8 +1385,7 @@ const Pipeline = struct {
                         .slope = 3,
                         .clamp = if (ngl.Feature.get(
                             gpa,
-                            inst,
-                            dev_desc,
+                            gpu,
                             .core,
                         ).?.rasterization.depth_bias_clamp) 1 else null,
                     },

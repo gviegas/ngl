@@ -3,38 +3,32 @@ const std = @import("std");
 const ngl = @import("ngl");
 
 pub const Context = struct {
-    instance_desc: ngl.Instance.Desc,
-    instance: ngl.Instance,
-    device_desc: ngl.Device.Desc,
+    gpu: ngl.Gpu,
     device: ngl.Device,
     mutexes: [ngl.Queue.max]std.Thread.Mutex,
 
     const Self = @This();
 
     pub fn initDefault(allocator: std.mem.Allocator) ngl.Error!Self {
-        var inst = try ngl.Instance.init(allocator, .{});
-        errdefer inst.deinit(allocator);
-        const descs = try inst.listDevices(allocator);
-        defer allocator.free(descs);
-        // TODO: Prioritize devices that support presentation
-        var desc_i: usize = 0;
-        for (0..descs.len) |i| {
-            if (descs[i].type == .discrete_gpu) {
-                desc_i = i;
+        const gpus = try ngl.getGpus(allocator);
+        defer allocator.free(gpus);
+        // TODO: Prioritize devices that support presentation.
+        var gpu_i: usize = 0;
+        for (0..gpus.len) |i| {
+            if (gpus[i].type == .discrete) {
+                gpu_i = i;
                 break;
             }
-            if (descs[i].type == .integrated_gpu) desc_i = i;
+            if (gpus[i].type == .integrated) gpu_i = i;
         }
-        const dev = try ngl.Device.init(allocator, &inst, descs[desc_i]);
+        const dev = try ngl.Device.init(allocator, gpus[gpu_i]);
         const mus = blk: {
             var mus: [ngl.Queue.max]std.Thread.Mutex = undefined;
             for (0..dev.queue_n) |i| mus[i] = .{};
             break :blk mus;
         };
         return .{
-            .instance_desc = .{},
-            .instance = inst,
-            .device_desc = descs[desc_i],
+            .gpu = gpus[gpu_i],
             .device = dev,
             .mutexes = mus,
         };
@@ -52,7 +46,6 @@ pub const Context = struct {
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
         self.device.deinit(allocator);
-        self.instance.deinit(allocator);
         self.* = undefined;
     }
 };
@@ -63,7 +56,7 @@ pub fn context() *Context {
         var once = std.once(init);
 
         fn init() void {
-            // Let it leak
+            // Let it leak.
             const allocator = std.heap.c_allocator;
             ctx = Context.initDefault(allocator) catch |err| @panic(@errorName(err));
         }

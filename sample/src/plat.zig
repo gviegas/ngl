@@ -33,10 +33,10 @@ pub const Platform = struct {
         option_2: bool = false,
     };
 
-    // TODO: Return type should be `ngl.Error!Platform`
+    // TODO: Return type should be `ngl.Error!Platform`.
     fn init(allocator: std.mem.Allocator) !Platform {
         const ctx = context();
-        if (!ctx.instance_desc.presentation or !ctx.device_desc.feature_set.presentation)
+        if (!ctx.gpu.feature_set.presentation)
             return error.NotSupported;
 
         var impl = try @typeInfo(Platform).Struct.fields[0].type.init();
@@ -46,7 +46,7 @@ pub const Platform = struct {
             .linux => if (builtin.target.isAndroid())
                 @compileError("TODO")
             else
-                ngl.Surface.init(allocator, &ctx.instance, .{
+                ngl.Surface.init(allocator, .{
                     .platform = .{ .xcb = .{
                         .connection = impl.connection,
                         .window = impl.window,
@@ -55,16 +55,16 @@ pub const Platform = struct {
             .windows => @compileError("TODO"),
             else => @compileError("OS not supported"),
         };
-        errdefer sf.deinit(allocator, &ctx.instance);
+        errdefer sf.deinit(allocator);
 
-        const fmts = try sf.getFormats(allocator, &ctx.instance, ctx.device_desc);
+        const fmts = try sf.getFormats(allocator, ctx.gpu);
         defer allocator.free(fmts);
         const fmt_i = for (fmts, 0..) |fmt, i| {
             // TODO
             _ = fmt;
             break i;
         } else unreachable;
-        const capab = try sf.getCapabilities(&ctx.instance, ctx.device_desc, .fifo);
+        const capab = try sf.getCapabilities(ctx.gpu, .fifo);
 
         var sc = try ngl.SwapChain.init(allocator, &ctx.device, .{
             .surface = &sf,
@@ -111,13 +111,11 @@ pub const Platform = struct {
             };
         }
 
-        const queue_i = for (ctx.device_desc.queues, 0..) |queue_desc, i| {
-            const is = sf.isCompatible(
-                &ctx.instance,
-                ctx.device_desc,
-                queue_desc orelse continue,
-            ) catch continue;
-            if (is) break @as(ngl.Queue.Index, @intCast(i));
+        const queue_i = for (ctx.gpu.queues, 0..) |queue_desc, i| {
+            if (queue_desc == null) continue;
+            const queue_i = @as(ngl.Queue.Index, @intCast(i));
+            const is = sf.isCompatible(ctx.gpu, queue_i) catch continue;
+            if (is) break queue_i;
         } else return error.SkipZigTest;
 
         return .{
@@ -149,7 +147,7 @@ pub const Platform = struct {
         allocator.free(self.image_views);
         allocator.free(self.images);
         self.swap_chain.deinit(allocator, &ctx.device);
-        self.surface.deinit(allocator, &ctx.instance);
+        self.surface.deinit(allocator);
         self.impl.deinit();
         self.* = undefined;
     }

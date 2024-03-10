@@ -9,7 +9,7 @@ const platform = @import("plat.zig").platform;
 const util = @import("util.zig");
 const model = @import("model.zig");
 
-// TODO: This needs a smoothing pass to reduce noise
+// TODO: This needs a smoothing pass to reduce noise.
 
 pub fn main() !void {
     try do();
