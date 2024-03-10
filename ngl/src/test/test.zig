@@ -10,7 +10,7 @@ pub const gpa = std.testing.allocator;
 // This can be set to `null` to suppress test output.
 pub const writer: ?std.fs.File.Writer = std.io.getStdErr().writer();
 
-// TODO: Test `Gpu` and fix commented out tests in `dev.zig`.
+// TODO: Test `Gpu`.
 test {
     _ = @import("flags.zig");
     _ = @import("dev.zig");
@@ -62,8 +62,32 @@ pub const Context = struct {
     const Self = @This();
 
     pub fn initDefault(allocator: std.mem.Allocator) ngl.Error!Self {
-        _ = allocator;
-        return ngl.Error.InitializationFailed;
+        const gpus = try ngl.getGpus(allocator);
+        defer allocator.free(gpus);
+        // TODO: Improve selection.
+        var idx: usize = 0;
+        for (gpus, 0..) |gpu, i|
+            switch (gpu.type) {
+                .cpu, .other => continue,
+                .integrated => idx = i,
+                .discrete => {
+                    idx = i;
+                    break;
+                },
+            };
+        const dev = try ngl.Device.init(allocator, gpus[idx], .{
+            .queues = gpus[idx].queues,
+            .feature_set = gpus[idx].feature_set,
+        });
+        return .{
+            .gpu = gpus[idx],
+            .device = dev,
+            .mutexes = blk: {
+                var mus: [ngl.Queue.max]std.Thread.Mutex = undefined;
+                for (0..dev.queue_n) |i| mus[i] = .{};
+                break :blk mus;
+            },
+        };
     }
 
     pub fn lockQueue(self: *Self, index: ngl.Queue.Index) void {
@@ -140,14 +164,14 @@ pub const Platform = struct {
         };
         errdefer sf.deinit(allocator);
 
-        const fmts = try sf.getFormats(allocator, &ctx.gpu);
+        const fmts = try sf.getFormats(allocator, ctx.gpu);
         defer allocator.free(fmts);
         const fmt_i = for (fmts, 0..) |fmt, i| {
             // TODO
             _ = fmt;
             break i;
         } else unreachable;
-        const capab = try sf.getCapabilities(&ctx.gpu, .fifo);
+        const capab = try sf.getCapabilities(ctx.gpu, .fifo);
 
         var sc = try ngl.SwapChain.init(allocator, &ctx.device, .{
             .surface = &sf,
@@ -197,7 +221,7 @@ pub const Platform = struct {
         const queue_i = for (&ctx.gpu.queues, 0..) |queue_desc, i| {
             if (queue_desc == null) continue;
             const queue_i = @as(ngl.Queue.Index, @intCast(i));
-            const is = sf.isCompatible(&ctx.gpu, queue_i) catch continue;
+            const is = sf.isCompatible(ctx.gpu, queue_i) catch continue;
             if (is) break queue_i;
         } else return error.SkipZigTest;
 
@@ -242,7 +266,7 @@ pub fn platform() !*Platform {
         var once = std.once(init);
 
         fn init() void {
-            // Let it leak
+            // Let it leak.
             const allocator = std.heap.c_allocator;
             plat = Platform.init(allocator);
             if (plat) |_| {} else |err| {

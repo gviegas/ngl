@@ -8,7 +8,7 @@ const context = @import("test.zig").context;
 test "QueryPool.init/deinit" {
     const ctx = context();
     const dev = &ctx.device;
-    const query_feat = ngl.Feature.get(gpa, &ctx.gpu, .core).?.query;
+    const query_feat = ngl.Feature.get(gpa, ctx.gpu, .core).?.query;
     const no_timestamp = std.mem.eql(bool, &query_feat.timestamp, &[_]bool{false} ** ngl.Queue.max);
 
     var query_pool = try ngl.QueryPool.init(gpa, dev, .{

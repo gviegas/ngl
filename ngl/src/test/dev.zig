@@ -5,242 +5,249 @@ const builtin = @import("builtin");
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 
-//test "Device.init/deinit" {
-//    var inst = try ngl.Instance.init(gpa, .{});
-//    defer inst.deinit(gpa);
-//
-//    // Should fail if no queue descriptions are provided
-//    // XXX: Currently this fails on Vulkan due to unset `impl`
-//    inline for (@typeInfo(ngl.Device.Type).Enum.fields) |f|
-//        try testing.expectError(ngl.Error.InvalidArgument, ngl.Device.init(gpa, &inst, .{
-//            .type = @enumFromInt(f.value),
-//            .queues = [_]?ngl.Queue.Desc{null} ** ngl.Queue.max,
-//            .feature_set = .{},
-//        }));
-//
-//    const dev_descs = try inst.listDevices(gpa);
-//    defer gpa.free(dev_descs);
-//
-//    var dev = try ngl.Device.init(gpa, &inst, dev_descs[0]);
-//    defer dev.deinit(gpa);
-//
-//    // Queues must be created verbatim
-//    try testing.expectEqual(dev.queue_n, blk: {
-//        var n: u8 = 0;
-//        for (dev_descs[0].queues) |q| {
-//            if (q) |_| n += 1;
-//        }
-//        break :blk n;
-//    });
-//
-//    // Queues must be capable of something
-//    for (dev.queues[0..dev.queue_n]) |q| {
-//        const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
-//        try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
-//    }
-//
-//    // Queues supporting graphics and/or compute
-//    // must also support transfer operations
-//    // (and must indicate such by setting the
-//    // `transfer` capability - it's not implicit)
-//    for (dev.queues[0..dev.queue_n]) |q| {
-//        if (q.capabilities.graphics or q.capabilities.compute)
-//            try testing.expect(q.capabilities.transfer);
-//    }
-//
-//    // Queues supporting graphics and/or compute
-//    // must not impose any granularity restriction
-//    // on image transfers
-//    for (dev.queues[0..dev.queue_n]) |q| {
-//        if (q.capabilities.graphics or q.capabilities.compute)
-//            try testing.expectEqual(q.image_transfer_granularity, .one);
-//    }
-//
-//    // Visible coherent memory is required
-//    for (dev.mem_types[0..dev.mem_type_n]) |m| {
-//        if (m.properties.host_visible and m.properties.host_coherent) break;
-//    } else try testing.expect(false);
-//
-//    // Device-local memory is required
-//    for (dev.mem_types[0..dev.mem_type_n]) |m| {
-//        if (m.properties.device_local) break;
-//    } else try testing.expect(false);
-//}
-//
-//test "multiple Device instances" {
-//    var inst = try ngl.Instance.init(gpa, .{});
-//    defer inst.deinit(gpa);
-//
-//    const dev_descs = try inst.listDevices(gpa);
-//    defer gpa.free(dev_descs);
-//
-//    if (dev_descs.len < 2) return error.SkipZigTest;
-//
-//    var devs = try gpa.alloc(ngl.Device, dev_descs.len);
-//    defer gpa.free(devs);
-//
-//    for (devs, dev_descs, 0..) |*dev, desc, i|
-//        dev.* = ngl.Device.init(gpa, &inst, desc) catch |err| {
-//            for (0..i) |j| devs[j].deinit(gpa);
-//            return err;
-//        };
-//    defer for (devs) |*dev| dev.deinit(gpa);
-//
-//    for (devs, dev_descs) |dev, desc| {
-//        try testing.expectEqual(dev.queue_n, blk: {
-//            var n: u8 = 0;
-//            for (desc.queues) |q| {
-//                if (q) |_| n += 1;
-//            }
-//            break :blk n;
-//        });
-//
-//        for (dev.queues[0..dev.queue_n]) |q| {
-//            const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
-//            try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
-//        }
-//
-//        for (dev.queues[0..dev.queue_n]) |q| {
-//            if (q.capabilities.graphics or q.capabilities.compute)
-//                try testing.expect(q.capabilities.transfer);
-//        }
-//
-//        for (dev.mem_types[0..dev.mem_type_n]) |m| {
-//            if (m.properties.host_visible and m.properties.host_coherent) break;
-//        } else try testing.expect(false);
-//
-//        for (dev.mem_types[0..dev.mem_type_n]) |m| {
-//            if (m.properties.device_local) break;
-//        } else try testing.expect(false);
-//    }
-//}
-//
-//test "aliasing Device instances" {
-//    var inst = try ngl.Instance.init(gpa, .{});
-//    defer inst.deinit(gpa);
-//
-//    const dev_descs = try inst.listDevices(gpa);
-//    defer gpa.free(dev_descs);
-//
-//    var devs = try gpa.alloc(ngl.Device, 2);
-//    defer gpa.free(devs);
-//
-//    for (devs, 0..) |*dev, i|
-//        dev.* = ngl.Device.init(gpa, &inst, dev_descs[0]) catch |err| {
-//            for (0..i) |j| devs[j].deinit(gpa);
-//            return err;
-//        };
-//    defer for (devs) |*dev| dev.deinit(gpa);
-//
-//    try testing.expectEqual(devs[0].queue_n, blk: {
-//        var n: u8 = 0;
-//        for (dev_descs[0].queues) |q| {
-//            if (q) |_| n += 1;
-//        }
-//        break :blk n;
-//    });
-//
-//    for (devs[0].queues[0..devs[0].queue_n]) |q| {
-//        const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
-//        try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
-//    }
-//
-//    for (devs[0].queues[0..devs[0].queue_n]) |q| {
-//        if (q.capabilities.graphics or q.capabilities.compute)
-//            try testing.expect(q.capabilities.transfer);
-//    }
-//
-//    for (devs[0].mem_types[0..devs[0].mem_type_n]) |m| {
-//        if (m.properties.host_visible and m.properties.host_coherent) break;
-//    } else try testing.expect(false);
-//
-//    for (devs[0].mem_types[0..devs[0].mem_type_n]) |m| {
-//        if (m.properties.device_local) break;
-//    } else try testing.expect(false);
-//
-//    for (devs[1..devs.len]) |dev| {
-//        try testing.expectEqual(devs[0].queue_n, dev.queue_n);
-//        try testing.expectEqual(devs[0].mem_type_n, dev.mem_type_n);
-//        // Don't rely on the order being consistent
-//        var seem = [_]bool{false} ** ngl.Memory.max_type;
-//        for (devs[0].mem_types[0..devs[0].mem_type_n]) |x| {
-//            for (dev.mem_types[0..dev.mem_type_n], 0..) |y, i| {
-//                if (!seem[i] and std.meta.eql(x, y)) {
-//                    seem[i] = true;
-//                    break;
-//                }
-//            } else try testing.expect(false);
-//        }
-//    }
-//}
-//
-//test "Device.alloc/free" {
-//    var inst = try ngl.Instance.init(gpa, .{});
-//    defer inst.deinit(gpa);
-//
-//    const dev_descs = try inst.listDevices(gpa);
-//    defer gpa.free(dev_descs);
-//
-//    var dev = try ngl.Device.init(gpa, &inst, dev_descs[0]);
-//    defer dev.deinit(gpa);
-//
-//    const sizes = [_]u64{ 1, 256, 64, 4096, 16384 };
-//
-//    const mems = try gpa.alloc(ngl.Memory, sizes.len * dev.mem_type_n);
-//    defer gpa.free(mems);
-//    var mems_ptr = mems.ptr;
-//
-//    for (0..dev.mem_type_n) |i| {
-//        const m: ngl.Memory.TypeIndex = @intCast(i);
-//        var a = try dev.alloc(gpa, .{ .size = sizes[0], .type_index = m });
-//        dev.free(gpa, &a);
-//        var b = try dev.alloc(gpa, .{ .size = sizes[1], .type_index = m });
-//        defer dev.free(gpa, &b);
-//        var c = try dev.alloc(gpa, .{ .size = sizes[2], .type_index = m });
-//        dev.free(gpa, &c);
-//        for (sizes) |sz| {
-//            mems_ptr[0] = dev.alloc(gpa, .{ .size = sz, .type_index = m }) catch |err| {
-//                while (mems_ptr != mems.ptr) : (mems_ptr -= 1) dev.free(gpa, &(mems_ptr - 1)[0]);
-//                return err;
-//            };
-//            mems_ptr += 1;
-//        }
-//    }
-//
-//    for (mems) |*m| dev.free(gpa, m);
-//}
-//
-//test "Device.wait" {
-//    var inst = try ngl.Instance.init(gpa, .{});
-//    defer inst.deinit(gpa);
-//
-//    const dev_descs = try inst.listDevices(gpa);
-//    defer gpa.free(dev_descs);
-//
-//    var dev = try ngl.Device.init(gpa, &inst, dev_descs[0]);
-//    defer dev.deinit(gpa);
-//
-//    try dev.wait();
-//
-//    var dev_2 = try ngl.Device.init(gpa, &inst, dev_descs[dev_descs.len - 1]);
-//    defer dev_2.deinit(gpa);
-//
-//    try dev_2.wait();
-//    try dev.wait();
-//
-//    if (!builtin.single_threaded) {
-//        const f = struct {
-//            fn f(device: *ngl.Device) ngl.Error!void {
-//                std.time.sleep(std.time.ns_per_ms);
-//                try device.wait();
-//            }
-//        }.f;
-//        var thrd = try std.Thread.spawn(.{ .allocator = gpa }, f, .{&dev});
-//        var thrd_2 = try std.Thread.spawn(.{ .allocator = gpa }, f, .{&dev_2});
-//        thrd.join();
-//        thrd_2.join();
-//    }
-//}
+test "Device.init/deinit" {
+    const gpus = try ngl.getGpus(gpa);
+    defer gpa.free(gpus);
+
+    for (gpus) |gpu| {
+        // Should fail if no queue descriptions are provided.
+        try testing.expectError(ngl.Error.InvalidArgument, ngl.Device.init(gpa, gpu, .{
+            .queues = [_]?ngl.Queue.Desc{null} ** ngl.Queue.max,
+            .feature_set = .{},
+        }));
+
+        var dev = try ngl.Device.init(gpa, gpu, .{ .queues = gpu.queues, .feature_set = gpu.feature_set });
+        defer dev.deinit(gpa);
+
+        // Queues must be created verbatim.
+        try testing.expectEqual(dev.queue_n, blk: {
+            var n: u8 = 0;
+            for (gpu.queues) |q| {
+                if (q) |_| n += 1;
+            }
+            break :blk n;
+        });
+
+        // Queues must be capable of something.
+        for (dev.queues[0..dev.queue_n]) |q| {
+            const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
+            try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
+        }
+
+        // Queues supporting graphics and/or compute
+        // must also support transfer operations
+        // (and must indicate such by setting the
+        // `transfer` capability - it's not implicit).
+        for (dev.queues[0..dev.queue_n]) |q| {
+            if (q.capabilities.graphics or q.capabilities.compute)
+                try testing.expect(q.capabilities.transfer);
+        }
+
+        // Queues supporting graphics and/or compute
+        // must not impose any granularity restriction
+        // on image transfers.
+        for (dev.queues[0..dev.queue_n]) |q| {
+            if (q.capabilities.graphics or q.capabilities.compute)
+                try testing.expectEqual(q.image_transfer_granularity, .one);
+        }
+
+        // Visible coherent memory is required.
+        for (dev.mem_types[0..dev.mem_type_n]) |m| {
+            if (m.properties.host_visible and m.properties.host_coherent) break;
+        } else try testing.expect(false);
+
+        // Device-local memory is required.
+        for (dev.mem_types[0..dev.mem_type_n]) |m| {
+            if (m.properties.device_local) break;
+        } else try testing.expect(false);
+    }
+}
+
+test "multiple Device instances" {
+    const gpus = try ngl.getGpus(gpa);
+    defer gpa.free(gpus);
+
+    if (gpus.len < 2) return error.SkipZigTest;
+
+    var devs = try gpa.alloc(ngl.Device, gpus.len);
+    defer gpa.free(devs);
+
+    for (devs, gpus, 0..) |*dev, gpu, i|
+        dev.* = ngl.Device.init(gpa, gpu, .{
+            .queues = gpu.queues,
+            .feature_set = gpu.feature_set,
+        }) catch |err| {
+            for (0..i) |j| devs[j].deinit(gpa);
+            return err;
+        };
+    defer for (devs) |*dev| dev.deinit(gpa);
+
+    for (devs, gpus) |dev, gpu| {
+        try testing.expectEqual(dev.queue_n, blk: {
+            var n: u8 = 0;
+            for (gpu.queues) |q| {
+                if (q) |_| n += 1;
+            }
+            break :blk n;
+        });
+
+        for (dev.queues[0..dev.queue_n]) |q| {
+            const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
+            try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
+        }
+
+        for (dev.queues[0..dev.queue_n]) |q| {
+            if (q.capabilities.graphics or q.capabilities.compute)
+                try testing.expect(q.capabilities.transfer);
+        }
+
+        for (dev.mem_types[0..dev.mem_type_n]) |m| {
+            if (m.properties.host_visible and m.properties.host_coherent) break;
+        } else try testing.expect(false);
+
+        for (dev.mem_types[0..dev.mem_type_n]) |m| {
+            if (m.properties.device_local) break;
+        } else try testing.expect(false);
+    }
+}
+
+test "aliasing Device instances" {
+    const gpu = blk: {
+        const gpus = try ngl.getGpus(gpa);
+        defer gpa.free(gpus);
+        break :blk gpus[0];
+    };
+    const desc = ngl.Device.Desc{
+        .queues = gpu.queues,
+        .feature_set = gpu.feature_set,
+    };
+
+    var devs = try gpa.alloc(ngl.Device, 2);
+    defer gpa.free(devs);
+
+    for (devs, 0..) |*dev, i|
+        dev.* = ngl.Device.init(gpa, gpu, desc) catch |err| {
+            for (0..i) |j| devs[j].deinit(gpa);
+            return err;
+        };
+    defer for (devs) |*dev| dev.deinit(gpa);
+
+    try testing.expectEqual(devs[0].queue_n, blk: {
+        var n: u8 = 0;
+        for (desc.queues) |q| {
+            if (q) |_| n += 1;
+        }
+        break :blk n;
+    });
+
+    for (devs[0].queues[0..devs[0].queue_n]) |q| {
+        const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
+        try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
+    }
+
+    for (devs[0].queues[0..devs[0].queue_n]) |q| {
+        if (q.capabilities.graphics or q.capabilities.compute)
+            try testing.expect(q.capabilities.transfer);
+    }
+
+    for (devs[0].mem_types[0..devs[0].mem_type_n]) |m| {
+        if (m.properties.host_visible and m.properties.host_coherent) break;
+    } else try testing.expect(false);
+
+    for (devs[0].mem_types[0..devs[0].mem_type_n]) |m| {
+        if (m.properties.device_local) break;
+    } else try testing.expect(false);
+
+    for (devs[1..devs.len]) |dev| {
+        try testing.expectEqual(devs[0].queue_n, dev.queue_n);
+        try testing.expectEqual(devs[0].mem_type_n, dev.mem_type_n);
+        // Don't rely on the order being consistent.
+        var seem = [_]bool{false} ** ngl.Memory.max_type;
+        for (devs[0].mem_types[0..devs[0].mem_type_n]) |x| {
+            for (dev.mem_types[0..dev.mem_type_n], 0..) |y, i| {
+                if (!seem[i] and std.meta.eql(x, y)) {
+                    seem[i] = true;
+                    break;
+                }
+            } else try testing.expect(false);
+        }
+    }
+}
+
+test "Device.alloc/free" {
+    const gpu = blk: {
+        const gpus = try ngl.getGpus(gpa);
+        defer gpa.free(gpus);
+        break :blk gpus[0];
+    };
+    const desc = ngl.Device.Desc{
+        .queues = gpu.queues,
+        .feature_set = gpu.feature_set,
+    };
+
+    var dev = try ngl.Device.init(gpa, gpu, desc);
+    defer dev.deinit(gpa);
+
+    const sizes = [_]u64{ 1, 256, 64, 4096, 16384 };
+
+    const mems = try gpa.alloc(ngl.Memory, sizes.len * dev.mem_type_n);
+    defer gpa.free(mems);
+    var mems_ptr = mems.ptr;
+
+    for (0..dev.mem_type_n) |i| {
+        const m: ngl.Memory.TypeIndex = @intCast(i);
+        var a = try dev.alloc(gpa, .{ .size = sizes[0], .type_index = m });
+        dev.free(gpa, &a);
+        var b = try dev.alloc(gpa, .{ .size = sizes[1], .type_index = m });
+        defer dev.free(gpa, &b);
+        var c = try dev.alloc(gpa, .{ .size = sizes[2], .type_index = m });
+        dev.free(gpa, &c);
+        for (sizes) |sz| {
+            mems_ptr[0] = dev.alloc(gpa, .{ .size = sz, .type_index = m }) catch |err| {
+                while (mems_ptr != mems.ptr) : (mems_ptr -= 1) dev.free(gpa, &(mems_ptr - 1)[0]);
+                return err;
+            };
+            mems_ptr += 1;
+        }
+    }
+
+    for (mems) |*m| dev.free(gpa, m);
+}
+
+test "Device.wait" {
+    const gpus = try ngl.getGpus(gpa);
+    defer gpa.free(gpus);
+
+    var dev = try ngl.Device.init(gpa, gpus[0], .{
+        .queues = gpus[0].queues,
+        .feature_set = gpus[0].feature_set,
+    });
+    defer dev.deinit(gpa);
+
+    try dev.wait();
+
+    var dev_2 = try ngl.Device.init(gpa, gpus[gpus.len - 1], .{
+        .queues = gpus[gpus.len - 1].queues,
+        .feature_set = gpus[gpus.len - 1].feature_set,
+    });
+    defer dev_2.deinit(gpa);
+
+    try dev_2.wait();
+    try dev.wait();
+
+    if (!builtin.single_threaded) {
+        const f = struct {
+            fn f(device: *ngl.Device) ngl.Error!void {
+                std.time.sleep(std.time.ns_per_ms);
+                try device.wait();
+            }
+        }.f;
+        var thrd = try std.Thread.spawn(.{ .allocator = gpa }, f, .{&dev});
+        var thrd_2 = try std.Thread.spawn(.{ .allocator = gpa }, f, .{&dev_2});
+        thrd.join();
+        thrd_2.join();
+    }
+}
 
 test "Device.findQueue/findQueueExact" {
     var dev: ngl.Device = undefined;

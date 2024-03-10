@@ -37,24 +37,24 @@ test "Surface queries" {
 
     for (ctx.gpu.queues, 0..) |queue_desc, i| {
         if (queue_desc == null) continue;
-        const is_compatible = try sf.isCompatible(&ctx.gpu, @as(ngl.Queue.Index, @intCast(i)));
+        const is_compatible = try sf.isCompatible(ctx.gpu, @as(ngl.Queue.Index, @intCast(i)));
         if (is_compatible) break;
     } else {
         // NOTE: This could happen but shouldn't
         try testing.expect(false);
     }
 
-    const pres_modes = try sf.getPresentModes(&ctx.gpu);
+    const pres_modes = try sf.getPresentModes(ctx.gpu);
     // FIFO support is mandatory
     try testing.expect(pres_modes.fifo);
 
     // NOTE: Currently this may return no formats at all
-    const fmts = try sf.getFormats(gpa, &ctx.gpu);
+    const fmts = try sf.getFormats(gpa, ctx.gpu);
     defer gpa.free(fmts);
     for (fmts) |fmt|
         try testing.expect(fmt.format.getFeatures(&ctx.device).optimal_tiling.color_attachment);
 
-    const capab = try sf.getCapabilities(&ctx.gpu, .fifo);
+    const capab = try sf.getCapabilities(ctx.gpu, .fifo);
     try testing.expect(capab.min_count > 0);
     // This differs from Vulkan
     try testing.expect(capab.max_count >= capab.min_count);
