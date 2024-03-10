@@ -67,13 +67,25 @@ fn getProc(name: [:0]const u8) Error!c.PFN_vkVoidFunction {
     return if (getInstanceProcAddr.?(null, name)) |fp| fp else Error.InitializationFailed;
 }
 
+var global_instance: ?Instance = null;
+
 /// The minimum version we can support.
 pub const supported_version = c.VK_API_VERSION_1_0;
 /// The version we prefer to use.
 pub const preferred_version = c.VK_API_VERSION_1_3;
 
-pub fn init() Error!Impl {
+pub fn init(allocator: std.mem.Allocator) Error!Impl {
     const sym = "vkGetInstanceProcAddr";
+
+    const setCommon = struct {
+        fn set(alloc: std.mem.Allocator) Error!void {
+            createInstance = @ptrCast(try getProc("vkCreateInstance"));
+            enumerateInstanceLayerProperties = @ptrCast(try getProc("vkEnumerateInstanceLayerProperties"));
+            enumerateInstanceExtensionProperties = @ptrCast(try getProc("vkEnumerateInstanceExtensionProperties"));
+            enumerateInstanceVersion = @ptrCast(getProc("vkEnumerateInstanceVersion") catch null);
+            global_instance = try Instance.init(alloc);
+        }
+    }.set;
 
     if (builtin.os.tag != .linux and builtin.os.tag != .windows)
         @compileError("OS not supported");
@@ -91,6 +103,7 @@ pub fn init() Error!Impl {
         if (libvulkan == null) return Error.InitializationFailed;
         getInstanceProcAddr = @ptrCast(std.c.dlsym(libvulkan.?, sym));
         if (getInstanceProcAddr == null) return Error.InitializationFailed;
+        try setCommon(allocator);
     }
 
     if (builtin.os.tag == .windows) {
@@ -98,23 +111,22 @@ pub fn init() Error!Impl {
         @compileError("Not yet implemented");
     }
 
-    createInstance = @ptrCast(try getProc("vkCreateInstance"));
-    enumerateInstanceLayerProperties = @ptrCast(try getProc("vkEnumerateInstanceLayerProperties"));
-    enumerateInstanceExtensionProperties = @ptrCast(try getProc("vkEnumerateInstanceExtensionProperties"));
-    enumerateInstanceVersion = @ptrCast(getProc("vkEnumerateInstanceVersion") catch null);
-
     return .{
         .ptr = undefined,
         .vtable = &vtable,
     };
 }
 
-// TODO
 fn deinit(_: *anyopaque, _: std.mem.Allocator) void {
+    if (global_instance) |*inst| {
+        inst.deinit();
+        global_instance = null;
+    }
     if (libvulkan) |handle| {
         if (builtin.os.tag != .windows) {
             _ = std.c.dlclose(handle);
         } else {
+            // TODO
             @compileError("Not yet implemented");
         }
         libvulkan = null;
@@ -171,8 +183,9 @@ pub const Instance = struct {
     else
         void,
 
-    pub inline fn cast(impl: Impl.Instance) *Instance {
-        return impl.ptr(Instance);
+    /// Only valid after global `init` succeeds.
+    pub inline fn get() *Instance {
+        return &global_instance.?;
     }
 
     /// The returned proc is guaranteed to be non-null.
@@ -181,14 +194,8 @@ pub const Instance = struct {
         return if (getInstanceProcAddr.?(instance, name)) |fp| fp else Error.InitializationFailed;
     }
 
-    fn init(
-        _: *anyopaque,
-        allocator: std.mem.Allocator,
-        desc: ngl.Instance.Desc,
-    ) Error!Impl.Instance {
-        std.debug.assert(createInstance != null);
-        std.debug.assert(enumerateInstanceLayerProperties != null);
-        std.debug.assert(enumerateInstanceExtensionProperties != null);
+    fn init(allocator: std.mem.Allocator) Error!Instance {
+        if (global_instance) |_| @panic("Instance exists");
 
         var ext_prop_n: u32 = undefined;
         try check(vkEnumerateInstanceExtensionProperties(null, &ext_prop_n, null));
@@ -199,7 +206,10 @@ pub const Instance = struct {
         var ext_names = std.ArrayList([*:0]const u8).init(allocator);
         defer ext_names.deinit();
 
-        if (desc.presentation) {
+        // TODO: Provide a way to disable presentation.
+        const presentation = true;
+
+        if (presentation) {
             const surface_ext = "VK_KHR_surface";
             for (ext_props) |prop| {
                 if (std.mem.eql(u8, prop.extensionName[0..surface_ext.len], surface_ext)) {
@@ -216,7 +226,7 @@ pub const Instance = struct {
                 else => @compileError("OS not supported"),
             };
             // TODO: Consider succeeding if at least one of the
-            // surface extensions is available
+            // surface extensions is available.
             inline for (platform_exts) |ext| {
                 for (ext_props) |prop| {
                     if (std.mem.eql(u8, prop.extensionName[0..ext.len], ext)) {
@@ -227,14 +237,11 @@ pub const Instance = struct {
             }
         }
 
-        // TODO
-        if (desc.debugging) log.warn("Instance.Desc.debugging ignored", .{});
-
         var ver: u32 = undefined;
         if (vkEnumerateInstanceVersion(&ver) != c.VK_SUCCESS)
             ver = c.VK_API_VERSION_1_0;
         // An 1.0 instance won't support devices with different versions,
-        // so don't bother continuing if we need anything higher than that
+        // so don't bother continuing if we need anything higher than that.
         if (ver < c.VK_VERSION_1_1 and supported_version >= c.VK_VERSION_1_1)
             return Error.NotSupported;
 
@@ -265,12 +272,10 @@ pub const Instance = struct {
             if (@as(c.PFN_vkDestroyInstance, @ptrCast(x))) |f| f(inst, null);
         } else |_| {};
 
-        const ptr = try allocator.create(Instance);
-        errdefer allocator.destroy(ptr);
-
-        ptr.* = .{
+        return .{
             .handle = inst,
             .version = ver,
+
             .destroyInstance = @ptrCast(try Instance.getProc(inst, "vkDestroyInstance")),
             .enumeratePhysicalDevices = @ptrCast(try Instance.getProc(inst, "vkEnumeratePhysicalDevices")),
             .getPhysicalDeviceProperties = @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceProperties")),
@@ -291,182 +296,61 @@ pub const Instance = struct {
             else
                 null,
 
-            .destroySurface = if (desc.presentation)
+            .destroySurface = if (presentation)
                 @ptrCast(try Instance.getProc(inst, "vkDestroySurfaceKHR"))
             else
                 null,
-            .getPhysicalDeviceSurfaceSupport = if (desc.presentation)
+            .getPhysicalDeviceSurfaceSupport = if (presentation)
                 @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceSurfaceSupportKHR"))
             else
                 null,
-            .getPhysicalDeviceSurfaceCapabilities = if (desc.presentation)
+            .getPhysicalDeviceSurfaceCapabilities = if (presentation)
                 @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR"))
             else
                 null,
-            .getPhysicalDeviceSurfaceFormats = if (desc.presentation)
+            .getPhysicalDeviceSurfaceFormats = if (presentation)
                 @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceSurfaceFormatsKHR"))
             else
                 null,
-            .getPhysicalDeviceSurfacePresentModes = if (desc.presentation)
+            .getPhysicalDeviceSurfacePresentModes = if (presentation)
                 @ptrCast(try Instance.getProc(inst, "vkGetPhysicalDeviceSurfacePresentModesKHR"))
             else
                 null,
 
             .createAndroidSurface = if (builtin.target.isAndroid())
-                if (desc.presentation)
+                if (presentation)
                     @ptrCast(try Instance.getProc(inst, "vkCreateAndroidSurfaceKHR"))
                 else
                     null
             else {},
 
             .createWaylandSurface = if (builtin.os.tag == .linux and !builtin.target.isAndroid())
-                if (desc.presentation)
+                if (presentation)
                     @ptrCast(try Instance.getProc(inst, "vkCreateWaylandSurfaceKHR"))
                 else
                     null
             else {},
 
             .createWin32Surface = if (builtin.os.tag == .windows)
-                if (desc.presentation)
+                if (presentation)
                     @ptrCast(try Instance.getProc(inst, "vkCreateWin32SurfaceKHR"))
                 else
                     null
             else {},
 
             .createXcbSurface = if (builtin.os.tag == .linux and !builtin.target.isAndroid())
-                if (desc.presentation)
+                if (presentation)
                     @ptrCast(try Instance.getProc(inst, "vkCreateXcbSurfaceKHR"))
                 else
                     null
             else {},
         };
-
-        return .{ .val = @intFromPtr(ptr) };
     }
 
-    fn listDevices(
-        _: *anyopaque,
-        allocator: std.mem.Allocator,
-        instance: Impl.Instance,
-    ) Error![]ngl.Device.Desc {
-        const inst = cast(instance);
-
-        var dev_n: u32 = undefined;
-        try check(inst.vkEnumeratePhysicalDevices(&dev_n, null));
-        if (dev_n == 0)
-            return Error.NotSupported;
-        const devs = try allocator.alloc(c.VkPhysicalDevice, dev_n);
-        defer allocator.free(devs);
-        try check(inst.vkEnumeratePhysicalDevices(&dev_n, devs.ptr));
-
-        const descs = try allocator.alloc(ngl.Device.Desc, dev_n);
-        errdefer allocator.free(descs);
-
-        var queue_props = std.ArrayList(c.VkQueueFamilyProperties).init(allocator);
-        defer queue_props.deinit();
-
-        var desc_n: usize = 0;
-        for (devs) |dev| {
-            var prop: c.VkPhysicalDeviceProperties = undefined;
-            inst.vkGetPhysicalDeviceProperties(dev, &prop);
-
-            if (prop.apiVersion < supported_version)
-                continue;
-
-            var n: u32 = undefined;
-            inst.vkGetPhysicalDeviceQueueFamilyProperties(dev, &n, null);
-            try queue_props.resize(n);
-            inst.vkGetPhysicalDeviceQueueFamilyProperties(dev, &n, queue_props.items.ptr);
-
-            // Graphics/compute/transfer
-            var main_queue: ngl.Queue.Desc = undefined;
-            for (queue_props.items, 0..n) |qp, fam| {
-                const mask = c.VK_QUEUE_GRAPHICS_BIT | c.VK_QUEUE_COMPUTE_BIT;
-                if (qp.queueFlags & mask == mask) {
-                    main_queue = .{
-                        .capabilities = .{
-                            .graphics = true,
-                            .compute = true,
-                            .transfer = true,
-                        },
-                        .priority = .default,
-                        .image_transfer_granularity = .one,
-                        .impl = .{
-                            .impl = fam,
-                            .info = .{ qp.timestampValidBits, 0, 0, 0 },
-                        },
-                    };
-                    break;
-                }
-            } else continue;
-
-            // Transfer-only
-            var xfer_queue: ?ngl.Queue.Desc = null;
-            for (queue_props.items, 0..n) |qp, fam| {
-                const mask =
-                    c.VK_QUEUE_GRAPHICS_BIT |
-                    c.VK_QUEUE_COMPUTE_BIT |
-                    c.VK_QUEUE_TRANSFER_BIT;
-                const gran = [3]u32{
-                    qp.minImageTransferGranularity.width,
-                    qp.minImageTransferGranularity.height,
-                    qp.minImageTransferGranularity.depth,
-                };
-                if (qp.queueFlags & mask == c.VK_QUEUE_TRANSFER_BIT) {
-                    xfer_queue = .{
-                        .capabilities = .{ .transfer = true },
-                        .priority = .default,
-                        .image_transfer_granularity = if (std.mem.eql(u32, &gran, &.{ 1, 1, 1 }))
-                            .one
-                        else
-                            .whole_level,
-                        .impl = .{
-                            .impl = fam,
-                            .info = .{ qp.timestampValidBits, 0, 0, 0 },
-                        },
-                    };
-                    break;
-                }
-            }
-
-            if (@typeInfo(ngl.Feature).Union.fields.len > 2)
-                @compileError("Set new feature(s)");
-
-            descs[desc_n] = .{
-                .type = switch (prop.deviceType) {
-                    c.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU => .discrete_gpu,
-                    c.VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU => .integrated_gpu,
-                    c.VK_PHYSICAL_DEVICE_TYPE_CPU => .cpu,
-                    else => .other,
-                },
-                .queues = .{ main_queue, xfer_queue, null, null },
-                .feature_set = .{
-                    .core = true,
-                    // Don't expose this feature if the instance was created
-                    // with presentation disabled, regardless of whether or not
-                    // the device can support it
-                    .presentation = if (inst.destroySurface != null)
-                        (try inst.hasDeviceExtensions(allocator, dev, &.{"VK_KHR_swapchain"}))[0]
-                    else
-                        false,
-                },
-                .impl = .{
-                    .impl = @intFromPtr(dev),
-                    .info = .{ prop.apiVersion, 0, 0, 0 },
-                },
-            };
-            desc_n += 1;
-        }
-
-        return if (desc_n > 0) descs[0..desc_n] else Error.NotSupported;
-    }
-
-    fn deinit(_: *anyopaque, allocator: std.mem.Allocator, instance: Impl.Instance) void {
-        const inst = cast(instance);
+    fn deinit(self: *Instance) void {
         // NOTE: This assumes that all instance-level objects
-        // have been destroyed
-        inst.vkDestroyInstance(null);
-        allocator.destroy(inst);
+        // have been destroyed.
+        self.vkDestroyInstance(null);
     }
 
     fn hasDeviceExtensions(
@@ -497,7 +381,7 @@ pub const Instance = struct {
 
     // Wrappers --------------------------------------------
 
-    pub inline fn vkDestroyInstance(
+    inline fn vkDestroyInstance(
         self: *Instance,
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
@@ -705,14 +589,134 @@ pub const Instance = struct {
     }
 };
 
+fn getGpus(_: *anyopaque, allocator: std.mem.Allocator) Error![]ngl.Gpu {
+    // `ngl.getGpus` calls `Impl.init`, which calls `init`.
+    const inst = Instance.get();
+
+    var dev_n: u32 = undefined;
+    try check(inst.vkEnumeratePhysicalDevices(&dev_n, null));
+    if (dev_n == 0)
+        return Error.NotSupported;
+    const devs = try allocator.alloc(c.VkPhysicalDevice, dev_n);
+    defer allocator.free(devs);
+    try check(inst.vkEnumeratePhysicalDevices(&dev_n, devs.ptr));
+
+    const gpus = try allocator.alloc(ngl.Gpu, dev_n);
+    errdefer allocator.free(gpus);
+
+    var queue_props = std.ArrayList(c.VkQueueFamilyProperties).init(allocator);
+    defer queue_props.deinit();
+
+    var gpu_n: usize = 0;
+    for (devs) |dev| {
+        var prop: c.VkPhysicalDeviceProperties = undefined;
+        inst.vkGetPhysicalDeviceProperties(dev, &prop);
+
+        if (prop.apiVersion < supported_version)
+            continue;
+
+        var n: u32 = undefined;
+        inst.vkGetPhysicalDeviceQueueFamilyProperties(dev, &n, null);
+        try queue_props.resize(n);
+        inst.vkGetPhysicalDeviceQueueFamilyProperties(dev, &n, queue_props.items.ptr);
+
+        // Graphics/compute/transfer.
+        var main_queue: ngl.Queue.Desc = undefined;
+        for (queue_props.items, 0..n) |qp, fam| {
+            const mask = c.VK_QUEUE_GRAPHICS_BIT | c.VK_QUEUE_COMPUTE_BIT;
+            if (qp.queueFlags & mask == mask) {
+                main_queue = .{
+                    .capabilities = .{
+                        .graphics = true,
+                        .compute = true,
+                        .transfer = true,
+                    },
+                    .priority = .default,
+                    .image_transfer_granularity = .one,
+                    .impl = .{
+                        .impl = fam,
+                        .info = .{ qp.timestampValidBits, 0, 0, 0 },
+                    },
+                };
+                break;
+            }
+        } else continue;
+
+        // Transfer-only.
+        var xfer_queue: ?ngl.Queue.Desc = null;
+        for (queue_props.items, 0..n) |qp, fam| {
+            const mask =
+                c.VK_QUEUE_GRAPHICS_BIT |
+                c.VK_QUEUE_COMPUTE_BIT |
+                c.VK_QUEUE_TRANSFER_BIT;
+            const gran = [3]u32{
+                qp.minImageTransferGranularity.width,
+                qp.minImageTransferGranularity.height,
+                qp.minImageTransferGranularity.depth,
+            };
+            if (qp.queueFlags & mask == c.VK_QUEUE_TRANSFER_BIT) {
+                xfer_queue = .{
+                    .capabilities = .{ .transfer = true },
+                    .priority = .default,
+                    .image_transfer_granularity = if (std.mem.eql(u32, &gran, &.{ 1, 1, 1 }))
+                        .one
+                    else
+                        .whole_level,
+                    .impl = .{
+                        .impl = fam,
+                        .info = .{ qp.timestampValidBits, 0, 0, 0 },
+                    },
+                };
+                break;
+            }
+        }
+
+        if (@typeInfo(ngl.Feature).Union.fields.len > 2)
+            @compileError("Set new feature(s)");
+
+        gpus[gpu_n] = .{
+            .impl = .{ .val = @bitCast(Gpu{ .handle = dev }) },
+            .info = .{ prop.apiVersion, 0, 0, 0 },
+            .type = switch (prop.deviceType) {
+                c.VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU => .discrete,
+                c.VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU => .integrated,
+                c.VK_PHYSICAL_DEVICE_TYPE_CPU => .cpu,
+                else => .other,
+            },
+            .queues = .{ main_queue, xfer_queue, null, null },
+            .feature_set = .{
+                .core = true,
+                // Don't expose this feature if the instance was created
+                // with presentation disabled, regardless of whether or not
+                // the device can support it.
+                .presentation = if (inst.destroySurface != null)
+                    (try inst.hasDeviceExtensions(allocator, dev, &.{"VK_KHR_swapchain"}))[0]
+                else
+                    false,
+            },
+        };
+        gpu_n += 1;
+    }
+
+    return if (gpu_n > 0) gpus[0..gpu_n] else Error.NotSupported;
+}
+
+pub const Gpu = packed struct {
+    handle: c.VkPhysicalDevice,
+
+    pub inline fn cast(impl: Impl.Gpu) Gpu {
+        return @bitCast(impl.val);
+    }
+};
+
 pub const Device = struct {
-    instance: *Instance,
-    physical_device: c.VkPhysicalDevice,
     handle: c.VkDevice,
     version: u32,
     queues: [ngl.Queue.max]Queue,
     queue_n: u8,
     timestamp_period: f32,
+
+    gpu: Gpu, // TODO: See if this can be removed.
 
     getDeviceProcAddr: c.PFN_vkGetDeviceProcAddr,
 
@@ -834,17 +838,11 @@ pub const Device = struct {
     fn init(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: Impl.Instance,
+        gpu: ngl.Gpu,
         desc: ngl.Device.Desc,
     ) Error!Impl.Device {
-        const inst = Instance.cast(instance);
-        const phys_dev: c.VkPhysicalDevice = if (desc.impl) |x|
-            @ptrFromInt(x.impl)
-        else {
-            // TODO: Consider supporting this
-            log.warn("Device.init requires a description produced by Instance.listDevices", .{});
-            return Error.InvalidArgument;
-        };
+        const inst = Instance.get();
+        const phys_dev = Gpu.cast(gpu.impl).handle;
 
         var queue_infos: [ngl.Queue.max]c.VkDeviceQueueCreateInfo = undefined;
         var queue_prios: [ngl.Queue.max]f32 = undefined;
@@ -1019,15 +1017,15 @@ pub const Device = struct {
         } else |_| {};
 
         // If the instance version is 1.0, then we can't use anything
-        // newer than that for the device
+        // newer than that for the device.
         // Otherwise, we need to abide by what was requested during
-        // instance creation
+        // instance creation.
         const ver = if (inst.version < c.VK_API_VERSION_1_1)
             c.VK_API_VERSION_1_0
-        else if (desc.impl.?.info[0] & ~@as(u32, 0xfff) > preferred_version)
+        else if (gpu.info[0] & ~@as(u32, 0xfff) > preferred_version)
             preferred_version
         else
-            desc.impl.?.info[0];
+            gpu.info[0];
 
         var dev_props: c.VkPhysicalDeviceProperties = undefined;
         inst.vkGetPhysicalDeviceProperties(phys_dev, &dev_props);
@@ -1042,14 +1040,16 @@ pub const Device = struct {
         errdefer allocator.destroy(ptr);
 
         ptr.* = .{
-            .instance = inst,
-            .physical_device = phys_dev,
             .handle = dev,
             .version = @intCast(ver),
             .queues = undefined,
             .queue_n = 0,
             .timestamp_period = tms_period,
+
+            .gpu = Gpu.cast(gpu.impl),
+
             .getDeviceProcAddr = get,
+
             .destroyDevice = @ptrCast(try Device.getProc(get, dev, "vkDestroyDevice")),
             .deviceWaitIdle = @ptrCast(try Device.getProc(get, dev, "vkDeviceWaitIdle")),
             .getDeviceQueue = @ptrCast(try Device.getProc(get, dev, "vkGetDeviceQueue")),
@@ -1200,7 +1200,7 @@ pub const Device = struct {
         const dev = cast(device);
 
         var props: c.VkPhysicalDeviceMemoryProperties = undefined;
-        dev.instance.vkGetPhysicalDeviceMemoryProperties(dev.physical_device, &props);
+        Instance.get().vkGetPhysicalDeviceMemoryProperties(dev.gpu.handle, &props);
         const mask: u32 =
             c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT |
             c.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
@@ -1211,7 +1211,7 @@ pub const Device = struct {
         for (0..props.memoryTypeCount) |i| {
             const flags = props.memoryTypes[i].propertyFlags;
             const heap: u4 = @intCast(props.memoryTypes[i].heapIndex);
-            // TODO: Handle this somehow
+            // TODO: Handle this somehow.
             if (~mask & flags != 0) log.warn("Memory type {} has unexposed flag(s)", .{i});
             allocation[i] = .{
                 .properties = .{
@@ -1256,7 +1256,7 @@ pub const Device = struct {
     fn deinit(_: *anyopaque, allocator: std.mem.Allocator, device: Impl.Device) void {
         const dev = cast(device);
         // NOTE: This assumes that all device-level objects
-        // have been destroyed
+        // have been destroyed.
         dev.vkDestroyDevice(null);
         allocator.destroy(dev);
     }
@@ -2515,13 +2515,11 @@ pub const Memory = packed struct {
 fn getFeature(
     _: *anyopaque,
     _: std.mem.Allocator,
-    instance: Impl.Instance,
-    device_desc: ngl.Device.Desc,
+    gpu: ngl.Gpu,
     feature: *ngl.Feature,
 ) Error!void {
-    const inst = Instance.cast(instance);
-    const phys_dev: c.VkPhysicalDevice =
-        if (device_desc.impl) |x| @ptrFromInt(x.impl) else return Error.InvalidArgument;
+    const inst = Instance.get();
+    const phys_dev = Gpu.cast(gpu.impl).handle;
 
     const convSpls = conv.fromVkSampleCountFlags;
 
@@ -2730,7 +2728,7 @@ fn getFeature(
                         if (l.timestampPeriod == 0)
                             break :blk [_]bool{false} ** ngl.Queue.max;
                         var supported: [ngl.Queue.max]bool = undefined;
-                        for (device_desc.queues, 0..) |queue, i| {
+                        for (gpu.queues, 0..) |queue, i| {
                             const q = queue orelse {
                                 supported[i] = false;
                                 continue;
@@ -2744,7 +2742,7 @@ fn getFeature(
             };
         },
 
-        .presentation => |*feat| if (device_desc.feature_set.presentation) {
+        .presentation => |*feat| if (gpu.feature_set.presentation) {
             feat.* = {};
         } else return Error.NotPresent,
     }
@@ -2753,9 +2751,7 @@ fn getFeature(
 const vtable = Impl.VTable{
     .deinit = deinit,
 
-    .initInstance = Instance.init,
-    .listDevices = Instance.listDevices,
-    .deinitInstance = Instance.deinit,
+    .getGpus = getGpus,
 
     .initDevice = Device.init,
     .getQueues = Device.getQueues,

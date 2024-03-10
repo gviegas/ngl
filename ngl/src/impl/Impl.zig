@@ -962,13 +962,12 @@ pub inline fn getDriverApi() DriverApi {
 
 // TODO: Parameters.
 pub fn init(allocator: std.mem.Allocator) Error!void {
-    _ = allocator;
     lock.lock();
     defer lock.unlock();
     if (impl) |_| return;
     switch (builtin.os.tag) {
         .linux, .windows => {
-            impl = try @import("vulkan/init.zig").init();
+            impl = try @import("vulkan/init.zig").init(allocator);
             dapi = .vulkan;
         },
         else => return Error.NotSupported,

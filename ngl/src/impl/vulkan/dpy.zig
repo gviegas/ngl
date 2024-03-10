@@ -11,6 +11,7 @@ const null_handle = conv.null_handle;
 const check = conv.check;
 const log = @import("init.zig").log;
 const Instance = @import("init.zig").Instance;
+const Gpu = @import("init.zig").Gpu;
 const Device = @import("init.zig").Device;
 const Image = @import("res.zig").Image;
 const Semaphore = @import("sync.zig").Semaphore;
@@ -23,13 +24,8 @@ pub const Surface = packed struct {
         return @bitCast(impl.val);
     }
 
-    pub fn init(
-        _: *anyopaque,
-        _: std.mem.Allocator,
-        instance: Impl.Instance,
-        desc: ngl.Surface.Desc,
-    ) Error!Impl.Surface {
-        const inst = Instance.cast(instance);
+    pub fn init(_: *anyopaque, _: std.mem.Allocator, desc: ngl.Surface.Desc) Error!Impl.Surface {
+        const inst = Instance.get();
 
         var surface: c.VkSurfaceKHR = undefined;
 
@@ -78,17 +74,17 @@ pub const Surface = packed struct {
 
     pub fn isCompatible(
         _: *anyopaque,
-        instance: Impl.Instance,
         surface: Impl.Surface,
-        device_desc: ngl.Device.Desc,
-        queue_desc: ngl.Queue.Desc,
+        gpu: ngl.Gpu,
+        queue: ngl.Queue.Index,
     ) Error!bool {
-        const inst = Instance.cast(instance);
+        const inst = Instance.get();
         const sf = cast(surface);
-        const phys_dev: c.VkPhysicalDevice =
-            if (device_desc.impl) |x| @ptrFromInt(x.impl) else return Error.InvalidArgument;
-        const queue_fam: u32 =
-            if (queue_desc.impl) |x| @intCast(x.impl) else return Error.InvalidArgument;
+        const phys_dev = Gpu.cast(gpu.impl).handle;
+        const queue_fam: u32 = if (gpu.queues[queue] != null and gpu.queues[queue].?.impl != null)
+            @intCast(gpu.queues[queue].?.impl.?.impl)
+        else
+            return Error.InvalidArgument;
 
         var supported: c.VkBool32 = undefined;
         try (check(inst.vkGetPhysicalDeviceSurfaceSupportKHR(
@@ -102,14 +98,12 @@ pub const Surface = packed struct {
 
     pub fn getPresentModes(
         _: *anyopaque,
-        instance: Impl.Instance,
         surface: Impl.Surface,
-        device_desc: ngl.Device.Desc,
+        gpu: ngl.Gpu,
     ) Error!ngl.Surface.PresentMode.Flags {
-        const inst = Instance.cast(instance);
+        const inst = Instance.get();
         const sf = cast(surface);
-        const phys_dev: c.VkPhysicalDevice =
-            if (device_desc.impl) |x| @ptrFromInt(x.impl) else return Error.InvalidArgument;
+        const phys_dev = Gpu.cast(gpu.impl).handle;
 
         var modes: [6]c.VkPresentModeKHR = undefined;
         var mode_n: u32 = undefined;
@@ -122,7 +116,7 @@ pub const Surface = packed struct {
         if (mode_n > modes.len) {
             // Will have to increase the length of `modes` in this case
             // (currently it matches the number of valid present modes
-            // that are defined in the C enum)
+            // that are defined in the C enum).
             std.debug.assert(false);
             log.warn(
                 "Too many supported present modes for Surface - ignoring {}",
@@ -156,14 +150,12 @@ pub const Surface = packed struct {
     pub fn getFormats(
         _: *anyopaque,
         allocator: std.mem.Allocator,
-        instance: Impl.Instance,
         surface: Impl.Surface,
-        device_desc: ngl.Device.Desc,
+        gpu: ngl.Gpu,
     ) Error![]ngl.Surface.Format {
-        const inst = Instance.cast(instance);
+        const inst = Instance.get();
         const sf = cast(surface);
-        const phys_dev: c.VkPhysicalDevice =
-            if (device_desc.impl) |x| @ptrFromInt(x.impl) else return Error.InvalidArgument;
+        const phys_dev = Gpu.cast(gpu.impl).handle;
 
         const n = 16;
         var stk_fmts: [n]c.VkSurfaceFormatKHR = undefined;
@@ -183,7 +175,7 @@ pub const Surface = packed struct {
         ));
 
         // BUG: We don't expose all Vulkan formats and the implementation
-        // is allowed to return anything it likes here
+        // is allowed to return anything it likes here.
         var s = try allocator.alloc(ngl.Surface.Format, fmts.len);
         errdefer allocator.free(s);
         var i: usize = 0;
@@ -205,19 +197,17 @@ pub const Surface = packed struct {
 
     pub fn getCapabilities(
         _: *anyopaque,
-        instance: Impl.Instance,
         surface: Impl.Surface,
-        device_desc: ngl.Device.Desc,
+        gpu: ngl.Gpu,
         present_mode: ngl.Surface.PresentMode,
     ) Error!ngl.Surface.Capabilities {
-        const inst = Instance.cast(instance);
+        const inst = Instance.get();
         const sf = cast(surface);
-        const phys_dev: c.VkPhysicalDevice =
-            if (device_desc.impl) |x| @ptrFromInt(x.impl) else return Error.InvalidArgument;
+        const phys_dev = Gpu.cast(gpu.impl).handle;
 
-        // TODO: Use get_surface_capabilities2/surface_maintenance1
+        // TODO: Use get_surface_capabilities2/surface_maintenance1.
 
-        // TODO: Should check whether `present_mode` is supported at all
+        // TODO: Should check whether `present_mode` is supported at all.
         _ = present_mode;
 
         var capab: c.VkSurfaceCapabilitiesKHR = undefined;
@@ -245,10 +235,9 @@ pub const Surface = packed struct {
     pub fn deinit(
         _: *anyopaque,
         _: std.mem.Allocator,
-        instance: Impl.Instance,
         surface: Impl.Surface,
     ) void {
-        Instance.cast(instance).vkDestroySurfaceKHR(cast(surface).handle, null);
+        Instance.get().vkDestroySurfaceKHR(cast(surface).handle, null);
     }
 };
 

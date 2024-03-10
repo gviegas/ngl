@@ -7,6 +7,7 @@ const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const conv = @import("conv.zig");
 const check = conv.check;
+const Instance = @import("init.zig").Instance;
 const Device = @import("init.zig").Device;
 const Memory = @import("init.zig").Memory;
 
@@ -18,8 +19,8 @@ pub fn getFormatFeatures(
     const dev = Device.cast(device);
 
     var props: c.VkFormatProperties = undefined;
-    dev.instance.vkGetPhysicalDeviceFormatProperties(
-        dev.physical_device,
+    Instance.get().vkGetPhysicalDeviceFormatProperties(
+        dev.gpu.handle,
         conv.toVkFormat(format) catch return .{
             .linear_tiling = .{},
             .optimal_tiling = .{},
@@ -250,8 +251,8 @@ pub const Image = packed struct {
         misc: ngl.Image.Misc,
     ) Error!ngl.Image.Capabilities {
         const dev = Device.cast(device);
-        const inst = dev.instance;
-        const phys_dev = dev.physical_device;
+        const inst = Instance.get();
+        const phys_dev = dev.gpu.handle;
 
         var props: c.VkImageFormatProperties = undefined;
         try check(inst.vkGetPhysicalDeviceImageFormatProperties(
