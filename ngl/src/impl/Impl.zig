@@ -59,7 +59,7 @@ pub const VTable = struct {
     initDevice: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        gpu: Gpu,
+        gpu: ngl.Gpu,
         desc: ngl.Device.Desc,
     ) Error!Device,
 
@@ -150,7 +150,7 @@ pub const VTable = struct {
     getFeature: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
-        gpu: Gpu,
+        gpu: ngl.Gpu,
         feature: *ngl.Feature,
     ) Error!void,
 
@@ -871,27 +871,27 @@ pub const VTable = struct {
     isSurfaceCompatible: *const fn (
         ctx: *anyopaque,
         surface: Surface,
-        gpu: Gpu,
+        gpu: ngl.Gpu,
         queue: ngl.Queue.Index,
     ) Error!bool,
 
     getSurfacePresentModes: *const fn (
         ctx: *anyopaque,
         surface: Surface,
-        gpu: Gpu,
+        gpu: ngl.Gpu,
     ) Error!ngl.Surface.PresentMode.Flags,
 
     getSurfaceFormats: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         surface: Surface,
-        gpu: Gpu,
+        gpu: ngl.Gpu,
     ) Error![]ngl.Surface.Format,
 
     getSurfaceCapabilities: *const fn (
         ctx: *anyopaque,
         surface: Surface,
-        gpu: Gpu,
+        gpu: ngl.Gpu,
         present_mode: ngl.Surface.PresentMode,
     ) Error!ngl.Surface.Capabilities,
 
@@ -995,7 +995,7 @@ pub fn getGpus(self: *Self, allocator: std.mem.Allocator) Error![]ngl.Gpu {
 pub fn initDevice(
     self: *Self,
     allocator: std.mem.Allocator,
-    gpu: Gpu,
+    gpu: ngl.Gpu,
     desc: ngl.Device.Desc,
 ) Error!Device {
     return self.vtable.initDevice(self.ptr, allocator, gpu, desc);
@@ -1098,7 +1098,7 @@ pub fn invalidateMappedMemory(
 pub fn getFeature(
     self: *Self,
     allocator: std.mem.Allocator,
-    gpu: Gpu,
+    gpu: ngl.Gpu,
     feature: *ngl.Feature,
 ) Error!void {
     try self.vtable.getFeature(self.ptr, allocator, gpu, feature);
@@ -2057,7 +2057,7 @@ pub fn initSurface(
 pub fn isSurfaceCompatible(
     self: *Self,
     surface: Surface,
-    gpu: Gpu,
+    gpu: ngl.Gpu,
     queue: ngl.Queue.Index,
 ) Error!bool {
     return self.vtable.isSurfaceCompatible(self.ptr, surface, gpu, queue);
@@ -2066,7 +2066,7 @@ pub fn isSurfaceCompatible(
 pub fn getSurfacePresentModes(
     self: *Self,
     surface: Surface,
-    gpu: Gpu,
+    gpu: ngl.Gpu,
 ) Error!ngl.Surface.PresentMode.Flags {
     return self.vtable.getSurfacePresentModes(self.ptr, surface, gpu);
 }
@@ -2075,7 +2075,7 @@ pub fn getSurfaceFormats(
     self: *Self,
     allocator: std.mem.Allocator,
     surface: Surface,
-    gpu: Gpu,
+    gpu: ngl.Gpu,
 ) Error![]ngl.Surface.Format {
     return self.vtable.getSurfaceFormats(self.ptr, allocator, surface, gpu);
 }
@@ -2083,7 +2083,7 @@ pub fn getSurfaceFormats(
 pub fn getSurfaceCapabilities(
     self: *Self,
     surface: Surface,
-    gpu: Gpu,
+    gpu: ngl.Gpu,
     present_mode: ngl.Surface.PresentMode,
 ) Error!ngl.Surface.Capabilities {
     return self.vtable.getSurfaceCapabilities(

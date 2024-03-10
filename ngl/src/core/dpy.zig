@@ -142,25 +142,25 @@ pub const Surface = struct {
 
     /// Returns whether the given queue of the given gpu can present
     /// to the surface.
-    pub fn isCompatible(self: *Self, gpu: *Gpu, queue: Queue.Index) Error!bool {
-        return Impl.get().isSurfaceCompatible(self.impl, gpu.impl, queue);
+    pub fn isCompatible(self: *Self, gpu: Gpu, queue: Queue.Index) Error!bool {
+        return Impl.get().isSurfaceCompatible(self.impl, gpu, queue);
     }
 
-    pub fn getPresentModes(self: *Self, gpu: *Gpu) Error!PresentMode.Flags {
-        return Impl.get().getSurfacePresentModes(self.impl, gpu.impl);
+    pub fn getPresentModes(self: *Self, gpu: Gpu) Error!PresentMode.Flags {
+        return Impl.get().getSurfacePresentModes(self.impl, gpu);
     }
 
     /// Caller is responsible for freeing the returned slice.
-    pub fn getFormats(self: *Self, allocator: std.mem.Allocator, gpu: *Gpu) Error![]Self.Format {
-        return Impl.get().getSurfaceFormats(allocator, self.impl, gpu.impl);
+    pub fn getFormats(self: *Self, allocator: std.mem.Allocator, gpu: Gpu) Error![]Self.Format {
+        return Impl.get().getSurfaceFormats(allocator, self.impl, gpu);
     }
 
     pub fn getCapabilities(
         self: *Self,
-        gpu: *Gpu,
+        gpu: Gpu,
         present_mode: PresentMode,
     ) Error!Capabilities {
-        return Impl.get().getSurfaceCapabilities(self.impl, gpu.impl, present_mode);
+        return Impl.get().getSurfaceCapabilities(self.impl, gpu, present_mode);
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {

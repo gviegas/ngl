@@ -54,9 +54,9 @@ pub const Device = struct {
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, gpu: *Gpu, desc: Desc) Error!Self {
+    pub fn init(allocator: std.mem.Allocator, gpu: Gpu, desc: Desc) Error!Self {
         var self = Self{
-            .impl = try Impl.get().initDevice(allocator, gpu.impl, desc),
+            .impl = try Impl.get().initDevice(allocator, gpu, desc),
             .queues = undefined,
             .queue_n = 0,
             .mem_types = undefined,
@@ -533,11 +533,11 @@ pub const Feature = union(enum) {
     /// by the gpu (note that `core` is always supported).
     pub fn get(
         allocator: std.mem.Allocator,
-        gpu: *Gpu,
+        gpu: Gpu,
         comptime tag: @typeInfo(Feature).Union.tag_type.?,
     ) ?@typeInfo(Feature).Union.fields[@intFromEnum(tag)].type {
         var feat = @unionInit(Feature, @tagName(tag), undefined);
-        return if (Impl.get().getFeature(allocator, gpu.impl, &feat)) |_|
+        return if (Impl.get().getFeature(allocator, gpu, &feat)) |_|
             @field(feat, @tagName(tag))
         else |_|
             null;
