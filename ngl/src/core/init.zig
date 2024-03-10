@@ -47,35 +47,33 @@ pub const Device = struct {
     mem_types: [Memory.max_type]Memory.Type,
     mem_type_n: u8,
 
-    pub const Desc = struct {
-        queues: [Queue.max]?Queue.Desc,
-        feature_set: Feature.Set,
-    };
-
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, gpu: Gpu, desc: Desc) Error!Self {
+    // It is allowed to edit `gpu.queues` and `gpu.feature_set` such
+    // that they define only a subset of what was originally exposed
+    // in a call to `getGpus`.
+    pub fn init(allocator: std.mem.Allocator, gpu: Gpu) Error!Self {
         var self = Self{
-            .impl = try Impl.get().initDevice(allocator, gpu, desc),
+            .impl = try Impl.get().initDevice(allocator, gpu),
             .queues = undefined,
             .queue_n = 0,
             .mem_types = undefined,
             .mem_type_n = 0,
         };
-        // Track the current element in `desc.queues` since it
+        // Track the current element in `gpu.queues` since it
         // might be interspersed with `null`s.
         var queue_i: usize = 0;
         var queue_alloc: [Queue.max]Impl.Queue = undefined;
         const queues = Impl.get().getQueues(&queue_alloc, self.impl);
         for (self.queues[0..queues.len], queues) |*queue, impl| {
             // This assumes that implementations won't reorder
-            // the queues - the order must match `desc`'s.
-            while (desc.queues[queue_i] == null) : (queue_i += 1) {}
+            // the queues.
+            while (gpu.queues[queue_i] == null) : (queue_i += 1) {}
             queue.* = .{
                 .impl = impl,
-                .capabilities = desc.queues[queue_i].?.capabilities,
-                .priority = desc.queues[queue_i].?.priority,
-                .image_transfer_granularity = desc.queues[queue_i].?.image_transfer_granularity,
+                .capabilities = gpu.queues[queue_i].?.capabilities,
+                .priority = gpu.queues[queue_i].?.priority,
+                .image_transfer_granularity = gpu.queues[queue_i].?.image_transfer_granularity,
             };
             queue_i += 1;
         }

@@ -75,10 +75,7 @@ pub const Context = struct {
                     break;
                 },
             };
-        const dev = try ngl.Device.init(allocator, gpus[idx], .{
-            .queues = gpus[idx].queues,
-            .feature_set = gpus[idx].feature_set,
-        });
+        const dev = try ngl.Device.init(allocator, gpus[idx]);
         return .{
             .gpu = gpus[idx],
             .device = dev,

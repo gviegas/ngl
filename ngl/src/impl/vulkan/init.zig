@@ -835,12 +835,7 @@ pub const Device = struct {
         return if (get.?(device, name)) |fp| fp else Error.InitializationFailed;
     }
 
-    fn init(
-        _: *anyopaque,
-        allocator: std.mem.Allocator,
-        gpu: ngl.Gpu,
-        desc: ngl.Device.Desc,
-    ) Error!Impl.Device {
+    fn init(_: *anyopaque, allocator: std.mem.Allocator, gpu: ngl.Gpu) Error!Impl.Device {
         const inst = Instance.get();
         const phys_dev = Gpu.cast(gpu.impl).handle;
 
@@ -848,7 +843,7 @@ pub const Device = struct {
         var queue_prios: [ngl.Queue.max]f32 = undefined;
         const queue_n = blk: {
             var n: u32 = 0;
-            for (desc.queues) |queue| {
+            for (gpu.queues) |queue| {
                 const q = queue orelse continue;
                 const fam: u32 = if (q.impl) |x| @intCast(x.impl) else return Error.InvalidArgument;
                 // Don't distinguish between default and high priority
@@ -882,7 +877,7 @@ pub const Device = struct {
         var ext_names = std.ArrayList([*:0]const u8).init(allocator);
         defer ext_names.deinit();
 
-        if (desc.feature_set.presentation) {
+        if (gpu.feature_set.presentation) {
             if (inst.destroySurface == null) return Error.InvalidArgument;
             const exts = .{"VK_KHR_swapchain"};
             inline for (exts) |ext| {
@@ -1144,23 +1139,23 @@ pub const Device = struct {
             .createQueryPool = @ptrCast(try Device.getProc(get, dev, "vkCreateQueryPool")),
             .destroyQueryPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyQueryPool")),
 
-            .queuePresent = if (desc.feature_set.presentation)
+            .queuePresent = if (gpu.feature_set.presentation)
                 @ptrCast(try Device.getProc(get, dev, "vkQueuePresentKHR"))
             else
                 null,
-            .createSwapchain = if (desc.feature_set.presentation)
+            .createSwapchain = if (gpu.feature_set.presentation)
                 @ptrCast(try Device.getProc(get, dev, "vkCreateSwapchainKHR"))
             else
                 null,
-            .getSwapchainImages = if (desc.feature_set.presentation)
+            .getSwapchainImages = if (gpu.feature_set.presentation)
                 @ptrCast(try Device.getProc(get, dev, "vkGetSwapchainImagesKHR"))
             else
                 null,
-            .acquireNextImage = if (desc.feature_set.presentation)
+            .acquireNextImage = if (gpu.feature_set.presentation)
                 @ptrCast(try Device.getProc(get, dev, "vkAcquireNextImageKHR"))
             else
                 null,
-            .destroySwapchain = if (desc.feature_set.presentation)
+            .destroySwapchain = if (gpu.feature_set.presentation)
                 @ptrCast(try Device.getProc(get, dev, "vkDestroySwapchainKHR"))
             else
                 null,

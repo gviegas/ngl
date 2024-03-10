@@ -5,18 +5,18 @@ const builtin = @import("builtin");
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 
+// TODO: Test w/ subset of `Gpu`'s queues/features.
 test "Device.init/deinit" {
     const gpus = try ngl.getGpus(gpa);
     defer gpa.free(gpus);
 
     for (gpus) |gpu| {
         // Should fail if no queue descriptions are provided.
-        try testing.expectError(ngl.Error.InvalidArgument, ngl.Device.init(gpa, gpu, .{
-            .queues = [_]?ngl.Queue.Desc{null} ** ngl.Queue.max,
-            .feature_set = .{},
-        }));
+        var gpu_no_q = gpu;
+        gpu_no_q.queues = [_]?ngl.Queue.Desc{null} ** ngl.Queue.max;
+        try testing.expectError(ngl.Error.InvalidArgument, ngl.Device.init(gpa, gpu_no_q));
 
-        var dev = try ngl.Device.init(gpa, gpu, .{ .queues = gpu.queues, .feature_set = gpu.feature_set });
+        var dev = try ngl.Device.init(gpa, gpu);
         defer dev.deinit(gpa);
 
         // Queues must be created verbatim.
@@ -73,10 +73,7 @@ test "multiple Device instances" {
     defer gpa.free(devs);
 
     for (devs, gpus, 0..) |*dev, gpu, i|
-        dev.* = ngl.Device.init(gpa, gpu, .{
-            .queues = gpu.queues,
-            .feature_set = gpu.feature_set,
-        }) catch |err| {
+        dev.* = ngl.Device.init(gpa, gpu) catch |err| {
             for (0..i) |j| devs[j].deinit(gpa);
             return err;
         };
@@ -117,16 +114,12 @@ test "aliasing Device instances" {
         defer gpa.free(gpus);
         break :blk gpus[0];
     };
-    const desc = ngl.Device.Desc{
-        .queues = gpu.queues,
-        .feature_set = gpu.feature_set,
-    };
 
     var devs = try gpa.alloc(ngl.Device, 2);
     defer gpa.free(devs);
 
     for (devs, 0..) |*dev, i|
-        dev.* = ngl.Device.init(gpa, gpu, desc) catch |err| {
+        dev.* = ngl.Device.init(gpa, gpu) catch |err| {
             for (0..i) |j| devs[j].deinit(gpa);
             return err;
         };
@@ -134,7 +127,7 @@ test "aliasing Device instances" {
 
     try testing.expectEqual(devs[0].queue_n, blk: {
         var n: u8 = 0;
-        for (desc.queues) |q| {
+        for (gpu.queues) |q| {
             if (q) |_| n += 1;
         }
         break :blk n;
@@ -180,12 +173,8 @@ test "Device.alloc/free" {
         defer gpa.free(gpus);
         break :blk gpus[0];
     };
-    const desc = ngl.Device.Desc{
-        .queues = gpu.queues,
-        .feature_set = gpu.feature_set,
-    };
 
-    var dev = try ngl.Device.init(gpa, gpu, desc);
+    var dev = try ngl.Device.init(gpa, gpu);
     defer dev.deinit(gpa);
 
     const sizes = [_]u64{ 1, 256, 64, 4096, 16384 };
@@ -218,18 +207,12 @@ test "Device.wait" {
     const gpus = try ngl.getGpus(gpa);
     defer gpa.free(gpus);
 
-    var dev = try ngl.Device.init(gpa, gpus[0], .{
-        .queues = gpus[0].queues,
-        .feature_set = gpus[0].feature_set,
-    });
+    var dev = try ngl.Device.init(gpa, gpus[0]);
     defer dev.deinit(gpa);
 
     try dev.wait();
 
-    var dev_2 = try ngl.Device.init(gpa, gpus[gpus.len - 1], .{
-        .queues = gpus[gpus.len - 1].queues,
-        .feature_set = gpus[gpus.len - 1].feature_set,
-    });
+    var dev_2 = try ngl.Device.init(gpa, gpus[gpus.len - 1]);
     defer dev_2.deinit(gpa);
 
     try dev_2.wait();

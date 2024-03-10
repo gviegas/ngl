@@ -60,7 +60,6 @@ pub const VTable = struct {
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         gpu: ngl.Gpu,
-        desc: ngl.Device.Desc,
     ) Error!Device,
 
     getQueues: *const fn (
@@ -991,13 +990,8 @@ pub fn getGpus(self: *Self, allocator: std.mem.Allocator) Error![]ngl.Gpu {
     return self.vtable.getGpus(self.ptr, allocator);
 }
 
-pub fn initDevice(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    gpu: ngl.Gpu,
-    desc: ngl.Device.Desc,
-) Error!Device {
-    return self.vtable.initDevice(self.ptr, allocator, gpu, desc);
+pub fn initDevice(self: *Self, allocator: std.mem.Allocator, gpu: ngl.Gpu) Error!Device {
+    return self.vtable.initDevice(self.ptr, allocator, gpu);
 }
 
 pub fn getQueues(self: *Self, allocation: *[ngl.Queue.max]Queue, device: Device) []Queue {
