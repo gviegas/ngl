@@ -862,6 +862,17 @@ pub const Device = struct {
             break :blk n;
         };
 
+        // If the instance version is 1.0, then we can't use anything
+        // newer than that for the device.
+        // Otherwise, we need to abide by what was requested during
+        // instance creation.
+        const ver = if (inst.version < c.VK_API_VERSION_1_1)
+            c.VK_API_VERSION_1_0
+        else if (gpu.info[0] & ~@as(u32, 0xfff) > preferred_version)
+            preferred_version
+        else
+            gpu.info[0];
+
         // TODO: Check other extensions that may be useful
         var ext_prop_n: u32 = undefined;
         try check(inst.vkEnumerateDeviceExtensionProperties(phys_dev, null, &ext_prop_n, null));
@@ -900,8 +911,8 @@ pub const Device = struct {
             .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
             .pNext = null,
         };
-        if (inst.version >= c.VK_API_VERSION_1_1) {
-            if (inst.version >= c.VK_API_VERSION_1_2) feats_2.pNext = &vk_1_2_feats;
+        if (ver >= c.VK_API_VERSION_1_1) {
+            if (ver >= c.VK_API_VERSION_1_2) feats_2.pNext = &vk_1_2_feats;
             inst.vkGetPhysicalDeviceFeatures2(phys_dev, &feats_2);
         } else inst.vkGetPhysicalDeviceFeatures(phys_dev, &feats_2.features);
         feats_2.features.robustBufferAccess = c.VK_FALSE;
@@ -941,7 +952,7 @@ pub const Device = struct {
         feats_2.features.sparseResidency16Samples = c.VK_FALSE;
         feats_2.features.sparseResidencyAliased = c.VK_FALSE;
         feats_2.features.variableMultisampleRate = c.VK_FALSE;
-        if (inst.version >= c.VK_API_VERSION_1_2) {
+        if (ver >= c.VK_API_VERSION_1_2) {
             vk_1_2_feats.drawIndirectCount = c.VK_FALSE;
             vk_1_2_feats.storageBuffer8BitAccess = c.VK_FALSE;
             vk_1_2_feats.uniformAndStorageBuffer8BitAccess = c.VK_FALSE;
@@ -992,7 +1003,7 @@ pub const Device = struct {
 
         var create_info = c.VkDeviceCreateInfo{
             .sType = c.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext = if (inst.version < c.VK_API_VERSION_1_1) null else &feats_2,
+            .pNext = if (ver < c.VK_API_VERSION_1_1) null else &feats_2,
             .flags = 0,
             .queueCreateInfoCount = queue_n,
             .pQueueCreateInfos = &queue_infos,
@@ -1000,7 +1011,7 @@ pub const Device = struct {
             .ppEnabledLayerNames = null,
             .enabledExtensionCount = @intCast(ext_names.items.len),
             .ppEnabledExtensionNames = if (ext_names.items.len > 0) ext_names.items.ptr else null,
-            .pEnabledFeatures = if (inst.version < c.VK_API_VERSION_1_1)
+            .pEnabledFeatures = if (ver < c.VK_API_VERSION_1_1)
                 &feats_2.features
             else
                 null,
@@ -1010,17 +1021,6 @@ pub const Device = struct {
         errdefer if (Instance.getProc(inst.handle, "vkDestroyDevice")) |x| {
             if (@as(c.PFN_vkDestroyDevice, @ptrCast(x))) |f| f(dev, null);
         } else |_| {};
-
-        // If the instance version is 1.0, then we can't use anything
-        // newer than that for the device.
-        // Otherwise, we need to abide by what was requested during
-        // instance creation.
-        const ver = if (inst.version < c.VK_API_VERSION_1_1)
-            c.VK_API_VERSION_1_0
-        else if (gpu.info[0] & ~@as(u32, 0xfff) > preferred_version)
-            preferred_version
-        else
-            gpu.info[0];
 
         var dev_props: c.VkPhysicalDeviceProperties = undefined;
         inst.vkGetPhysicalDeviceProperties(phys_dev, &dev_props);
@@ -2520,17 +2520,17 @@ fn getFeature(
 
     switch (feature.*) {
         .core => |*feat| {
-            var l: c.VkPhysicalDeviceLimits = undefined;
+            var props: c.VkPhysicalDeviceProperties = undefined;
+            inst.vkGetPhysicalDeviceProperties(phys_dev, &props);
+            const ver = props.apiVersion;
+            const l = &props.limits;
             var mem_max_size: u64 = 1073741824;
             var buf_max_size: u64 = 1073741824;
             var fb_int_spl_cnts = ngl.SampleCount.Flags{ .@"1" = true };
             var f: c.VkPhysicalDeviceFeatures = undefined;
             var splr_mirror_clamp_to_edge = false;
 
-            if (inst.version < c.VK_API_VERSION_1_1) {
-                var props: c.VkPhysicalDeviceProperties = undefined;
-                inst.vkGetPhysicalDeviceProperties(phys_dev, &props);
-                l = props.limits;
+            if (ver < c.VK_API_VERSION_1_1) {
                 inst.vkGetPhysicalDeviceFeatures(phys_dev, &f);
             } else {
                 // Properties 2 ----------------------------
@@ -2543,21 +2543,20 @@ fn getFeature(
                     // v1.2
                     var @"1.2" = c.VkPhysicalDeviceVulkan12Properties{
                         .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES,
-                        .pNext = if (inst.version >= c.VK_API_VERSION_1_3) &m4 else null,
+                        .pNext = if (ver >= c.VK_API_VERSION_1_3) &m4 else null,
                     };
                     // v1.1
                     var m3 = c.VkPhysicalDeviceMaintenance3Properties{
                         .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,
-                        .pNext = if (inst.version >= c.VK_API_VERSION_1_2) &@"1.2" else null,
+                        .pNext = if (ver >= c.VK_API_VERSION_1_2) &@"1.2" else null,
                     };
-                    var props = c.VkPhysicalDeviceProperties2{
+                    var props_2 = c.VkPhysicalDeviceProperties2{
                         .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
                         .pNext = &m3,
                     };
-                    inst.vkGetPhysicalDeviceProperties2(phys_dev, &props);
-                    l = props.properties.limits;
+                    inst.vkGetPhysicalDeviceProperties2(phys_dev, &props_2);
                     mem_max_size = m3.maxMemoryAllocationSize;
-                    if (inst.version >= c.VK_API_VERSION_1_2) {
+                    if (ver >= c.VK_API_VERSION_1_2) {
                         // Certain devices may lie about MS support
                         // for signed integer formats
                         var x: c.VkImageFormatProperties = undefined;
@@ -2577,7 +2576,7 @@ fn getFeature(
                         else
                             fb_int_spl_cnts = convSpls(mask);
                     }
-                    if (inst.version >= c.VK_API_VERSION_1_3)
+                    if (ver >= c.VK_API_VERSION_1_3)
                         buf_max_size = m4.maxBufferSize;
                 }
                 // Features 2 ------------------------------
@@ -2589,11 +2588,11 @@ fn getFeature(
                     };
                     var feats = c.VkPhysicalDeviceFeatures2{
                         .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-                        .pNext = if (inst.version >= c.VK_API_VERSION_1_2) &@"1.2" else null,
+                        .pNext = if (ver >= c.VK_API_VERSION_1_2) &@"1.2" else null,
                     };
                     inst.vkGetPhysicalDeviceFeatures2(phys_dev, &feats);
                     f = feats.features;
-                    if (inst.version >= c.VK_API_VERSION_1_2)
+                    if (ver >= c.VK_API_VERSION_1_2)
                         splr_mirror_clamp_to_edge = @"1.2".samplerMirrorClampToEdge == c.VK_TRUE;
                 }
             }
