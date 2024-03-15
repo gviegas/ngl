@@ -126,7 +126,7 @@ pub fn frustum(left: f32, right: f32, top: f32, bottom: f32, near: f32, far: f32
     var m = [_]f32{0} ** 16;
     m[0] = (2 * near) / (right - left);
     m[5] = (2 * near) / (bottom - top);
-    m[8] = (right + left) / (right - left);
+    m[8] = -(right + left) / (right - left);
     m[9] = -(bottom + top) / (bottom - top);
     m[10] = far / (far - near);
     m[11] = 1;
