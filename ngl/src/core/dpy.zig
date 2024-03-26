@@ -35,7 +35,7 @@ pub const Surface = struct {
 
     // TODO: OS-agnostic platform.
     pub const Platform = @Type(.{ .Union = .{
-        .layout = .Auto,
+        .layout = .auto,
         .tag_type = switch (builtin.os.tag) {
             .linux => if (builtin.target.isAndroid()) enum { android } else enum { wayland, xcb },
             .windows => enum { win32 },

@@ -81,7 +81,7 @@ pub const DescriptorPool = struct {
 
     pub const PoolSize = @Type(.{
         .Struct = .{
-            .layout = .Auto,
+            .layout = .auto,
             .fields = blk: {
                 const StructField = std.builtin.Type.StructField;
                 var fields: []const StructField = &[_]StructField{};

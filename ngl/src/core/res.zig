@@ -210,7 +210,7 @@ pub const Format = enum {
     /// Required format support.
     /// The image features pertain only to optimal tiling.
     pub const min_features = @Type(.{ .Struct = .{
-        .layout = .Auto,
+        .layout = .auto,
         .fields = blk: {
             const StructField = std.builtin.Type.StructField;
             var fields: []const StructField = &[_]StructField{};

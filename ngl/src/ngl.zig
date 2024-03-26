@@ -83,7 +83,7 @@ pub fn Flags(comptime E: type) type {
         else => @compileError("E must be an enum type"),
     }
     return @Type(.{ .Struct = .{
-        .layout = .Packed,
+        .layout = .@"packed",
         .fields = fields,
         .decls = &.{},
         .is_tuple = false,

@@ -270,7 +270,7 @@ pub const ComputeState = struct {
     /// This is `ShaderStage.Desc` without the `stage` field
     /// (implicit `.compute`).
     stage: @Type(.{ .Struct = .{
-        .layout = .Auto,
+        .layout = .auto,
         .fields = @typeInfo(ShaderStage.Desc).Struct.fields[1..],
         .decls = &.{},
         .is_tuple = false,

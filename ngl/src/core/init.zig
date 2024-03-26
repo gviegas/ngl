@@ -500,7 +500,7 @@ pub const Feature = union(enum) {
     presentation,
 
     pub const Set = @Type(.{ .Struct = .{
-        .layout = .Packed,
+        .layout = .@"packed",
         .fields = blk: {
             const type_info = @typeInfo(Feature);
             if (!std.mem.eql(u8, type_info.Union.fields[0].name, "core"))
