@@ -271,7 +271,7 @@ test "executeCommands command (dispatching)" {
             cmd.setPipeline(self.pl);
             cmd.dispatch(self.wg_count[0], self.wg_count[1], self.wg_count[2]);
             try cmd.end();
-            _ = @atomicRmw(@TypeOf(self.rem.*), self.rem, .Sub, 1, .AcqRel);
+            _ = @atomicRmw(@TypeOf(self.rem.*), self.rem, .Sub, 1, .acq_rel);
         }
     } = .{
         // Top-left
@@ -345,7 +345,7 @@ test "executeCommands command (dispatching)" {
         }},
         .by_region = false,
     }});
-    while (@atomicLoad(@TypeOf(rem), &rem, .Acquire) > 0) {}
+    while (@atomicLoad(@TypeOf(rem), &rem, .acquire) > 0) {}
     cmd.executeCommands(blk: {
         var ptrs: [rec.len]*ngl.CommandBuffer = undefined;
         for (&ptrs, t.cmd_bufs[1..]) |*p, *c| p.* = c;
@@ -663,17 +663,17 @@ test "executeCommands command (drawing)" {
             );
             cmd.draw(3, 1, 0, 0);
             try cmd.end();
-            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 1, .AcqRel);
+            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 1, .acq_rel);
         }
 
         fn cmdBuf2(self: @This()) void {
             self.cmdBufs23(.@"2");
-            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 2, .AcqRel);
+            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 2, .acq_rel);
         }
 
         fn cmdBuf3(self: @This()) void {
             self.cmdBufs23(.@"3");
-            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 4, .AcqRel);
+            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 4, .acq_rel);
         }
 
         fn cmdBufs23(self: @This(), comptime cb: enum { @"2", @"3" }) void {
@@ -791,7 +791,7 @@ test "executeCommands command (drawing)" {
         // Only `Cmd.executeCommands` allowed in this subpass
         .{ .contents = .secondary_command_buffers_only },
     );
-    while (@atomicLoad(@TypeOf(done), &done, .Acquire) != (1 << rec.len) - 1) {}
+    while (@atomicLoad(@TypeOf(done), &done, .acquire) != (1 << rec.len) - 1) {}
     cmd.executeCommands(blk: {
         var ptrs: [rec.len]*ngl.CommandBuffer = undefined;
         for (&ptrs, t.cmd_bufs[1..]) |*p, *c| p.* = c;
