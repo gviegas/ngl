@@ -199,8 +199,8 @@ const Extension = struct {
         return self.names.contains(nm);
     }
 
-    fn clear(self: *Extension) void {
-        self.names.clearAndFree(self.allocator);
+    fn clearRetainingCapacity(self: *Extension) void {
+        self.names.clearRetainingCapacity();
     }
 
     fn deinit(self: *Extension) void {
@@ -410,32 +410,6 @@ pub const Instance = struct {
         // NOTE: This assumes that all instance-level objects
         // have been destroyed.
         self.vkDestroyInstance(null);
-    }
-
-    fn hasDeviceExtensions(
-        self: *Instance,
-        allocator: std.mem.Allocator,
-        device: c.VkPhysicalDevice,
-        comptime names: []const [:0]const u8,
-    ) Error![names.len]bool {
-        var ext_prop_n: u32 = undefined;
-        try check(self.vkEnumerateDeviceExtensionProperties(device, null, &ext_prop_n, null));
-        const ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
-        defer allocator.free(ext_props);
-        try check(self.vkEnumerateDeviceExtensionProperties(
-            device,
-            null,
-            &ext_prop_n,
-            ext_props.ptr,
-        ));
-        var has: [names.len]bool = undefined;
-        for (names, 0..) |name, i| {
-            has[i] = for (ext_props) |prop| {
-                if (std.mem.eql(u8, name, prop.extensionName[0..name.len]))
-                    break true;
-            } else false;
-        }
-        return has;
     }
 
     // Wrappers --------------------------------------------
@@ -666,6 +640,9 @@ fn getGpus(_: *anyopaque, allocator: std.mem.Allocator) Error![]ngl.Gpu {
     var queue_props = std.ArrayList(c.VkQueueFamilyProperties).init(allocator);
     defer queue_props.deinit();
 
+    var ext = Extension.init(allocator);
+    defer ext.deinit();
+
     var gpu_n: usize = 0;
     for (devs) |dev| {
         var prop: c.VkPhysicalDeviceProperties = undefined;
@@ -730,6 +707,13 @@ fn getGpus(_: *anyopaque, allocator: std.mem.Allocator) Error![]ngl.Gpu {
             }
         }
 
+        // TODO: Remove/update this conditional when adding more features
+        // that need to query available extensions.
+        if (inst.destroySurface != null) {
+            ext.clearRetainingCapacity();
+            try ext.putAllDevice(dev);
+        }
+
         if (@typeInfo(ngl.Feature).Union.fields.len > 2)
             @compileError("Set new feature(s)");
 
@@ -749,7 +733,7 @@ fn getGpus(_: *anyopaque, allocator: std.mem.Allocator) Error![]ngl.Gpu {
                 // with presentation disabled, regardless of whether or not
                 // the device can support it.
                 .presentation = if (inst.destroySurface != null)
-                    (try inst.hasDeviceExtensions(allocator, dev, &.{"VK_KHR_swapchain"}))[0]
+                    ext.contains("VK_KHR_swapchain")
                 else
                     false,
             },
