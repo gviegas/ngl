@@ -138,6 +138,77 @@ fn deinit(_: *anyopaque, _: std.mem.Allocator) void {
     }
 }
 
+const Extension = struct {
+    names: std.AutoHashMapUnmanaged(Name, void) = .{},
+    allocator: std.mem.Allocator,
+
+    const Name = [c.VK_MAX_EXTENSION_NAME_SIZE]u8;
+
+    fn normalizeName(name: *Name) void {
+        if (name[0] == 0) {
+            log.warn("Empty extension name", .{});
+            return;
+        }
+        // We'll compare fixed-size arrays, not NTSs.
+        var i = name.len - 1;
+        while (i > 0 and name[i] != 0) : (i -= 1)
+            name[i] = 0;
+    }
+
+    fn init(allocator: std.mem.Allocator) Extension {
+        return .{ .allocator = allocator };
+    }
+
+    fn putAllInstance(self: *Extension, layer: [:0]const u8) !void {
+        var n: u32 = undefined;
+        try check(vkEnumerateInstanceExtensionProperties(layer, &n, null));
+        if (n == 0) return;
+        const props = try self.allocator.alloc(c.VkExtensionProperties, n);
+        defer self.allocator.free(props);
+        try check(vkEnumerateInstanceExtensionProperties(layer, &n, props.ptr));
+
+        for (props) |*prop| {
+            normalizeName(&prop.extensionName);
+            try self.names.put(self.allocator, prop.extensionName, {});
+        }
+    }
+
+    fn putAllDevice(self: *Extension, device: c.VkPhysicalDevice) !void {
+        const inst = Instance.get();
+
+        var n: u32 = undefined;
+        try check(inst.vkEnumerateDeviceExtensionProperties(device, null, &n, null));
+        if (n == 0) return;
+        const props = try self.allocator.alloc(c.VkExtensionProperties, n);
+        defer self.allocator.free(props);
+        try check(inst.vkEnumerateDeviceExtensionProperties(device, null, &n, props.ptr));
+
+        for (props) |*prop| {
+            normalizeName(&prop.extensionName);
+            try self.names.put(self.allocator, prop.extensionName, {});
+        }
+    }
+
+    /// Call `putAll*` before this method as appropriate.
+    // TODO: Consider using a custom context to speed up comparisons.
+    fn contains(self: Extension, name: []const u8) bool {
+        var nm: Name = undefined;
+        if (name.len > nm.len) return false;
+        @memcpy(nm[0..name.len], name);
+        @memset(nm[name.len..nm.len], 0);
+        return self.names.contains(nm);
+    }
+
+    fn clear(self: *Extension) void {
+        self.names.clearAndFree(self.allocator);
+    }
+
+    fn deinit(self: *Extension) void {
+        self.names.deinit(self.allocator);
+        self.* = undefined;
+    }
+};
+
 pub const Instance = struct {
     handle: c.VkInstance,
     version: u32,
