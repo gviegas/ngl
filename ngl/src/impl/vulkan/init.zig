@@ -268,12 +268,9 @@ pub const Instance = struct {
     fn init(allocator: std.mem.Allocator) Error!Instance {
         if (global_instance) |_| @panic("Instance exists");
 
-        var ext_prop_n: u32 = undefined;
-        try check(vkEnumerateInstanceExtensionProperties(null, &ext_prop_n, null));
-        const ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
-        defer allocator.free(ext_props);
-        try check(vkEnumerateInstanceExtensionProperties(null, &ext_prop_n, ext_props.ptr));
-
+        var ext = Extension.init(allocator);
+        defer ext.deinit();
+        try ext.putAllInstance("");
         var ext_names = std.ArrayList([*:0]const u8).init(allocator);
         defer ext_names.deinit();
 
@@ -281,29 +278,20 @@ pub const Instance = struct {
         const presentation = true;
 
         if (presentation) {
-            const surface_ext = "VK_KHR_surface";
-            for (ext_props) |prop| {
-                if (std.mem.eql(u8, prop.extensionName[0..surface_ext.len], surface_ext)) {
-                    try ext_names.append(@ptrCast(&prop.extensionName));
-                    break;
-                }
-            } else return Error.NotPresent;
+            const surface_ext = [1][:0]const u8{"VK_KHR_surface"};
             const platform_exts = switch (builtin.os.tag) {
                 .linux => if (builtin.target.isAndroid())
-                    .{"VK_KHR_android_surface"}
+                    [1][:0]const u8{"VK_KHR_android_surface"}
                 else
-                    .{ "VK_KHR_wayland_surface", "VK_KHR_xcb_surface" },
-                .windows => .{"VK_KHR_win32_surface"},
+                    [2][:0]const u8{ "VK_KHR_wayland_surface", "VK_KHR_xcb_surface" },
+                .windows => [1][:0]const u8{"VK_KHR_win32_surface"},
                 else => @compileError("OS not supported"),
             };
             // TODO: Consider succeeding if at least one of the
             // surface extensions is available.
-            inline for (platform_exts) |ext| {
-                for (ext_props) |prop| {
-                    if (std.mem.eql(u8, prop.extensionName[0..ext.len], ext)) {
-                        try ext_names.append(@ptrCast(&prop.extensionName));
-                        break;
-                    }
+            for (surface_ext ++ platform_exts) |x| {
+                if (ext.contains(x)) {
+                    try ext_names.append(x);
                 } else return Error.NotPresent;
             }
         }
