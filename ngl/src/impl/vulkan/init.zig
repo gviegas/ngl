@@ -932,35 +932,22 @@ pub const Device = struct {
         else
             gpu.info[0];
 
-        // TODO: Check other extensions that may be useful
-        var ext_prop_n: u32 = undefined;
-        try check(inst.vkEnumerateDeviceExtensionProperties(phys_dev, null, &ext_prop_n, null));
-        const ext_props = try allocator.alloc(c.VkExtensionProperties, ext_prop_n);
-        defer allocator.free(ext_props);
-        try check(inst.vkEnumerateDeviceExtensionProperties(
-            phys_dev,
-            null,
-            &ext_prop_n,
-            ext_props.ptr,
-        ));
-
+        // TODO: Check other extensions.
+        var ext = Extension.init(allocator);
+        defer ext.deinit();
+        try ext.putAllDevice(phys_dev);
         var ext_names = std.ArrayList([*:0]const u8).init(allocator);
         defer ext_names.deinit();
 
         if (gpu.feature_set.presentation) {
             if (inst.destroySurface == null) return Error.InvalidArgument;
-            const exts = .{"VK_KHR_swapchain"};
-            inline for (exts) |ext| {
-                for (ext_props) |prop| {
-                    if (std.mem.eql(u8, ext, prop.extensionName[0..ext.len])) {
-                        try ext_names.append(@ptrCast(&prop.extensionName));
-                        break;
-                    }
-                } else return Error.NotPresent;
-            }
+            const swapchain_ext = "VK_KHR_swapchain";
+            if (ext.contains(swapchain_ext)) {
+                try ext_names.append(swapchain_ext);
+            } else return Error.NotPresent;
         }
 
-        // TODO: Expose/enable more features
+        // TODO: Expose/enable more features.
         var feats_2 = c.VkPhysicalDeviceFeatures2{
             .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
             .pNext = null,
