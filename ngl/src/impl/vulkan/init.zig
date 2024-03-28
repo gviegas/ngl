@@ -269,6 +269,24 @@ const Feature = struct {
         return self;
     }
 
+    /// Gets all core features up to `version`, inclusive.
+    // TODO: Make this aware of available extensions (or maybe add
+    // a separate method for such).
+    fn getVersion(device: c.VkPhysicalDevice, version: u32) Feature {
+        const options = Options{
+            .@"1.1" = version >= c.VK_API_VERSION_1_2, // See below.
+            .@"1.2" = version >= c.VK_API_VERSION_1_2,
+            .@"1.3" = version >= c.VK_API_VERSION_1_3,
+        };
+
+        if (!options.@"1.1" and version >= c.VK_API_VERSION_1_1) {
+            // TODO: VkPhysicalDeviceVulkan11Features requires v1.2.
+            log.warn("TODO: Handle Feature.getVersion for v1.1", .{});
+        }
+
+        return get(device, options);
+    }
+
     /// This method will disable features that aren't needed,
     /// while leaving desired features unchanged.
     // TODO: Expose/enable more features.
@@ -2774,17 +2792,17 @@ fn getFeature(
             } else {
                 // Properties 2 ----------------------------
                 {
-                    // v1.3
+                    // v1.3.
                     var m4 = c.VkPhysicalDeviceMaintenance4Properties{
                         .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES,
                         .pNext = null,
                     };
-                    // v1.2
+                    // v1.2.
                     var @"1.2" = c.VkPhysicalDeviceVulkan12Properties{
                         .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES,
                         .pNext = if (ver >= c.VK_API_VERSION_1_3) &m4 else null,
                     };
-                    // v1.1
+                    // v1.1.
                     var m3 = c.VkPhysicalDeviceMaintenance3Properties{
                         .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,
                         .pNext = if (ver >= c.VK_API_VERSION_1_2) &@"1.2" else null,
@@ -2797,7 +2815,8 @@ fn getFeature(
                     mem_max_size = m3.maxMemoryAllocationSize;
                     if (ver >= c.VK_API_VERSION_1_2) {
                         // Certain devices may lie about MS support
-                        // for signed integer formats
+                        // for signed integer formats.
+                        // TODO: It seems that this has been fixed.
                         var x: c.VkImageFormatProperties = undefined;
                         const r = inst.vkGetPhysicalDeviceImageFormatProperties(
                             phys_dev,
@@ -2810,7 +2829,7 @@ fn getFeature(
                         );
                         const mask = @"1.2".framebufferIntegerColorSampleCounts;
                         if (r != c.VK_SUCCESS or x.sampleCounts & mask != mask)
-                            // Use the default (no MS)
+                            // Use the default (no MS).
                             log.warn("Feature.core.frame_buffer.integer_sample_counts workaround", .{})
                         else
                             fb_int_spl_cnts = convSpls(mask);
