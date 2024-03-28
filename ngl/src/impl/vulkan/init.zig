@@ -2819,19 +2819,16 @@ fn getFeature(
                 }
                 // Features 2 ------------------------------
                 {
-                    // v1.2
-                    var @"1.2" = c.VkPhysicalDeviceVulkan12Features{
-                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
-                        .pNext = null,
-                    };
-                    var feats = c.VkPhysicalDeviceFeatures2{
-                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-                        .pNext = if (ver >= c.VK_API_VERSION_1_2) &@"1.2" else null,
-                    };
-                    inst.vkGetPhysicalDeviceFeatures2(phys_dev, &feats);
-                    f = feats.features;
-                    if (ver >= c.VK_API_VERSION_1_2)
-                        splr_mirror_clamp_to_edge = @"1.2".samplerMirrorClampToEdge == c.VK_TRUE;
+                    var f2 = Feature.get(phys_dev, .{
+                        .@"1.1" = false,
+                        .@"1.2" = ver >= c.VK_API_VERSION_1_2,
+                        .@"1.3" = false,
+                    });
+                    // TODO: This is unnecessary.
+                    f2.set();
+                    // TODO: Avoid this copy.
+                    f = f2.features_2.features;
+                    splr_mirror_clamp_to_edge = f2.@"1.2".samplerMirrorClampToEdge == c.VK_TRUE;
                 }
             }
 
