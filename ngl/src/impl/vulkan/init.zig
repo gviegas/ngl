@@ -209,6 +209,214 @@ const Extension = struct {
     }
 };
 
+const Feature = struct {
+    options: Options,
+    features_2: c.VkPhysicalDeviceFeatures2,
+    @"1.1": c.VkPhysicalDeviceVulkan11Features,
+    @"1.2": c.VkPhysicalDeviceVulkan12Features,
+    @"1.3": c.VkPhysicalDeviceVulkan13Features,
+
+    const Options = packed struct {
+        @"1.1": bool,
+        @"1.2": bool,
+        @"1.3": bool,
+    };
+
+    /// The caller must ensure that `options` is valid for the
+    /// instance/device versions.
+    fn get(device: c.VkPhysicalDevice, options: Options) Feature {
+        const inst = Instance.get();
+
+        var self = Feature{
+            .options = options,
+            .features_2 = .{
+                .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+                .pNext = null,
+                .features = undefined,
+            },
+            .@"1.1" = .{
+                .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
+                .pNext = null,
+            },
+            .@"1.2" = .{
+                .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
+                .pNext = null,
+            },
+            .@"1.3" = .{
+                .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
+                .pNext = null,
+            },
+        };
+
+        if (options.@"1.1") {
+            self.@"1.1".pNext = self.features_2.pNext;
+            self.features_2.pNext = &self.@"1.1";
+        }
+        if (options.@"1.2") {
+            self.@"1.2".pNext = self.features_2.pNext;
+            self.features_2.pNext = &self.@"1.2";
+        }
+        if (options.@"1.3") {
+            self.@"1.3".pNext = self.features_2.pNext;
+            self.features_2.pNext = &self.@"1.3";
+        }
+
+        if (self.features_2.pNext != null) {
+            if (inst.getPhysicalDeviceFeatures2 == null) @panic("Invalid call to Feature.get");
+            inst.vkGetPhysicalDeviceFeatures2(device, &self.features_2);
+        } else inst.vkGetPhysicalDeviceFeatures(device, &self.features_2.features);
+
+        return self;
+    }
+
+    /// This method will disable features that aren't needed,
+    /// while leaving desired features unchanged.
+    // TODO: Expose/enable more features.
+    fn set(self: *Feature) void {
+        const @"1.0" = &self.features_2.features;
+        @"1.0".robustBufferAccess = c.VK_FALSE;
+        @"1.0".geometryShader = c.VK_FALSE;
+        @"1.0".tessellationShader = c.VK_FALSE;
+        @"1.0".sampleRateShading = c.VK_FALSE;
+        @"1.0".dualSrcBlend = c.VK_FALSE;
+        @"1.0".logicOp = c.VK_FALSE;
+        @"1.0".depthBounds = c.VK_FALSE;
+        @"1.0".wideLines = c.VK_FALSE;
+        @"1.0".largePoints = c.VK_FALSE;
+        @"1.0".multiViewport = c.VK_FALSE;
+        @"1.0".pipelineStatisticsQuery = c.VK_FALSE;
+        @"1.0".shaderTessellationAndGeometryPointSize = c.VK_FALSE;
+        @"1.0".shaderImageGatherExtended = c.VK_FALSE;
+        @"1.0".shaderStorageImageExtendedFormats = c.VK_FALSE;
+        @"1.0".shaderStorageImageReadWithoutFormat = c.VK_FALSE;
+        @"1.0".shaderStorageImageWriteWithoutFormat = c.VK_FALSE;
+        @"1.0".shaderUniformBufferArrayDynamicIndexing = c.VK_FALSE;
+        @"1.0".shaderSampledImageArrayDynamicIndexing = c.VK_FALSE;
+        @"1.0".shaderStorageBufferArrayDynamicIndexing = c.VK_FALSE;
+        @"1.0".shaderStorageImageArrayDynamicIndexing = c.VK_FALSE;
+        @"1.0".shaderClipDistance = c.VK_FALSE;
+        @"1.0".shaderCullDistance = c.VK_FALSE;
+        @"1.0".shaderFloat64 = c.VK_FALSE;
+        @"1.0".shaderInt64 = c.VK_FALSE;
+        @"1.0".shaderInt16 = c.VK_FALSE;
+        @"1.0".shaderResourceResidency = c.VK_FALSE;
+        @"1.0".shaderResourceMinLod = c.VK_FALSE;
+        @"1.0".sparseBinding = c.VK_FALSE;
+        @"1.0".sparseResidencyBuffer = c.VK_FALSE;
+        @"1.0".sparseResidencyImage2D = c.VK_FALSE;
+        @"1.0".sparseResidencyImage3D = c.VK_FALSE;
+        @"1.0".sparseResidency2Samples = c.VK_FALSE;
+        @"1.0".sparseResidency4Samples = c.VK_FALSE;
+        @"1.0".sparseResidency8Samples = c.VK_FALSE;
+        @"1.0".sparseResidency16Samples = c.VK_FALSE;
+        @"1.0".sparseResidencyAliased = c.VK_FALSE;
+        @"1.0".variableMultisampleRate = c.VK_FALSE;
+
+        if (self.options.@"1.1") {
+            const @"1.1" = &self.@"1.1";
+            @"1.1".storageBuffer16BitAccess = c.VK_FALSE;
+            @"1.1".uniformAndStorageBuffer16BitAccess = c.VK_FALSE;
+            @"1.1".storagePushConstant16 = c.VK_FALSE;
+            @"1.1".storageInputOutput16 = c.VK_FALSE;
+            @"1.1".multiview = c.VK_FALSE;
+            @"1.1".multiviewGeometryShader = c.VK_FALSE;
+            @"1.1".multiviewTessellationShader = c.VK_FALSE;
+            @"1.1".variablePointersStorageBuffer = c.VK_FALSE;
+            @"1.1".variablePointers = c.VK_FALSE;
+            @"1.1".protectedMemory = c.VK_FALSE;
+            @"1.1".samplerYcbcrConversion = c.VK_FALSE;
+            @"1.1".shaderDrawParameters = c.VK_FALSE;
+        }
+
+        if (self.options.@"1.2") {
+            const @"1.2" = &self.@"1.2";
+            @"1.2".drawIndirectCount = c.VK_FALSE;
+            @"1.2".storageBuffer8BitAccess = c.VK_FALSE;
+            @"1.2".uniformAndStorageBuffer8BitAccess = c.VK_FALSE;
+            @"1.2".storagePushConstant8 = c.VK_FALSE;
+            @"1.2".shaderBufferInt64Atomics = c.VK_FALSE;
+            @"1.2".shaderSharedInt64Atomics = c.VK_FALSE;
+            @"1.2".shaderFloat16 = c.VK_FALSE;
+            @"1.2".shaderInt8 = c.VK_FALSE;
+            @"1.2".descriptorIndexing = c.VK_FALSE;
+            @"1.2".shaderInputAttachmentArrayDynamicIndexing = c.VK_FALSE;
+            @"1.2".shaderUniformTexelBufferArrayDynamicIndexing = c.VK_FALSE;
+            @"1.2".shaderStorageTexelBufferArrayDynamicIndexing = c.VK_FALSE;
+            @"1.2".shaderUniformBufferArrayNonUniformIndexing = c.VK_FALSE;
+            @"1.2".shaderSampledImageArrayNonUniformIndexing = c.VK_FALSE;
+            @"1.2".shaderStorageBufferArrayNonUniformIndexing = c.VK_FALSE;
+            @"1.2".shaderStorageImageArrayNonUniformIndexing = c.VK_FALSE;
+            @"1.2".shaderInputAttachmentArrayNonUniformIndexing = c.VK_FALSE;
+            @"1.2".shaderUniformTexelBufferArrayNonUniformIndexing = c.VK_FALSE;
+            @"1.2".shaderStorageTexelBufferArrayNonUniformIndexing = c.VK_FALSE;
+            @"1.2".descriptorBindingUniformBufferUpdateAfterBind = c.VK_FALSE;
+            @"1.2".descriptorBindingSampledImageUpdateAfterBind = c.VK_FALSE;
+            @"1.2".descriptorBindingStorageImageUpdateAfterBind = c.VK_FALSE;
+            @"1.2".descriptorBindingStorageBufferUpdateAfterBind = c.VK_FALSE;
+            @"1.2".descriptorBindingUniformTexelBufferUpdateAfterBind = c.VK_FALSE;
+            @"1.2".descriptorBindingStorageTexelBufferUpdateAfterBind = c.VK_FALSE;
+            @"1.2".descriptorBindingUpdateUnusedWhilePending = c.VK_FALSE;
+            @"1.2".descriptorBindingPartiallyBound = c.VK_FALSE;
+            @"1.2".descriptorBindingVariableDescriptorCount = c.VK_FALSE;
+            @"1.2".runtimeDescriptorArray = c.VK_FALSE;
+            @"1.2".samplerFilterMinmax = c.VK_FALSE;
+            @"1.2".scalarBlockLayout = c.VK_FALSE;
+            @"1.2".imagelessFramebuffer = c.VK_FALSE;
+            @"1.2".uniformBufferStandardLayout = c.VK_FALSE;
+            @"1.2".shaderSubgroupExtendedTypes = c.VK_FALSE;
+            @"1.2".separateDepthStencilLayouts = c.VK_FALSE;
+            @"1.2".hostQueryReset = c.VK_FALSE;
+            @"1.2".timelineSemaphore = c.VK_FALSE;
+            @"1.2".bufferDeviceAddress = c.VK_FALSE;
+            @"1.2".bufferDeviceAddressCaptureReplay = c.VK_FALSE;
+            @"1.2".bufferDeviceAddressMultiDevice = c.VK_FALSE;
+            @"1.2".vulkanMemoryModel = c.VK_FALSE;
+            @"1.2".vulkanMemoryModelDeviceScope = c.VK_FALSE;
+            @"1.2".vulkanMemoryModelAvailabilityVisibilityChains = c.VK_FALSE;
+            @"1.2".shaderOutputViewportIndex = c.VK_FALSE;
+            @"1.2".shaderOutputLayer = c.VK_FALSE;
+            @"1.2".subgroupBroadcastDynamicId = c.VK_FALSE;
+        }
+
+        if (self.options.@"1.3") {
+            const @"1.3" = &self.@"1.3";
+            @"1.3".robustImageAccess = c.VK_FALSE;
+            @"1.3".inlineUniformBlock = c.VK_FALSE;
+            @"1.3".descriptorBindingInlineUniformBlockUpdateAfterBind = c.VK_FALSE;
+            @"1.3".pipelineCreationCacheControl = c.VK_FALSE;
+            @"1.3".privateData = c.VK_FALSE;
+            @"1.3".shaderDemoteToHelperInvocation = c.VK_FALSE;
+            @"1.3".shaderTerminateInvocation = c.VK_FALSE;
+            @"1.3".subgroupSizeControl = c.VK_FALSE;
+            @"1.3".computeFullSubgroups = c.VK_FALSE;
+            @"1.3".textureCompressionASTC_HDR = c.VK_FALSE;
+            @"1.3".shaderZeroInitializeWorkgroupMemory = c.VK_FALSE;
+            @"1.3".shaderIntegerDotProduct = c.VK_FALSE;
+        }
+    }
+
+    /// Updates `create_info` such that it references the data in `self`.
+    /// Note that this uses self-references.
+    fn ref(self: *Feature, create_info: *c.VkDeviceCreateInfo) void {
+        if (self.features_2.pNext != null) {
+            self.features_2.pNext = @constCast(create_info.pNext);
+            if (self.options.@"1.1") {
+                self.@"1.1".pNext = self.features_2.pNext;
+                self.features_2.pNext = &self.@"1.1";
+            }
+            if (self.options.@"1.2") {
+                self.@"1.2".pNext = self.features_2.pNext;
+                self.features_2.pNext = &self.@"1.2";
+            }
+            if (self.options.@"1.3") {
+                self.@"1.3".pNext = self.features_2.pNext;
+                self.features_2.pNext = &self.@"1.3";
+            }
+            create_info.pNext = &self.features_2;
+        } else create_info.pEnabledFeatures = &self.features_2.features;
+    }
+};
+
 pub const Instance = struct {
     handle: c.VkInstance,
     version: u32,
