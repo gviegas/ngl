@@ -413,6 +413,7 @@ const Feature = struct {
                 self.features_2.pNext = &self.@"1.3";
             }
             create_info.pNext = &self.features_2;
+            create_info.pEnabledFeatures = null;
         } else create_info.pEnabledFeatures = &self.features_2.features;
     }
 };
