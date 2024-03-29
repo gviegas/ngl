@@ -436,6 +436,85 @@ const Feature = struct {
     }
 };
 
+const Property = struct {
+    options: Options,
+    properties_2: c.VkPhysicalDeviceProperties2,
+    @"1.1": c.VkPhysicalDeviceVulkan11Properties,
+    @"1.2": c.VkPhysicalDeviceVulkan12Properties,
+    @"1.3": c.VkPhysicalDeviceVulkan13Properties,
+
+    const Options = packed struct {
+        @"1.1": bool,
+        @"1.2": bool,
+        @"1.3": bool,
+    };
+
+    /// The caller must ensure that `options` is valid for the
+    /// instance/device versions.
+    fn get(device: c.VkPhysicalDevice, options: Options) Property {
+        const inst = Instance.get();
+
+        var self = Property{
+            .options = options,
+            .properties_2 = .{
+                .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+                .pNext = null,
+                .properties = undefined,
+            },
+            .@"1.1" = .{
+                .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES,
+                .pNext = null,
+            },
+            .@"1.2" = .{
+                .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES,
+                .pNext = null,
+            },
+            .@"1.3" = .{
+                .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES,
+                .pNext = null,
+            },
+        };
+
+        if (options.@"1.1") {
+            self.@"1.1".pNext = self.properties_2.pNext;
+            self.properties_2.pNext = &self.@"1.1";
+        }
+        if (options.@"1.2") {
+            self.@"1.2".pNext = self.properties_2.pNext;
+            self.properties_2.pNext = &self.@"1.2";
+        }
+        if (options.@"1.3") {
+            self.@"1.3".pNext = self.properties_2.pNext;
+            self.properties_2.pNext = &self.@"1.3";
+        }
+
+        if (self.properties_2.pNext != null) {
+            if (inst.getPhysicalDeviceProperties2 == null) @panic("Invalid call to Property.get");
+            inst.vkGetPhysicalDeviceProperties2(device, &self.properties_2);
+        } else inst.vkGetPhysicalDeviceProperties(device, &self.properties_2.properties);
+
+        return self;
+    }
+
+    /// Gets all core properties up to `version`, inclusive.
+    // TODO: Make this aware of available extensions (or maybe add
+    // a separate method for such).
+    fn getVersion(device: c.VkPhysicalDevice, version: u32) Property {
+        const options = Options{
+            .@"1.1" = version >= c.VK_API_VERSION_1_2, // See below.
+            .@"1.2" = version >= c.VK_API_VERSION_1_2,
+            .@"1.3" = version >= c.VK_API_VERSION_1_3,
+        };
+
+        if (!options.@"1.1" and version >= c.VK_API_VERSION_1_1) {
+            // TODO: VkPhysicalDeviceVulkan11Properties requires v1.2.
+            log.warn("TODO: Handle Property.getVersion for v1.1", .{});
+        }
+
+        return get(device, options);
+    }
+};
+
 pub const Instance = struct {
     handle: c.VkInstance,
     version: u32,
