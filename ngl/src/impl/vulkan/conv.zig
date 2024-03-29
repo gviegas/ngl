@@ -75,7 +75,7 @@ pub fn toVkFormat(format: ngl.Format) Error!c.VkFormat {
         .r8_snorm => c.VK_FORMAT_R8_SNORM,
         .r8_uint => c.VK_FORMAT_R8_UINT,
         .r8_sint => c.VK_FORMAT_R8_SINT,
-        .a8_unorm => 1000470001, // c.VK_FORMAT_A8_UNORM_KHR,
+        .a8_unorm => c.VK_FORMAT_A8_UNORM_KHR,
         .r4g4_unorm => c.VK_FORMAT_R4G4_UNORM_PACK8,
 
         .r16_unorm => c.VK_FORMAT_R16_UNORM,
@@ -97,7 +97,7 @@ pub fn toVkFormat(format: ngl.Format) Error!c.VkFormat {
         .rgb5a1_unorm => c.VK_FORMAT_R5G5B5A1_UNORM_PACK16,
         .bgr5a1_unorm => c.VK_FORMAT_B5G5R5A1_UNORM_PACK16,
         .a1rgb5_unorm => c.VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-        .a1bgr5_unorm => 1000470000, // c.VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+        .a1bgr5_unorm => c.VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
 
         .rgb8_unorm => c.VK_FORMAT_R8G8B8_UNORM,
         .rgb8_srgb => c.VK_FORMAT_R8G8B8_SRGB,
@@ -128,16 +128,16 @@ pub fn toVkFormat(format: ngl.Format) Error!c.VkFormat {
         .bgra8_snorm => c.VK_FORMAT_B8G8R8A8_SNORM,
         .bgra8_uint => c.VK_FORMAT_B8G8R8A8_UINT,
         .bgra8_sint => c.VK_FORMAT_B8G8R8A8_SINT,
-        .rgb10a2_unorm => Error.NotSupported, // XXX
-        .rgb10a2_uint => Error.NotSupported, // XXX
+        .rgb10a2_unorm => Error.NotSupported, // For other APIs.
+        .rgb10a2_uint => Error.NotSupported, // For other APIs.
         .a2rgb10_unorm => c.VK_FORMAT_A2R10G10B10_UNORM_PACK32,
         .a2rgb10_uint => c.VK_FORMAT_A2R10G10B10_UINT_PACK32,
         .a2bgr10_unorm => c.VK_FORMAT_A2B10G10R10_UNORM_PACK32,
         .a2bgr10_uint => c.VK_FORMAT_A2B10G10R10_UINT_PACK32,
-        .bgr10a2_unorm => Error.NotSupported, // XXX
-        .rg11b10_sfloat => Error.NotSupported, // XXX
+        .bgr10a2_unorm => Error.NotSupported, // For other APIs.
+        .rg11b10_sfloat => Error.NotSupported, // For other APIs.
         .b10gr11_ufloat => c.VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-        .rgb9e5_sfloat => Error.NotSupported, // XXX
+        .rgb9e5_sfloat => Error.NotSupported, // For other APIs.
         .e5bgr9_ufloat => c.VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
 
         .rgb16_unorm => c.VK_FORMAT_R16G16B16_UNORM,
@@ -846,7 +846,7 @@ pub fn fromVkFormat(vk_format: c.VkFormat) Error!ngl.Format {
         c.VK_FORMAT_R8_SNORM => .r8_snorm,
         c.VK_FORMAT_R8_UINT => .r8_uint,
         c.VK_FORMAT_R8_SINT => .r8_sint,
-        1000470001 => .a8_unorm, // c.VK_FORMAT_A8_UNORM_KHR,
+        c.VK_FORMAT_A8_UNORM_KHR => .a8_unorm,
         c.VK_FORMAT_R4G4_UNORM_PACK8 => .r4g4_unorm,
 
         c.VK_FORMAT_R16_UNORM => .r16_unorm,
@@ -868,7 +868,7 @@ pub fn fromVkFormat(vk_format: c.VkFormat) Error!ngl.Format {
         c.VK_FORMAT_R5G5B5A1_UNORM_PACK16 => .rgb5a1_unorm,
         c.VK_FORMAT_B5G5R5A1_UNORM_PACK16 => .bgr5a1_unorm,
         c.VK_FORMAT_A1R5G5B5_UNORM_PACK16 => .a1rgb5_unorm,
-        1000470000 => .a1bgr5_unorm, // c.VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+        c.VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR => .a1bgr5_unorm,
 
         c.VK_FORMAT_R8G8B8_UNORM => .rgb8_unorm,
         c.VK_FORMAT_R8G8B8_SRGB => .rgb8_srgb,
