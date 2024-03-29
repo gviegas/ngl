@@ -2757,80 +2757,65 @@ fn getFeature(
 
     switch (feature.*) {
         .core => |*feat| {
-            var props: c.VkPhysicalDeviceProperties = undefined;
-            inst.vkGetPhysicalDeviceProperties(phys_dev, &props);
-            const ver = props.apiVersion;
-            const l = &props.limits;
-            var mem_max_size: u64 = 1073741824;
-            var buf_max_size: u64 = 1073741824;
-            var fb_int_spl_cnts = ngl.SampleCount.Flags{ .@"1" = true };
-            var f: c.VkPhysicalDeviceFeatures = undefined;
-            var splr_mirror_clamp_to_edge = false;
+            const prop = blk: {
+                // TODO: Improve this.
+                var prop = Property.getVersion(phys_dev, c.VK_API_VERSION_1_0);
+                if (inst.version >= c.VK_API_VERSION_1_1 and
+                    prop.properties_2.properties.apiVersion >= c.VK_API_VERSION_1_2)
+                {
+                    prop = Property.getVersion(phys_dev, prop.properties_2.properties.apiVersion);
+                }
+                break :blk prop;
+            };
+            const ver = prop.properties_2.properties.apiVersion;
+            const l = &prop.properties_2.properties.limits;
 
-            if (ver < c.VK_API_VERSION_1_1) {
-                inst.vkGetPhysicalDeviceFeatures(phys_dev, &f);
-            } else {
-                // Properties 2 ----------------------------
-                {
-                    // v1.3.
-                    var m4 = c.VkPhysicalDeviceMaintenance4Properties{
-                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES,
-                        .pNext = null,
-                    };
-                    // v1.2.
-                    var @"1.2" = c.VkPhysicalDeviceVulkan12Properties{
-                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES,
-                        .pNext = if (ver >= c.VK_API_VERSION_1_3) &m4 else null,
-                    };
-                    // v1.1.
-                    var m3 = c.VkPhysicalDeviceMaintenance3Properties{
-                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES,
-                        .pNext = if (ver >= c.VK_API_VERSION_1_2) &@"1.2" else null,
-                    };
-                    var props_2 = c.VkPhysicalDeviceProperties2{
-                        .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
-                        .pNext = &m3,
-                    };
-                    inst.vkGetPhysicalDeviceProperties2(phys_dev, &props_2);
-                    mem_max_size = m3.maxMemoryAllocationSize;
-                    if (ver >= c.VK_API_VERSION_1_2) {
-                        // Certain devices may lie about MS support
-                        // for signed integer formats.
-                        // TODO: It seems that this has been fixed.
-                        var x: c.VkImageFormatProperties = undefined;
-                        const r = inst.vkGetPhysicalDeviceImageFormatProperties(
-                            phys_dev,
-                            c.VK_FORMAT_R8_SINT,
-                            c.VK_IMAGE_TYPE_2D,
-                            c.VK_IMAGE_TILING_OPTIMAL,
-                            c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                            0,
-                            &x,
-                        );
-                        const mask = @"1.2".framebufferIntegerColorSampleCounts;
-                        if (r != c.VK_SUCCESS or x.sampleCounts & mask != mask)
-                            // Use the default (no MS).
-                            log.warn("Feature.core.frame_buffer.integer_sample_counts workaround", .{})
-                        else
-                            fb_int_spl_cnts = convSpls(mask);
-                    }
-                    if (ver >= c.VK_API_VERSION_1_3)
-                        buf_max_size = m4.maxBufferSize;
-                }
-                // Features 2 ------------------------------
-                {
-                    var f2 = Feature.get(phys_dev, .{
-                        .@"1.1" = false,
-                        .@"1.2" = ver >= c.VK_API_VERSION_1_2,
-                        .@"1.3" = false,
-                    });
-                    // TODO: This is unnecessary.
-                    f2.set();
-                    // TODO: Avoid this copy.
-                    f = f2.features_2.features;
-                    splr_mirror_clamp_to_edge = f2.@"1.2".samplerMirrorClampToEdge == c.VK_TRUE;
-                }
+            const ft = blk: {
+                // TODO: Make sure to update the options as needed.
+                var ft = Feature.get(phys_dev, .{
+                    .@"1.1" = false,
+                    .@"1.2" = ver >= c.VK_API_VERSION_1_2,
+                    .@"1.3" = false,
+                });
+                // TODO: This is unnecessary.
+                ft.set();
+                break :blk ft;
+            };
+            const f = &ft.features_2.features;
+
+            var mem_max_size: u64 = 1073741824;
+            var fb_int_spl_cnts = ngl.SampleCount.Flags{ .@"1" = true };
+            var splr_mirror_clamp_to_edge = false;
+            var buf_max_size: u64 = 1073741824;
+
+            if (ver >= c.VK_API_VERSION_1_2) {
+                mem_max_size = prop.@"1.1".maxMemoryAllocationSize;
+
+                // Certain devices may lie about MS support
+                // for signed integer formats.
+                // TODO: It seems that this has been fixed.
+                var x: c.VkImageFormatProperties = undefined;
+                const r = inst.vkGetPhysicalDeviceImageFormatProperties(
+                    phys_dev,
+                    c.VK_FORMAT_R8_SINT,
+                    c.VK_IMAGE_TYPE_2D,
+                    c.VK_IMAGE_TILING_OPTIMAL,
+                    c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                    0,
+                    &x,
+                );
+                const mask = prop.@"1.2".framebufferIntegerColorSampleCounts;
+                if (r != c.VK_SUCCESS or x.sampleCounts & mask != mask)
+                    // Use the default (no MS).
+                    log.warn("Feature.core.frame_buffer.integer_sample_counts workaround", .{})
+                else
+                    fb_int_spl_cnts = convSpls(mask);
+
+                splr_mirror_clamp_to_edge = ft.@"1.2".samplerMirrorClampToEdge == c.VK_TRUE;
             }
+
+            if (ver >= c.VK_API_VERSION_1_3)
+                buf_max_size = prop.@"1.3".maxBufferSize;
 
             feat.* = .{
                 .memory = .{
@@ -2952,8 +2937,6 @@ fn getFeature(
                 .query = .{
                     .occlusion_precise = f.occlusionQueryPrecise == c.VK_TRUE,
                     .timestamp = blk: {
-                        // I didn't found documented anywhere that this
-                        // isn't allowed, so assume that it is
                         if (l.timestampPeriod == 0)
                             break :blk [_]bool{false} ** ngl.Queue.max;
                         var supported: [ngl.Queue.max]bool = undefined;
