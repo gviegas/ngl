@@ -68,7 +68,7 @@ pub const Fence = packed struct {
         try check(Device.cast(device).vkWaitForFences(
             @intCast(fncs.len),
             fncs.ptr,
-            c.VK_TRUE, // TODO: Maybe expose this
+            c.VK_TRUE, // TODO: Maybe expose this.
             timeout,
         ));
     }

@@ -3,7 +3,7 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 const DriverApi = ngl.DriverApi;
 const CommandBuffer = ngl.CommandBuffer;
-const PipelineStage = ngl.PipelineStage;
+const Stage = ngl.Stage;
 const Fence = ngl.Fence;
 const Semaphore = ngl.Semaphore;
 const SwapChain = ngl.SwapChain;
@@ -204,7 +204,7 @@ pub const Queue = struct {
 
         pub const SemaphoreSubmit = struct {
             semaphore: *Semaphore,
-            stage_mask: PipelineStage.Flags,
+            stage_mask: Stage.Flags,
         };
     };
 

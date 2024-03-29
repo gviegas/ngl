@@ -225,7 +225,7 @@ pub const Pipeline = struct {
                 .pNext = null,
                 .flags = 0,
                 .stageCount = @intCast(state.stages.len),
-                .pStages = undefined, // Set below
+                .pStages = undefined, // Set below.
                 .pVertexInputState = &inner.vertex_input_state,
                 .pInputAssemblyState = &inner.input_assembly_state,
                 .pTessellationState = &defaults.tessellation_state,
@@ -241,7 +241,7 @@ pub const Pipeline = struct {
                 else
                     null_handle,
                 .subpass = state.subpass,
-                // TODO: Expose these
+                // TODO: Expose these.
                 .basePipelineHandle = null_handle,
                 .basePipelineIndex = -1,
             };
@@ -259,7 +259,7 @@ pub const Pipeline = struct {
                             .inputRate = switch (b.step_rate) {
                                 .vertex => c.VK_VERTEX_INPUT_RATE_VERTEX,
                                 // TODO: Support other instance divisor values
-                                // (need to check availability)
+                                // (need to check availability).
                                 .instance => |div| if (div == 1)
                                     c.VK_VERTEX_INPUT_RATE_INSTANCE
                                 else
@@ -507,7 +507,7 @@ pub const Pipeline = struct {
             dev.vkDestroyShaderModule(s.module, null);
         };
 
-        if (false) { // TODO: Don't create modules if maintenance5 is available
+        if (false) { // TODO: Don't create modules if maintenance5 is available.
             stages_ptr[0].module = null;
             // TODO...
         } else {
@@ -605,9 +605,9 @@ pub const Pipeline = struct {
                 .sType = c.VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
                 .pNext = null,
                 .flags = 0,
-                .stage = undefined, // Set below
+                .stage = undefined, // Set below.
                 .layout = PipelineLayout.cast(state.layout.impl).handle,
-                // TODO: Expose these
+                // TODO: Expose these.
                 .basePipelineHandle = null_handle,
                 .basePipelineIndex = -1,
             };
@@ -646,7 +646,7 @@ pub const Pipeline = struct {
             dev.vkDestroyShaderModule(m, null);
         };
 
-        if (false) { // TODO: Don't create modules if maintenance5 is available
+        if (false) { // TODO: Don't create modules if maintenance5 is available.
             @memset(modules, null);
             // TODO...
         } else {

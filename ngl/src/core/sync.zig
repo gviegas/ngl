@@ -5,7 +5,7 @@ const Device = ngl.Device;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
-pub const PipelineStage = enum {
+pub const Stage = enum {
     none,
     all_commands,
     all_graphics,
@@ -22,7 +22,7 @@ pub const PipelineStage = enum {
     copy,
     host,
 
-    pub const Flags = ngl.Flags(PipelineStage);
+    pub const Flags = ngl.Flags(Stage);
 };
 
 pub const Access = enum {

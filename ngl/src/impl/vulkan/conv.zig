@@ -432,15 +432,15 @@ pub fn toVkSamplerMipmapMode(sampler_mipmap_mode: ngl.Sampler.MipmapMode) c.VkSa
     };
 }
 
-// TODO: `toVkPipelineStage2`
+// TODO: `toVkPipelineStage2`.
 pub fn toVkPipelineStage(
     comptime scope: enum { source, dest },
-    pipeline_stage: ngl.PipelineStage,
+    stage: ngl.Stage,
 ) c.VkPipelineStageFlagBits {
-    return switch (pipeline_stage) {
+    return switch (stage) {
         // `VK_PIPELINE_STAGE_NONE` (i.e. 0) is generally not allowed
         // on vanilla commands unless synchronization2 is enabled,
-        // so we resort to the top of pipe and bottom of pipe stages
+        // so we resort to the top of pipe and bottom of pipe stages.
         .none => switch (scope) {
             .source => c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             .dest => c.VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
@@ -469,12 +469,12 @@ pub fn toVkPipelineStage(
     };
 }
 
-// TODO: `toVkPipelineStageFlags2`
+// TODO: `toVkPipelineStageFlags2`.
 pub fn toVkPipelineStageFlags(
     comptime scope: enum { source, dest },
-    pipeline_stage_flags: ngl.PipelineStage.Flags,
+    stage_flags: ngl.Stage.Flags,
 ) c.VkPipelineStageFlags {
-    if (pipeline_stage_flags.none or ngl.noFlagsSet(pipeline_stage_flags))
+    if (stage_flags.none or ngl.noFlagsSet(stage_flags))
         return switch (scope) {
             .source => c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             .dest => c.VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
@@ -482,55 +482,55 @@ pub fn toVkPipelineStageFlags(
 
     var flags: c.VkPipelineStageFlags = 0;
 
-    if (pipeline_stage_flags.all_commands) {
+    if (stage_flags.all_commands) {
         flags |= c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-        if (pipeline_stage_flags.host)
+        if (stage_flags.host)
             flags |= c.VK_PIPELINE_STAGE_HOST_BIT;
         return flags;
     }
 
-    if (pipeline_stage_flags.all_graphics) {
+    if (stage_flags.all_graphics) {
         flags |= c.VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
-        if (pipeline_stage_flags.compute_shader)
+        if (stage_flags.compute_shader)
             flags |= c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-        if (pipeline_stage_flags.clear or pipeline_stage_flags.copy)
+        if (stage_flags.clear or stage_flags.copy)
             flags |= c.VK_PIPELINE_STAGE_TRANSFER_BIT;
-        if (pipeline_stage_flags.host)
+        if (stage_flags.host)
             flags |= c.VK_PIPELINE_STAGE_HOST_BIT;
         return flags;
     }
 
-    if (pipeline_stage_flags.draw_indirect)
+    if (stage_flags.draw_indirect)
         flags |= c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
-    if (pipeline_stage_flags.index_input or pipeline_stage_flags.vertex_attribute_input)
+    if (stage_flags.index_input or stage_flags.vertex_attribute_input)
         flags |= c.VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
-    if (pipeline_stage_flags.vertex_shader)
+    if (stage_flags.vertex_shader)
         flags |= c.VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-    if (pipeline_stage_flags.early_fragment_tests)
+    if (stage_flags.early_fragment_tests)
         flags |= c.VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    if (pipeline_stage_flags.fragment_shader)
+    if (stage_flags.fragment_shader)
         flags |= c.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    if (pipeline_stage_flags.late_fragment_tests)
+    if (stage_flags.late_fragment_tests)
         flags |= c.VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    if (pipeline_stage_flags.color_attachment_output)
+    if (stage_flags.color_attachment_output)
         flags |= c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    if (pipeline_stage_flags.compute_shader)
+    if (stage_flags.compute_shader)
         flags |= c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-    if (pipeline_stage_flags.clear or pipeline_stage_flags.copy)
+    if (stage_flags.clear or stage_flags.copy)
         flags |= c.VK_PIPELINE_STAGE_TRANSFER_BIT;
-    if (pipeline_stage_flags.host)
+    if (stage_flags.host)
         flags |= c.VK_PIPELINE_STAGE_HOST_BIT;
     return flags;
 }
 
-// TODO: toVkAccess2
+// TODO: toVkAccess2.
 pub fn toVkAccess(_: ngl.Access) c.VkAccessFlagBits {
     // Nothing in Vulkan 1.3 seems to use these values
-    // by themselves, only as `VkAccessFlags`
+    // by themselves, only as `VkAccessFlags`.
     @compileError("What do you need this for?");
 }
 
-// TODO: toVkAccessFlags2
+// TODO: toVkAccessFlags2.
 pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
     if (access_flags.none or ngl.noFlagsSet(access_flags))
         return 0; // c.VK_ACCESS_NONE
@@ -629,7 +629,7 @@ pub fn toVkAttachmentStoreOp(store_op: ngl.StoreOp) c.VkAttachmentStoreOp {
     };
 }
 
-/// v1.2
+/// v1.2.
 pub fn toVkResolveMode(resolve_mode: ngl.ResolveMode) c.VkResolveModeFlagBits {
     return switch (resolve_mode) {
         .average => c.VK_RESOLVE_MODE_AVERAGE_BIT,
@@ -639,7 +639,7 @@ pub fn toVkResolveMode(resolve_mode: ngl.ResolveMode) c.VkResolveModeFlagBits {
     };
 }
 
-/// v1.2
+/// v1.2.
 pub fn toVkResolveModeFlags(resolve_mode_flags: ngl.ResolveMode.Flags) c.VkResolveModeFlags {
     var flags: c.VkResolveModeFlags = 0;
     if (resolve_mode_flags.average)

@@ -32,7 +32,7 @@ pub fn getFormatFeatures(
     // TODO: There's no valid usage defined for these flags, so in theory
     // an implementation could do something confusing like setting only
     // `VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT` and assume that
-    // `VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT` is inferred
+    // `VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT` is inferred.
 
     const convFlagsImg = struct {
         fn f(flags: c.VkFormatFeatureFlags) ngl.Format.Features {
@@ -202,7 +202,7 @@ pub const Image = packed struct {
         desc: ngl.Image.Desc,
     ) Error!Impl.Image {
         const usage = conv.toVkImageUsageFlags(desc.usage);
-        // Usage must not be zero
+        // Usage must not be zero.
         if (usage == 0) return Error.InvalidArgument;
 
         var depth: u32 = undefined;
@@ -414,7 +414,7 @@ pub const Sampler = packed struct {
         device: Impl.Device,
         desc: ngl.Sampler.Desc,
     ) Error!Impl.Sampler {
-        // The caller is responsible for checking anisotropy support
+        // The caller is responsible for checking anisotropy support.
         var aniso_enable: c.VkBool32 = undefined;
         var max_aniso: f32 = undefined;
         if (desc.max_anisotropy != null and desc.max_anisotropy.? > 1 and

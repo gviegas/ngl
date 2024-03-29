@@ -2573,7 +2573,7 @@ pub const Queue = struct {
             if (subm.signal.len > 0) {
                 info.pSignalSemaphores = semas_ptr;
                 for (semas_ptr, subm.signal) |*handle, ssema|
-                    // No signal stage mask on vanilla submission
+                    // No signal stage mask on vanilla submission.
                     handle.* = Semaphore.cast(ssema.semaphore.impl).handle;
                 semas_ptr += subm.signal.len;
             } else info.pSignalSemaphores = null;

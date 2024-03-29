@@ -6,7 +6,7 @@ const Format = ngl.Format;
 const ImageView = ngl.ImageView;
 const SampleCount = ngl.SampleCount;
 const Image = ngl.Image;
-const PipelineStage = ngl.PipelineStage;
+const Stage = ngl.Stage;
 const Access = ngl.Access;
 const Pipeline = ngl.Pipeline;
 const Error = ngl.Error;
@@ -81,9 +81,9 @@ pub const RenderPass = struct {
     pub const Dependency = struct {
         source_subpass: Subpass.Ref,
         dest_subpass: Subpass.Ref,
-        source_stage_mask: PipelineStage.Flags,
+        source_stage_mask: Stage.Flags,
         source_access_mask: Access.Flags,
-        dest_stage_mask: PipelineStage.Flags,
+        dest_stage_mask: Stage.Flags,
         dest_access_mask: Access.Flags,
         by_region: bool,
     };

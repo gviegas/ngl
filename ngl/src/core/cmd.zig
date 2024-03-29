@@ -5,7 +5,7 @@ const Device = ngl.Device;
 const Queue = ngl.Queue;
 const Buffer = ngl.Buffer;
 const Image = ngl.Image;
-const PipelineStage = ngl.PipelineStage;
+const Stage = ngl.Stage;
 const Access = ngl.Access;
 const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
@@ -581,7 +581,7 @@ pub const CommandBuffer = struct {
         }
 
         /// Cleared range must be aligned to 4 bytes.
-        /// Executes in `PipelineStage.clear`.
+        /// Executes in `Stage.clear`.
         ///
         /// BUG: Currently, this command may require a graphics or
         /// compute queue.
@@ -819,16 +819,11 @@ pub const CommandBuffer = struct {
         /// ✔ Graphics queue
         /// ✔ Compute queue
         /// ✔ Transfer queue
-        pub fn writeTimestamp(
-            self: *Cmd,
-            pipeline_stage: PipelineStage,
-            query_pool: *QueryPool,
-            query: u32,
-        ) void {
+        pub fn writeTimestamp(self: *Cmd, stage: Stage, query_pool: *QueryPool, query: u32) void {
             Impl.get().writeTimestamp(
                 self.device.impl,
                 self.command_buffer.impl,
-                pipeline_stage,
+                stage,
                 query_pool.impl,
                 query,
             );
@@ -880,16 +875,16 @@ pub const CommandBuffer = struct {
             by_region: bool,
 
             pub const GlobalDependency = struct {
-                source_stage_mask: PipelineStage.Flags,
+                source_stage_mask: Stage.Flags,
                 source_access_mask: Access.Flags,
-                dest_stage_mask: PipelineStage.Flags,
+                dest_stage_mask: Stage.Flags,
                 dest_access_mask: Access.Flags,
             };
 
             pub const BufferDependency = struct {
-                source_stage_mask: PipelineStage.Flags,
+                source_stage_mask: Stage.Flags,
                 source_access_mask: Access.Flags,
-                dest_stage_mask: PipelineStage.Flags,
+                dest_stage_mask: Stage.Flags,
                 dest_access_mask: Access.Flags,
                 queue_transfer: ?struct {
                     source: *Queue,
@@ -901,9 +896,9 @@ pub const CommandBuffer = struct {
             };
 
             pub const ImageDependency = struct {
-                source_stage_mask: PipelineStage.Flags,
+                source_stage_mask: Stage.Flags,
                 source_access_mask: Access.Flags,
-                dest_stage_mask: PipelineStage.Flags,
+                dest_stage_mask: Stage.Flags,
                 dest_access_mask: Access.Flags,
                 queue_transfer: ?struct {
                     source: *Queue,

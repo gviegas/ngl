@@ -431,7 +431,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         device: Device,
         command_buffer: CommandBuffer,
-        pipeline_stage: ngl.PipelineStage,
+        stage: ngl.Stage,
         query_pool: QueryPool,
         query: u32,
     ) void,
@@ -1520,18 +1520,11 @@ pub fn writeTimestamp(
     self: *Self,
     device: Device,
     command_buffer: CommandBuffer,
-    pipeline_stage: ngl.PipelineStage,
+    stage: ngl.Stage,
     query_pool: QueryPool,
     query: u32,
 ) void {
-    self.vtable.writeTimestamp(
-        self.ptr,
-        device,
-        command_buffer,
-        pipeline_stage,
-        query_pool,
-        query,
-    );
+    self.vtable.writeTimestamp(self.ptr, device, command_buffer, stage, query_pool, query);
 }
 
 pub fn copyQueryPoolResults(
