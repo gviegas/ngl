@@ -57,7 +57,6 @@ pub const Error = error{
     Fragmentation,
     OutOfMemory,
     NotSupported,
-    NotPresent,
     InitializationFailed,
     DeviceLost,
     SurfaceLost,

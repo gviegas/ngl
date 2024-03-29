@@ -598,7 +598,7 @@ pub const Instance = struct {
             for (surface_ext ++ platform_exts) |x| {
                 if (ext.contains(x)) {
                     try ext_names.append(x);
-                } else return Error.NotPresent;
+                } else return Error.NotSupported;
             }
         }
 
@@ -1234,7 +1234,7 @@ pub const Device = struct {
             const swapchain_ext = "VK_KHR_swapchain";
             if (ext.contains(swapchain_ext)) {
                 try ext_names.append(swapchain_ext);
-            } else return Error.NotPresent;
+            } else return Error.NotSupported;
         }
 
         var feat = Feature.getVersion(phys_dev, @intCast(ver));
@@ -2956,7 +2956,7 @@ fn getFeature(
 
         .presentation => |*feat| if (gpu.feature_set.presentation) {
             feat.* = {};
-        } else return Error.NotPresent,
+        } else return Error.NotSupported,
     }
 }
 

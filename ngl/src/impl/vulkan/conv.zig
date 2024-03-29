@@ -32,28 +32,28 @@ pub fn check(result: c.VkResult) Error!void {
 
         c.VK_ERROR_OUT_OF_HOST_MEMORY,
         c.VK_ERROR_OUT_OF_DEVICE_MEMORY,
-        c.VK_ERROR_OUT_OF_POOL_MEMORY, // v1.1
+        c.VK_ERROR_OUT_OF_POOL_MEMORY, // v1.1.
         => Error.OutOfMemory,
 
         c.VK_ERROR_INITIALIZATION_FAILED => Error.InitializationFailed,
         c.VK_ERROR_DEVICE_LOST => Error.DeviceLost,
         c.VK_ERROR_TOO_MANY_OBJECTS => Error.TooManyObjects,
-        c.VK_ERROR_FORMAT_NOT_SUPPORTED => Error.NotSupported,
 
         c.VK_ERROR_LAYER_NOT_PRESENT,
         c.VK_ERROR_EXTENSION_NOT_PRESENT,
         c.VK_ERROR_FEATURE_NOT_PRESENT,
-        => Error.NotPresent,
+        c.VK_ERROR_FORMAT_NOT_SUPPORTED,
+        => Error.NotSupported,
 
         c.VK_ERROR_FRAGMENTED_POOL,
-        c.VK_ERROR_FRAGMENTATION, // v1.2
+        c.VK_ERROR_FRAGMENTATION, // v1.2.
         => Error.Fragmentation,
 
-        // VK_KHR_surface
+        // VK_KHR_surface.
         c.VK_ERROR_SURFACE_LOST_KHR => Error.SurfaceLost,
         c.VK_ERROR_NATIVE_WINDOW_IN_USE_KHR => Error.WindowInUse,
 
-        // VK_KHR_swapchain
+        // VK_KHR_swapchain.
         c.VK_SUBOPTIMAL_KHR,
         c.VK_ERROR_OUT_OF_DATE_KHR,
         => Error.OutOfDate,
@@ -533,7 +533,7 @@ pub fn toVkAccess(_: ngl.Access) c.VkAccessFlagBits {
 // TODO: toVkAccessFlags2.
 pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
     if (access_flags.none or ngl.noFlagsSet(access_flags))
-        return 0; // c.VK_ACCESS_NONE
+        return 0; // c.VK_ACCESS_NONE.
 
     var flags: c.VkAccessFlags = 0;
 
