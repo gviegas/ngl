@@ -614,7 +614,7 @@ pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
     return flags;
 }
 
-pub fn toVkAttachmentLoadOp(load_op: ngl.LoadOp) c.VkAttachmentLoadOp {
+pub fn toVkAttachmentLoadOp(load_op: ngl.Cmd.LoadOp) c.VkAttachmentLoadOp {
     return switch (load_op) {
         .load => c.VK_ATTACHMENT_LOAD_OP_LOAD,
         .clear => c.VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -622,7 +622,7 @@ pub fn toVkAttachmentLoadOp(load_op: ngl.LoadOp) c.VkAttachmentLoadOp {
     };
 }
 
-pub fn toVkAttachmentStoreOp(store_op: ngl.StoreOp) c.VkAttachmentStoreOp {
+pub fn toVkAttachmentStoreOp(store_op: ngl.Cmd.StoreOp) c.VkAttachmentStoreOp {
     return switch (store_op) {
         .store => c.VK_ATTACHMENT_STORE_OP_STORE,
         .dont_care => c.VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -630,7 +630,7 @@ pub fn toVkAttachmentStoreOp(store_op: ngl.StoreOp) c.VkAttachmentStoreOp {
 }
 
 /// v1.2.
-pub fn toVkResolveMode(resolve_mode: ngl.ResolveMode) c.VkResolveModeFlagBits {
+pub fn toVkResolveMode(resolve_mode: ngl.Cmd.ResolveMode) c.VkResolveModeFlagBits {
     return switch (resolve_mode) {
         .average => c.VK_RESOLVE_MODE_AVERAGE_BIT,
         .sample_zero => c.VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,

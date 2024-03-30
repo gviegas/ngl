@@ -9,28 +9,11 @@ const Image = ngl.Image;
 const Stage = ngl.Stage;
 const Access = ngl.Access;
 const Pipeline = ngl.Pipeline;
+const LoadOp = ngl.Cmd.LoadOp;
+const StoreOp = ngl.Cmd.StoreOp;
+const ResolveMode = ngl.Cmd.ResolveMode;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
-
-pub const LoadOp = enum {
-    load,
-    clear,
-    dont_care,
-};
-
-pub const StoreOp = enum {
-    store,
-    dont_care,
-};
-
-pub const ResolveMode = enum {
-    average,
-    sample_zero,
-    min,
-    max,
-
-    pub const Flags = ngl.Flags(ResolveMode);
-};
 
 pub const RenderPass = struct {
     impl: Impl.RenderPass,

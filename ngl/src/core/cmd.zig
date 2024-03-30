@@ -8,9 +8,6 @@ const Image = ngl.Image;
 const ImageView = ngl.ImageView;
 const Stage = ngl.Stage;
 const Access = ngl.Access;
-const LoadOp = ngl.LoadOp;
-const StoreOp = ngl.StoreOp;
-const ResolveMode = ngl.ResolveMode;
 const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
 const PipelineLayout = ngl.PipelineLayout;
@@ -413,6 +410,28 @@ pub const CommandBuffer = struct {
         pub fn endRenderPass(self: *Cmd, subpass_end: SubpassEnd) void {
             Impl.get().endRenderPass(self.device.impl, self.command_buffer.impl, subpass_end);
         }
+
+        pub const LoadOp = enum {
+            load,
+            clear,
+            dont_care,
+        };
+
+        pub const StoreOp = enum {
+            store,
+            dont_care,
+            // TODO
+            //none,
+        };
+
+        pub const ResolveMode = enum {
+            average,
+            sample_zero,
+            min,
+            max,
+
+            pub const Flags = ngl.Flags(ResolveMode);
+        };
 
         pub const Rendering = struct {
             colors: []Attachment,
