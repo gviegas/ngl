@@ -141,7 +141,6 @@ test "submission of multiple command buffers" {
                     },
                     .layout = &pl_layt,
                     .primitive = &prim,
-                    .viewport = null,
                     .rasterization = &raster,
                     .depth_stencil = null,
                     .color_blend = &.{
@@ -184,7 +183,6 @@ test "submission of multiple command buffers" {
                     },
                     .layout = &pl_layt,
                     .primitive = &prim,
-                    .viewport = null,
                     .rasterization = &raster,
                     .depth_stencil = null,
                     .color_blend = &.{

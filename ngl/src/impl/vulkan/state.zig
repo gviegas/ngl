@@ -291,46 +291,8 @@ pub const Pipeline = struct {
                 .primitiveRestartEnable = if (s.restart) c.VK_TRUE else c.VK_FALSE,
             } else defaults.input_assembly_state;
 
-            inner.viewport_state = if (state.viewport) |s| .{
-                .sType = defaults.viewport_state.sType,
-                .pNext = null,
-                .flags = 0,
-                .viewportCount = 1,
-                .pViewports = blk: {
-                    inner.viewport_state_viewport = .{
-                        .x = s.x,
-                        .y = s.y,
-                        .width = s.width,
-                        .height = s.height,
-                        .minDepth = s.near,
-                        .maxDepth = s.far,
-                    };
-                    break :blk &inner.viewport_state_viewport;
-                },
-                .scissorCount = 1,
-                .pScissors = blk: {
-                    inner.viewport_state_scissor = if (s.scissor) |x| .{
-                        .offset = .{
-                            .x = @min(x.x, std.math.maxInt(i32)),
-                            .y = @min(x.y, std.math.maxInt(i32)),
-                        },
-                        .extent = .{
-                            .width = x.width,
-                            .height = x.height,
-                        },
-                    } else .{
-                        .offset = .{
-                            .x = @intFromFloat(@min(@abs(s.x), std.math.maxInt(i32))),
-                            .y = @intFromFloat(@min(@abs(s.y), std.math.maxInt(i32))),
-                        },
-                        .extent = .{
-                            .width = @intFromFloat(@min(@abs(s.width), std.math.maxInt(u32))),
-                            .height = @intFromFloat(@min(@abs(s.height), std.math.maxInt(u32))),
-                        },
-                    };
-                    break :blk &inner.viewport_state_scissor;
-                },
-            } else defaults.viewport_state;
+            // BUG: Assumes a single viewport.
+            inner.viewport_state = defaults.viewport_state;
 
             inner.rasterization_state = if (state.rasterization) |s| .{
                 .sType = defaults.rasterization_state.sType,
@@ -469,11 +431,9 @@ pub const Pipeline = struct {
 
             inner.dynamic_state = blk: {
                 var dyns: []c.VkDynamicState = &inner.dynamic_state_dynamic_states;
-                if (state.viewport == null) {
-                    dyns[0] = c.VK_DYNAMIC_STATE_VIEWPORT;
-                    dyns[1] = c.VK_DYNAMIC_STATE_SCISSOR;
-                    dyns = dyns[2..];
-                }
+                dyns[0] = c.VK_DYNAMIC_STATE_VIEWPORT;
+                dyns[1] = c.VK_DYNAMIC_STATE_SCISSOR;
+                dyns = dyns[2..];
                 if (state.depth_stencil) |x| {
                     if ((x.stencil_front != null and x.stencil_front.?.reference == null) or
                         (x.stencil_back != null and x.stencil_back.?.reference == null))

@@ -257,15 +257,6 @@ test "depth-only rendering" {
         .topology = .triangle_list,
     };
 
-    const vport = ngl.Viewport{
-        .x = 0,
-        .y = 0,
-        .width = w,
-        .height = h,
-        .near = 0,
-        .far = 1,
-    };
-
     const raster = ngl.Rasterization{
         .polygon_mode = .fill,
         .cull_mode = .back,
@@ -288,7 +279,6 @@ test "depth-only rendering" {
                 .stages = &stages,
                 .layout = &pl_layt,
                 .primitive = &prim,
-                .viewport = &vport,
                 .rasterization = &raster,
                 .depth_stencil = &ds,
                 .color_blend = null,
@@ -434,6 +424,20 @@ test "depth-only rendering" {
     cmd.setPipeline(&pl);
     cmd.setIndexBuffer(.u16, &prim_buf, idx_off, @sizeOf(@TypeOf(idx_data)));
     cmd.setVertexBuffers(0, &.{&prim_buf}, &.{vert_off}, &.{@sizeOf(@TypeOf(vert_data))});
+    cmd.setViewports(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = w,
+        .height = h,
+        .znear = 0,
+        .zfar = 1,
+    }});
+    cmd.setScissorRects(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = w,
+        .height = h,
+    }});
     cmd.setDescriptors(.graphics, &pl_layt, 0, &.{&desc_sets[0]});
     cmd.drawIndexed(6, 1, 0, 0, 0);
     cmd.setDescriptors(.graphics, &pl_layt, 0, &.{&desc_sets[1]});

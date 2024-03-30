@@ -121,21 +121,6 @@ pub const Primitive = struct {
     };
 };
 
-pub const Viewport = struct {
-    x: f32 = 0,
-    y: f32 = 0,
-    width: f32,
-    height: f32,
-    near: f32,
-    far: f32,
-    scissor: ?struct {
-        x: u32,
-        y: u32,
-        width: u32,
-        height: u32,
-    } = null,
-};
-
 pub const Rasterization = struct {
     polygon_mode: PolygonMode,
     cull_mode: CullMode,
@@ -258,7 +243,6 @@ pub const GraphicsState = struct {
     stages: []const ShaderStage.Desc,
     layout: *PipelineLayout,
     primitive: ?*const Primitive,
-    viewport: ?*const Viewport,
     rasterization: ?*const Rasterization,
     depth_stencil: ?*const DepthStencil,
     color_blend: ?*const ColorBlend,

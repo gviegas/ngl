@@ -51,22 +51,6 @@ test "Pipeline.initGraphics/deinit" {
         .restart = false,
     };
 
-    const vport = ngl.Viewport{
-        .x = 0,
-        .y = 0,
-        .width = 470,
-        .height = 280,
-        .near = 0,
-        .far = 1,
-        // Should be the same as leaving unset.
-        .scissor = .{
-            .x = 0,
-            .y = 0,
-            .width = 470,
-            .height = 280,
-        },
-    };
-
     const raster = ngl.Rasterization{
         .polygon_mode = .fill,
         .cull_mode = .back,
@@ -152,7 +136,6 @@ test "Pipeline.initGraphics/deinit" {
             .stages = &stages,
             .layout = &pl_layt,
             .primitive = &prim,
-            .viewport = &vport,
             .rasterization = &raster,
             .depth_stencil = &ds,
             .color_blend = &col_blend,

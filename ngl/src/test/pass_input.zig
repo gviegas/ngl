@@ -421,7 +421,6 @@ test "subpass input" {
                     },
                     .topology = .triangle_list,
                 },
-                .viewport = null, // Dynamic.
                 .rasterization = &.{
                     .polygon_mode = .fill,
                     .cull_mode = .back,
@@ -468,7 +467,6 @@ test "subpass input" {
                     }},
                     .topology = .triangle_list,
                 },
-                .viewport = null, // Dynamic
                 .rasterization = &.{
                     .polygon_mode = .fill,
                     .cull_mode = .back,

@@ -399,7 +399,6 @@ const T = struct {
                     }},
                     .topology = triangle.topology,
                 },
-                .viewport = null,
                 .rasterization = &.{
                     .polygon_mode = .fill,
                     .cull_mode = .back,

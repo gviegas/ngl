@@ -299,15 +299,6 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         .topology = .triangle_list,
     };
 
-    const vport = ngl.Viewport{
-        .x = 0,
-        .y = 0,
-        .width = w,
-        .height = h,
-        .near = 0,
-        .far = 1,
-    };
-
     const raster = ngl.Rasterization{
         .polygon_mode = .fill,
         .cull_mode = .front, // Due to the uniform's transform.
@@ -328,7 +319,6 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
                 .stages = &stages,
                 .layout = &pl_layt,
                 .primitive = &prim,
-                .viewport = &vport,
                 .rasterization = &raster,
                 .depth_stencil = null,
                 .color_blend = &col_blend,
@@ -453,6 +443,20 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     }, .{ .contents = .inline_only });
     cmd.setPipeline(&pl);
     cmd.setDescriptors(.graphics, &pl_layt, 0, &.{&desc_set});
+    cmd.setViewports(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = w,
+        .height = h,
+        .znear = 0,
+        .zfar = 1,
+    }});
+    cmd.setScissorRects(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = w,
+        .height = h,
+    }});
     cmd.setVertexBuffers(0, &.{&vert_buf}, &.{0}, &.{vert_size}); // Note `vert_size`.
     if (!indexed) {
         cmd.draw(3, 1, 0, 0);

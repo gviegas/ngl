@@ -262,14 +262,6 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
                     },
                     .topology = triangle.topology,
                 },
-                .viewport = &.{
-                    .x = 0,
-                    .y = 0,
-                    .width = width,
-                    .height = height,
-                    .near = 0,
-                    .far = 0,
-                },
                 .rasterization = &.{
                     .polygon_mode = .fill,
                     .cull_mode = .back,
@@ -443,6 +435,20 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         .{ .contents = .inline_only },
     );
     cmd.setPipeline(&pl);
+    cmd.setScissorRects(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = width,
+        .height = height,
+    }});
+    cmd.setViewports(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = width,
+        .height = height,
+        .znear = 0,
+        .zfar = 0,
+    }});
     if (indexed)
         cmd.setIndexBuffer(.u16, &idx_buf, 0, @sizeOf(@TypeOf(triangle.indices)));
     cmd.setVertexBuffers(

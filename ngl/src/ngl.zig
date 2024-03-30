@@ -33,7 +33,6 @@ pub const DescriptorSet = @import("core/desc.zig").DescriptorSet;
 pub const Pipeline = @import("core/state.zig").Pipeline;
 pub const ShaderStage = @import("core/state.zig").ShaderStage;
 pub const Primitive = @import("core/state.zig").Primitive;
-pub const Viewport = @import("core/state.zig").Viewport;
 pub const Rasterization = @import("core/state.zig").Rasterization;
 pub const DepthStencil = @import("core/state.zig").DepthStencil;
 pub const ColorBlend = @import("core/state.zig").ColorBlend;

@@ -388,14 +388,6 @@ fn testOcclusionQuery(comptime precise: bool) !void {
                 }},
                 .topology = triangle.topology,
             },
-            .viewport = &.{
-                .x = 0,
-                .y = 0,
-                .width = width,
-                .height = height,
-                .near = 0,
-                .far = 1,
-            },
             .rasterization = &.{
                 .polygon_mode = .fill,
                 .cull_mode = .back,
@@ -447,6 +439,20 @@ fn testOcclusionQuery(comptime precise: bool) !void {
         .{ .contents = .inline_only },
     );
     cmd.setPipeline(&pl[0]);
+    cmd.setViewports(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = width,
+        .height = height,
+        .znear = 0,
+        .zfar = 1,
+    }});
+    cmd.setScissorRects(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = width,
+        .height = height,
+    }});
 
     // samples_passed == width / 2 * height (or > 0).
     cmd.beginQuery(&query_pool, 0, .{ .precise = precise });

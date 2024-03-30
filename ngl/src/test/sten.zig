@@ -318,14 +318,6 @@ test "stencil test" {
             },
             .topology = .triangle_list,
         },
-        .viewport = &.{
-            .x = 0,
-            .y = 0,
-            .width = w,
-            .height = h,
-            .near = 0,
-            .far = 1,
-        },
         .rasterization = &.{
             .polygon_mode = .fill,
             // Don't cull anything since we want to check
@@ -398,6 +390,21 @@ test "stencil test" {
             .dest_offset = 0,
             .size = vert_size,
         }},
+    }});
+
+    cmd.setViewports(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = w,
+        .height = h,
+        .znear = 0,
+        .zfar = 1,
+    }});
+    cmd.setScissorRects(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = w,
+        .height = h,
     }});
 
     // Has front and back stencil tests defined with non-null reference.
