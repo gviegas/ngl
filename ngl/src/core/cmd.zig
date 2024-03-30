@@ -13,7 +13,6 @@ const FrameBuffer = ngl.FrameBuffer;
 const PipelineLayout = ngl.PipelineLayout;
 const DescriptorSet = ngl.DescriptorSet;
 const ShaderStage = ngl.ShaderStage;
-const Viewport = ngl.Viewport;
 const Pipeline = ngl.Pipeline;
 const QueryPool = ngl.QueryPool;
 const Error = ngl.Error;
@@ -268,6 +267,22 @@ pub const CommandBuffer = struct {
                 sizes,
             );
         }
+
+        pub const Viewport = struct {
+            x: f32,
+            y: f32,
+            width: f32,
+            height: f32,
+            znear: f32,
+            zfar: f32,
+        };
+
+        pub const ScissorRect = struct {
+            x: u32,
+            y: u32,
+            width: u32,
+            height: u32,
+        };
 
         /// Only valid for pipelines with unspecified viewport state.
         ///
