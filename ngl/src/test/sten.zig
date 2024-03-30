@@ -19,14 +19,14 @@ test "stencil test" {
     const copy_sten_off = (w * h * 2 + 255) & ~@as(u64, 255);
 
     const col_data = [1]u16{
-        0xbee, // I'm the color of the provoking vertex
+        0xbee, // I'm the color of the provoking vertex.
     } ++ [_]u16{undefined} ** 5;
     const pos_data = [18 + 6]i8{
-        // First draw (front-facing; passes depth test)
+        // First draw (front-facing; passes depth test).
         127,  -128, 0,   undefined,
         127,  127,  0,   undefined,
         0,    127,  0,   undefined,
-        // Second draw (back-facing; fails depth test)
+        // Second draw (back-facing; fails depth test).
         -128, -128, 127, undefined,
         -128, 127,  127, undefined,
         0,    127,  127, undefined,
@@ -329,7 +329,7 @@ test "stencil test" {
         .rasterization = &.{
             .polygon_mode = .fill,
             // Don't cull anything since we want to check
-            // the stencil attachment updates
+            // the stencil attachment updates.
             .cull_mode = .none,
             .clockwise = true,
             .samples = .@"1",
@@ -338,7 +338,7 @@ test "stencil test" {
             .depth_compare = .less,
             .depth_write = true,
             // The front-facing primitive must pass both the
-            // stencil test and the depth test
+            // stencil test and the depth test.
             .stencil_front = .{
                 .fail_op = .zero,
                 .pass_op = .increment_clamp,
@@ -349,7 +349,7 @@ test "stencil test" {
                 .reference = 0x8f,
             },
             // The backing-face primitive must pass the stencil
-            // test and fail the depth test
+            // test and fail the depth test.
             .stencil_back = .{
                 .fail_op = .zero,
                 .pass_op = .zero,
@@ -386,7 +386,7 @@ test "stencil test" {
     // then record a render pass instance with color and combined
     // depth/stencil attachments that draws front and back-facing
     // primitives, then copy the color and stencil output into the
-    // staging buffer
+    // staging buffer.
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
@@ -400,9 +400,9 @@ test "stencil test" {
         }},
     }});
 
-    // Has front and back stencil tests defined with non-null reference
+    // Has front and back stencil tests defined with non-null reference.
     cmd.setPipeline(&pl);
-    // Binding #1 is the same for both draws
+    // Binding #1 is the same for both draws.
     cmd.setVertexBuffers(1, &.{&vert_buf}, &.{0}, &.{@sizeOf(@TypeOf(col_data))});
 
     cmd.beginRenderPass(.{
@@ -416,7 +416,7 @@ test "stencil test" {
         },
         .clear_values = &.{
             .{ .color_u32 = .{ 2, 0, 0, 0 } },
-            // The second draw must fail the depth test
+            // The second draw must fail the depth test.
             .{ .depth_stencil = .{ 0.5, 0x80 } },
         },
     }, .{ .contents = .inline_only });
@@ -494,11 +494,11 @@ test "stencil test" {
 
     // The front-facing primitive must have passed the stencil test
     // and the depth test, so both the color and stencil attachments
-    // must have been written
+    // must have been written.
     //
     // The back-facing primitive must have passed the stencil test
     // and failed the depth test, so only the stencil attachment
-    // must have been written
+    // must have been written.
 
     if ((w * h) & 3 != 0) @compileError("Use a dimension multiple of four to ease testing");
     if (w / h >= 2 or h / w >= 2) @compileError("Use a sensible aspect ratio to ease testing");

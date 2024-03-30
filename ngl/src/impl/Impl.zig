@@ -253,11 +253,20 @@ pub const VTable = struct {
         sizes: []const u64,
     ) void,
 
-    setViewport: *const fn (
+    setViewports: *const fn (
         ctx: *anyopaque,
+        allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        viewport: ngl.Viewport,
+        viewports: []const ngl.Cmd.Viewport,
+    ) void,
+
+    setScissorRects: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        scissor_rects: []const ngl.Cmd.ScissorRect,
     ) void,
 
     setStencilReference: *const fn (
@@ -1258,13 +1267,24 @@ pub fn setVertexBuffers(
     );
 }
 
-pub fn setViewport(
+pub fn setViewports(
     self: *Self,
+    allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    viewport: ngl.Viewport,
+    viewports: []const ngl.Cmd.Viewport,
 ) void {
-    self.vtable.setViewport(self.ptr, device, command_buffer, viewport);
+    self.vtable.setViewports(self.ptr, allocator, device, command_buffer, viewports);
+}
+
+pub fn setScissorRects(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    scissor_rects: []const ngl.Cmd.ScissorRect,
+) void {
+    self.vtable.setScissorRects(self.ptr, allocator, device, command_buffer, scissor_rects);
 }
 
 pub fn setStencilReference(

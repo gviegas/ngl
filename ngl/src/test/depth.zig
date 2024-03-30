@@ -235,7 +235,7 @@ test "depth-only rendering" {
     });
     defer rp.deinit(gpa, dev);
 
-    // Vertex stage only
+    // Vertex stage only.
     const stages = [_]ngl.ShaderStage.Desc{.{
         .stage = .vertex,
         .code = &vert_spv,
@@ -280,7 +280,7 @@ test "depth-only rendering" {
         .stencil_back = null,
     };
 
-    // No color blend state
+    // No color blend state.
 
     var pl = blk: {
         const s = try ngl.Pipeline.initGraphics(gpa, dev, .{
@@ -342,7 +342,7 @@ test "depth-only rendering" {
     });
     defer fb.deinit(gpa, dev);
 
-    // Keep mapped
+    // Keep mapped.
     var p = try stg_buf_mem.map(dev, 0, null);
     {
         const len = @sizeOf(@TypeOf(unif_data[0]));
@@ -379,7 +379,7 @@ test "depth-only rendering" {
 
     // Update uniform, index and vertex buffers using a staging buffer,
     // then record a render pass instance containing depth attachment
-    // only, then copy this attachment back to the staging buffer
+    // only, then copy this attachment back to the staging buffer.
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
@@ -418,7 +418,7 @@ test "depth-only rendering" {
         },
     });
 
-    // No memory barrier necessary here
+    // No memory barrier necessary here.
 
     cmd.beginRenderPass(.{
         .render_pass = &rp,
@@ -440,7 +440,7 @@ test "depth-only rendering" {
     cmd.drawIndexed(6, 1, 0, 0, 0);
     cmd.endRenderPass(.{});
 
-    // No memory barrier necessary here
+    // No memory barrier necessary here.
 
     cmd.copyImageToBuffer(&.{.{
         .buffer = &stg_buf,
@@ -482,14 +482,14 @@ test "depth-only rendering" {
     // of three possible values:
     // - The clear depth value (1.0, i.e. 65535) or
     // - The depth value of the first draw (0) or
-    // - The depth value of the second draw (0.5, i.e. 32768)
+    // - The depth value of the second draw (0.5, i.e. 32768).
 
     const s = @as([*]const u16, @ptrCast(@alignCast(p)))[0 .. w * h];
 
     const clear_dep: u16 = 65535;
     const vert_dep = [2]u16{
         0,
-        32768, // Due to the uniform's transform
+        32768, // Due to the uniform's transform.
     };
 
     const clear_dep_n = std.mem.count(u16, s, &.{clear_dep});
@@ -506,7 +506,7 @@ test "depth-only rendering" {
     // The drawn rectangles were transformed in such a way that they
     // partially intersect one another in the XY plane, and where
     // they intersect, the depth value must be zero (i.e., the depth
-    // value from the first draw)
+    // value from the first draw).
     try testing.expectApproxEqAbs(
         @as(f64, @floatFromInt(vert_dep_n[0])) / @as(f64, @floatFromInt(vert_dep_n[1])),
         4.0 / 3.0,

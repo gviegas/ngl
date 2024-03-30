@@ -32,11 +32,11 @@ test "CommandPool.alloc/reset/free" {
     defer gpa.free(cmd_bufs);
     try testing.expectEqual(cmd_bufs.len, count_2);
 
-    // Affects everything in `cmd_buf` and `cmd_bufs`
+    // Affects everything in `cmd_buf` and `cmd_bufs`.
     try cmd_pool.reset(dev, .keep);
 
     cmd_pool.free(gpa, dev, &.{&cmd_bufs[0]});
     cmd_pool.free(gpa, dev, &.{ &cmd_buf[0], &cmd_bufs[3], &cmd_bufs[2] });
 
-    // `cmd_bufs[1]` shouldn't leak
+    // `cmd_bufs[1]` shouldn't leak.
 }

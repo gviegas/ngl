@@ -9,7 +9,7 @@ test "Format.getFeatures" {
 
     var feat_set: ngl.Format.FeatureSet = undefined;
 
-    // This is allowed and should produce an empty set
+    // This is allowed and should produce an empty set.
     feat_set = ngl.Format.unknown.getFeatures(dev);
     try testing.expectEqual(feat_set, ngl.Format.FeatureSet{
         .linear_tiling = .{},
@@ -17,7 +17,7 @@ test "Format.getFeatures" {
         .buffer = .{},
     });
 
-    // XXX: This relies on how the Format enum is defined
+    // XXX: This relies on how the Format enum is defined.
     const fmts_col = blk: {
         const first = @intFromEnum(ngl.Format.r8_unorm);
         const last = @intFromEnum(ngl.Format.rgba64_sfloat);
@@ -29,11 +29,11 @@ test "Format.getFeatures" {
     for (fmts_col) |fmt| {
         feat_set = fmt.getFeatures(dev);
         for ([2]ngl.Format.Features{ feat_set.linear_tiling, feat_set.optimal_tiling }) |feats|
-            // Color formats aren't allowed as depth/stencil attachments
+            // Color formats aren't allowed as depth/stencil attachments.
             try testing.expect(!feats.depth_stencil_attachment);
     }
 
-    // XXX: This relies on how the Format enum is defined
+    // XXX: This relies on how the Format enum is defined.
     const fmts_ds = blk: {
         const first = @intFromEnum(ngl.Format.d16_unorm);
         const last = @intFromEnum(ngl.Format.d32_sfloat_s8_uint);
@@ -45,13 +45,13 @@ test "Format.getFeatures" {
     for (fmts_ds) |fmt| {
         feat_set = fmt.getFeatures(dev);
         for ([2]ngl.Format.Features{ feat_set.linear_tiling, feat_set.optimal_tiling }) |feats|
-            // Depth/stencil formats aren't allowed as color attachments
+            // Depth/stencil formats aren't allowed as color attachments.
             try testing.expect(!feats.color_attachment and !feats.color_attachment_blend);
         // TODO: Consider disallowing more features since depth/stencil
-        // formats have no layout guarantees
+        // formats have no layout guarantees.
     }
 
-    // XXX: This relies on how the Format enum is defined
+    // XXX: This relies on how the Format enum is defined.
     const fmts_cmpr = blk: {
         const first = @intFromEnum(ngl.Format.bc1_rgb_unorm);
         const last = @intFromEnum(ngl.Format.astc_12x12_srgb);
@@ -61,7 +61,7 @@ test "Format.getFeatures" {
         break :blk fmts;
     };
     // At least one set of compressed formats must be supported
-    // in its entirety (assuming that Vulkan is the backend)
+    // in its entirety (assuming that Vulkan is the backend).
     for ([3][2]ngl.Format{
         .{ .bc1_rgb_unorm, .bc7_srgb },
         .{ .etc2_rgb8_unorm, .eac_rg11_snorm },
@@ -97,7 +97,7 @@ test "Format.getFeatures" {
     });
     inline for (@typeInfo(ngl.Format).Enum.fields) |field| {
         feat_set = @field(ngl.Format, field.name).getFeatures(dev);
-        // Shouldn't mix image and buffer features
+        // Shouldn't mix image and buffer features.
         try testing.expect(@as(U, @bitCast(feat_set.linear_tiling)) & feats_buf == 0);
         try testing.expect(@as(U, @bitCast(feat_set.optimal_tiling)) & feats_buf == 0);
         try testing.expect(@as(U, @bitCast(feat_set.buffer)) & feats_img == 0);
@@ -129,7 +129,7 @@ test "required format support" {
     }
 
     for ([_]ngl.Format{
-        //.s8_uint, // Must be a combined depth/stencil format
+        //.s8_uint, // Must be a combined depth/stencil format.
         .d16_unorm_s8_uint,
         .d24_unorm_s8_uint,
         .d32_sfloat_s8_uint,

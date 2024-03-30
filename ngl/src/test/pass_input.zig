@@ -268,7 +268,7 @@ test "subpass input" {
 
     var rp = try ngl.RenderPass.init(gpa, dev, .{
         .attachments = &.{
-            // `inp_view`
+            // `inp_view`.
             .{
                 .format = .r8_unorm,
                 .samples = .@"1",
@@ -280,7 +280,7 @@ test "subpass input" {
                 .combined = null,
                 .may_alias = false,
             },
-            // `col_view`
+            // `col_view`.
             .{
                 .format = .r8_unorm,
                 .samples = .@"1",
@@ -294,7 +294,7 @@ test "subpass input" {
             },
         },
         .subpasses = &.{
-            // Write to `inp_view`
+            // Write to `inp_view`.
             .{
                 .pipeline_type = .graphics,
                 .input_attachments = null,
@@ -307,7 +307,7 @@ test "subpass input" {
                 .depth_stencil_attachment = null,
                 .preserve_attachments = null,
             },
-            // Read from `inp_view`
+            // Read from `inp_view`.
             .{
                 .pipeline_type = .graphics,
                 .input_attachments = &.{.{
@@ -377,7 +377,7 @@ test "subpass input" {
 
     var pls = try ngl.Pipeline.initGraphics(gpa, dev, .{
         .states = &.{
-            // Used in the first subpass
+            // Used in the first subpass.
             .{
                 .stages = &.{
                     .{
@@ -421,7 +421,7 @@ test "subpass input" {
                     },
                     .topology = .triangle_list,
                 },
-                .viewport = null, // Dynamic
+                .viewport = null, // Dynamic.
                 .rasterization = &.{
                     .polygon_mode = .fill,
                     .cull_mode = .back,
@@ -439,7 +439,7 @@ test "subpass input" {
                 .render_pass = &rp,
                 .subpass = 0,
             },
-            // Used in the second subpass
+            // Used in the second subpass.
             .{
                 .stages = &.{
                     .{
@@ -545,7 +545,7 @@ test "subpass input" {
     // then record a 2-subpass render pass instance that generates an
     // input attachment in the first subpass and loads from it in the
     // second subpass, then copy the color attachment output from the
-    // last subpass into the staging buffer
+    // last subpass into the staging buffer.
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
@@ -589,20 +589,26 @@ test "subpass input" {
             .height = h,
         },
         .clear_values = &.{
-            .{ .color_f32 = .{ 1, 0, 0, 0 } }, // `inp_view`
-            null, // `col_view`
+            .{ .color_f32 = .{ 1, 0, 0, 0 } }, // `inp_view`.
+            null, // `col_view`.
         },
     }, .{ .contents = .inline_only });
-    cmd.setViewport(.{
+    cmd.setViewports(&.{.{
         .x = 0,
         .y = 0,
         .width = w,
         .height = h,
-        .near = 0,
-        .far = 1,
-    });
+        .znear = 0,
+        .zfar = 1,
+    }});
+    cmd.setScissorRects(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = w,
+        .height = h,
+    }});
     // Both pipelines have the same layout, but the first
-    // uses only set #0 while the second uses only set #1
+    // uses only set #0 while the second uses only set #1.
     cmd.setDescriptors(.graphics, &pl_layt, 0, &.{ &desc_sets[0], &desc_sets[1] });
     cmd.setPipeline(&pls[0]);
     cmd.setIndexBuffer(.u16, &idx_buf, idx_off, idx_size);
@@ -691,9 +697,9 @@ test "subpass input" {
 
     try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&fence});
 
-    // The first subpass cleared attachment #0 (`inp_view`) and drew onto it
+    // The first subpass cleared attachment #0 (`inp_view`) and drew onto it.
     // The second subpass wrote every fragment of attachment #1 (`col_view`)
-    // using attachment #0 as a subpass input attachment
+    // using attachment #0 as a subpass input attachment.
 
     const s = p[0 .. w * h];
 
@@ -703,21 +709,21 @@ test "subpass input" {
     const clear_col_n = std.mem.count(u8, s, &.{clear_col});
     const vert_col_n = std.mem.count(u8, s, &.{vert_col});
 
-    // We didn't clear the final color attachment
-    // We did clear the first color attachment (used as input afterwards)
+    // We didn't clear the final color attachment.
+    // We did clear the first color attachment (used as input afterwards).
     try testing.expectEqual(clear_col_n + vert_col_n, s.len);
 
     try testing.expectApproxEqAbs(@as(f64, @floatFromInt(clear_col_n)) / (w * h / 2), 1, 0.1);
     try testing.expectApproxEqAbs(@as(f64, @floatFromInt(vert_col_n)) / (w * h / 2), 1, 0.1);
 
-    // This is meant to simplify testing; it's not required for correctness
+    // This is meant to simplify testing; it's not required for correctness.
     if (w & 1 != 0 or h & 1 != 0) @compileError("Use even values for `w` and `h`");
     for (0..h / 2) |i| {
         const j = h - i - 1;
         const a = s[i * w .. i * w + w];
         const b = s[j * w .. j * w + w];
         try testing.expect(std.mem.eql(u8, a, b));
-        // Assume that it may be off by one texel
+        // Assume that it may be off by one texel.
         var k: usize = 0;
         while (k < w / 2) : (k += 1) {
             if (a[k] == a[w - k - 1]) continue;

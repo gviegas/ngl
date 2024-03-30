@@ -60,7 +60,7 @@ test "Buffer allocation" {
     };
     defer dev.free(gpa, &mem);
 
-    // Should be able to bind a new buffer to the device allocation
+    // Should be able to bind a new buffer to the device allocation.
     buf.deinit(gpa, dev);
     var new_buf = try ngl.Buffer.init(gpa, dev, buf_desc);
     defer new_buf.deinit(gpa, dev);
@@ -75,7 +75,7 @@ test "BufferView.init/deinit" {
         .size = 147456,
         .usage = .{ .storage_texel_buffer = true },
     });
-    // It's invalid to create a view with no backing memory
+    // It's invalid to create a view with no backing memory.
     var tb_mem = blk: {
         errdefer tb.deinit(gpa, dev);
         const mem_reqs = tb.getMemoryRequirements(dev);
@@ -100,7 +100,7 @@ test "BufferView.init/deinit" {
     });
     defer tb_view.deinit(gpa, dev);
 
-    // Aliasing is allowed
+    // Aliasing is allowed.
     var tb_view_2 = try ngl.BufferView.init(gpa, dev, .{
         .buffer = &tb,
         .format = .r32_uint,

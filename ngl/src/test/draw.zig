@@ -58,7 +58,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         break :blk (sz + 255) & ~@as(u64, 255);
     };
 
-    // Invert the winding order for indexed draw
+    // Invert the winding order for indexed draw.
     const idx_data = if (indexed) [3]u16{ 2, 1, 0 } else {};
     const idx_size = @sizeOf(@TypeOf(idx_data));
 
@@ -310,12 +310,12 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
 
     const raster = ngl.Rasterization{
         .polygon_mode = .fill,
-        .cull_mode = .front, // Due to the uniform's transform
+        .cull_mode = .front, // Due to the uniform's transform.
         .clockwise = !indexed,
         .samples = .@"1",
     };
 
-    // No depth/stencil state
+    // No depth/stencil state.
 
     const col_blend = ngl.ColorBlend{
         .attachments = &.{.{ .blend = null, .write = .all }},
@@ -373,7 +373,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     });
     defer fb.deinit(gpa, dev);
 
-    // Keep mapped
+    // Keep mapped.
     var p = try stg_buf_mem.map(dev, 0, null);
     {
         const len = @sizeOf(@TypeOf(unif_data));
@@ -405,7 +405,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     // Update uniform/vertex/index buffers using a staging buffer,
     // then record a render pass instance that draws to a single
     // color attachment, then copy this attachment back to the
-    // staging buffer
+    // staging buffer.
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
@@ -416,7 +416,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
             .regions = &.{.{
                 .source_offset = 0,
                 .dest_offset = 0,
-                .size = unif_size, // Note `unif_size`
+                .size = unif_size, // Note `unif_size`.
             }},
         },
         .{
@@ -425,7 +425,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
             .regions = &.{.{
                 .source_offset = unif_size,
                 .dest_offset = 0,
-                .size = vert_size, // Note `vert_size`
+                .size = vert_size, // Note `vert_size`.
             }},
         },
     } ++ if (indexed) &[_]ngl.Cmd.BufferCopy{.{
@@ -434,11 +434,11 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         .regions = &.{.{
             .source_offset = size - idx_size,
             .dest_offset = 0,
-            .size = idx_size, // This one matches the data size
+            .size = idx_size, // This one matches the data size.
         }},
     }} else &[_]ngl.Cmd.BufferCopy{});
 
-    // No memory barrier necessary here
+    // No memory barrier necessary here.
 
     cmd.beginRenderPass(.{
         .render_pass = &rp,
@@ -453,7 +453,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     }, .{ .contents = .inline_only });
     cmd.setPipeline(&pl);
     cmd.setDescriptors(.graphics, &pl_layt, 0, &.{&desc_set});
-    cmd.setVertexBuffers(0, &.{&vert_buf}, &.{0}, &.{vert_size}); // Note `vert_size`
+    cmd.setVertexBuffers(0, &.{&vert_buf}, &.{0}, &.{vert_size}); // Note `vert_size`.
     if (!indexed) {
         cmd.draw(3, 1, 0, 0);
     } else {
@@ -462,7 +462,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     }
     cmd.endRenderPass(.{});
 
-    // No memory barrier necessary here
+    // No memory barrier necessary here.
 
     cmd.copyImageToBuffer(&.{.{
         .buffer = &stg_buf,
@@ -500,10 +500,10 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&fence});
 
     // What the render pass did:
-    // 1. Cleared the color attachment to `clear_col` values
+    // 1. Cleared the color attachment to `clear_col` values.
     // 2. Drew an inverted triangle in clip coordinates (assuming a
     //    top-left origin) using `vert_col` as vertex color and
-    //    with a transform that flips the vertex positions
+    //    with a transform that flips the vertex positions.
 
     const s = @as([*]const u32, @ptrCast(@alignCast(p)))[0 .. w * h];
 
@@ -515,7 +515,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     try testing.expectEqual(clear_col_n + vert_col_n, w * h);
 
     // The uniform's transform must have flipped the triangle
-    // such that it's no longer inverted
+    // such that it's no longer inverted.
     const tip_beg = std.mem.indexOfScalar(u32, s, vert_col_un).?;
     const tip_len = std.mem.indexOfScalar(u32, s[tip_beg..], clear_col_un).?;
     const base_end = std.mem.lastIndexOfScalar(u32, s, vert_col_un).?;
@@ -528,7 +528,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         prev_len = len;
     }
 
-    // TODO: May need to relax this (even more)
+    // TODO: May need to relax this (even more).
     try testing.expectApproxEqAbs(
         @as(f64, @floatFromInt(clear_col_n)) / @as(f64, @floatFromInt(vert_col_n)),
         1,

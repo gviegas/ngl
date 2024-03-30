@@ -58,7 +58,7 @@ test "Pipeline.initGraphics/deinit" {
         .height = 280,
         .near = 0,
         .far = 1,
-        // Should be the same as leaving unset
+        // Should be the same as leaving unset.
         .scissor = .{
             .x = 0,
             .y = 0,

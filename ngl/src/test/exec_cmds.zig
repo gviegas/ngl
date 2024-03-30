@@ -274,7 +274,7 @@ test "executeCommands command (dispatching)" {
             _ = @atomicRmw(@TypeOf(self.rem.*), self.rem, .Sub, 1, .acq_rel);
         }
     } = .{
-        // Top-left
+        // Top-left.
         .{
             .dev = dev,
             .pl_layt = &pl_layt,
@@ -284,7 +284,7 @@ test "executeCommands command (dispatching)" {
             .wg_count = .{ lwidth, height, 1 },
             .rem = &rem,
         },
-        // Top-right
+        // Top-right.
         .{
             .dev = dev,
             .pl_layt = &pl_layt,
@@ -294,7 +294,7 @@ test "executeCommands command (dispatching)" {
             .wg_count = .{ rwidth, height, 1 },
             .rem = &rem,
         },
-        // Bottom-right
+        // Bottom-right.
         .{
             .dev = dev,
             .pl_layt = &pl_layt,
@@ -304,7 +304,7 @@ test "executeCommands command (dispatching)" {
             .wg_count = .{ rwidth, height, 1 },
             .rem = &rem,
         },
-        // Bottom-left
+        // Bottom-left.
         .{
             .dev = dev,
             .pl_layt = &pl_layt,
@@ -640,14 +640,20 @@ test "executeCommands command (drawing)" {
                 },
             });
             cmd.setPipeline(self.pl);
-            cmd.setViewport(.{
+            cmd.setViewports(&.{.{
                 .x = 0,
                 .y = 0,
                 .width = @TypeOf(t).width,
                 .height = @TypeOf(t).height,
-                .near = 0,
-                .far = 0,
-            });
+                .znear = 0,
+                .zfar = 0,
+            }});
+            cmd.setScissorRects(&.{.{
+                .x = 0,
+                .y = 0,
+                .width = @TypeOf(t).width,
+                .height = @TypeOf(t).height,
+            }});
             cmd.setVertexBuffers(
                 0,
                 &.{self.buf},
@@ -690,14 +696,20 @@ test "executeCommands command (drawing)" {
                 },
             });
             cmd.setPipeline(self.pl);
-            cmd.setViewport(.{
+            cmd.setViewports(&.{.{
                 .x = 0,
                 .y = 0,
                 .width = @TypeOf(t).width,
                 .height = @TypeOf(t).height,
-                .near = 0,
-                .far = 0,
-            });
+                .znear = 0,
+                .zfar = 0,
+            }});
+            cmd.setScissorRects(&.{.{
+                .x = 0,
+                .y = 0,
+                .width = @TypeOf(t).width,
+                .height = @TypeOf(t).height,
+            }});
             switch (cb) {
                 .@"2" => cmd.setVertexBuffers(
                     0,
@@ -788,7 +800,7 @@ test "executeCommands command (drawing)" {
             },
             .clear_values = &.{null},
         },
-        // Only `Cmd.executeCommands` allowed in this subpass
+        // Only `Cmd.executeCommands` allowed in this subpass.
         .{ .contents = .secondary_command_buffers_only },
     );
     while (@atomicLoad(@TypeOf(done), &done, .acquire) != (1 << rec.len) - 1) {}
@@ -845,7 +857,7 @@ fn T(comptime cmd_buf_sec_n: u32) type {
     return struct {
         queue_i: ngl.Queue.Index,
         queue: *ngl.Queue,
-        // We want to record in parallel
+        // We want to record in parallel.
         cmd_pools: [1 + cmd_buf_sec_n]ngl.CommandPool,
         cmd_bufs: [1 + cmd_buf_sec_n]ngl.CommandBuffer,
         fence: ngl.Fence,
@@ -862,7 +874,7 @@ fn T(comptime cmd_buf_sec_n: u32) type {
         const size = 4 * width * height;
 
         // The values that `validate` expects in the top/bottom
-        // halves of `stg_data`
+        // halves of `stg_data`.
         const top_val: u32 = 0xabeeface;
         const bot_val: u32 = 0xdeadd0d0;
 

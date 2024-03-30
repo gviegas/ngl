@@ -70,7 +70,7 @@ test "copy between resources" {
             .samples = .@"1",
             .tiling = .optimal,
             .usage = .{
-                .storage_image = true, // Pretend that we'll do something meaningful with it
+                .storage_image = true, // Pretend that we'll do something meaningful with it.
                 .transfer_source = true,
                 .transfer_dest = true,
             },
@@ -104,7 +104,7 @@ test "copy between resources" {
 
     // Copy from buffer #0 to image #0, then copy from image #0 to
     // both layers of image #1, then copy the first and second layers
-    // of image #1 to buffer #1 and buffer #2, respectively
+    // of image #1 to buffer #1 and buffer #2, respectively.
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
@@ -142,7 +142,7 @@ test "copy between resources" {
         .by_region = false,
     }});
 
-    // Invert the top and bottom halves
+    // Invert the top and bottom halves.
     cmd.copyBufferToImage(&.{.{
         .buffer = &bufs[0],
         .image = &images[0],
@@ -218,8 +218,8 @@ test "copy between resources" {
         .by_region = false,
     }});
 
-    // Invert the top and bottom halves for the first layer
-    // For the second layer, the contents are copied as-is
+    // Invert the top and bottom halves for the first layer.
+    // For the second layer, the contents are copied as-is.
     cmd.copyImage(&.{.{
         .source = &images[0],
         .source_layout = .transfer_source_optimal,
@@ -297,7 +297,7 @@ test "copy between resources" {
     }});
 
     // Nothing fancy here, just copy the second image's layers
-    // to mappable buffers
+    // to mappable buffers.
     cmd.copyImageToBuffer(&.{
         .{
             .buffer = &bufs[1],
@@ -361,19 +361,19 @@ test "copy between resources" {
     };
 
     // The top and bottom halves of the staging buffer were cleared
-    // using different values
+    // using different values.
     for (0..size / 2) |i| try testing.expectEqual(ps[0][i], 0x9d);
     for (size / 2..size) |i| try testing.expectEqual(ps[0][i], 0xfa);
 
     // When copying from the first image to the second's first layer,
     // we inverted the top and bottom halves, so it must match
-    // the original contents of the staging buffer
+    // the original contents of the staging buffer.
     try testing.expect(std.mem.eql(u8, ps[0][0..size], ps[1][0..size]));
 
     // The contents of the first image were copied verbatim to the
     // second layer of the second image, so the top half must be
     // at the bottom and the bottom half at the top (relative to
-    // staging buffer contents)
+    // staging buffer contents).
     try testing.expect(std.mem.eql(u8, ps[0][0 .. size / 2], ps[2][size / 2 .. size]));
     try testing.expect(std.mem.eql(u8, ps[0][size / 2 .. size], ps[2][0 .. size / 2]));
 }

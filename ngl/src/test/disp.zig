@@ -13,9 +13,9 @@ test "dispatch command" {
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);
 
-    // Dimensions for the `dispatch` call
+    // Dimensions for the `dispatch` call.
     const groups = .{ 4, 5, 1 };
-    // Defined in shader code
+    // Defined in shader code.
     const local = .{ 8, 8, 1 };
 
     const w = groups[0] * local[0];
@@ -126,7 +126,7 @@ test "dispatch command" {
         break :blk s[0];
     };
 
-    // Write to the descriptor set before recording
+    // Write to the descriptor set before recording.
     try ngl.DescriptorSet.write(gpa, dev, &.{.{
         .descriptor_set = &desc_set,
         .binding = 0,
@@ -143,7 +143,7 @@ test "dispatch command" {
     };
 
     // Dispatch compute thread groups that write to the storage image
-    // and then copy this image to a mappable buffer
+    // and then copy this image to a mappable buffer.
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
@@ -173,7 +173,7 @@ test "dispatch command" {
     cmd.dispatch(groups[0], groups[1], groups[2]);
 
     cmd.pipelineBarrier(&.{.{
-        // Leave the image in the general layout
+        // Leave the image in the general layout.
         .global_dependencies = &.{.{
             .source_stage_mask = .{ .compute_shader = true },
             .source_access_mask = .{ .shader_storage_write = true },

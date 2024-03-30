@@ -10,5 +10,5 @@ test "PipelineCache.init/deinit" {
     var cache = try ngl.PipelineCache.init(gpa, dev, .{ .initial_data = null });
     defer cache.deinit(gpa, dev);
 
-    // TODO: Cache management
+    // TODO: Cache management.
 }

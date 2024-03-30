@@ -88,7 +88,7 @@ test "linear tiling" {
         .layers = 1,
     };
 
-    // This should be preserved due to `.preinitialized` layout
+    // This should be preserved due to `.preinitialized` layout.
     var s = data[lin_layt.offset..];
     for (0..height) |y| {
         for (0..width) |x| {
@@ -109,7 +109,7 @@ test "linear tiling" {
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);
 
-    // Copy from the linear tiling image to the optimal tiling one
+    // Copy from the linear tiling image to the optimal tiling one.
     var cmd = try cmd_buf[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
     cmd.pipelineBarrier(&.{.{
         .image_dependencies = &.{
@@ -186,7 +186,7 @@ test "linear tiling" {
     }
     try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&fence});
 
-    // Should allow host access in `.general` layout
+    // Should allow host access in `.general` layout.
     s = data[lin_layt.offset..];
     for (0..height) |y| {
         for (0..width) |x| {
@@ -200,10 +200,10 @@ test "linear tiling" {
         }
         s = s[lin_layt.row_pitch - 4 * width ..];
     }
-    // The copy below should overwrite this
+    // The copy below should overwrite this.
     @memset(data, 255);
 
-    // Now copy back to the linear tiling image
+    // Now copy back to the linear tiling image.
     try ngl.Fence.reset(gpa, dev, &.{&fence});
     try cmd_pool.reset(dev, .keep);
     cmd = try cmd_buf[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });

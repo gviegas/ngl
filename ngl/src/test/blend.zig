@@ -37,7 +37,7 @@ test "color blending" {
         try t.validate(
             source * @as(@Vector(4, f32), @splat(dest[3])) -
                 dest * @as(@Vector(4, f32), @splat(source[3])),
-            // Alpha is already zero
+            // Alpha is already zero.
         );
     }
     {
@@ -305,7 +305,7 @@ const T = struct {
         });
         errdefer pl_layt.deinit(gpa, dev);
 
-        // Vertices won't change so copy them upfront
+        // Vertices won't change so copy them upfront.
         @memcpy(
             stg_data[0..@sizeOf(@TypeOf(triangle.data))],
             @as([*]const u8, @ptrCast(&triangle.data))[0..@sizeOf(@TypeOf(triangle.data))],
@@ -355,7 +355,7 @@ const T = struct {
         };
     }
 
-    // This will create/recreate the pipeline
+    // This will create/recreate the pipeline.
     fn setColorBlend(
         self: *@This(),
         blend_equation: ngl.ColorBlend.BlendEquation,
@@ -453,14 +453,20 @@ const T = struct {
             @as([*]align(4) const u8, @ptrCast(&source_color))[0..16],
         );
         cmd.setVertexBuffers(0, &.{&self.vert_buf}, &.{0}, &.{@sizeOf(@TypeOf(triangle.data))});
-        cmd.setViewport(.{
+        cmd.setViewports(&.{.{
             .x = 0,
             .y = 0,
             .width = width,
             .height = height,
-            .near = 0,
-            .far = 0,
-        });
+            .znear = 0,
+            .zfar = 0,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = width,
+            .height = height,
+        }});
         if (self.consts.? == .dynamic)
             cmd.setBlendConstants(constants.?);
         cmd.draw(3, 1, 0, 0);

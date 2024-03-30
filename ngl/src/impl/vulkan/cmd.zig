@@ -324,46 +324,83 @@ pub const CommandBuffer = packed struct {
         );
     }
 
-    pub fn setViewport(
+    pub fn setViewports(
         _: *anyopaque,
+        allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        viewport: ngl.Viewport,
+        viewports: []const ngl.Cmd.Viewport,
     ) void {
-        const dev = Device.cast(device);
-        const cmd_buf = cast(command_buffer);
+        const n = 1;
+        var stk_vports: [n]c.VkViewport = undefined;
+        const vports = if (viewports.len > n) allocator.alloc(c.VkViewport, viewports.len) catch {
+            var i: usize = 0;
+            while (i < viewports.len) : (i += n) {
+                const j = @min(i + n, viewports.len);
+                setViewports(undefined, allocator, device, command_buffer, viewports[i..j]);
+            }
+            return;
+        } else stk_vports[0..viewports.len];
+        defer if (vports.len > n) allocator.free(vports);
 
-        const vport: [1]c.VkViewport = .{.{
-            .x = viewport.x,
-            .y = viewport.y,
-            .width = viewport.width,
-            .height = viewport.height,
-            .minDepth = viewport.near,
-            .maxDepth = viewport.far,
-        }};
+        for (vports, viewports) |*vport, viewport|
+            vport.* = .{
+                .x = viewport.x,
+                .y = viewport.y,
+                .width = viewport.width,
+                .height = viewport.height,
+                .minDepth = viewport.znear,
+                .maxDepth = viewport.zfar,
+            };
 
-        const sciss: [1]c.VkRect2D = .{if (viewport.scissor) |x| .{
-            .offset = .{
-                .x = @min(x.x, std.math.maxInt(i32)),
-                .y = @min(x.y, std.math.maxInt(i32)),
-            },
-            .extent = .{
-                .width = x.width,
-                .height = x.height,
-            },
-        } else .{
-            .offset = .{
-                .x = @intFromFloat(@min(@abs(viewport.x), std.math.maxInt(i32))),
-                .y = @intFromFloat(@min(@abs(viewport.y), std.math.maxInt(i32))),
-            },
-            .extent = .{
-                .width = @intFromFloat(@min(@abs(viewport.width), std.math.maxInt(u32))),
-                .height = @intFromFloat(@min(@abs(viewport.height), std.math.maxInt(u32))),
-            },
-        }};
+        Device.cast(device).vkCmdSetViewport(
+            cast(command_buffer).handle,
+            0,
+            @intCast(viewports.len),
+            vports.ptr,
+        );
+    }
 
-        dev.vkCmdSetViewport(cmd_buf.handle, 0, 1, &vport);
-        dev.vkCmdSetScissor(cmd_buf.handle, 0, 1, &sciss);
+    pub fn setScissorRects(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        scissor_rects: []const ngl.Cmd.ScissorRect,
+    ) void {
+        const n = 1;
+        var stk_rects: [n]c.VkRect2D = undefined;
+        const rects = if (scissor_rects.len > n) allocator.alloc(
+            c.VkRect2D,
+            scissor_rects.len,
+        ) catch {
+            var i: usize = 0;
+            while (i < scissor_rects.len) : (i += n) {
+                const j = @min(i + n, scissor_rects.len);
+                setScissorRects(undefined, allocator, device, command_buffer, scissor_rects[i..j]);
+            }
+            return;
+        } else stk_rects[0..scissor_rects.len];
+        defer if (rects.len > n) allocator.free(rects);
+
+        for (rects, scissor_rects) |*rect, scissor_rect|
+            rect.* = .{
+                .offset = .{
+                    .x = @min(scissor_rect.x, std.math.maxInt(i32)),
+                    .y = @min(scissor_rect.y, std.math.maxInt(i32)),
+                },
+                .extent = .{
+                    .width = scissor_rect.width,
+                    .height = scissor_rect.height,
+                },
+            };
+
+        Device.cast(device).vkCmdSetScissor(
+            cast(command_buffer).handle,
+            0,
+            @intCast(scissor_rects.len),
+            rects.ptr,
+        );
     }
 
     pub fn setStencilReference(

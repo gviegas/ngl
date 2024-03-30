@@ -133,7 +133,7 @@ test "DescriptorPool.alloc/reset" {
     gpa.free(try pool.alloc(gpa, dev, .{ .layouts = &.{&layt_2} }));
     gpa.free(try pool.alloc(gpa, dev, .{ .layouts = &.{&layt_3} }));
 
-    // This isn't guaranteed to fail
+    // This isn't guaranteed to fail.
     if (pool.alloc(gpa, dev, .{ .layouts = &.{&layt_3} })) |set|
         gpa.free(set)
     else |err| switch (err) {

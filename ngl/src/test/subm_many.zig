@@ -100,7 +100,7 @@ test "submission of multiple command buffers" {
     });
     defer pl_layt.deinit(gpa, dev);
 
-    // Clear, `pls[0]` draw, `pls[1]` draw
+    // Clear, `pls[0]` draw, `pls[1]` draw.
     const colors = [_]f32{ 1, 0.3, 0.6 };
 
     const pls = blk: {
@@ -238,10 +238,10 @@ test "submission of multiple command buffers" {
         const clr = colors[0];
         const pl0 = colors[1];
         const pl1 = colors[2];
-        // Clear color -> `pls[0]` color -> `pls[1]` color
+        // Clear color -> `pls[0]` color -> `pls[1]` color.
         const x = clr * 1 - pl0 * 1;
         const f = x * 1 - pl1 * x;
-        // Clear color -> `pls[1]` color -> `pls[0]` color
+        // Clear color -> `pls[1]` color -> `pls[0]` color.
         const y = clr * 1 - pl1 * clr;
         const s = y * 1 - pl0 * 1;
         break :blk [_]u8{ @round(f * 255), @round(s * 255) };
@@ -252,7 +252,7 @@ test "submission of multiple command buffers" {
         for ([_]bool{ false, true }) |split_subm| {
             @memset(data, @intFromFloat(255 * colors[0]));
 
-            // Draw
+            // Draw.
             for (cmd_bufs[0..2], pls) |*cmd_buf, *pl| {
                 var cmd = try cmd_buf.begin(gpa, dev, .{
                     .one_time_submit = true,
@@ -273,20 +273,26 @@ test "submission of multiple command buffers" {
                     .{ .contents = .inline_only },
                 );
                 cmd.setPipeline(pl);
-                cmd.setViewport(.{
+                cmd.setViewports(&.{.{
                     .x = 0,
                     .y = 0,
                     .width = width,
                     .height = height,
-                    .near = 0,
-                    .far = 0,
-                });
+                    .znear = 0,
+                    .zfar = 0,
+                }});
+                cmd.setScissorRects(&.{.{
+                    .x = 0,
+                    .y = 0,
+                    .width = width,
+                    .height = height,
+                }});
                 cmd.draw(3, 1, 0, 0);
                 cmd.endRenderPass(.{});
                 try cmd.end();
             }
 
-            // Clear image
+            // Clear image.
             {
                 var cmd = try cmd_bufs[2].begin(gpa, dev, .{
                     .one_time_submit = true,
@@ -357,7 +363,7 @@ test "submission of multiple command buffers" {
                 try cmd.end();
             }
 
-            // Synchronize draws
+            // Synchronize draws.
             {
                 var cmd = try cmd_bufs[3].begin(gpa, dev, .{
                     .one_time_submit = true,
@@ -378,7 +384,7 @@ test "submission of multiple command buffers" {
                 try cmd.end();
             }
 
-            // Copy result
+            // Copy result.
             {
                 var cmd = try cmd_bufs[4].begin(gpa, dev, .{
                     .one_time_submit = true,
@@ -428,7 +434,7 @@ test "submission of multiple command buffers" {
 
             ctx.lockQueue(queue_i);
 
-            // These should be equivalent
+            // These should be equivalent.
             const subms: []const ngl.Queue.Submit = if (split_subm) &.{
                 .{
                     .commands = &.{.{ .command_buffer = &cmd_bufs[2] }},

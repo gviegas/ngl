@@ -178,7 +178,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
         const topology = ngl.Primitive.Topology.triangle_list;
         const clockwise = true;
 
-        // Each triangle will cover half the render area
+        // Each triangle will cover half the render area.
         const data: struct {
             left: [3 * 3]f32 = .{
                 0,  -3, 0,
@@ -448,7 +448,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     );
     cmd.setPipeline(&pl[0]);
 
-    // samples_passed == width / 2 * height (or > 0)
+    // samples_passed == width / 2 * height (or > 0).
     cmd.beginQuery(&query_pool, 0, .{ .precise = precise });
     cmd.setVertexBuffers(
         0,
@@ -459,12 +459,12 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     cmd.draw(3, 1, 0, 0);
     cmd.endQuery(&query_pool, 0);
 
-    // samples_passed == 0
+    // samples_passed == 0.
     cmd.beginQuery(&query_pool, 1, .{ .precise = precise });
     cmd.draw(3, 1, 0, 0);
     cmd.endQuery(&query_pool, 1);
 
-    // samples_passed == width / 2 * height (or > 0)
+    // samples_passed == width / 2 * height (or > 0).
     cmd.beginQuery(&query_pool, 2, .{ .precise = precise });
     cmd.setVertexBuffers(
         0,
@@ -482,7 +482,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     cmd.draw(3, 1, 0, 0);
     cmd.endQuery(&query_pool, 2);
 
-    // samples_passed == 0
+    // samples_passed == 0.
     cmd.beginQuery(&query_pool, 3, .{ .precise = precise });
     cmd.draw(3, 1, 0, 0);
     cmd.setVertexBuffers(

@@ -12,7 +12,7 @@ test "timestamp query on empty command buffer" {
     if (std.mem.eql(bool, &core_feat.query.timestamp, &[_]bool{false} ** ngl.Queue.max))
         return error.SkipZigTest;
     // We won't record anything other than the queries themselves
-    // so the capabilities of the queue don't matter
+    // so the capabilities of the queue don't matter.
     const queue_i: ngl.Queue.Index = @intCast(std.mem.indexOfScalar(
         bool,
         &core_feat.query.timestamp,
@@ -140,7 +140,7 @@ test "timestamp query" {
         return error.SkipZigTest;
     var queue_i: ngl.Queue.Index = undefined;
     // We dont' want a transfer-only queue because it may be faster and
-    // also because Vulkan 1.0 doesn't allow filling buffers on such a queue
+    // also because Vulkan 1.0 doesn't allow filling buffers on such a queue.
     for (dev.queues[0..dev.queue_n], 0..) |queue, i| {
         if (!core_feat.query.timestamp[i]) continue;
         queue_i = @intCast(i);
@@ -232,8 +232,8 @@ test "timestamp query" {
     }
 
     // BUG: Putting a value too low here will crash the test during
-    // the fill plus copy loop below (note that it's quadratic)
-    // Need to investigate the cause
+    // the fill plus copy loop below (note that it's quadratic).
+    // Need to investigate the cause.
     const tile = extent / 32;
     const copy_buf_size = tile * tile * 4;
     var copy_buf = try ngl.Buffer.init(gpa, dev, .{
@@ -284,7 +284,7 @@ test "timestamp query" {
         }},
         .by_region = false,
     }});
-    // This should take a while
+    // This should take a while.
     for (0..extent / tile) |x| {
         for (0..extent / tile) |y| {
             cmd.clearBuffer(&copy_buf, 0, null, @intCast((x ^ y) & 255));
@@ -353,7 +353,7 @@ test "timestamp query" {
     const r1 = query_resolve.resolved_results[1].ns.?;
     try testing.expect(r0 < r1);
     const dt = r1 - r0;
-    // TODO: May need to adjust this value
-    // It takes ~150ms on an integrated GPU from 2014
+    // TODO: May need to adjust this value.
+    // It takes ~150ms on an integrated GPU from 2014.
     try testing.expect(dt > std.time.ns_per_ms * 5);
 }

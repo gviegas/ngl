@@ -16,7 +16,7 @@ test "Fence.init/deinit" {
     defer sig.deinit(gpa, dev);
     try testing.expectEqual(sig.getStatus(dev), .signaled);
 
-    // Unsignaled is the default
+    // Unsignaled is the default.
     var unsig_2 = try ngl.Fence.init(gpa, dev, .{});
     defer unsig_2.deinit(gpa, dev);
     try testing.expectEqual(unsig.getStatus(dev), .unsignaled);
@@ -70,7 +70,7 @@ test "Fence.wait" {
     try ngl.Fence.wait(gpa, dev, timeout, &.{&sig});
     try testing.expectEqual(sig.getStatus(dev), .signaled);
 
-    // Current behavior is to wait until all fences become signaled
+    // Current behavior is to wait until all fences become signaled.
     try testing.expectError(
         ngl.Error.Timeout,
         ngl.Fence.wait(gpa, dev, timeout, &.{ &sig, &unsig }),

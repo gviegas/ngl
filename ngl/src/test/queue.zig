@@ -40,7 +40,7 @@ test "Queue.submit" {
     defer ctx.unlockQueue(0);
 
     {
-        // Submission of empty command buffers is allowed
+        // Submission of empty command buffers is allowed.
         for (cmd_bufs) |*cmd_buf| {
             var cmd = try cmd_buf.begin(
                 gpa,
@@ -149,7 +149,7 @@ test "Queue.submit" {
         try ngl.Fence.reset(gpa, dev, &.{ &fences[0], &fences[1] });
 
         // We should be able to re-submit this command buffer
-        // when a previous submission completes its execution
+        // when a previous submission completes its execution.
         var cmd = try cmd_bufs[0].begin(gpa, dev, .{
             .one_time_submit = false,
             .inheritance = null,
@@ -172,14 +172,14 @@ test "Queue.submit" {
     {
         try ngl.Fence.reset(gpa, dev, &.{&fences[0]});
 
-        // We don't have to submit any command buffers
+        // We don't have to submit any command buffers.
         try queue.submit(gpa, dev, null, &.{.{
             .commands = &.{},
             .wait = &.{},
             .signal = &.{.{ .semaphore = &semas[0], .stage_mask = .{ .copy = true } }},
         }});
 
-        // We don't have to submit anything at all
+        // We don't have to submit anything at all.
         try queue.submit(gpa, dev, &fences[0], &.{});
         try ngl.Fence.wait(gpa, dev, timeout, &.{&fences[0]});
     }
@@ -210,7 +210,7 @@ test "Queue.present" {
     const timeout = std.time.ns_per_ms * 3;
 
     // TODO: Create the swap chain with more images than the minimum
-    // so we can test multiple presents in one call
+    // so we can test multiple presents in one call.
 
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[plat.queue_index] });
     defer cmd_pool.deinit(gpa, dev);

@@ -25,7 +25,7 @@ test "Memory.map/unmap (coherent)" {
 
         mem.unmap(dev);
 
-        // Should be equivalent to `map(dev, 0, size)`
+        // Should be equivalent to `map(dev, 0, size)`.
         p = try mem.map(dev, 0, null);
         defer mem.unmap(dev);
         try testing.expect(std.mem.eql(u8, p[0..size], &[_]u8{0xcd} ** size));
@@ -40,7 +40,7 @@ test "Memory.map/unmap (coherent)" {
 
         mem.unmap(dev);
 
-        // Should be equivalent to `map(dev, off, size - off)`
+        // Should be equivalent to `map(dev, off, size - off)`.
         p = try mem.map(dev, off, null);
         try testing.expect(std.mem.eql(u8, p[0 .. size - off], &[_]u8{0xf9} ** (size - off)));
 
@@ -112,12 +112,12 @@ test "Memory.map/unmap (coherent)" {
         }
     }
 
-    // Freeing mapped device memory is allowed
+    // Freeing mapped device memory is allowed.
     _ = try mem.map(dev, 0, size);
 }
 
 test "Memory.flushMapped/invalidateMapped (non-coherent)" {
-    // TODO: Need a device that exposes such memory
+    // TODO: Need a device that exposes such memory.
 }
 
 test "Memory.Requirements.findType/findTypeExact" {

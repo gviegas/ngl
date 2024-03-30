@@ -136,7 +136,7 @@ test "Image capabilities" {
             try expect.sampleCounts(capabs, f.name, .{ .color = true }, usage, core);
         } else if (feats.depth_stencil_attachment) {
             // Currently, this is the only format in `Format.min_features`
-            // that must support depth/stencil attachments
+            // that must support depth/stencil attachments.
             if (@field(ngl.Format, f.name) != .d16_unorm)
                 @compileError("Update Image capabilities test");
             const usage = ngl.Image.Usage{
@@ -258,7 +258,7 @@ test "ImageView.init/deinit" {
         .misc = .{},
         .initial_layout = undefined,
     });
-    // It's invalid to create a view with no backing memory
+    // It's invalid to create a view with no backing memory.
     var rt_mem = blk: {
         errdefer rt.deinit(gpa, dev);
         const mem_reqs = rt.getMemoryRequirements(dev);
@@ -289,7 +289,7 @@ test "ImageView.init/deinit" {
     });
     defer rt_view.deinit(gpa, dev);
 
-    // Aliasing is allowed
+    // Aliasing is allowed.
     var rt_view_2 = try ngl.ImageView.init(gpa, dev, .{
         .image = &rt,
         .type = .@"2d",

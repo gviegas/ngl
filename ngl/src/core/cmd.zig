@@ -284,8 +284,6 @@ pub const CommandBuffer = struct {
             height: u32,
         };
 
-        /// Only valid for pipelines with unspecified viewport state.
-        ///
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope
@@ -293,8 +291,29 @@ pub const CommandBuffer = struct {
         /// ✔ Graphics queue
         /// ✘ Compute queue
         /// ✘ Transfer queue
-        pub fn setViewport(self: *Cmd, viewport: Viewport) void {
-            Impl.get().setViewport(self.device.impl, self.command_buffer.impl, viewport);
+        pub fn setViewports(self: *Cmd, viewports: []const Viewport) void {
+            Impl.get().setViewports(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                viewports,
+            );
+        }
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setScissorRects(self: *Cmd, scissor_rects: []const ScissorRect) void {
+            Impl.get().setScissorRects(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                scissor_rects,
+            );
         }
 
         pub const StencilFace = enum {

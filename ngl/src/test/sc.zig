@@ -24,7 +24,7 @@ test "SwapChain.init/deinit" {
 
     const fmts = try plat.surface.getFormats(gpa, ctx.gpu);
     defer gpa.free(fmts);
-    // TODO: Need to fix this somehow
+    // TODO: Need to fix this somehow.
     if (fmts.len == 0) {
         std.log.warn("No exposed format for SwapChain creation!", .{});
         return error.SkipZigTest;

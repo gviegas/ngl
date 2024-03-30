@@ -40,15 +40,15 @@ test "Surface queries" {
         const is_compatible = try sf.isCompatible(ctx.gpu, @as(ngl.Queue.Index, @intCast(i)));
         if (is_compatible) break;
     } else {
-        // NOTE: This could happen but shouldn't
+        // NOTE: This could happen but shouldn't.
         try testing.expect(false);
     }
 
     const pres_modes = try sf.getPresentModes(ctx.gpu);
-    // FIFO support is mandatory
+    // FIFO support is mandatory.
     try testing.expect(pres_modes.fifo);
 
-    // NOTE: Currently this may return no formats at all
+    // NOTE: Currently this may return no formats at all.
     const fmts = try sf.getFormats(gpa, ctx.gpu);
     defer gpa.free(fmts);
     for (fmts) |fmt|
@@ -56,7 +56,7 @@ test "Surface queries" {
 
     const capab = try sf.getCapabilities(ctx.gpu, .fifo);
     try testing.expect(capab.min_count > 0);
-    // This differs from Vulkan
+    // This differs from Vulkan.
     try testing.expect(capab.max_count >= capab.min_count);
     if (capab.current_width) |w| {
         if (capab.current_height) |h| {

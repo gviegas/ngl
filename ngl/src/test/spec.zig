@@ -15,7 +15,7 @@ test "shader specialization" {
 
     const groups = .{ 10, 1, 1 };
     const local = .{ 6, 1, 1 };
-    // Two dispatch calls
+    // Two dispatch calls.
     const size = (groups[0] * 2) * local[0] * 4;
 
     var stor_buf = try ngl.Buffer.init(gpa, dev, .{
@@ -223,7 +223,7 @@ test "shader specialization" {
     //  - `pls[0]` writes `values[0]` to even "rows"
     //  - `pls[1]` writes `values[1]` to odd "rows"
     // (here a row means a contiguous range of length `local[0]`
-    // within the storage buffer)
+    // within the storage buffer).
 
     const p = try stg_mem.map(dev, 0, null);
     const s = @as([*]const u32, @ptrCast(@alignCast(p)))[0 .. size / 4];

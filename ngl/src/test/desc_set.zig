@@ -168,7 +168,7 @@ test "DescriptorSet.write" {
     var sets = try pool.alloc(gpa, dev, .{ .layouts = &.{ &layt, &layt_2 } });
     defer gpa.free(sets);
 
-    // Combined image/sampler (x2)
+    // Combined image/sampler (x2).
     const write_0_0 = ngl.DescriptorSet.Write{
         .descriptor_set = &sets[0],
         .binding = 0,
@@ -186,14 +186,14 @@ test "DescriptorSet.write" {
             },
         } },
     };
-    // Storage texel buffer
+    // Storage texel buffer.
     const write_0_1 = ngl.DescriptorSet.Write{
         .descriptor_set = &sets[0],
         .binding = 1,
         .element = 0,
         .contents = .{ .storage_texel_buffer = &.{&buf_view} },
     };
-    // Uniform buffer (x2)
+    // Uniform buffer (x2).
     const write_0_2 = ngl.DescriptorSet.Write{
         .descriptor_set = &sets[0],
         .binding = 2,
@@ -211,7 +211,7 @@ test "DescriptorSet.write" {
             },
         } },
     };
-    // Combined image/sampler w/ immutable sampler
+    // Combined image/sampler w/ immutable sampler.
     const write_1_0 = ngl.DescriptorSet.Write{
         .descriptor_set = &sets[1],
         .binding = 0,
@@ -222,7 +222,7 @@ test "DescriptorSet.write" {
             .sampler = null,
         }} },
     };
-    // Sampler
+    // Sampler.
     const write_1_1 = ngl.DescriptorSet.Write{
         .descriptor_set = &sets[1],
         .binding = 1,

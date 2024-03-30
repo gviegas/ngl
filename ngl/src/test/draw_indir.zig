@@ -13,7 +13,7 @@ test "drawIndexedIndirect command" {
     try testDrawIndirectCommand(true, @src().fn_name);
 }
 
-// TODO: Test `draw_count` greater than one in indirect command calls
+// TODO: Test `draw_count` greater than one in indirect command calls.
 fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u8) !void {
     const ctx = context();
     const dev = &ctx.device;
@@ -79,7 +79,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         const top_left_color = [4]f32{ 1, 0, 0, 1 };
         const bottom_right_color = [4]f32{ 0, 0, 1, 1 };
 
-        // Each triangle will cover one quadrant of the render area
+        // Each triangle will cover one quadrant of the render area.
         const data: struct {
             top_left: [3]Vertex = .{
                 Vertex.init(.{ 0, 0, 0 }, top_left_color),
@@ -93,7 +93,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
             },
         } = .{};
 
-        // Invert the winding order for indexed indirect draw
+        // Invert the winding order for indexed indirect draw.
         const indices = if (indexed) [3]u16{ 2, 1, 0 } else {};
     };
 

@@ -432,7 +432,7 @@ test "Device.findQueue/findQueueExact" {
     }
 
     // Check that default and high priorities are treated equally
-    // when none is specified
+    // when none is specified.
 
     dev.queue_n = 2;
     dev.queues[0] = .{
@@ -513,7 +513,7 @@ test "Device.findQueue/findQueueExact" {
         try testing.expectEqual(dev.findQueueExact(case.@"0", case.@"1"), case.@"2");
 
     // Check that default or high priority is selected in lieu of
-    // low priority when none is specified
+    // low priority when none is specified.
 
     dev.queue_n = 2;
     dev.queues[0] = .{

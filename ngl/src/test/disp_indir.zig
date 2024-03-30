@@ -202,7 +202,7 @@ test "dispatchIndirect command" {
 
     // We should have dispatched a total of `invoc` invocations,
     // each of which wrote `invoc` - <flattened invocation index>
-    // to a single location of `stor_buf`
+    // to a single location of `stor_buf`.
 
     const s = @as([*]const u32, @ptrCast(@alignCast(stg_data)))[0..invoc];
     for (s, 0..) |x, i|

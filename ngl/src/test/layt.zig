@@ -99,7 +99,7 @@ test "DescriptorSetLayout and PipelineLayout" {
     });
     defer pl_layt_3.deinit(gpa, dev);
 
-    // Needn't use any shader resources at all
+    // Needn't use any shader resources at all.
     var pl_layt_4 = try ngl.PipelineLayout.init(gpa, dev, .{
         .descriptor_set_layouts = null,
         .push_constant_ranges = null,
@@ -123,8 +123,8 @@ test "DescriptorSetLayout and PipelineLayout" {
             return err;
         };
 
-        // Shouldn't retain the set layouts
-        // TODO: Try doing this during command recording
+        // Shouldn't retain the set layouts.
+        // TODO: Try doing this during command recording.
         set_layt_3.deinit(gpa, dev);
         pl_layt_5.deinit(gpa, dev);
     }
