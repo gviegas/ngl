@@ -22,7 +22,7 @@ var getInstanceProcAddr: c.PFN_vkGetInstanceProcAddr = null;
 // NOTE: Procs from any version greater than 1.0, as well as extensions,
 // are allowed to be null after initialization.
 
-// v1.0
+// v1.0.
 var createInstance: c.PFN_vkCreateInstance = null;
 inline fn vkCreateInstance(
     create_info: *const c.VkInstanceCreateInfo,
@@ -32,7 +32,7 @@ inline fn vkCreateInstance(
     return createInstance.?(create_info, vk_allocator, instance);
 }
 
-// v1.0
+// v1.0.
 var enumerateInstanceLayerProperties: c.PFN_vkEnumerateInstanceLayerProperties = null;
 inline fn vkEnumerateInstanceLayerProperties(
     property_count: *u32,
@@ -41,7 +41,7 @@ inline fn vkEnumerateInstanceLayerProperties(
     return enumerateInstanceLayerProperties.?(property_count, properties);
 }
 
-// v1.0
+// v1.0.
 var enumerateInstanceExtensionProperties: c.PFN_vkEnumerateInstanceExtensionProperties = null;
 inline fn vkEnumerateInstanceExtensionProperties(
     layer_name: ?[*:0]const u8,
@@ -51,7 +51,7 @@ inline fn vkEnumerateInstanceExtensionProperties(
     return enumerateInstanceExtensionProperties.?(layer_name, property_count, properties);
 }
 
-// v1.1
+// v1.1.
 var enumerateInstanceVersion: c.PFN_vkEnumerateInstanceVersion = null;
 /// This wrapper can be called regardless of API version.
 inline fn vkEnumerateInstanceVersion(version: *u32) c.VkResult {
@@ -519,7 +519,7 @@ pub const Instance = struct {
     handle: c.VkInstance,
     version: u32,
 
-    // v1.0
+    // v1.0.
     destroyInstance: c.PFN_vkDestroyInstance,
     enumeratePhysicalDevices: c.PFN_vkEnumeratePhysicalDevices,
     getPhysicalDeviceProperties: c.PFN_vkGetPhysicalDeviceProperties,
@@ -530,31 +530,31 @@ pub const Instance = struct {
     getPhysicalDeviceFeatures: c.PFN_vkGetPhysicalDeviceFeatures,
     createDevice: c.PFN_vkCreateDevice,
     enumerateDeviceExtensionProperties: c.PFN_vkEnumerateDeviceExtensionProperties,
-    // v1.1
+    // v1.1.
     getPhysicalDeviceProperties2: c.PFN_vkGetPhysicalDeviceProperties2,
     getPhysicalDeviceFeatures2: c.PFN_vkGetPhysicalDeviceFeatures2,
-    // VK_KHR_surface
+    // VK_KHR_surface.
     destroySurface: c.PFN_vkDestroySurfaceKHR,
     getPhysicalDeviceSurfaceSupport: c.PFN_vkGetPhysicalDeviceSurfaceSupportKHR,
     getPhysicalDeviceSurfaceCapabilities: c.PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR,
     getPhysicalDeviceSurfaceFormats: c.PFN_vkGetPhysicalDeviceSurfaceFormatsKHR,
     getPhysicalDeviceSurfacePresentModes: c.PFN_vkGetPhysicalDeviceSurfacePresentModesKHR,
-    // VK_KHR_android_surface
+    // VK_KHR_android_surface.
     createAndroidSurface: if (builtin.target.isAndroid())
         c.PFN_vkCreateAndroidSurfaceKHR
     else
         void,
-    // VK_KHR_wayland_surface
+    // VK_KHR_wayland_surface.
     createWaylandSurface: if (builtin.os.tag == .linux and !builtin.target.isAndroid())
         c.PFN_vkCreateWaylandSurfaceKHR
     else
         void,
-    // VK_KHR_win32_surface
+    // VK_KHR_win32_surface.
     createWin32Surface: if (builtin.os.tag == .windows)
         c.PFN_vkCreateWin32SurfaceKHR
     else
         void,
-    // VK_KHR_xcb_surface
+    // VK_KHR_xcb_surface.
     createXcbSurface: if (builtin.os.tag == .linux and !builtin.target.isAndroid())
         c.PFN_vkCreateXcbSurfaceKHR
     else
@@ -1069,7 +1069,7 @@ pub const Device = struct {
 
     getDeviceProcAddr: c.PFN_vkGetDeviceProcAddr,
 
-    // v1.0
+    // v1.0.
     destroyDevice: c.PFN_vkDestroyDevice,
     deviceWaitIdle: c.PFN_vkDeviceWaitIdle,
     getDeviceQueue: c.PFN_vkGetDeviceQueue,
@@ -1163,7 +1163,10 @@ pub const Device = struct {
     destroyShaderModule: c.PFN_vkDestroyShaderModule,
     createQueryPool: c.PFN_vkCreateQueryPool,
     destroyQueryPool: c.PFN_vkDestroyQueryPool,
-    // VK_KHR_swapchain
+    // v1.3.
+    cmdBeginRendering: c.PFN_vkCmdBeginRendering,
+    cmdEndRendering: c.PFN_vkCmdEndRendering,
+    // VK_KHR_swapchain.
     queuePresent: c.PFN_vkQueuePresentKHR,
     createSwapchain: c.PFN_vkCreateSwapchainKHR,
     getSwapchainImages: c.PFN_vkGetSwapchainImagesKHR,
@@ -1375,6 +1378,15 @@ pub const Device = struct {
             .destroyShaderModule = @ptrCast(try Device.getProc(get, dev, "vkDestroyShaderModule")),
             .createQueryPool = @ptrCast(try Device.getProc(get, dev, "vkCreateQueryPool")),
             .destroyQueryPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyQueryPool")),
+
+            .cmdBeginRendering = if (ver >= c.VK_API_VERSION_1_3)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdBeginRendering"))
+            else
+                null,
+            .cmdEndRendering = if (ver >= c.VK_API_VERSION_1_3)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdEndRendering"))
+            else
+                null,
 
             .queuePresent = if (gpu.feature_set.presentation)
                 @ptrCast(try Device.getProc(get, dev, "vkQueuePresentKHR"))
@@ -2415,6 +2427,18 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.destroyQueryPool.?(self.handle, query_pool, vk_allocator);
+    }
+
+    pub inline fn vkCmdBeginRendering(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        rendering_info: *const c.VkRenderingInfo,
+    ) void {
+        self.cmdBeginRendering.?(command_buffer, rendering_info);
+    }
+
+    pub inline fn vkCmdEndRendering(self: *Device, command_buffer: c.VkCommandBuffer) void {
+        self.cmdEndRendering.?(command_buffer);
     }
 
     pub inline fn vkQueuePresentKHR(
