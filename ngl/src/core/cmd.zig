@@ -5,8 +5,12 @@ const Device = ngl.Device;
 const Queue = ngl.Queue;
 const Buffer = ngl.Buffer;
 const Image = ngl.Image;
+const ImageView = ngl.ImageView;
 const Stage = ngl.Stage;
 const Access = ngl.Access;
+const LoadOp = ngl.LoadOp;
+const StoreOp = ngl.StoreOp;
+const ResolveMode = ngl.ResolveMode;
 const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
 const PipelineLayout = ngl.PipelineLayout;
@@ -408,6 +412,51 @@ pub const CommandBuffer = struct {
         /// ✘ Transfer queue
         pub fn endRenderPass(self: *Cmd, subpass_end: SubpassEnd) void {
             Impl.get().endRenderPass(self.device.impl, self.command_buffer.impl, subpass_end);
+        }
+
+        pub const Rendering = struct {
+            colors: []Attachment,
+            depth: ?Attachment,
+            stencil: ?Attachment,
+            render_area: struct {
+                x: u32 = 0,
+                y: u32 = 0,
+                width: u32,
+                height: u32,
+            },
+            layers: u32,
+            view_mask: u32 = 0,
+            context: Context = .none,
+
+            pub const Attachment = struct {
+                view: *ImageView,
+                layout: Image.Layout,
+                load_op: LoadOp,
+                store_op: StoreOp,
+                clear_value: ?ClearValue,
+                resolve: ?struct {
+                    view: *ImageView,
+                    layout: Image.Layout,
+                    mode: ResolveMode,
+                },
+            };
+
+            pub const Context = enum {
+                none,
+                suspending,
+                resuming,
+            };
+        };
+
+        pub fn beginRendering(self: *Cmd, rendering: Rendering) void {
+            // TODO
+            _ = self;
+            _ = rendering;
+        }
+
+        pub fn endRendering(self: *Cmd) void {
+            // TODO
+            _ = self;
         }
 
         /// ✔ Primary command buffer
