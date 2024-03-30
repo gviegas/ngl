@@ -299,6 +299,16 @@ pub const VTable = struct {
         subpass_end: ngl.Cmd.SubpassEnd,
     ) void,
 
+    beginRendering: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        rendering: ngl.Cmd.Rendering,
+    ) void,
+
+    endRendering: *const fn (ctx: *anyopaque, device: Device, command_buffer: CommandBuffer) void,
+
     draw: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1311,6 +1321,20 @@ pub fn endRenderPass(
     subpass_end: ngl.Cmd.SubpassEnd,
 ) void {
     self.vtable.endRenderPass(self.ptr, device, command_buffer, subpass_end);
+}
+
+pub fn beginRendering(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    rendering: ngl.Cmd.Rendering,
+) void {
+    self.vtable.beginRendering(self.ptr, allocator, device, command_buffer, rendering);
+}
+
+pub fn endRendering(self: *Self, device: Device, command_buffer: CommandBuffer) void {
+    self.vtable.endRendering(self.ptr, device, command_buffer);
 }
 
 pub fn draw(

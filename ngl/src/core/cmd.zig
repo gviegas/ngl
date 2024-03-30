@@ -467,15 +467,31 @@ pub const CommandBuffer = struct {
             };
         };
 
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✘ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
         pub fn beginRendering(self: *Cmd, rendering: Rendering) void {
-            // TODO
-            _ = self;
-            _ = rendering;
+            Impl.get().beginRendering(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                rendering,
+            );
         }
 
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✘ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
         pub fn endRendering(self: *Cmd) void {
-            // TODO
-            _ = self;
+            Impl.get().endRendering(self.device.impl, self.command_buffer.impl);
         }
 
         /// ✔ Primary command buffer

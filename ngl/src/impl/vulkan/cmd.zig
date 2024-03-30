@@ -38,7 +38,7 @@ pub const CommandPool = packed struct {
         try check(Device.cast(device).vkCreateCommandPool(&.{
             .sType = c.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .pNext = null,
-            .flags = 0, // TODO: Maybe expose this
+            .flags = 0, // TODO: Maybe expose this.
             .queueFamilyIndex = Queue.cast(desc.queue.impl).family,
         }, null, &cmd_pool));
 
@@ -101,7 +101,7 @@ pub const CommandPool = packed struct {
     ) void {
         const dev = Device.cast(device);
         const cmd_pool = cast(command_pool);
-        // Should be safe to assume this
+        // Should be safe to assume this.
         const n: u32 = @intCast(command_buffers.len);
 
         const handles = allocator.alloc(c.VkCommandBuffer, n) catch {
@@ -148,7 +148,7 @@ pub const CommandBuffer = packed struct {
                 flags |= c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
             if (desc.inheritance != null and desc.inheritance.?.render_pass_continue != null)
                 flags |= c.VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-            // Disallow simultaneous use
+            // Disallow simultaneous use.
             break :blk flags;
         };
 
@@ -271,7 +271,7 @@ pub const CommandBuffer = packed struct {
         index_type: ngl.Cmd.IndexType,
         buffer: Impl.Buffer,
         offset: u64,
-        _: u64, // Requires newer command
+        _: u64, // TODO: Requires newer command.
     ) void {
         Device.cast(device).vkCmdBindIndexBuffer(
             cast(command_buffer).handle,
@@ -289,7 +289,7 @@ pub const CommandBuffer = packed struct {
         first_binding: u32,
         buffers: []const *ngl.Buffer,
         offsets: []const u64,
-        _: []const u64, // Requires newer command
+        _: []const u64, // TODO: Requires newer command.
     ) void {
         const n = 16;
         var stk_bufs: [n]c.VkBuffer = undefined;
@@ -403,7 +403,7 @@ pub const CommandBuffer = packed struct {
             c.VkClearValue,
             render_pass_begin.clear_values.len,
         ) catch {
-            // TODO: Handle this somehow
+            // TODO: Handle this somehow.
             @panic("OOM");
         } else stk_clears[0..render_pass_begin.clear_values.len];
         defer if (clears.len > n) allocator.free(clears);
@@ -453,6 +453,32 @@ pub const CommandBuffer = packed struct {
         _: ngl.Cmd.SubpassEnd,
     ) void {
         Device.cast(device).vkCmdEndRenderPass(cast(command_buffer).handle);
+    }
+
+    // TODO
+    pub fn beginRendering(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        rendering: ngl.Cmd.Rendering,
+    ) void {
+        _ = allocator;
+        _ = device;
+        _ = command_buffer;
+        _ = rendering;
+        @panic("Not yet implemented");
+    }
+
+    // TODO
+    pub fn endRendering(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        @panic("Not yet implemented");
     }
 
     pub fn draw(
@@ -595,7 +621,7 @@ pub const CommandBuffer = packed struct {
         defer if (regions.len > 1) allocator.free(regions);
 
         for (copies) |x| {
-            // We need to copy this many regions
+            // We need to copy this many regions.
             const n = x.regions.len;
 
             if (n > regions.len) {
@@ -610,7 +636,7 @@ pub const CommandBuffer = packed struct {
                 }
             }
 
-            // We can copy this many regions per call
+            // We can copy this many regions per call.
             const max = regions.len;
 
             var i: usize = 0;
@@ -644,7 +670,7 @@ pub const CommandBuffer = packed struct {
         defer if (regions.len > 1) allocator.free(regions);
 
         for (copies) |x| {
-            // We need to copy this many regions
+            // We need to copy this many regions.
             const n = x.regions.len;
 
             if (n > regions.len) {
@@ -659,11 +685,11 @@ pub const CommandBuffer = packed struct {
                 }
             }
 
-            // We can copy this many regions per call
+            // We can copy this many regions per call.
             const max = regions.len;
 
             // TODO: Check that the compiler is generating a
-            // separate path for 3D images
+            // separate path for 3D images.
             const is_3d = x.type == .@"3d";
 
             var i: usize = 0;
@@ -725,7 +751,7 @@ pub const CommandBuffer = packed struct {
         defer if (regions.len > 1) allocator.free(regions);
 
         for (copies) |x| {
-            // We need to copy this many regions
+            // We need to copy this many regions.
             const n = x.regions.len;
 
             if (n > regions.len) {
@@ -740,11 +766,11 @@ pub const CommandBuffer = packed struct {
                 }
             }
 
-            // We can copy this many regions per call
+            // We can copy this many regions per call.
             const max = regions.len;
 
             // TODO: Check that the compiler is generating a
-            // separate path for 3D images
+            // separate path for 3D images.
             const is_3d = x.image_type == .@"3d";
 
             var i: usize = 0;
@@ -845,7 +871,7 @@ pub const CommandBuffer = packed struct {
             QueryPool.cast(query_pool).handle,
             query,
             // This assumes that `control.precise` will only be set to
-            // `true` for occlusion queries
+            // `true` for occlusion queries.
             if (control.precise) c.VK_QUERY_CONTROL_PRECISE_BIT else 0,
         );
     }
@@ -932,7 +958,7 @@ pub const CommandBuffer = packed struct {
         const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
 
-        // TODO: Need synchronization2 to implement this efficiently
+        // TODO: Need synchronization2 to implement this efficiently.
         if (true) {
             for (dependencies) |x| {
                 const depend_flags: c.VkDependencyFlags = if (x.by_region)
@@ -1099,7 +1125,7 @@ pub const CommandBuffer = packed struct {
                         _ = d;
                     }
                     // TODO: Call `vkCmdPipelineBarrier2`
-                    // Maybe try to fill more `VkDependencyInfo`s
+                    // Maybe try to fill more `VkDependencyInfo`s.
                     mem_i += mem_max;
                     buf_i += buf_max;
                     img_i += img_max;
@@ -1116,7 +1142,7 @@ pub const CommandBuffer = packed struct {
         secondary_command_buffers: []const *ngl.CommandBuffer,
     ) void {
         // Ideally, this would be the number of available cores,
-        // but such value isn't known at compile time
+        // but such value isn't known at compile time.
         const n = if (builtin.single_threaded) 1 else 16;
         var stk_cmd_bufs: [n]c.VkCommandBuffer = undefined;
         const cmd_bufs = if (secondary_command_buffers.len > n) allocator.alloc(
