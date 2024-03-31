@@ -329,6 +329,38 @@ pub const CommandBuffer = struct {
         /// ✔ Graphics queue
         /// ✘ Compute queue
         /// ✘ Transfer queue
+        pub fn setStencilReadMask(self: *Cmd, stencil_face: StencilFace, mask: u32) void {
+            Impl.get().setStencilReadMask(
+                self.device.impl,
+                self.command_buffer.impl,
+                stencil_face,
+                mask,
+            );
+        }
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setStencilWriteMask(self: *Cmd, stencil_face: StencilFace, mask: u32) void {
+            Impl.get().setStencilWriteMask(
+                self.device.impl,
+                self.command_buffer.impl,
+                stencil_face,
+                mask,
+            );
+        }
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
         pub fn setStencilReference(self: *Cmd, stencil_face: StencilFace, reference: u32) void {
             Impl.get().setStencilReference(
                 self.device.impl,
