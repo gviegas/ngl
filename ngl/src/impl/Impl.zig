@@ -269,6 +269,22 @@ pub const VTable = struct {
         scissor_rects: []const ngl.Cmd.ScissorRect,
     ) void,
 
+    setStencilReadMask: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        stencil_face: ngl.Cmd.StencilFace,
+        mask: u32,
+    ) void,
+
+    setStencilWriteMask: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        stencil_face: ngl.Cmd.StencilFace,
+        mask: u32,
+    ) void,
+
     setStencilReference: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1285,6 +1301,26 @@ pub fn setScissorRects(
     scissor_rects: []const ngl.Cmd.ScissorRect,
 ) void {
     self.vtable.setScissorRects(self.ptr, allocator, device, command_buffer, scissor_rects);
+}
+
+pub fn setStencilReadMask(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    stencil_face: ngl.Cmd.StencilFace,
+    mask: u32,
+) void {
+    self.vtable.setStencilReadMask(self.ptr, device, command_buffer, stencil_face, mask);
+}
+
+pub fn setStencilWriteMask(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    stencil_face: ngl.Cmd.StencilFace,
+    mask: u32,
+) void {
+    self.vtable.setStencilWriteMask(self.ptr, device, command_buffer, stencil_face, mask);
 }
 
 pub fn setStencilReference(
