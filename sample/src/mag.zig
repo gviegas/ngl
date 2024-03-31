@@ -10,7 +10,7 @@ const util = @import("util.zig");
 const idata = @import("idata.zig");
 
 // TODO: Try the technique from Valve's paper that uses
-// signed distance fields rather than coverage data
+// signed distance fields rather than coverage data.
 
 pub fn main() !void {
     try do();
@@ -272,6 +272,20 @@ fn do() !void {
         cmd.setPipeline(&rend.pipeline);
         cmd.setDescriptors(.graphics, &desc.pipeline_layout, 1, &.{&desc.sets[frame + 1]});
         cmd.setVertexBuffers(0, &.{&vert_buf.buffer}, &.{0}, &.{quad.size});
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+        }});
         cmd.draw(quad.vertex_count, 1, 0, 0);
         cmd.endRenderPass(.{});
         if (!is_unified) @panic("TODO");
@@ -720,7 +734,7 @@ const Descriptor = struct {
         };
 
         var writes: [2 + frame_n * 2]ngl.DescriptorSet.Write = undefined;
-        // First set
+        // First set.
         writes[0] = .{
             .descriptor_set = &sets[0],
             .binding = 0,
@@ -740,7 +754,7 @@ const Descriptor = struct {
                 .layout = .general,
             }} },
         };
-        // Remaining (per frame) sets
+        // Remaining (per frame) sets.
         var is_wr: [frame_n]ngl.DescriptorSet.Write.ImageSamplerWrite = undefined;
         var buf_wr: [frame_n]ngl.DescriptorSet.Write.BufferWrite = undefined;
         for (0..frame_n) |i| {
@@ -940,14 +954,6 @@ const Rendering = struct {
                         },
                     },
                     .topology = quad.topology,
-                },
-                .viewport = &.{
-                    .x = 0,
-                    .y = 0,
-                    .width = Platform.width,
-                    .height = Platform.height,
-                    .near = 0,
-                    .far = 1,
                 },
                 .rasterization = &.{
                     .polygon_mode = .fill,

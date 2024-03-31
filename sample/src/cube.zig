@@ -72,8 +72,8 @@ fn do() !void {
         }
     } = .{ .data = stg_buf.data };
 
-    // x, -x, y, -y, z, -z
-    // TODO: Need to flip some to match cube orientation
+    // x, -x, y, -y, z, -z.
+    // TODO: Need to flip some to match cube orientation.
     const cube_data = .{
         try idata.loadPng(gpa, "data/image/x.png", &dest),
         try idata.loadPng(gpa, "data/image/-x.png", &dest),
@@ -304,6 +304,20 @@ fn do() !void {
             },
             .{ .contents = .inline_only },
         );
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = width,
+            .height = height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = width,
+            .height = height,
+        }});
         cmd.setDescriptors(.graphics, &desc.pipeline_layout, 0, &.{&desc.set});
         cmd.setPipeline(&pl.cube_map);
         cmd.setVertexBuffers(
@@ -512,7 +526,7 @@ const Queue = struct {
     pools: [frame_n]ngl.CommandPool,
     buffers: [frame_n]ngl.CommandBuffer,
     semaphores: [frame_n * 2]ngl.Semaphore,
-    fences: [frame_n]ngl.Fence, // Signaled
+    fences: [frame_n]ngl.Fence, // Signaled.
     non_unified: ?struct {
         pools: [frame_n]ngl.CommandPool,
         buffers: [frame_n]ngl.CommandBuffer,
@@ -1010,14 +1024,6 @@ const Pipeline = struct {
     fn init(descriptor: *Descriptor, pass: *Pass) ngl.Error!Pipeline {
         const dev = &context().device;
 
-        const vport = ngl.Viewport{
-            .x = 0,
-            .y = 0,
-            .width = width,
-            .height = height,
-            .near = 0,
-            .far = 1,
-        };
         const ds = ngl.DepthStencil{
             .depth_compare = .less_equal,
             .depth_write = true,
@@ -1072,7 +1078,6 @@ const Pipeline = struct {
                 },
                 .topology = .triangle_list,
             },
-            .viewport = &vport,
             .rasterization = &.{
                 .polygon_mode = .fill,
                 .cull_mode = .none,
@@ -1113,7 +1118,6 @@ const Pipeline = struct {
                 }},
                 .topology = model.cube.topology,
             },
-            .viewport = &vport,
             .rasterization = &.{
                 .polygon_mode = .fill,
                 .cull_mode = .front,

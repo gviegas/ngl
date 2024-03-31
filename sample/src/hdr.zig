@@ -234,7 +234,7 @@ fn do() !void {
         cmd.setDescriptors(.graphics, &desc.pipeline_layout, 0, &.{set_0});
         cmd.setDescriptors(.compute, &desc.pipeline_layout, 0, &.{set_0});
 
-        // First render pass
+        // First render pass.
         cmd.beginRenderPass(
             .{
                 .render_pass = &pass.first.render_pass,
@@ -253,10 +253,24 @@ fn do() !void {
             },
             .{ .contents = .inline_only },
         );
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+        }});
         drawRenderables(frame, &cmd, &pl, &desc, &vert_buf, mdl, &models, &planes);
         cmd.endRenderPass(.{});
 
-        // Bloom threshold
+        // Bloom threshold.
         cmd.pipelineBarrier(&.{.{
             .image_dependencies = &.{.{
                 .source_stage_mask = .{
@@ -287,7 +301,7 @@ fn do() !void {
         cmd.setPipeline(&pl.compute.bloom);
         cmd.dispatch(BloomMap.width, BloomMap.height, 1);
 
-        // Bloom smoothing
+        // Bloom smoothing.
         cmd.pipelineBarrier(&.{.{
             .image_dependencies = &.{.{
                 .source_stage_mask = .{ .compute_shader = true },
@@ -343,7 +357,7 @@ fn do() !void {
         cmd.setPipeline(&pl.compute.blur[1]);
         cmd.dispatch(BloomMap.width, BloomMap.height, 1);
 
-        // First tone map downsample
+        // First tone map downsample.
         cmd.pipelineBarrier(&.{.{
             .image_dependencies = &.{
                 .{
@@ -400,7 +414,7 @@ fn do() !void {
         cmd.setPipeline(&pl.compute.tm);
         cmd.dispatch(ToneMap.widths[0], ToneMap.heights[0], 1);
 
-        // Remaining tone map downsamples
+        // Remaining tone map downsamples.
         for (ToneMap.downsamples[1..ToneMap.downsamples.len], 0..) |size, i| {
             cmd.pipelineBarrier(&.{.{
                 .image_dependencies = &.{
@@ -445,7 +459,7 @@ fn do() !void {
             cmd.dispatch(size[0], size[1], 1);
         }
 
-        // Last render pass
+        // Last render pass.
         cmd.pipelineBarrier(&.{.{
             .image_dependencies = &.{
                 .{
@@ -499,6 +513,20 @@ fn do() !void {
             },
             .{ .contents = .inline_only },
         );
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+        }});
         drawTriangle(&cmd, &pl, &vert_buf, vert_buf_size - @sizeOf(@TypeOf(triangle.data)));
         cmd.endRenderPass(.{});
 
@@ -718,12 +746,12 @@ const Light = struct {
 };
 
 const Queue = struct {
-    // Graphics/compute
+    // Graphics/compute.
     index: ngl.Queue.Index,
     pools: [frame_n]ngl.CommandPool,
     buffers: [frame_n]ngl.CommandBuffer,
     semaphores: [frame_n * 2]ngl.Semaphore,
-    // Signaled
+    // Signaled.
     fences: [frame_n]ngl.Fence,
     non_unified: ?struct {
         pools: [frame_n]ngl.CommandPool,
@@ -1329,7 +1357,7 @@ const Descriptor = struct {
 
         var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
-                // HDR texture/sampler (resolved)
+                // HDR texture/sampler (resolved).
                 .{
                     .binding = 0,
                     .type = .combined_image_sampler,
@@ -1337,7 +1365,7 @@ const Descriptor = struct {
                     .stage_mask = .{ .compute = true, .fragment = true },
                     .immutable_samplers = &.{&hdr_map.sampler},
                 },
-                // Bloom image (layer 0)
+                // Bloom image (layer 0).
                 .{
                     .binding = 1,
                     .type = .storage_image,
@@ -1345,7 +1373,7 @@ const Descriptor = struct {
                     .stage_mask = .{ .compute = true },
                     .immutable_samplers = null,
                 },
-                // Bloom image (layer 1)
+                // Bloom image (layer 1).
                 .{
                     .binding = 2,
                     .type = .storage_image,
@@ -1353,7 +1381,7 @@ const Descriptor = struct {
                     .stage_mask = .{ .compute = true },
                     .immutable_samplers = null,
                 },
-                // Bloom texture/sampler (layer 0)
+                // Bloom texture/sampler (layer 0).
                 .{
                     .binding = 3,
                     .type = .combined_image_sampler,
@@ -1361,7 +1389,7 @@ const Descriptor = struct {
                     .stage_mask = .{ .fragment = true },
                     .immutable_samplers = &.{&bloom_map.sampler},
                 },
-                // Tone map image (index 0)
+                // Tone map image (index 0).
                 .{
                     .binding = 4,
                     .type = .storage_image,
@@ -1369,7 +1397,7 @@ const Descriptor = struct {
                     .stage_mask = .{ .compute = true },
                     .immutable_samplers = null,
                 },
-                // Tone map image (index 1)
+                // Tone map image (index 1).
                 .{
                     .binding = 5,
                     .type = .storage_image,
@@ -1377,7 +1405,7 @@ const Descriptor = struct {
                     .stage_mask = .{ .compute = true },
                     .immutable_samplers = null,
                 },
-                // Tone map texture/sampler (index 0 or 1)
+                // Tone map texture/sampler (index 0 or 1).
                 .{
                     .binding = 6,
                     .type = .combined_image_sampler,
@@ -1385,7 +1413,7 @@ const Descriptor = struct {
                     .stage_mask = .{ .fragment = true },
                     .immutable_samplers = &.{&tone_map.sampler},
                 },
-                // Light uniforms
+                // Light uniforms.
                 .{
                     .binding = 7,
                     .type = .uniform_buffer,
@@ -1398,7 +1426,7 @@ const Descriptor = struct {
         errdefer set_layt.deinit(gpa, dev);
         var set_layt_2 = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
-                // Global uniforms
+                // Global uniforms.
                 .{
                     .binding = 0,
                     .type = .uniform_buffer,
@@ -1406,7 +1434,7 @@ const Descriptor = struct {
                     .stage_mask = .{ .vertex = true },
                     .immutable_samplers = null,
                 },
-                // Material uniforms
+                // Material uniforms.
                 .{
                     .binding = 1,
                     .type = .uniform_buffer,
@@ -1954,15 +1982,6 @@ const Pipeline = struct {
             },
         };
 
-        const vport = ngl.Viewport{
-            .x = 0,
-            .y = 0,
-            .width = Platform.width,
-            .height = Platform.height,
-            .near = 0,
-            .far = 1,
-        };
-
         const rasters = [3]ngl.Rasterization{
             .{
                 .polygon_mode = .fill,
@@ -2002,7 +2021,6 @@ const Pipeline = struct {
                     .stages = stages[0..2],
                     .layout = &descriptor.pipeline_layout,
                     .primitive = &prims[0],
-                    .viewport = &vport,
                     .rasterization = &rasters[0],
                     .depth_stencil = &ds,
                     .color_blend = &blend,
@@ -2013,7 +2031,6 @@ const Pipeline = struct {
                     .stages = stages[0..2],
                     .layout = &descriptor.pipeline_layout,
                     .primitive = &prims[1],
-                    .viewport = &vport,
                     .rasterization = &rasters[1],
                     .depth_stencil = &ds,
                     .color_blend = &blend,
@@ -2024,7 +2041,6 @@ const Pipeline = struct {
                     .stages = stages[2..4],
                     .layout = &descriptor.pipeline_layout,
                     .primitive = &prims[2],
-                    .viewport = &vport,
                     .rasterization = &rasters[2],
                     .depth_stencil = null,
                     .color_blend = &blend,

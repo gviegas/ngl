@@ -77,7 +77,7 @@ fn do() !void {
         @memcpy(dest[0..size], @as([*]const u8, @ptrCast(mdl.normals.items.ptr))[0..size]);
         dest = dest[size..];
         size = mdl.texCoordSize();
-        // Not used
+        // Not used.
         dest = dest[size..];
         size = @sizeOf(@TypeOf(model.plane.data));
         @memcpy(dest[0..size], @as([*]const u8, @ptrCast(&model.plane.data))[0..size]);
@@ -216,6 +216,20 @@ fn do() !void {
             },
             .{ .contents = .inline_only },
         );
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = width,
+            .height = height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = width,
+            .height = height,
+        }});
 
         cmd.setPipeline(&pl.pipelines[Pipeline.mdl]);
         cmd.setDescriptors(
@@ -338,11 +352,11 @@ const triangle = struct {
 };
 
 const Queue = struct {
-    index: ngl.Queue.Index, // Graphics/compute
+    index: ngl.Queue.Index, // Graphics/compute.
     pools: [frame_n]ngl.CommandPool,
     buffers: [frame_n]ngl.CommandBuffer,
     semaphores: [frame_n * 2]ngl.Semaphore,
-    fences: [frame_n]ngl.Fence, // Signaled
+    fences: [frame_n]ngl.Fence, // Signaled.
     non_unified: ?struct {
         pools: [frame_n]ngl.CommandPool,
         buffers: [frame_n]ngl.CommandBuffer,
@@ -772,7 +786,7 @@ const Descriptor = struct {
     fn init(normal_map: *NormalMap, depth_map: *DepthMap) ngl.Error!Descriptor {
         const dev = &context().device;
 
-        // SSAO resources
+        // SSAO resources.
         var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
                 .{
@@ -806,7 +820,7 @@ const Descriptor = struct {
             },
         });
         errdefer set_layt.deinit(gpa, dev);
-        // Global uniforms for input pass
+        // Global uniforms for input pass.
         var set_layt_2 = try ngl.DescriptorSetLayout.init(gpa, dev, .{ .bindings = &.{.{
             .binding = 0,
             .type = .uniform_buffer,
@@ -1241,15 +1255,6 @@ const Pipeline = struct {
             .topology = triangle.topology,
         };
 
-        const vport = ngl.Viewport{
-            .x = 0,
-            .y = 0,
-            .width = width,
-            .height = height,
-            .near = 0,
-            .far = 1,
-        };
-
         const raster = [3]ngl.Rasterization{
             .{
                 .polygon_mode = .fill,
@@ -1297,7 +1302,6 @@ const Pipeline = struct {
                     .stages = &in_stages,
                     .layout = &descriptor.pipeline_layout,
                     .primitive = &in_prim[0],
-                    .viewport = &vport,
                     .rasterization = &raster[0],
                     .depth_stencil = &in_ds,
                     .color_blend = &in_blend,
@@ -1308,7 +1312,6 @@ const Pipeline = struct {
                     .stages = &in_stages,
                     .layout = &descriptor.pipeline_layout,
                     .primitive = &in_prim[1],
-                    .viewport = &vport,
                     .rasterization = &raster[1],
                     .depth_stencil = &in_ds,
                     .color_blend = &in_blend,
@@ -1319,7 +1322,6 @@ const Pipeline = struct {
                     .stages = &ao_stages,
                     .layout = &descriptor.pipeline_layout,
                     .primitive = &ao_prim,
-                    .viewport = &vport,
                     .rasterization = &raster[2],
                     .depth_stencil = null,
                     .color_blend = &ao_blend,

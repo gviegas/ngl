@@ -326,7 +326,7 @@ fn do() !void {
     });
 }
 
-// TODO: Mip levels
+// TODO: Mip levels.
 const ShadowMap = struct {
     format: ngl.Format,
     image: ngl.Image,
@@ -334,7 +334,7 @@ const ShadowMap = struct {
     views: [2]ngl.ImageView,
     sampler: ngl.Sampler,
 
-    // TODO: Try increasing the extent (and then blur a downsampled shadow map)
+    // TODO: Try increasing the extent (and then blur a downsampled shadow map).
     const extent = 256;
 
     fn init() ngl.Error!ShadowMap {
@@ -343,10 +343,10 @@ const ShadowMap = struct {
         const fmt = blk: {
             for ([_]ngl.Format{
                 //.rg32_sfloat,
-                //.rgb32_sfloat, // This is rarely supported for anything other than vertex input
+                //.rgb32_sfloat, // This is rarely supported for anything other than vertex input.
                 .rgba32_sfloat,
                 //.rg16_sfloat,
-                //.rgba16_sfloat, // This must support all the features we need
+                //.rgba16_sfloat, // This must support all the features we need.
             }) |fmt| {
                 const opt = fmt.getFeatures(dev).optimal_tiling;
                 if (opt.sampled_image_filter_linear and opt.storage_image and opt.color_attachment)
@@ -720,11 +720,11 @@ const DepthAttachment = struct {
 };
 
 const Queue = struct {
-    index: ngl.Queue.Index, // Graphics/compute
+    index: ngl.Queue.Index, // Graphics/compute.
     pools: [frame_n]ngl.CommandPool,
     buffers: [frame_n]ngl.CommandBuffer,
     semaphores: [frame_n * 2]ngl.Semaphore,
-    fences: [frame_n]ngl.Fence, // Signaled
+    fences: [frame_n]ngl.Fence, // Signaled.
     non_unified: ?struct {
         pools: [frame_n]ngl.CommandPool,
         buffers: [frame_n]ngl.CommandBuffer,
@@ -890,7 +890,7 @@ const Descriptor = struct {
 
         var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
-                // Shadow map layer [0]
+                // Shadow map layer [0].
                 .{
                     .binding = 0,
                     .type = .storage_image,
@@ -898,7 +898,7 @@ const Descriptor = struct {
                     .stage_mask = .{ .compute = true },
                     .immutable_samplers = null,
                 },
-                // Shadow map layer [1]
+                // Shadow map layer [1].
                 .{
                     .binding = 1,
                     .type = .storage_image,
@@ -906,7 +906,7 @@ const Descriptor = struct {
                     .stage_mask = .{ .compute = true },
                     .immutable_samplers = null,
                 },
-                // Shadow map layer [0] again
+                // Shadow map layer [0] again.
                 .{
                     .binding = 2,
                     .type = .combined_image_sampler,
@@ -914,7 +914,7 @@ const Descriptor = struct {
                     .stage_mask = .{ .fragment = true },
                     .immutable_samplers = &.{&shadow_map.sampler},
                 },
-                // Light uniforms
+                // Light uniforms.
                 .{
                     .binding = 3,
                     .type = .uniform_buffer,
@@ -927,7 +927,7 @@ const Descriptor = struct {
         errdefer set_layt.deinit(gpa, dev);
         var set_layt_2 = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
-                // Material uniforms
+                // Material uniforms.
                 .{
                     .binding = 0,
                     .type = .uniform_buffer,
@@ -940,7 +940,7 @@ const Descriptor = struct {
         errdefer set_layt_2.deinit(gpa, dev);
         var set_layt_3 = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
-                // Global uniforms for shadow generation and shading
+                // Global uniforms for shadow generation and shading.
                 .{
                     .binding = 0,
                     .type = .uniform_buffer,
@@ -969,11 +969,11 @@ const Descriptor = struct {
         errdefer pool.deinit(gpa, dev);
         const sets = blk: {
             const s = try pool.alloc(gpa, dev, blk_2: {
-                // One per frame
+                // One per frame.
                 const @"0" = [_]*ngl.DescriptorSetLayout{&set_layt};
-                // One per draw per frame
+                // One per draw per frame.
                 const @"1" = [_]*ngl.DescriptorSetLayout{&set_layt_2};
-                // Two per draw per frame (drawn twice)
+                // Two per draw per frame (drawn twice).
                 const @"2" = [_]*ngl.DescriptorSetLayout{&set_layt_3};
                 break :blk_2 .{ .layouts = &(@"0" ++ (@"1" ++ @"2" ** 2) ** draw_n) ** frame_n };
             });
@@ -1222,17 +1222,9 @@ const Generation = struct {
                 }},
                 .topology = model.plane.topology,
             },
-            .viewport = &.{
-                .x = 0,
-                .y = 0,
-                .width = ShadowMap.extent,
-                .height = ShadowMap.extent,
-                .near = 0,
-                .far = 1,
-            },
             .rasterization = &.{
                 .polygon_mode = .fill,
-                .cull_mode = .back, // Notice back-face culling
+                .cull_mode = .back, // Notice back-face culling.
                 .clockwise = model.plane.clockwise,
                 .samples = .@"1",
             },
@@ -1281,17 +1273,9 @@ const Generation = struct {
                 }},
                 .topology = model.cube.topology,
             },
-            .viewport = &.{
-                .x = 0,
-                .y = 0,
-                .width = ShadowMap.extent,
-                .height = ShadowMap.extent,
-                .near = 0,
-                .far = 1,
-            },
             .rasterization = &.{
                 .polygon_mode = .fill,
-                .cull_mode = .back, // Notice back-face culling
+                .cull_mode = .back, // Notice back-face culling.
                 .clockwise = model.cube.clockwise,
                 .samples = .@"1",
             },
@@ -1356,6 +1340,20 @@ const Generation = struct {
             },
             .{ .contents = .inline_only },
         );
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = ShadowMap.extent,
+            .height = ShadowMap.extent,
+            .znear = 0,
+            .zfar = 1,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = ShadowMap.extent,
+            .height = ShadowMap.extent,
+        }});
         Draw(.plane).draw(cmd, frame, descriptor, self, vertex_buffer, index_buffer, &planes);
         Draw(.cube).draw(cmd, frame, descriptor, self, vertex_buffer, index_buffer, &cubes);
         cmd.endRenderPass(.{});
@@ -1401,7 +1399,7 @@ const Smoothing = struct {
         descriptor: *Descriptor,
         shadow_map: *ShadowMap,
     ) void {
-        // Note that this is only set for graphics at this point
+        // Note that this is only set for graphics at this point.
         cmd.setDescriptors(
             .compute,
             &descriptor.pipeline_layout,
@@ -1410,7 +1408,7 @@ const Smoothing = struct {
         );
 
         // Shadow generation pass will transition the first layer
-        // to the `general` layout
+        // to the `general` layout.
         cmd.pipelineBarrier(&.{.{
             .image_dependencies = &.{.{
                 .source_stage_mask = .{ .compute_shader = true },
@@ -1432,7 +1430,7 @@ const Smoothing = struct {
             .by_region = false,
         }});
 
-        // Read from first layer and writes to second layer
+        // Read from first layer and writes to second layer.
         cmd.setPipeline(&self.pipelines[0]);
         cmd.dispatch(ShadowMap.extent, ShadowMap.extent, 1);
 
@@ -1476,12 +1474,12 @@ const Smoothing = struct {
             .by_region = false,
         }});
 
-        // Reads from second layer and writes to first layer
+        // Reads from second layer and writes to first layer.
         cmd.setPipeline(&self.pipelines[1]);
         cmd.dispatch(ShadowMap.extent, ShadowMap.extent, 1);
 
         // The result ends up in the first layer, which will be
-        // sampled in the shading pass
+        // sampled in the shading pass.
         cmd.pipelineBarrier(&.{.{
             .image_dependencies = &.{.{
                 .source_stage_mask = .{ .compute_shader = true },
@@ -1700,14 +1698,6 @@ const Shading = struct {
                 },
                 .topology = model.plane.topology,
             },
-            .viewport = &.{
-                .x = 0,
-                .y = 0,
-                .width = Platform.width,
-                .height = Platform.height,
-                .near = 0,
-                .far = 1,
-            },
             .rasterization = &.{
                 .polygon_mode = .fill,
                 .cull_mode = .back,
@@ -1782,14 +1772,6 @@ const Shading = struct {
                 },
                 .topology = model.cube.topology,
             },
-            .viewport = &.{
-                .x = 0,
-                .y = 0,
-                .width = Platform.width,
-                .height = Platform.height,
-                .near = 0,
-                .far = 1,
-            },
             .rasterization = &.{
                 .polygon_mode = .fill,
                 .cull_mode = .back,
@@ -1832,7 +1814,7 @@ const Shading = struct {
         vertex_buffer: *Buffer(.device),
         index_buffer: *Buffer(.device),
     ) void {
-        // Descriptor set 0 is already set
+        // Descriptor set 0 is already set.
 
         cmd.beginRenderPass(
             .{
@@ -1852,6 +1834,20 @@ const Shading = struct {
             },
             .{ .contents = .inline_only },
         );
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+        }});
         Draw(.plane).draw(cmd, frame, descriptor, self, vertex_buffer, index_buffer, &planes);
         Draw(.cube).draw(cmd, frame, descriptor, self, vertex_buffer, index_buffer, &cubes);
         cmd.endRenderPass(.{});
@@ -1948,7 +1944,7 @@ fn Draw(comptime @"type": enum { plane, cube }) type {
             @memcpy(data[0..64], @as([*]const u8, @ptrCast(&mvp))[0..64]);
         }
 
-        // Descriptor set 0 must have been set
+        // Descriptor set 0 must have been set.
         fn draw(
             cmd: *ngl.Cmd,
             frame: usize,

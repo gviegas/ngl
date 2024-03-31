@@ -25,32 +25,32 @@ pub const cube = struct {
     pub const data: struct {
         const n = 24;
         position: [n * 3]f32 = .{
-            // -x
+            // -x:
             -1, -1, 1,
             -1, -1, -1,
             -1, 1,  -1,
             -1, 1,  1,
-            // x
+            // x:
             1,  -1, -1,
             1,  -1, 1,
             1,  1,  1,
             1,  1,  -1,
-            // -y
+            // -y:
             -1, -1, 1,
             1,  -1, 1,
             1,  -1, -1,
             -1, -1, -1,
-            // y
+            // y:
             -1, 1,  -1,
             1,  1,  -1,
             1,  1,  1,
             -1, 1,  1,
-            // -z
+            // -z:
             -1, -1, -1,
             1,  -1, -1,
             1,  1,  -1,
             -1, 1,  -1,
-            // z
+            // z:
             1,  -1, 1,
             -1, -1, 1,
             -1, 1,  1,
@@ -94,8 +94,8 @@ pub const plane = struct {
     } = .{};
 };
 
-// -y up; z forward; ccw
-// Must have normals and texture coordinates
+/// -y up; z forward; ccw.
+/// Must have normals and texture coordinates.
 pub fn loadObj(gpa: std.mem.Allocator, file_name: []const u8) !Model {
     const dir = std.fs.cwd();
     const file = try dir.openFile(file_name, .{});
@@ -138,7 +138,7 @@ const DataObj = struct {
     positions: std.ArrayListUnmanaged([3]f32) = .{},
     tex_coords: std.ArrayListUnmanaged([2]f32) = .{},
     normals: std.ArrayListUnmanaged([3]f32) = .{},
-    // pos/tc/norm
+    // pos/tc/norm.
     faces: std.ArrayListUnmanaged([9]u32) = .{},
     gpa: std.mem.Allocator,
 

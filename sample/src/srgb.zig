@@ -229,6 +229,20 @@ fn do() !void {
             0,
             @as([*]align(4) const u8, @ptrCast(&scale))[0..@sizeOf(@TypeOf(scale))],
         );
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+        }});
         cmd.setVertexBuffers(
             0,
             &.{&vert_buf.buffer},
@@ -283,7 +297,7 @@ const Texture = struct {
     view: ngl.ImageView,
     sampler: ngl.Sampler,
 
-    // We'll apply the sRGB conversion ourselves
+    // We'll apply the sRGB conversion ourselves.
     const format = ngl.Format.rgba8_unorm;
 
     fn init(width: u32, height: u32) ngl.Error!Texture {
@@ -532,19 +546,19 @@ const Pipeline = struct {
             .name = "main",
         };
         const frag_spec_consts = &.{
-            // `convert_input`
+            // `convert_input`.
             .{
                 .id = 0,
                 .offset = 0,
                 .size = 4,
             },
-            // `convert_output`
+            // `convert_output`.
             .{
                 .id = 1,
                 .offset = 4,
                 .size = 4,
             },
-            // `accurate`
+            // `accurate`.
             .{
                 .id = 2,
                 .offset = 8,
@@ -603,15 +617,6 @@ const Pipeline = struct {
             .topology = VertexBuffer.topology,
         };
 
-        const vport = ngl.Viewport{
-            .x = 0,
-            .y = 0,
-            .width = Platform.width,
-            .height = Platform.height,
-            .near = 0,
-            .far = 1,
-        };
-
         const raster = ngl.Rasterization{
             .polygon_mode = .fill,
             .cull_mode = .back,
@@ -630,7 +635,6 @@ const Pipeline = struct {
                     .stages = &.{ vert_shd, frag_shds[0] },
                     .layout = &descriptor.pipeline_layout,
                     .primitive = &prim,
-                    .viewport = &vport,
                     .rasterization = &raster,
                     .depth_stencil = null,
                     .color_blend = &blend,
@@ -641,7 +645,6 @@ const Pipeline = struct {
                     .stages = &.{ vert_shd, frag_shds[1] },
                     .layout = &descriptor.pipeline_layout,
                     .primitive = &prim,
-                    .viewport = &vport,
                     .rasterization = &raster,
                     .depth_stencil = null,
                     .color_blend = &blend,
@@ -785,7 +788,7 @@ const Queue = struct {
     pools: [frame_n]ngl.CommandPool,
     buffers: [frame_n]ngl.CommandBuffer,
     semaphores: [frame_n * 2]ngl.Semaphore,
-    fences: [frame_n]ngl.Fence, // Signaled
+    fences: [frame_n]ngl.Fence, // Signaled.
     non_unified: ?struct {
         pools: [frame_n]ngl.CommandPool,
         buffers: [frame_n]ngl.CommandBuffer,

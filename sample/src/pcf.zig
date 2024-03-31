@@ -411,6 +411,22 @@ const ShadowPass = struct {
             .clear_values = &.{.{ .depth_stencil = .{ 1, undefined } }},
         }, .{ .contents = .inline_only });
 
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = ShadowMap.extent,
+            .height = ShadowMap.extent,
+            .znear = 0,
+            .zfar = 1,
+        }});
+
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = ShadowMap.extent,
+            .height = ShadowMap.extent,
+        }});
+
         for (draws, draw_transforms) |draw, xform| {
             cmd.setPipeline(&pipeline.shadow[@intFromEnum(draw.model)]);
             const s = @as([*]align(4) const u8, @ptrCast(&xform))[0..64];
@@ -429,7 +445,7 @@ const ShadowPass = struct {
 };
 
 const ColorAttachment = struct {
-    format: ngl.Format, // Same as `Platform.format.format`
+    format: ngl.Format, // Same as `Platform.format.format`.
     samples: ngl.SampleCount,
     image: ngl.Image,
     memory: ngl.Memory,
@@ -521,7 +537,7 @@ const ColorAttachment = struct {
 
 const DepthAttachment = struct {
     format: ngl.Format,
-    samples: ngl.SampleCount, // Same as `ColorAttachment.samples`
+    samples: ngl.SampleCount, // Same as `ColorAttachment.samples`.
     image: ngl.Image,
     memory: ngl.Memory,
     view: ngl.ImageView,
@@ -562,7 +578,7 @@ const DepthAttachment = struct {
             const mask: U = @bitCast(capabs.sample_counts);
             if ((@as(U, 1) << @intFromEnum(spls)) & mask != 0)
                 break x;
-        } else @panic("MS count mismatch"); // This seems very unlikely
+        } else @panic("MS count mismatch"); // This seems very unlikely.
 
         var image = try ngl.Image.init(gpa, dev, .{
             .type = @"type",
@@ -786,6 +802,22 @@ const LightPass = struct {
             .{ .contents = .inline_only },
         );
 
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = width,
+            .height = height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = width,
+            .height = height,
+        }});
+
         const set_off = Pipeline.set_n / frame_n * frame;
         cmd.setDescriptors(.graphics, &pipeline.pipeline_layout, 0, &.{&pipeline.sets[set_off]});
 
@@ -982,16 +1014,16 @@ const VertexBuffer = struct {
 
 const UniformBuffer = struct {
     buffer: ngl.Buffer,
-    memory: ngl.Memory, // Mapped
+    memory: ngl.Memory, // Mapped.
     data: []u8,
 
-    // Per frame
+    // Per frame.
     const stride = 256 * (1 + materials.len + draws.len);
 
     fn init() ngl.Error!UniformBuffer {
         const dev = &context().device;
 
-        // We'll use a host accessible uniform buffer this time
+        // We'll use a host accessible uniform buffer this time.
         var buf = try ngl.Buffer.init(gpa, dev, .{
             .size = frame_n * stride,
             .usage = .{ .uniform_buffer = true },
@@ -1054,7 +1086,7 @@ const UniformBuffer = struct {
 
 const StagingBuffer = struct {
     buffer: ngl.Buffer,
-    memory: ngl.Memory, // Mapped
+    memory: ngl.Memory, // Mapped.
     data: []u8,
 
     fn init() ngl.Error!StagingBuffer {
@@ -1088,8 +1120,8 @@ const StagingBuffer = struct {
         };
     }
 
-    // Will lock the graphics queue and wait on fence 0
-    // `Texture.image` will be transitioned to `shader_read_only_optimal`
+    // Will lock the graphics queue and wait on fence 0.
+    // `Texture.image` will be transitioned to `shader_read_only_optimal`.
     fn copy(
         self: *StagingBuffer,
         queue: *Queue,
@@ -1252,7 +1284,7 @@ const Pipeline = struct {
     const plane_model: u1 = 1;
 
     // One for shadow and light, plus one for each kind
-    // of material plus one for each draw call
+    // of material plus one for each draw call.
     const set_n = frame_n * (1 + materials.len + draws.len);
 
     const shdw_map_vert_spv align(4) = @embedFile("shader/pcf/shdw_map.vert.spv").*;
@@ -1368,14 +1400,6 @@ const Pipeline = struct {
                     }},
                     .topology = params.topology,
                 },
-                .viewport = &.{
-                    .x = 0,
-                    .y = 0,
-                    .width = ShadowMap.extent,
-                    .height = ShadowMap.extent,
-                    .near = 0,
-                    .far = 1,
-                },
                 .rasterization = &.{
                     .polygon_mode = .fill,
                     .cull_mode = params.cull_mode,
@@ -1470,14 +1494,6 @@ const Pipeline = struct {
                     },
                     .topology = params.topology,
                 },
-                .viewport = &.{
-                    .x = 0,
-                    .y = 0,
-                    .width = width,
-                    .height = height,
-                    .near = 0,
-                    .far = 1,
-                },
                 .rasterization = &.{
                     .polygon_mode = .fill,
                     .cull_mode = .back,
@@ -1537,11 +1553,11 @@ const Pipeline = struct {
             var s: []ngl.DescriptorSet = sets[0..];
             var off: u64 = 0;
             for (0..frame_n) |_| {
-                // Shadow image/sampler (set 0)
+                // Shadow image/sampler (set 0).
                 iw[0] = .{
                     .view = &shadow_map.view,
                     .layout = .shader_read_only_optimal,
-                    .sampler = null, // Immutable sampler
+                    .sampler = null, // Immutable sampler.
                 };
                 w[0] = .{
                     .descriptor_set = &s[0],
@@ -1549,7 +1565,7 @@ const Pipeline = struct {
                     .element = 0,
                     .contents = .{ .combined_image_sampler = iw[0..1] },
                 };
-                // Light uniform (set 0)
+                // Light uniform (set 0).
                 bw[0] = .{
                     .buffer = &uniform_buffer.buffer,
                     .offset = off,
@@ -1567,11 +1583,11 @@ const Pipeline = struct {
                 s = s[1..];
                 off += 256;
                 for (0..materials.len) |i| {
-                    // Base color texture/sampler (set 1)
+                    // Base color texture/sampler (set 1).
                     iw[0] = .{
                         .view = &texture.views[i],
                         .layout = .shader_read_only_optimal,
-                        .sampler = null, // Immutable sampler
+                        .sampler = null, // Immutable sampler.
                     };
                     w[0] = .{
                         .descriptor_set = &s[0],
@@ -1579,7 +1595,7 @@ const Pipeline = struct {
                         .element = 0,
                         .contents = .{ .combined_image_sampler = iw[0..1] },
                     };
-                    // Material uniform (set 1)
+                    // Material uniform (set 1).
                     bw[0] = .{
                         .buffer = &uniform_buffer.buffer,
                         .offset = off,
@@ -1598,7 +1614,7 @@ const Pipeline = struct {
                     off += 256;
                 }
                 for (0..draws.len) |_| {
-                    // Transform uniform (set 2)
+                    // Transform uniform (set 2).
                     bw[0] = .{
                         .buffer = &uniform_buffer.buffer,
                         .offset = off,
@@ -1645,9 +1661,9 @@ const Queue = struct {
     pools: [frame_n]ngl.CommandPool,
     buffers: [frame_n]ngl.CommandBuffer,
     semaphores: [frame_n * 2]ngl.Semaphore,
-    fences: [frame_n]ngl.Fence, // Signaled
+    fences: [frame_n]ngl.Fence, // Signaled.
     non_unified: ?struct {
-        present: ngl.Queue.Index, // Same as `Platform.queue_index`
+        present: ngl.Queue.Index, // Same as `Platform.queue_index`.
         pools: [frame_n]ngl.CommandPool,
         buffers: [frame_n]ngl.CommandBuffer,
         semaphores: [frame_n]ngl.Semaphore,

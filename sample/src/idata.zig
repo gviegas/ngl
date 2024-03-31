@@ -82,7 +82,7 @@ pub const DataPng = struct {
         filter_method: u8,
         interlace_method: u8,
 
-        // Call this once
+        /// Call this once.
         fn toNative(self: *Ihdr) void {
             switch (native_endian) {
                 .little => std.mem.byteSwapAllFields(Ihdr, self),
@@ -90,7 +90,7 @@ pub const DataPng = struct {
             }
         }
 
-        // Must be called after `toNative`
+        /// Must be called after `toNative`.
         fn validate(self: Ihdr) !void {
             if (self.width == 0 or self.height == 0)
                 return error.ZeroExtentPng;
@@ -131,15 +131,15 @@ pub const DataPng = struct {
 
         fn init(ihdr: Ihdr) Idat {
             const chans: u3 = switch (ihdr.color_type) {
-                // Grayscale w/o alpha, palette index
+                // Grayscale w/o alpha, palette index.
                 0, 3 => 1,
-                // Truecolor w/o alpha
+                // Truecolor w/o alpha.
                 2 => 3,
-                // Grayscale w/ alpha
+                // Grayscale w/ alpha.
                 4 => 2,
-                // Truecolor w/ alpha
+                // Truecolor w/ alpha.
                 6 => 4,
-                else => unreachable, // Assume that `ihdr.validate` was called
+                else => unreachable, // Assume that `ihdr.validate` was called.
             };
             const bipp = chans * ihdr.bit_depth;
             const bypp = @max(bipp / 8, 1);
@@ -157,9 +157,9 @@ pub const DataPng = struct {
             };
         }
 
-        // `reader` must be positioned at the beginning of the data
-        // in the first IDAT chunk
-        // It returns the preamble of the next non-IDAT chunk
+        /// `reader` must be positioned at the beginning of the data
+        /// in the first IDAT chunk.
+        /// It returns the preamble of the next non-IDAT chunk.
         fn readChunks(
             self: *Idat,
             gpa: std.mem.Allocator,
@@ -214,8 +214,8 @@ pub const DataPng = struct {
             return self.convert(dest);
         }
 
-        // Called by `decode`
-        // Must happen before `unfilter`
+        /// Called by `decode`.
+        /// Must happen before `unfilter`.
         fn decompress(self: *Idat, gpa: std.mem.Allocator) !void {
             var input = std.io.fixedBufferStream(self.data.items);
             var output = std.ArrayListUnmanaged(u8){};
@@ -225,19 +225,19 @@ pub const DataPng = struct {
             self.data = output;
         }
 
-        // Called by `decode`
-        // Must happen before `convert`
+        /// Called by `decode`.
+        /// Must happen before `convert`.
         fn unfilter(self: *Idat) !void {
             var ln = self.data.items.ptr;
             switch (ln[0]) {
-                // None/Up
+                // None/Up.
                 0, 2 => {},
-                // Sub/Paeth
+                // Sub/Paeth.
                 1, 4 => {
                     for (self.bytes_per_pixel + 1..self.scanline_size) |i|
                         ln[i] +%= ln[i - self.bytes_per_pixel];
                 },
-                // Average
+                // Average.
                 3 => {
                     for (self.bytes_per_pixel + 1..self.scanline_size) |i|
                         ln[i] +%= ln[i - self.bytes_per_pixel] / 2;
@@ -248,19 +248,19 @@ pub const DataPng = struct {
                 const prev_ln = ln;
                 ln += self.scanline_size;
                 switch (ln[0]) {
-                    // None
+                    // None.
                     0 => {},
-                    // Sub
+                    // Sub.
                     1 => {
                         for (self.bytes_per_pixel + 1..self.scanline_size) |i|
                             ln[i] +%= ln[i - self.bytes_per_pixel];
                     },
-                    // Up
+                    // Up.
                     2 => {
                         for (1..self.scanline_size) |i|
                             ln[i] +%= prev_ln[i];
                     },
-                    // Average
+                    // Average.
                     3 => {
                         for (1..self.bytes_per_pixel) |i|
                             ln[i] +%= prev_ln[i] / 2;
@@ -270,7 +270,7 @@ pub const DataPng = struct {
                             ln[i] +%= @truncate((left + up) / 2);
                         }
                     },
-                    // Paeth
+                    // Paeth.
                     4 => {
                         for (1..self.bytes_per_pixel) |i|
                             ln[i] +%= prev_ln[i];
@@ -295,9 +295,9 @@ pub const DataPng = struct {
             }
         }
 
-        // Called by `decode`
-        // This is the final step
-        // TODO: Currently this only handles gray8/rgb8/rgba8
+        /// Called by `decode`.
+        /// This is the final step.
+        // TODO: Currently this only handles gray8/rgb8/rgba8.
         fn convert(self: *Idat, dest: anytype) !struct { ngl.Format, []u8 } {
             if (self.channels == 3 and self.bits_per_pixel == 24) {
                 const w = self.scanline_size / 3;
@@ -395,7 +395,7 @@ pub const DataPng = struct {
                 const dec = try idat.decode(gpa, dest);
                 self.format = dec[0];
                 self.data = dec[1];
-                // We have all we need
+                // We have all we need.
                 return self;
             }
 
@@ -405,11 +405,11 @@ pub const DataPng = struct {
             }
 
             if (chk_type.eql(ChunkType.iend)) {
-                // This should be unreachable since we end on IDAT
+                // This should be unreachable since we end on IDAT.
                 return error.BadPng;
             }
 
-            // TODO: Fail if the chunk is required
+            // TODO: Fail if the chunk is required.
             try rd.skipBytes(chk_len + 4, .{});
         }
 

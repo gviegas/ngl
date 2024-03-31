@@ -622,6 +622,22 @@ const Pass = struct {
 
         cmd.setPipeline(&pipeline.pipeline);
 
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = width,
+            .height = height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = width,
+            .height = height,
+        }});
+
         cmd.setDescriptors(.graphics, &descriptor.pipeline_layout, 0, &.{
             &descriptor.sets[frame],
             &descriptor.sets[frame_n + frame * materials.len + material],
@@ -685,7 +701,7 @@ const Texture = struct {
 
         var regions: [levels]ngl.Cmd.BufferImageCopy.Region = undefined;
 
-        // LOD 0
+        // LOD 0.
         for (0..extent) |i|
             @memcpy(staging_buffer.data[offset + row.len * i .. offset + row.len * (i + 1)], &row);
         regions[0] = .{
@@ -702,7 +718,7 @@ const Texture = struct {
             .image_depth_or_layers = 1,
         };
 
-        // TODO: This only works because we are using a solid color
+        // TODO: This only works because we are using a solid color.
         {
             const copy_sz = extent * extent * 4;
             const source_off = offset;
@@ -713,7 +729,7 @@ const Texture = struct {
             );
         }
 
-        // LOD [1..levels)
+        // LOD [1..levels).
         for (1..levels) |i| {
             const prev = &regions[i - 1];
             regions[i] = .{
@@ -852,7 +868,7 @@ const UniformBuffer = struct {
 const VertexBuffer = struct {
     buffer: ngl.Buffer,
     memory: ngl.Memory,
-    // TODO: This should be loaded into GPU memory directly
+    // TODO: This should be loaded into GPU memory directly.
     model: model.Model,
 
     fn copy(
@@ -1165,15 +1181,6 @@ const Pipeline = struct {
             .topology = .triangle_list,
         };
 
-        const vport = ngl.Viewport{
-            .x = 0,
-            .y = 0,
-            .width = width,
-            .height = height,
-            .near = 0,
-            .far = 1,
-        };
-
         const raster = ngl.Rasterization{
             .polygon_mode = .fill,
             .cull_mode = .back,
@@ -1198,7 +1205,6 @@ const Pipeline = struct {
                 .stages = &stages,
                 .layout = &descriptor.pipeline_layout,
                 .primitive = &prim,
-                .viewport = &vport,
                 .rasterization = &raster,
                 .depth_stencil = &ds,
                 .color_blend = &blend,
@@ -1221,7 +1227,7 @@ const Queue = struct {
     graphics: ngl.Queue.Index,
     pools: [frame_n]ngl.CommandPool,
     buffers: [frame_n]ngl.CommandBuffer,
-    fences: [frame_n]ngl.Fence, // Signaled
+    fences: [frame_n]ngl.Fence, // Signaled.
     semaphores: [frame_n * 2]ngl.Semaphore,
     non_unified: ?struct {
         pools: [frame_n]ngl.CommandPool,
@@ -1383,7 +1389,7 @@ const Light = struct {
         offset: u64,
     ) ngl.Cmd.BufferCopy.Region {
         std.debug.assert(offset & 255 == 0);
-        // Interleaved with `Global`
+        // Interleaved with `Global`.
         const off = frame * 512 + 256;
         if (self.lights.len > 1) @compileError("TODO");
         const data: [256 / 4]f32 =
@@ -1419,7 +1425,7 @@ const Material = struct {
         offset: u64,
     ) ngl.Cmd.BufferCopy.Region {
         std.debug.assert(offset & 255 == 0);
-        // After all `Global`s and `Light`s
+        // After all `Global`s and `Light`s.
         const off = frame_n * 512 + frame * 256 * materials.len + index * 256;
         const data: [256 / 4]f32 =
             [1]f32{self.metallic} ++

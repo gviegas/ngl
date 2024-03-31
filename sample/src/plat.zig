@@ -159,7 +159,7 @@ pub fn platform() !*Platform {
         var once = std.once(init);
 
         fn init() void {
-            // Let it leak
+            // Let it leak.
             const allocator = std.heap.c_allocator;
             plat = Platform.init(allocator);
             if (plat) |_| {} else |err| {

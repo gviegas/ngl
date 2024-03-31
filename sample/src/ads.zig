@@ -117,13 +117,13 @@ fn do() !void {
         break :blk xform;
     };
     const light: Light =
-        util.mulMV(4, v, .{ 2, -3, 4, 1 }) // Position
-    ++ [3]f32{ 0.25, 0.25, 0.25 }; // Intensity
+        util.mulMV(4, v, .{ 2, -3, 4, 1 }) // Position.
+    ++ [3]f32{ 0.25, 0.25, 0.25 }; // Intensity.
     const material = Material{
-        0, 0, 0.2, undefined, // Ka
-        0.9, 0, 0, undefined, // Kd
-        0, 0.1, 0, undefined, // Ks
-        200, // Specular power
+        0, 0, 0.2, undefined, // Ka.
+        0.9, 0, 0, undefined, // Kd.
+        0, 0.1, 0, undefined, // Ks.
+        200, // Specular power.
     };
 
     const pixel_cpy_off = 0;
@@ -282,7 +282,7 @@ fn do() !void {
         try ngl.Fence.reset(gpa, dev, &.{&d.submit.fences[frame]});
 
         // TODO: Confirm that reusing the 2nd semaphore is valid
-        // since presentation is not waited for
+        // since presentation is not waited for.
         const semas = .{ &d.submit.semaphores[frame * 2], &d.submit.semaphores[frame * 2 + 1] };
 
         const next = try plat.swap_chain.nextImage(dev, std.time.ns_per_s, semas[0], null);
@@ -306,6 +306,20 @@ fn do() !void {
                 .{ .depth_stencil = .{ 1, undefined } },
             },
         }, .{ .contents = .inline_only });
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = Platform.width,
+            .height = Platform.height,
+        }});
         cmd.setPipeline(&d.state.pipeline);
         cmd.setDescriptors(.graphics, &d.descriptor.pipeline_layout, 0, &.{
             &d.descriptor.sets[frame * 2],
@@ -333,7 +347,7 @@ fn do() !void {
         cmd.drawIndexed(cube.indices.len, 1, 0, 0, 0);
         cmd.endRenderPass(.{});
         if (need_queue_transfer)
-            // TODO: Record a queue transfer
+            // TODO: Record a queue transfer.
             @panic("TODO");
         try cmd.end();
 
@@ -355,7 +369,7 @@ fn do() !void {
         const pres_sema = if (need_queue_transfer) {
             // TODO: Record a queue transfer for the present queue, lock it
             // and submit the command for execution (will need to use
-            // pool/buffer/semaphore from `Data.present`)
+            // pool/buffer/semaphore from `Data.present`).
             @panic("TODO");
         } else semas[1];
 
@@ -639,7 +653,7 @@ const Data = struct {
         fn init(self: *@This(), device: *ngl.Device) ngl.Error!void {
             self.set_layouts[0] = try ngl.DescriptorSetLayout.init(gpa, device, .{
                 .bindings = &.{
-                    // Transform
+                    // Transform.
                     .{
                         .binding = 0,
                         .type = .uniform_buffer,
@@ -647,7 +661,7 @@ const Data = struct {
                         .stage_mask = .{ .vertex = true },
                         .immutable_samplers = null,
                     },
-                    // Light
+                    // Light.
                     .{
                         .binding = 1,
                         .type = .uniform_buffer,
@@ -660,7 +674,7 @@ const Data = struct {
             errdefer self.set_layouts[0].deinit(gpa, device);
             self.set_layouts[1] = try ngl.DescriptorSetLayout.init(gpa, device, .{
                 .bindings = &.{
-                    // Material
+                    // Material.
                     .{
                         .binding = 0,
                         .type = .uniform_buffer,
@@ -668,7 +682,7 @@ const Data = struct {
                         .stage_mask = .{ .fragment = true },
                         .immutable_samplers = null,
                     },
-                    // Base color
+                    // Base color.
                     .{
                         .binding = 1,
                         .type = .combined_image_sampler,
@@ -862,21 +876,21 @@ const Data = struct {
                             },
                         },
                         .attributes = &.{
-                            // Position
+                            // Position.
                             .{
                                 .location = 0,
                                 .binding = 0,
                                 .format = .rgb32_sfloat,
                                 .offset = 0,
                             },
-                            // Normal
+                            // Normal.
                             .{
                                 .location = 1,
                                 .binding = 1,
                                 .format = .rgb32_sfloat,
                                 .offset = 0,
                             },
-                            // Texture coordinates
+                            // Texture coordinates.
                             .{
                                 .location = 2,
                                 .binding = 2,
@@ -885,14 +899,6 @@ const Data = struct {
                             },
                         },
                         .topology = cube.topology,
-                    },
-                    .viewport = &.{
-                        .x = 0,
-                        .y = 0,
-                        .width = width,
-                        .height = height,
-                        .near = 0,
-                        .far = 1,
                     },
                     .rasterization = &.{
                         .polygon_mode = .fill,
@@ -929,7 +935,7 @@ const Data = struct {
         queue_index: ngl.Queue.Index,
         pools: [frame_n]ngl.CommandPool,
         buffers: [frame_n]ngl.CommandBuffer,
-        // Signaled
+        // Signaled.
         fences: [frame_n]ngl.Fence,
         semaphores: [frame_n * 2]ngl.Semaphore,
 
@@ -975,7 +981,7 @@ const Data = struct {
     present: struct {
         queue_index: ngl.Queue.Index,
         need_queue_transfer: bool,
-        // The following are invalid if `!need_queue_transfer`
+        // The following are invalid if `!need_queue_transfer`.
         pools: [frame_n]ngl.CommandPool,
         buffers: [frame_n]ngl.CommandBuffer,
         semaphores: [frame_n]ngl.Semaphore,
