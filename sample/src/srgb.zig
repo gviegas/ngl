@@ -626,7 +626,6 @@ const Pipeline = struct {
 
         const blend = ngl.ColorBlend{
             .attachments = &.{.{ .blend = null, .write = .all }},
-            .constants = .unused,
         };
 
         const pls = try ngl.Pipeline.initGraphics(gpa, dev, .{

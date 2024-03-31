@@ -1288,12 +1288,10 @@ const Pipeline = struct {
                 .{ .blend = null, .write = .all },
                 .{ .blend = null, .write = .all },
             },
-            .constants = .unused,
         };
 
         const ao_blend = ngl.ColorBlend{
             .attachments = &.{.{ .blend = null, .write = .all }},
-            .constants = .unused,
         };
 
         const pls = try ngl.Pipeline.initGraphics(gpa, dev, .{

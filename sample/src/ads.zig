@@ -914,7 +914,6 @@ const Data = struct {
                     },
                     .color_blend = &.{
                         .attachments = &.{.{ .blend = null, .write = .all }},
-                        .constants = .unused,
                     },
                     .render_pass = render_pass,
                     .subpass = 0,

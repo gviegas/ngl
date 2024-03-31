@@ -1197,7 +1197,6 @@ const Pipeline = struct {
 
         const blend = ngl.ColorBlend{
             .attachments = &.{.{ .blend = null, .write = .all }},
-            .constants = .unused,
         };
 
         const pl = try ngl.Pipeline.initGraphics(gpa, &context().device, .{

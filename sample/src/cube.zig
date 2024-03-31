@@ -1032,7 +1032,6 @@ const Pipeline = struct {
         };
         const blend = ngl.ColorBlend{
             .attachments = &.{.{ .blend = null, .write = .all }},
-            .constants = .unused,
         };
 
         const cm_state = ngl.GraphicsState{

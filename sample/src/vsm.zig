@@ -1239,7 +1239,6 @@ const Generation = struct {
                     .blend = null,
                     .write = .{ .mask = .{ .r = true, .g = true, .b = false, .a = false } },
                 }},
-                .constants = .unused,
             },
             .render_pass = &rp,
             .subpass = 0,
@@ -1290,7 +1289,6 @@ const Generation = struct {
                     .blend = null,
                     .write = .{ .mask = .{ .r = true, .g = true, .b = false, .a = false } },
                 }},
-                .constants = .unused,
             },
             .render_pass = &rp,
             .subpass = 0,
@@ -1712,7 +1710,6 @@ const Shading = struct {
             },
             .color_blend = &.{
                 .attachments = &.{.{ .blend = null, .write = .all }},
-                .constants = .unused,
             },
             .render_pass = &rp,
             .subpass = 0,
@@ -1786,7 +1783,6 @@ const Shading = struct {
             },
             .color_blend = &.{
                 .attachments = &.{.{ .blend = null, .write = .all }},
-                .constants = .unused,
             },
             .render_pass = &rp,
             .subpass = 0,
