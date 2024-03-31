@@ -48,7 +48,7 @@ pub const Pipeline = struct {
                 depth_stencil_state: c.VkPipelineDepthStencilStateCreateInfo,
                 color_blend_state: c.VkPipelineColorBlendStateCreateInfo,
                 dynamic_state: c.VkPipelineDynamicStateCreateInfo,
-                dynamic_state_dynamic_states: [4]c.VkDynamicState,
+                dynamic_state_dynamic_states: [6]c.VkDynamicState,
             },
             desc.states.len,
         );
@@ -346,8 +346,8 @@ pub const Pipeline = struct {
                     .passOp = conv.toVkStencilOp(t.pass_op),
                     .depthFailOp = conv.toVkStencilOp(t.depth_fail_op),
                     .compareOp = conv.toVkCompareOp(t.compare),
-                    .compareMask = t.read_mask,
-                    .writeMask = t.write_mask,
+                    .compareMask = 0,
+                    .writeMask = 0,
                     .reference = 0,
                 } else .{
                     .failOp = c.VK_STENCIL_OP_KEEP,
@@ -363,8 +363,8 @@ pub const Pipeline = struct {
                     .passOp = conv.toVkStencilOp(t.pass_op),
                     .depthFailOp = conv.toVkStencilOp(t.depth_fail_op),
                     .compareOp = conv.toVkCompareOp(t.compare),
-                    .compareMask = t.read_mask,
-                    .writeMask = t.write_mask,
+                    .compareMask = 0,
+                    .writeMask = 0,
                     .reference = 0,
                 } else .{
                     .failOp = c.VK_STENCIL_OP_KEEP,
@@ -433,6 +433,14 @@ pub const Pipeline = struct {
                 dyns = dyns[2..];
                 if (state.depth_stencil) |x| {
                     if (x.stencil_front != null or x.stencil_back != null) {
+                        if (x.stencil_front != null) {
+                            dyns[0] = c.VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK;
+                            dyns = dyns[1..];
+                        }
+                        if (x.stencil_back != null) {
+                            dyns[0] = c.VK_DYNAMIC_STATE_STENCIL_WRITE_MASK;
+                            dyns = dyns[1..];
+                        }
                         dyns[0] = c.VK_DYNAMIC_STATE_STENCIL_REFERENCE;
                         dyns = dyns[1..];
                     }

@@ -162,8 +162,6 @@ pub const DepthStencil = struct {
         pass_op: StencilOp,
         depth_fail_op: StencilOp,
         compare: CompareOp,
-        read_mask: u32,
-        write_mask: u32,
     };
 
     pub const StencilOp = enum {

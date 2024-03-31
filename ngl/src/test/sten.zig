@@ -336,8 +336,6 @@ test "stencil test" {
                 .pass_op = .increment_clamp,
                 .depth_fail_op = .zero,
                 .compare = .greater,
-                .read_mask = 0x0f,
-                .write_mask = 0x0f,
             },
             // The backing-face primitive must pass the stencil
             // test and fail the depth test.
@@ -346,8 +344,6 @@ test "stencil test" {
                 .pass_op = .zero,
                 .depth_fail_op = .decrement_clamp,
                 .compare = .equal,
-                .read_mask = 0xf0,
-                .write_mask = 0xf0,
             },
         },
         .color_blend = &.{
@@ -408,6 +404,13 @@ test "stencil test" {
     cmd.setPipeline(&pl);
     // Binding #1 is the same for both draws.
     cmd.setVertexBuffers(1, &.{&vert_buf}, &.{0}, &.{@sizeOf(@TypeOf(col_data))});
+
+    const front_mask = 0x0f;
+    const back_mask = 0xf0;
+    inline for (.{ .front, .back }, .{ front_mask, back_mask }) |face, mask| {
+        cmd.setStencilReadMask(face, mask);
+        cmd.setStencilWriteMask(face, mask);
+    }
 
     const reference = 0x8f;
     cmd.setStencilReference(.front_and_back, reference);
