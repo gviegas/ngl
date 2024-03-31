@@ -402,7 +402,6 @@ fn testOcclusionQuery(comptime precise: bool) !void {
             },
             .color_blend = &.{
                 .attachments = &.{.{ .blend = null, .write = .all }},
-                .constants = .unused,
             },
             .render_pass = &rp,
             .subpass = 0,

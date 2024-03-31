@@ -271,7 +271,6 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
                 .depth_stencil = null,
                 .color_blend = &.{
                     .attachments = &.{.{ .blend = null, .write = .all }},
-                    .constants = .unused,
                 },
                 .render_pass = &rp,
                 .subpass = 0,

@@ -16,7 +16,7 @@ test "color blending" {
             .alpha_source_factor = .one,
             .alpha_dest_factor = .one,
             .alpha_op = .subtract,
-        }, .unused);
+        });
         const source = @Vector(4, f32){ 0.35, 0.125, 0.2, 1 };
         const dest = @Vector(4, f32){ 0.25, 0.6, 0.01, 0.75 };
         try t.render(source, dest, null);
@@ -30,7 +30,7 @@ test "color blending" {
             .alpha_source_factor = .zero,
             .alpha_dest_factor = .one_minus_dest_alpha,
             .alpha_op = .add,
-        }, .unused);
+        });
         const source = @Vector(4, f32){ 1, 0.8, 0.6, 0.5 };
         const dest = @Vector(4, f32){ 0.5, 0.9, 0.2, 1 };
         try t.render(source, dest, null);
@@ -48,7 +48,7 @@ test "color blending" {
             .alpha_source_factor = .source_alpha,
             .alpha_dest_factor = .dest_alpha,
             .alpha_op = .min,
-        }, .unused);
+        });
         const source = @Vector(4, f32){ 0.05, 0.1, 0.3333, 0.6666 };
         const dest = @Vector(4, f32){ 1, 1, 1, 1 };
         try t.render(source, dest, null);
@@ -64,7 +64,7 @@ test "color blending" {
             .alpha_source_factor = .source_alpha,
             .alpha_dest_factor = .one_minus_source_alpha,
             .alpha_op = .add,
-        }, .unused);
+        });
         const source = @Vector(4, f32){ 0.2, 0.4, 0.6, 0.8 };
         const dest = @Vector(4, f32){ 0.3, 0.6, 0.9, 1 };
         try t.render(source, dest, null);
@@ -73,57 +73,55 @@ test "color blending" {
                 dest * @as(@Vector(4, f32), @splat(1 - source[3])),
         );
     }
-    for ([_]bool{ false, true }) |dynamic| {
-        {
-            const consts = @Vector(4, f32){ 0.5, 0, 1, 0.25 };
-            try t.setColorBlend(.{
-                .color_source_factor = .constant_color,
-                .color_dest_factor = .constant_color,
-                .color_op = .add,
-                .alpha_source_factor = .constant_alpha,
-                .alpha_dest_factor = .constant_alpha,
-                .alpha_op = .add,
-            }, if (dynamic) .dynamic else .{ .static = consts });
-            const source = @Vector(4, f32){ 0.4, 0.3, 0.2, 0.1 };
-            const dest = @Vector(4, f32){ 0.6, 0.4, 0.25, 0.75 };
-            try t.render(source, dest, if (dynamic) consts else null);
-            try t.validate(source * consts + dest * consts);
-        }
-        {
-            const consts = @Vector(4, f32){ 0.5, 0.6, 0.7, 0.8 };
-            try t.setColorBlend(.{
-                .color_source_factor = .one,
-                .color_dest_factor = .one_minus_constant_color,
-                .color_op = .reverse_subtract,
-                .alpha_source_factor = .constant_color,
-                .alpha_dest_factor = .zero,
-                .alpha_op = .add,
-            }, if (dynamic) .dynamic else .{ .static = consts });
-            const source = @Vector(4, f32){ 0.4444, 0.3333, 0.2222, 0.1111 };
-            const dest = @Vector(4, f32){ 1, 0.9, 0.8, 0 };
-            try t.render(source, dest, if (dynamic) consts else null);
-            try t.validate(
-                @as([4]f32, dest * (@Vector(4, f32){ 1, 1, 1, 1 } - consts) - source)[0..3].* ++
-                    [_]f32{source[3] * consts[3]},
-            );
-        }
-        {
-            const consts: @Vector(4, f32) = @splat(0.1);
-            try t.setColorBlend(.{
-                .color_source_factor = .constant_color,
-                .color_dest_factor = .zero,
-                .color_op = .min,
-                .alpha_source_factor = .one,
-                .alpha_dest_factor = .constant_alpha,
-                .alpha_op = .max,
-            }, if (dynamic) .dynamic else .{ .static = consts });
-            const source = @Vector(4, f32){ 1, 0.8, 0.04, 0.95 };
-            const dest = @Vector(4, f32){ 0.5, 0.9, 0.3, 1 };
-            try t.render(source, dest, if (dynamic) consts else null);
-            try t.validate(
-                @as([4]f32, @min(source, dest))[0..3].* ++ [_]f32{@max(source[3], dest[3])},
-            );
-        }
+    {
+        try t.setColorBlend(.{
+            .color_source_factor = .constant_color,
+            .color_dest_factor = .constant_color,
+            .color_op = .add,
+            .alpha_source_factor = .constant_alpha,
+            .alpha_dest_factor = .constant_alpha,
+            .alpha_op = .add,
+        });
+        const source = @Vector(4, f32){ 0.4, 0.3, 0.2, 0.1 };
+        const dest = @Vector(4, f32){ 0.6, 0.4, 0.25, 0.75 };
+        const consts = @Vector(4, f32){ 0.5, 0, 1, 0.25 };
+        try t.render(source, dest, consts);
+        try t.validate(source * consts + dest * consts);
+    }
+    {
+        try t.setColorBlend(.{
+            .color_source_factor = .one,
+            .color_dest_factor = .one_minus_constant_color,
+            .color_op = .reverse_subtract,
+            .alpha_source_factor = .constant_color,
+            .alpha_dest_factor = .zero,
+            .alpha_op = .add,
+        });
+        const source = @Vector(4, f32){ 0.4444, 0.3333, 0.2222, 0.1111 };
+        const dest = @Vector(4, f32){ 1, 0.9, 0.8, 0 };
+        const consts = @Vector(4, f32){ 0.5, 0.6, 0.7, 0.8 };
+        try t.render(source, dest, consts);
+        try t.validate(
+            @as([4]f32, dest * (@Vector(4, f32){ 1, 1, 1, 1 } - consts) - source)[0..3].* ++
+                [_]f32{source[3] * consts[3]},
+        );
+    }
+    {
+        try t.setColorBlend(.{
+            .color_source_factor = .constant_color,
+            .color_dest_factor = .zero,
+            .color_op = .min,
+            .alpha_source_factor = .one,
+            .alpha_dest_factor = .constant_alpha,
+            .alpha_op = .max,
+        });
+        const source = @Vector(4, f32){ 1, 0.8, 0.04, 0.95 };
+        const dest = @Vector(4, f32){ 0.5, 0.9, 0.3, 1 };
+        const consts: @Vector(4, f32) = @splat(0.1);
+        try t.render(source, dest, consts);
+        try t.validate(
+            @as([4]f32, @min(source, dest))[0..3].* ++ [_]f32{@max(source[3], dest[3])},
+        );
     }
 }
 
@@ -145,7 +143,6 @@ const T = struct {
     fb: ngl.FrameBuffer,
     pl_layt: ngl.PipelineLayout,
     pl: ?ngl.Pipeline,
-    consts: ?@TypeOf(@as(ngl.ColorBlend, undefined).constants),
     clear_col: ?[4]f32,
 
     const width = 100;
@@ -350,23 +347,17 @@ const T = struct {
             .fb = fb,
             .pl_layt = pl_layt,
             .pl = null,
-            .consts = null,
             .clear_col = null,
         };
     }
 
     // This will create/recreate the pipeline.
-    fn setColorBlend(
-        self: *@This(),
-        blend_equation: ngl.ColorBlend.BlendEquation,
-        constants: @TypeOf(@as(ngl.ColorBlend, undefined).constants),
-    ) !void {
+    fn setColorBlend(self: *@This(), blend_equation: ngl.ColorBlend.BlendEquation) !void {
         const dev = &context().device;
 
         if (self.pl) |*pl| {
             pl.deinit(gpa, dev);
             self.pl = null;
-            self.consts = null;
             self.clear_col = null;
         }
 
@@ -408,7 +399,6 @@ const T = struct {
                 .depth_stencil = null,
                 .color_blend = &.{
                     .attachments = &.{.{ .blend = blend_equation, .write = .all }},
-                    .constants = constants,
                 },
                 .render_pass = &self.rp,
                 .subpass = 0,
@@ -418,7 +408,6 @@ const T = struct {
         defer gpa.free(pl);
 
         self.pl = pl[0];
-        self.consts = constants;
     }
 
     fn render(self: *@This(), source_color: [4]f32, dest_color: [4]f32, constants: ?[4]f32) !void {
@@ -466,8 +455,8 @@ const T = struct {
             .width = width,
             .height = height,
         }});
-        if (self.consts.? == .dynamic)
-            cmd.setBlendConstants(constants.?);
+        if (constants) |x|
+            cmd.setBlendConstants(x);
         cmd.draw(3, 1, 0, 0);
         cmd.endRenderPass(.{});
         cmd.pipelineBarrier(&.{.{

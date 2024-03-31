@@ -184,11 +184,6 @@ pub const ColorBlend = struct {
     /// `Feature.core.color_blend.independent_blend`
     /// is supported.
     attachments: []const Attachment,
-    constants: union(enum) {
-        unused,
-        dynamic,
-        static: [4]f32,
-    },
 
     pub const Attachment = struct {
         blend: ?BlendEquation,

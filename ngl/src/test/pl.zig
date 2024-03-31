@@ -82,7 +82,6 @@ test "Pipeline.initGraphics/deinit" {
             },
             .write = .all,
         }},
-        .constants = .unused,
     };
 
     var rp = try ngl.RenderPass.init(gpa, dev, .{

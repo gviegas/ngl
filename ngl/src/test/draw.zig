@@ -310,7 +310,6 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
 
     const col_blend = ngl.ColorBlend{
         .attachments = &.{.{ .blend = null, .write = .all }},
-        .constants = .unused,
     };
 
     var pl = blk: {

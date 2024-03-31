@@ -340,8 +340,6 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// Only valid for pipelines with unspecified blend constants.
-        ///
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope

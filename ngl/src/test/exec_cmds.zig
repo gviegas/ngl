@@ -580,7 +580,6 @@ test "executeCommands command (drawing)" {
 
     const col_blend = ngl.ColorBlend{
         .attachments = &.{.{ .blend = null, .write = .all }},
-        .constants = .unused,
     };
 
     const pls = try ngl.Pipeline.initGraphics(gpa, dev, .{
