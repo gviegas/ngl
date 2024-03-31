@@ -164,7 +164,6 @@ pub const DepthStencil = struct {
         compare: CompareOp,
         read_mask: u32,
         write_mask: u32,
-        reference: ?u32,
     };
 
     pub const StencilOp = enum {

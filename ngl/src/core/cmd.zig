@@ -322,8 +322,6 @@ pub const CommandBuffer = struct {
             front_and_back,
         };
 
-        /// Only valid for pipelines with unspecified stencil reference.
-        ///
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope

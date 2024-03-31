@@ -348,7 +348,7 @@ pub const Pipeline = struct {
                     .compareOp = conv.toVkCompareOp(t.compare),
                     .compareMask = t.read_mask,
                     .writeMask = t.write_mask,
-                    .reference = t.reference orelse 0,
+                    .reference = 0,
                 } else .{
                     .failOp = c.VK_STENCIL_OP_KEEP,
                     .passOp = c.VK_STENCIL_OP_KEEP,
@@ -356,7 +356,7 @@ pub const Pipeline = struct {
                     .compareOp = c.VK_COMPARE_OP_ALWAYS,
                     .compareMask = 0,
                     .writeMask = 0,
-                    .reference = if (s.stencil_back) |x| x.reference orelse 0 else 0,
+                    .reference = 0,
                 },
                 .back = if (s.stencil_back) |t| .{
                     .failOp = conv.toVkStencilOp(t.fail_op),
@@ -365,7 +365,7 @@ pub const Pipeline = struct {
                     .compareOp = conv.toVkCompareOp(t.compare),
                     .compareMask = t.read_mask,
                     .writeMask = t.write_mask,
-                    .reference = t.reference orelse 0,
+                    .reference = 0,
                 } else .{
                     .failOp = c.VK_STENCIL_OP_KEEP,
                     .passOp = c.VK_STENCIL_OP_KEEP,
@@ -373,7 +373,7 @@ pub const Pipeline = struct {
                     .compareOp = c.VK_COMPARE_OP_ALWAYS,
                     .compareMask = 0,
                     .writeMask = 0,
-                    .reference = if (s.stencil_front) |x| x.reference orelse 0 else 0,
+                    .reference = 0,
                 },
                 .minDepthBounds = 0,
                 .maxDepthBounds = 0,
@@ -432,9 +432,7 @@ pub const Pipeline = struct {
                 dyns[1] = c.VK_DYNAMIC_STATE_SCISSOR;
                 dyns = dyns[2..];
                 if (state.depth_stencil) |x| {
-                    if ((x.stencil_front != null and x.stencil_front.?.reference == null) or
-                        (x.stencil_back != null and x.stencil_back.?.reference == null))
-                    {
+                    if (x.stencil_front != null or x.stencil_back != null) {
                         dyns[0] = c.VK_DYNAMIC_STATE_STENCIL_REFERENCE;
                         dyns = dyns[1..];
                     }

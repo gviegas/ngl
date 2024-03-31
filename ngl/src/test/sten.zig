@@ -338,7 +338,6 @@ test "stencil test" {
                 .compare = .greater,
                 .read_mask = 0x0f,
                 .write_mask = 0x0f,
-                .reference = 0x8f,
             },
             // The backing-face primitive must pass the stencil
             // test and fail the depth test.
@@ -349,7 +348,6 @@ test "stencil test" {
                 .compare = .equal,
                 .read_mask = 0xf0,
                 .write_mask = 0xf0,
-                .reference = 0x8f,
             },
         },
         .color_blend = &.{
@@ -406,10 +404,13 @@ test "stencil test" {
         .height = h,
     }});
 
-    // Has front and back stencil tests defined with non-null reference.
+    // Has front and back stencil tests defined.
     cmd.setPipeline(&pl);
     // Binding #1 is the same for both draws.
     cmd.setVertexBuffers(1, &.{&vert_buf}, &.{0}, &.{@sizeOf(@TypeOf(col_data))});
+
+    const reference = 0x8f;
+    cmd.setStencilReference(.front_and_back, reference);
 
     cmd.beginRenderPass(.{
         .render_pass = &rp,
