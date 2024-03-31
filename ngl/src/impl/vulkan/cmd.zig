@@ -403,6 +403,17 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn setDepthBias(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        value: f32,
+        slope: f32,
+        clamp: f32,
+    ) void {
+        Device.cast(device).vkCmdSetDepthBias(cast(command_buffer).handle, value, clamp, slope);
+    }
+
     pub fn setStencilReadMask(
         _: *anyopaque,
         device: Impl.Device,

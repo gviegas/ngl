@@ -1094,6 +1094,7 @@ pub const Device = struct {
     cmdBindVertexBuffers: c.PFN_vkCmdBindVertexBuffers,
     cmdSetViewport: c.PFN_vkCmdSetViewport,
     cmdSetScissor: c.PFN_vkCmdSetScissor,
+    cmdSetDepthBias: c.PFN_vkCmdSetDepthBias,
     cmdSetStencilCompareMask: c.PFN_vkCmdSetStencilCompareMask,
     cmdSetStencilWriteMask: c.PFN_vkCmdSetStencilWriteMask,
     cmdSetStencilReference: c.PFN_vkCmdSetStencilReference,
@@ -1311,6 +1312,7 @@ pub const Device = struct {
             .cmdBindVertexBuffers = @ptrCast(try Device.getProc(get, dev, "vkCmdBindVertexBuffers")),
             .cmdSetViewport = @ptrCast(try Device.getProc(get, dev, "vkCmdSetViewport")),
             .cmdSetScissor = @ptrCast(try Device.getProc(get, dev, "vkCmdSetScissor")),
+            .cmdSetDepthBias = @ptrCast(try Device.getProc(get, dev, "vkCmdSetDepthBias")),
             .cmdSetStencilCompareMask = @ptrCast(try Device.getProc(get, dev, "vkCmdSetStencilCompareMask")),
             .cmdSetStencilWriteMask = @ptrCast(try Device.getProc(get, dev, "vkCmdSetStencilWriteMask")),
             .cmdSetStencilReference = @ptrCast(try Device.getProc(get, dev, "vkCmdSetStencilReference")),
@@ -1729,6 +1731,16 @@ pub const Device = struct {
         scissors: [*]const c.VkRect2D,
     ) void {
         self.cmdSetScissor.?(command_buffer, first_scissor, scissor_count, scissors);
+    }
+
+    pub inline fn vkCmdSetDepthBias(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        constant_factor: f32,
+        clamp: f32,
+        slope_factor: f32,
+    ) void {
+        self.cmdSetDepthBias.?(command_buffer, constant_factor, clamp, slope_factor);
     }
 
     pub inline fn vkCmdSetStencilCompareMask(
@@ -3044,6 +3056,7 @@ const vtable = Impl.VTable{
     .setVertexBuffers = @import("cmd.zig").CommandBuffer.setVertexBuffers,
     .setViewports = @import("cmd.zig").CommandBuffer.setViewports,
     .setScissorRects = @import("cmd.zig").CommandBuffer.setScissorRects,
+    .setDepthBias = @import("cmd.zig").CommandBuffer.setDepthBias,
     .setStencilReadMask = @import("cmd.zig").CommandBuffer.setStencilReadMask,
     .setStencilWriteMask = @import("cmd.zig").CommandBuffer.setStencilWriteMask,
     .setStencilReference = @import("cmd.zig").CommandBuffer.setStencilReference,
