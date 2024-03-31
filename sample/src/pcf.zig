@@ -19,7 +19,7 @@ const width = Platform.width;
 const height = Platform.height;
 const materials = [_]UniformBuffer.Material{
     .{
-        0.1, 0.0, 0,   undefined,
+        0.1, 0,   0,   undefined,
         1,   0,   0,   undefined,
         0.1, 0.1, 0.1, undefined,
         200,
@@ -321,9 +321,12 @@ const ShadowMap = struct {
 const ShadowPass = struct {
     render_pass: ngl.RenderPass,
     frame_buffer: ngl.FrameBuffer,
+    depth_bias_clamp: bool,
 
     fn init(shadow_map: *ShadowMap) ngl.Error!ShadowPass {
-        const dev = &context().device;
+        const ctx = context();
+        const dev = &ctx.device;
+        const gpu = ctx.gpu;
 
         var rp = try ngl.RenderPass.init(gpa, dev, .{
             .attachments = &.{.{
@@ -388,7 +391,11 @@ const ShadowPass = struct {
             .layers = 1,
         });
 
-        return .{ .render_pass = rp, .frame_buffer = fb };
+        return .{
+            .render_pass = rp,
+            .frame_buffer = fb,
+            .depth_bias_clamp = ngl.Feature.get(gpa, gpu, .core).?.rasterization.depth_bias_clamp,
+        };
     }
 
     fn record(
@@ -426,6 +433,8 @@ const ShadowPass = struct {
             .width = ShadowMap.extent,
             .height = ShadowMap.extent,
         }});
+
+        cmd.setDepthBias(0.01, 2, if (self.depth_bias_clamp) 1 else 0);
 
         for (draws, draw_transforms) |draw, xform| {
             cmd.setPipeline(&pipeline.shadow[@intFromEnum(draw.model)]);
@@ -1299,9 +1308,7 @@ const Pipeline = struct {
         texture: *Texture,
         uniform_buffer: *UniformBuffer,
     ) ngl.Error!Pipeline {
-        const ctx = context();
-        const gpu = ctx.gpu;
-        const dev = &ctx.device;
+        const dev = &context().device;
 
         var set_layts: [3]ngl.DescriptorSetLayout = undefined;
         set_layts[0] = try ngl.DescriptorSetLayout.init(gpa, dev, .{ .bindings = &.{
@@ -1404,15 +1411,7 @@ const Pipeline = struct {
                     .polygon_mode = .fill,
                     .cull_mode = params.cull_mode,
                     .clockwise = params.clockwise,
-                    .depth_bias = .{
-                        .value = 0.01,
-                        .slope = 3,
-                        .clamp = if (ngl.Feature.get(
-                            gpa,
-                            gpu,
-                            .core,
-                        ).?.rasterization.depth_bias_clamp) 1 else null,
-                    },
+                    .depth_bias = true,
                     .samples = .@"1",
                 },
                 .depth_stencil = &.{
