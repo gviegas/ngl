@@ -301,7 +301,6 @@ const Feature = struct {
         @"1.0".depthBounds = c.VK_FALSE;
         @"1.0".wideLines = c.VK_FALSE;
         @"1.0".largePoints = c.VK_FALSE;
-        @"1.0".multiViewport = c.VK_FALSE;
         @"1.0".pipelineStatisticsQuery = c.VK_FALSE;
         @"1.0".shaderTessellationAndGeometryPointSize = c.VK_FALSE;
         @"1.0".shaderImageGatherExtended = c.VK_FALSE;
@@ -2924,6 +2923,7 @@ fn getFeature(
                     .max_attribute_offset = l.maxVertexInputAttributeOffset,
                 },
                 .viewport = .{
+                    .max_count = l.maxViewports,
                     .max_width = l.maxViewportDimensions[0],
                     .max_height = l.maxViewportDimensions[1],
                     .min_bound = l.viewportBoundsRange[0],

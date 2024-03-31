@@ -455,6 +455,7 @@ pub const Feature = union(enum) {
             max_attribute_offset: u32 = 2047,
         },
         viewport: struct {
+            max_count: u32 = 1,
             max_width: u32 = 4096,
             max_height: u32 = 4096,
             min_bound: f32 = -8192,
