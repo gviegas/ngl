@@ -269,6 +269,15 @@ pub const VTable = struct {
         scissor_rects: []const ngl.Cmd.ScissorRect,
     ) void,
 
+    setDepthBias: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        value: f32,
+        slope: f32,
+        clamp: f32,
+    ) void,
+
     setStencilReadMask: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1301,6 +1310,17 @@ pub fn setScissorRects(
     scissor_rects: []const ngl.Cmd.ScissorRect,
 ) void {
     self.vtable.setScissorRects(self.ptr, allocator, device, command_buffer, scissor_rects);
+}
+
+pub fn setDepthBias(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    value: f32,
+    slope: f32,
+    clamp: f32,
+) void {
+    self.vtable.setDepthBias(self.ptr, device, command_buffer, value, slope, clamp);
 }
 
 pub fn setStencilReadMask(
