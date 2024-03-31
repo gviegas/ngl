@@ -1094,6 +1094,8 @@ pub const Device = struct {
     cmdBindVertexBuffers: c.PFN_vkCmdBindVertexBuffers,
     cmdSetViewport: c.PFN_vkCmdSetViewport,
     cmdSetScissor: c.PFN_vkCmdSetScissor,
+    cmdSetStencilCompareMask: c.PFN_vkCmdSetStencilCompareMask,
+    cmdSetStencilWriteMask: c.PFN_vkCmdSetStencilWriteMask,
     cmdSetStencilReference: c.PFN_vkCmdSetStencilReference,
     cmdSetBlendConstants: c.PFN_vkCmdSetBlendConstants,
     cmdBeginRenderPass: c.PFN_vkCmdBeginRenderPass,
@@ -1309,6 +1311,8 @@ pub const Device = struct {
             .cmdBindVertexBuffers = @ptrCast(try Device.getProc(get, dev, "vkCmdBindVertexBuffers")),
             .cmdSetViewport = @ptrCast(try Device.getProc(get, dev, "vkCmdSetViewport")),
             .cmdSetScissor = @ptrCast(try Device.getProc(get, dev, "vkCmdSetScissor")),
+            .cmdSetStencilCompareMask = @ptrCast(try Device.getProc(get, dev, "vkCmdSetStencilCompareMask")),
+            .cmdSetStencilWriteMask = @ptrCast(try Device.getProc(get, dev, "vkCmdSetStencilWriteMask")),
             .cmdSetStencilReference = @ptrCast(try Device.getProc(get, dev, "vkCmdSetStencilReference")),
             .cmdSetBlendConstants = @ptrCast(try Device.getProc(get, dev, "vkCmdSetBlendConstants")),
             .cmdBeginRenderPass = @ptrCast(try Device.getProc(get, dev, "vkCmdBeginRenderPass")),
@@ -1725,6 +1729,24 @@ pub const Device = struct {
         scissors: [*]const c.VkRect2D,
     ) void {
         self.cmdSetScissor.?(command_buffer, first_scissor, scissor_count, scissors);
+    }
+
+    pub inline fn vkCmdSetStencilCompareMask(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        face_mask: c.VkStencilFaceFlags,
+        compare_mask: u32,
+    ) void {
+        self.cmdSetStencilCompareMask.?(command_buffer, face_mask, compare_mask);
+    }
+
+    pub inline fn vkCmdSetStencilWriteMask(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        face_mask: c.VkStencilFaceFlags,
+        write_mask: u32,
+    ) void {
+        self.cmdSetStencilWriteMask.?(command_buffer, face_mask, write_mask);
     }
 
     pub inline fn vkCmdSetStencilReference(
@@ -3022,6 +3044,8 @@ const vtable = Impl.VTable{
     .setVertexBuffers = @import("cmd.zig").CommandBuffer.setVertexBuffers,
     .setViewports = @import("cmd.zig").CommandBuffer.setViewports,
     .setScissorRects = @import("cmd.zig").CommandBuffer.setScissorRects,
+    .setStencilReadMask = @import("cmd.zig").CommandBuffer.setStencilReadMask,
+    .setStencilWriteMask = @import("cmd.zig").CommandBuffer.setStencilWriteMask,
     .setStencilReference = @import("cmd.zig").CommandBuffer.setStencilReference,
     .setBlendConstants = @import("cmd.zig").CommandBuffer.setBlendConstants,
     .beginRenderPass = @import("cmd.zig").CommandBuffer.beginRenderPass,

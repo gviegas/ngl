@@ -403,6 +403,34 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn setStencilReadMask(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        stencil_face: ngl.Cmd.StencilFace,
+        mask: u32,
+    ) void {
+        Device.cast(device).vkCmdSetStencilCompareMask(
+            cast(command_buffer).handle,
+            conv.toVkStencilFaceFlags(stencil_face),
+            mask,
+        );
+    }
+
+    pub fn setStencilWriteMask(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        stencil_face: ngl.Cmd.StencilFace,
+        mask: u32,
+    ) void {
+        Device.cast(device).vkCmdSetStencilWriteMask(
+            cast(command_buffer).handle,
+            conv.toVkStencilFaceFlags(stencil_face),
+            mask,
+        );
+    }
+
     pub fn setStencilReference(
         _: *anyopaque,
         device: Impl.Device,
