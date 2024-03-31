@@ -48,7 +48,7 @@ pub const Pipeline = struct {
                 depth_stencil_state: c.VkPipelineDepthStencilStateCreateInfo,
                 color_blend_state: c.VkPipelineColorBlendStateCreateInfo,
                 dynamic_state: c.VkPipelineDynamicStateCreateInfo,
-                dynamic_state_dynamic_states: [6]c.VkDynamicState,
+                dynamic_state_dynamic_states: [7]c.VkDynamicState,
             },
             desc.states.len,
         );
@@ -306,10 +306,10 @@ pub const Pipeline = struct {
                     c.VK_FRONT_FACE_CLOCKWISE
                 else
                     c.VK_FRONT_FACE_COUNTER_CLOCKWISE,
-                .depthBiasEnable = if (s.depth_bias == null) c.VK_FALSE else c.VK_TRUE,
-                .depthBiasConstantFactor = if (s.depth_bias) |x| x.value else 0,
-                .depthBiasClamp = if (s.depth_bias) |x| x.clamp orelse 0 else 0,
-                .depthBiasSlopeFactor = if (s.depth_bias) |x| x.slope else 0,
+                .depthBiasEnable = if (s.depth_bias) c.VK_TRUE else c.VK_FALSE,
+                .depthBiasConstantFactor = 0,
+                .depthBiasClamp = 0,
+                .depthBiasSlopeFactor = 0,
                 .lineWidth = 1,
             } else defaults.rasterization_state;
 
@@ -431,6 +431,12 @@ pub const Pipeline = struct {
                 dyns[0] = c.VK_DYNAMIC_STATE_VIEWPORT;
                 dyns[1] = c.VK_DYNAMIC_STATE_SCISSOR;
                 dyns = dyns[2..];
+                if (state.rasterization) |x| {
+                    if (x.depth_bias) {
+                        dyns[0] = c.VK_DYNAMIC_STATE_DEPTH_BIAS;
+                        dyns = dyns[1..];
+                    }
+                }
                 if (state.depth_stencil) |x| {
                     if (x.stencil_front != null or x.stencil_back != null) {
                         if (x.stencil_front != null) {
@@ -450,13 +456,13 @@ pub const Pipeline = struct {
                     dyns = dyns[1..];
                 }
                 const dyn_n = inner.dynamic_state_dynamic_states.len - dyns.len;
-                break :blk if (dyn_n > 0) .{
+                break :blk .{
                     .sType = defaults.dynamic_state.sType,
                     .pNext = null,
                     .flags = 0,
                     .dynamicStateCount = @intCast(dyn_n),
                     .pDynamicStates = &inner.dynamic_state_dynamic_states,
-                } else defaults.dynamic_state;
+                };
             };
         }
 

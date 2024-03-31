@@ -127,12 +127,7 @@ pub const Rasterization = struct {
     clockwise: bool,
     /// `Feature.core.rasterization.depth_clamp`.
     depth_clamp: bool = false,
-    depth_bias: ?struct {
-        value: f32,
-        slope: f32,
-        /// `Feature.core.rasterization.depth_bias_clamp`.
-        clamp: ?f32,
-    } = null,
+    depth_bias: bool = false,
     samples: SampleCount,
     sample_mask: u64 = ~@as(u64, 0),
     alpha_to_coverage: bool = false,

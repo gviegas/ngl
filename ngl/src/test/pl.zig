@@ -56,7 +56,7 @@ test "Pipeline.initGraphics/deinit" {
         .cull_mode = .back,
         .clockwise = false,
         .depth_clamp = false,
-        .depth_bias = null,
+        .depth_bias = false,
         .samples = .@"1",
         .sample_mask = 0x1,
         .alpha_to_coverage = false,
