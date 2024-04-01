@@ -39,6 +39,7 @@ pub const ImageView = Type(ngl.ImageView);
 pub const Sampler = Type(ngl.Sampler);
 pub const RenderPass = Type(ngl.RenderPass);
 pub const FrameBuffer = Type(ngl.FrameBuffer);
+pub const Shader = Type(ngl.Shader);
 pub const DescriptorSetLayout = Type(ngl.DescriptorSetLayout);
 pub const PipelineLayout = Type(ngl.PipelineLayout);
 pub const DescriptorPool = Type(ngl.DescriptorPool);
@@ -741,6 +742,23 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         frame_buffer: FrameBuffer,
+    ) void,
+
+    // Shader ----------------------------------------------
+
+    initShader: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        descs: []const ngl.Shader.Desc,
+        shaders: []Error!ngl.Shader,
+    ) Error!void,
+
+    deinitShader: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        shader: Shader,
     ) void,
 
     // DescriptorSetLayout ---------------------------------
@@ -1929,6 +1947,25 @@ pub fn deinitFrameBuffer(
     frame_buffer: FrameBuffer,
 ) void {
     self.vtable.deinitFrameBuffer(self.ptr, allocator, device, frame_buffer);
+}
+
+pub fn initShader(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    descs: []const ngl.Shader.Desc,
+    shaders: []Error!ngl.Shader,
+) Error!void {
+    try self.vtable.initShader(self.ptr, allocator, device, descs, shaders);
+}
+
+pub fn deinitShader(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    shader: Shader,
+) void {
+    self.vtable.deinitShader(self.ptr, allocator, device, shader);
 }
 
 pub fn initDescriptorSetLayout(

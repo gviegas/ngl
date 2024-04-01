@@ -8,7 +8,7 @@ const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
 pub const Shader = struct {
-    //impl: Impl.Shader,
+    impl: Impl.Shader,
 
     // TODO: Add other shader types.
     pub const Type = enum {
@@ -42,17 +42,22 @@ pub const Shader = struct {
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, device: *Device, descs: []const Desc) Error![]?Self {
-        _ = allocator;
-        _ = device;
-        _ = descs;
-        @panic("Not yet implemented");
+    pub fn init(
+        allocator: std.mem.Allocator,
+        device: *Device,
+        descs: []const Desc,
+    ) Error![]Error!Self {
+        if (descs.len == 0) return &.{};
+        const shaders = try allocator.alloc(Error!Self, descs.len);
+        errdefer allocator.free(shaders);
+        for (shaders) |*shader|
+            shader.* = Error.Other;
+        try Impl.get().initShader(allocator, device.impl, descs, shaders);
+        return shaders;
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
-        _ = self;
-        _ = allocator;
-        _ = device;
-        @panic("Not yet implemented");
+        Impl.get().deinitShader(allocator, device.impl, self.impl);
+        self.* = undefined;
     }
 };
