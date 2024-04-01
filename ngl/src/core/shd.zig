@@ -38,6 +38,7 @@ pub const Shader = struct {
         set_layouts: []const *DescriptorSetLayout,
         push_constants: []const PushConstantRange,
         specialization: ?Specialization,
+        link: bool,
     };
 
     const Self = @This();
