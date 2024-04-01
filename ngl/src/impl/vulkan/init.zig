@@ -3125,6 +3125,9 @@ const vtable = Impl.VTable{
     .initFrameBuffer = @import("pass.zig").FrameBuffer.init,
     .deinitFrameBuffer = @import("pass.zig").FrameBuffer.deinit,
 
+    .initShader = @import("shd.zig").Shader.init,
+    .deinitShader = @import("shd.zig").Shader.deinit,
+
     .initDescriptorSetLayout = @import("desc.zig").DescriptorSetLayout.init,
     .deinitDescriptorSetLayout = @import("desc.zig").DescriptorSetLayout.deinit,
 
