@@ -3059,6 +3059,7 @@ const vtable = Impl.VTable{
     .setVertexBuffers = @import("cmd.zig").CommandBuffer.setVertexBuffers,
     .setViewports = @import("cmd.zig").CommandBuffer.setViewports,
     .setScissorRects = @import("cmd.zig").CommandBuffer.setScissorRects,
+    .setPolygonMode = @import("cmd.zig").CommandBuffer.setPolygonMode,
     .setDepthBias = @import("cmd.zig").CommandBuffer.setDepthBias,
     .setStencilReadMask = @import("cmd.zig").CommandBuffer.setStencilReadMask,
     .setStencilWriteMask = @import("cmd.zig").CommandBuffer.setStencilWriteMask,

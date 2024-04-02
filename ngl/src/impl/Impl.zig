@@ -295,6 +295,13 @@ pub const VTable = struct {
         scissor_rects: []const ngl.Cmd.ScissorRect,
     ) void,
 
+    setPolygonMode: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        polygon_mode: ngl.Cmd.PolygonMode,
+    ) void,
+
     setDepthBias: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1391,6 +1398,15 @@ pub fn setScissorRects(
     scissor_rects: []const ngl.Cmd.ScissorRect,
 ) void {
     self.vtable.setScissorRects(self.ptr, allocator, device, command_buffer, scissor_rects);
+}
+
+pub fn setPolygonMode(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    polygon_mode: ngl.Cmd.PolygonMode,
+) void {
+    self.vtable.setPolygonMode(self.ptr, device, command_buffer, polygon_mode);
 }
 
 pub fn setDepthBias(

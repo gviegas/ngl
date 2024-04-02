@@ -352,13 +352,6 @@ pub const CommandBuffer = struct {
             zfar: f32,
         };
 
-        pub const ScissorRect = struct {
-            x: u32,
-            y: u32,
-            width: u32,
-            height: u32,
-        };
-
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope
@@ -375,6 +368,13 @@ pub const CommandBuffer = struct {
             );
         }
 
+        pub const ScissorRect = struct {
+            x: u32,
+            y: u32,
+            width: u32,
+            height: u32,
+        };
+
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope
@@ -389,6 +389,22 @@ pub const CommandBuffer = struct {
                 self.command_buffer.impl,
                 scissor_rects,
             );
+        }
+
+        pub const PolygonMode = enum {
+            fill,
+            line,
+        };
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setPolygonMode(self: *Cmd, polygon_mode: PolygonMode) void {
+            Impl.get().setPolygonMode(self.device.impl, self.command_buffer.impl, polygon_mode);
         }
 
         /// ✔ Primary command buffer

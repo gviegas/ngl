@@ -448,6 +448,18 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn setPolygonMode(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        polygon_mode: ngl.Cmd.PolygonMode,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = polygon_mode;
+        @panic("Not yet implemented");
+    }
+
     pub fn setDepthBias(
         _: *anyopaque,
         device: Impl.Device,
