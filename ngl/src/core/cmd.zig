@@ -3,6 +3,7 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
 const Queue = ngl.Queue;
+const Format = ngl.Format;
 const Buffer = ngl.Buffer;
 const Image = ngl.Image;
 const ImageView = ngl.ImageView;
@@ -227,6 +228,43 @@ pub const CommandBuffer = struct {
                 stage_mask,
                 offset,
                 constants,
+            );
+        }
+
+        pub const VertexInputBinding = struct {
+            binding: u32,
+            stride: u32,
+            step_rate: union(enum) {
+                vertex,
+                instance: u1, // TODO: Must be `1` currently.
+            },
+        };
+
+        pub const VertexInputAttribute = struct {
+            location: u32,
+            binding: u32,
+            format: Format,
+            offset: u32,
+        };
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setVertexInput(
+            self: *Cmd,
+            bindings: []const VertexInputBinding,
+            attributes: []const VertexInputAttribute,
+        ) void {
+            Impl.get().setVertexInput(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                bindings,
+                attributes,
             );
         }
 

@@ -242,6 +242,15 @@ pub const VTable = struct {
         constants: []align(4) const u8,
     ) void,
 
+    setVertexInput: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        bindings: []const ngl.Cmd.VertexInputBinding,
+        attributes: []const ngl.Cmd.VertexInputAttribute,
+    ) void,
+
     setIndexBuffer: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1293,6 +1302,24 @@ pub fn setPushConstants(
         stage_mask,
         offset,
         constants,
+    );
+}
+
+pub fn setVertexInput(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    bindings: []const ngl.Cmd.VertexInputBinding,
+    attributes: []const ngl.Cmd.VertexInputAttribute,
+) void {
+    self.vtable.setVertexInput(
+        self.ptr,
+        allocator,
+        device,
+        command_buffer,
+        bindings,
+        attributes,
     );
 }
 

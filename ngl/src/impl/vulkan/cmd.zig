@@ -281,6 +281,22 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn setVertexInput(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        bindings: []const ngl.Cmd.VertexInputBinding,
+        attributes: []const ngl.Cmd.VertexInputAttribute,
+    ) void {
+        _ = allocator;
+        _ = device;
+        _ = command_buffer;
+        _ = bindings;
+        _ = attributes;
+        @panic("Not yet implemented");
+    }
+
     pub fn setIndexBuffer(
         _: *anyopaque,
         device: Impl.Device,

@@ -3053,6 +3053,7 @@ const vtable = Impl.VTable{
     .setShaders = @import("cmd.zig").CommandBuffer.setShaders,
     .setDescriptors = @import("cmd.zig").CommandBuffer.setDescriptors,
     .setPushConstants = @import("cmd.zig").CommandBuffer.setPushConstants,
+    .setVertexInput = @import("cmd.zig").CommandBuffer.setVertexInput,
     .setIndexBuffer = @import("cmd.zig").CommandBuffer.setIndexBuffer,
     .setVertexBuffers = @import("cmd.zig").CommandBuffer.setVertexBuffers,
     .setViewports = @import("cmd.zig").CommandBuffer.setViewports,
