@@ -460,6 +460,30 @@ pub const CommandBuffer = packed struct {
         @panic("Not yet implemented");
     }
 
+    pub fn setCullMode(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        cull_mode: ngl.Cmd.CullMode,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = cull_mode;
+        @panic("Not yet implemented");
+    }
+
+    pub fn setFrontFace(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        front_face: ngl.Cmd.FrontFace,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = front_face;
+        @panic("Not yet implemented");
+    }
+
     pub fn setDepthBias(
         _: *anyopaque,
         device: Impl.Device,

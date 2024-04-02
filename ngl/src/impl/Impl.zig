@@ -302,6 +302,20 @@ pub const VTable = struct {
         polygon_mode: ngl.Cmd.PolygonMode,
     ) void,
 
+    setCullMode: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        cull_mode: ngl.Cmd.CullMode,
+    ) void,
+
+    setFrontFace: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        front_face: ngl.Cmd.FrontFace,
+    ) void,
+
     setDepthBias: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1407,6 +1421,24 @@ pub fn setPolygonMode(
     polygon_mode: ngl.Cmd.PolygonMode,
 ) void {
     self.vtable.setPolygonMode(self.ptr, device, command_buffer, polygon_mode);
+}
+
+pub fn setCullMode(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    cull_mode: ngl.Cmd.CullMode,
+) void {
+    self.vtable.setCullMode(self.ptr, device, command_buffer, cull_mode);
+}
+
+pub fn setFrontFace(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    front_face: ngl.Cmd.FrontFace,
+) void {
+    self.vtable.setFrontFace(self.ptr, device, command_buffer, front_face);
 }
 
 pub fn setDepthBias(

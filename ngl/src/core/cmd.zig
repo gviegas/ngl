@@ -407,6 +407,39 @@ pub const CommandBuffer = struct {
             Impl.get().setPolygonMode(self.device.impl, self.command_buffer.impl, polygon_mode);
         }
 
+        pub const CullMode = enum {
+            none,
+            front,
+            back,
+        };
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setCullMode(self: *Cmd, cull_mode: CullMode) void {
+            Impl.get().setCullMode(self.device.impl, self.command_buffer.impl, cull_mode);
+        }
+
+        pub const FrontFace = enum {
+            clockwise,
+            counter_clockwise,
+        };
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setFrontFace(self: *Cmd, front_face: FrontFace) void {
+            Impl.get().setFrontFace(self.device.impl, self.command_buffer.impl, front_face);
+        }
+
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope
