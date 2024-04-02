@@ -200,6 +200,23 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    // TODO
+    pub fn setShaders(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        types: []const ngl.Shader.Type,
+        shaders: []const ?*ngl.Shader,
+    ) void {
+        _ = allocator;
+        _ = device;
+        _ = command_buffer;
+        _ = types;
+        _ = shaders;
+        @panic("Not yet implemented");
+    }
+
     pub fn setDescriptors(
         _: *anyopaque,
         allocator: std.mem.Allocator,

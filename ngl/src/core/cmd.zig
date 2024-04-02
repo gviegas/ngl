@@ -10,6 +10,7 @@ const Stage = ngl.Stage;
 const Access = ngl.Access;
 const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
+const Shader = ngl.Shader;
 const PipelineLayout = ngl.PipelineLayout;
 const DescriptorSet = ngl.DescriptorSet;
 const ShaderStage = ngl.ShaderStage;
@@ -160,6 +161,23 @@ pub const CommandBuffer = struct {
                 self.command_buffer.impl,
                 pipeline.type,
                 pipeline.impl,
+            );
+        }
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✔ Compute queue
+        /// ✘ Transfer queue
+        pub fn setShaders(self: *Cmd, types: []const Shader.Type, shaders: []const ?*Shader) void {
+            Impl.get().setShaders(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                types,
+                shaders,
             );
         }
 

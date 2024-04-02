@@ -212,6 +212,15 @@ pub const VTable = struct {
         pipeline: Pipeline,
     ) void,
 
+    setShaders: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        types: []const ngl.Shader.Type,
+        shaders: []const ?*ngl.Shader,
+    ) void,
+
     setDescriptors: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1232,6 +1241,17 @@ pub fn setPipeline(
     pipeline: Pipeline,
 ) void {
     self.vtable.setPipeline(self.ptr, device, command_buffer, @"type", pipeline);
+}
+
+pub fn setShaders(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    types: []const ngl.Shader.Type,
+    shaders: []const ?*ngl.Shader,
+) void {
+    self.vtable.setShaders(self.ptr, allocator, device, command_buffer, types, shaders);
 }
 
 pub fn setDescriptors(
