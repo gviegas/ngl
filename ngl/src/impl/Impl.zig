@@ -251,6 +251,13 @@ pub const VTable = struct {
         attributes: []const ngl.Cmd.VertexInputAttribute,
     ) void,
 
+    setPrimitiveTopology: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        topology: ngl.Cmd.PrimitiveTopology,
+    ) void,
+
     setIndexBuffer: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1321,6 +1328,15 @@ pub fn setVertexInput(
         bindings,
         attributes,
     );
+}
+
+pub fn setPrimitiveTopology(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    topology: ngl.Cmd.PrimitiveTopology,
+) void {
+    self.vtable.setPrimitiveTopology(self.ptr, device, command_buffer, topology);
 }
 
 pub fn setIndexBuffer(

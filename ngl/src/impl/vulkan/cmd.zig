@@ -297,6 +297,18 @@ pub const CommandBuffer = packed struct {
         @panic("Not yet implemented");
     }
 
+    pub fn setPrimitiveTopology(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        topology: ngl.Cmd.PrimitiveTopology,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = topology;
+        @panic("Not yet implemented");
+    }
+
     pub fn setIndexBuffer(
         _: *anyopaque,
         device: Impl.Device,

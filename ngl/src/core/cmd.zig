@@ -268,6 +268,25 @@ pub const CommandBuffer = struct {
             );
         }
 
+        pub const PrimitiveTopology = enum {
+            point_list,
+            line_list,
+            line_strip,
+            triangle_list,
+            triangle_strip,
+        };
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setPrimitiveTopology(self: *Cmd, topology: PrimitiveTopology) void {
+            Impl.get().setPrimitiveTopology(self.device.impl, self.command_buffer.impl, topology);
+        }
+
         pub const IndexType = enum {
             u16,
             u32,
