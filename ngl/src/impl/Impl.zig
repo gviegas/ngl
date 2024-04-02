@@ -316,6 +316,20 @@ pub const VTable = struct {
         front_face: ngl.Cmd.FrontFace,
     ) void,
 
+    setSampleCount: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        sample_count: ngl.SampleCount,
+    ) void,
+
+    setSampleMask: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        sample_mask: u64,
+    ) void,
+
     setDepthBias: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1439,6 +1453,24 @@ pub fn setFrontFace(
     front_face: ngl.Cmd.FrontFace,
 ) void {
     self.vtable.setFrontFace(self.ptr, device, command_buffer, front_face);
+}
+
+pub fn setSampleCount(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    sample_count: ngl.SampleCount,
+) void {
+    self.vtable.setSampleCount(self.ptr, device, command_buffer, sample_count);
+}
+
+pub fn setSampleMask(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    sample_mask: u64,
+) void {
+    self.vtable.setSampleMask(self.ptr, device, command_buffer, sample_mask);
 }
 
 pub fn setDepthBias(

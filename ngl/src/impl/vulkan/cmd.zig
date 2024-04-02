@@ -484,6 +484,30 @@ pub const CommandBuffer = packed struct {
         @panic("Not yet implemented");
     }
 
+    pub fn setSampleCount(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        sample_count: ngl.SampleCount,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = sample_count;
+        @panic("Not yet implemented");
+    }
+
+    pub fn setSampleMask(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        sample_mask: u64,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = sample_mask;
+        @panic("Not yet implemented");
+    }
+
     pub fn setDepthBias(
         _: *anyopaque,
         device: Impl.Device,

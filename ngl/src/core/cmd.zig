@@ -4,6 +4,7 @@ const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
 const Queue = ngl.Queue;
 const Format = ngl.Format;
+const SampleCount = ngl.SampleCount;
 const Buffer = ngl.Buffer;
 const Image = ngl.Image;
 const ImageView = ngl.ImageView;
@@ -438,6 +439,28 @@ pub const CommandBuffer = struct {
         /// ✘ Transfer queue
         pub fn setFrontFace(self: *Cmd, front_face: FrontFace) void {
             Impl.get().setFrontFace(self.device.impl, self.command_buffer.impl, front_face);
+        }
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setSampleCount(self: *Cmd, sample_count: SampleCount) void {
+            Impl.get().setSampleCount(self.device.impl, self.command_buffer.impl, sample_count);
+        }
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setSampleMask(self: *Cmd, sample_mask: u64) void {
+            Impl.get().setSampleMask(self.device.impl, self.command_buffer.impl, sample_mask);
         }
 
         /// ✔ Primary command buffer
