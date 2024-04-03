@@ -629,6 +629,54 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn setColorBlendEnable(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        first_attachment: u32,
+        enable: []const bool,
+    ) void {
+        _ = allocator;
+        _ = device;
+        _ = command_buffer;
+        _ = first_attachment;
+        _ = enable;
+        @panic("Not yet implemented");
+    }
+
+    pub fn setColorBlend(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        first_attachment: u32,
+        blend: []const ngl.Cmd.Blend,
+    ) void {
+        _ = allocator;
+        _ = device;
+        _ = command_buffer;
+        _ = first_attachment;
+        _ = blend;
+        @panic("Not yet implemented");
+    }
+
+    pub fn setColorWrite(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        first_attachment: u32,
+        write_masks: []const ngl.Cmd.ColorMask,
+    ) void {
+        _ = allocator;
+        _ = device;
+        _ = command_buffer;
+        _ = first_attachment;
+        _ = write_masks;
+        @panic("Not yet implemented");
+    }
+
     pub fn setBlendConstants(
         _: *anyopaque,
         device: Impl.Device,

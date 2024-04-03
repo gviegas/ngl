@@ -402,6 +402,33 @@ pub const VTable = struct {
         reference: u32,
     ) void,
 
+    setColorBlendEnable: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        first_attachment: u32,
+        enable: []const bool,
+    ) void,
+
+    setColorBlend: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        first_attachment: u32,
+        blend: []const ngl.Cmd.Blend,
+    ) void,
+
+    setColorWrite: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        command_buffer: CommandBuffer,
+        first_attachment: u32,
+        write_masks: []const ngl.Cmd.ColorMask,
+    ) void,
+
     setBlendConstants: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1609,6 +1636,53 @@ pub fn setStencilReference(
     reference: u32,
 ) void {
     self.vtable.setStencilReference(self.ptr, device, command_buffer, stencil_face, reference);
+}
+
+pub fn setColorBlendEnable(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    first_attachment: u32,
+    enable: []const bool,
+) void {
+    self.vtable.setColorBlendEnable(
+        self.ptr,
+        allocator,
+        device,
+        command_buffer,
+        first_attachment,
+        enable,
+    );
+}
+
+pub fn setColorBlend(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    first_attachment: u32,
+    blend: []const ngl.Cmd.Blend,
+) void {
+    self.vtable.setColorBlend(self.ptr, allocator, device, command_buffer, first_attachment, blend);
+}
+
+pub fn setColorWrite(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    command_buffer: CommandBuffer,
+    first_attachment: u32,
+    write_masks: []const ngl.Cmd.ColorMask,
+) void {
+    self.vtable.setColorWrite(
+        self.ptr,
+        allocator,
+        device,
+        command_buffer,
+        first_attachment,
+        write_masks,
+    );
 }
 
 pub fn setBlendConstants(

@@ -623,6 +623,106 @@ pub const CommandBuffer = struct {
         /// ✔ Graphics queue
         /// ✘ Compute queue
         /// ✘ Transfer queue
+        pub fn setColorBlendEnable(self: *Cmd, first_attachment: u32, enable: []const bool) void {
+            Impl.get().setColorBlendEnable(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                first_attachment,
+                enable,
+            );
+        }
+
+        pub const BlendFactor = enum {
+            zero,
+            one,
+            source_color,
+            one_minus_source_color,
+            dest_color,
+            one_minus_dest_color,
+            source_alpha,
+            one_minus_source_alpha,
+            dest_alpha,
+            one_minus_dest_alpha,
+            constant_color,
+            one_minus_constant_color,
+            constant_alpha,
+            one_minus_constant_alpha,
+            source_alpha_saturate,
+        };
+
+        pub const BlendOp = enum {
+            add,
+            subtract,
+            reverse_subtract,
+            min,
+            max,
+        };
+
+        pub const Blend = struct {
+            color_source_factor: BlendFactor,
+            color_dest_factor: BlendFactor,
+            color_op: BlendOp,
+            alpha_source_factor: BlendFactor,
+            alpha_dest_factor: BlendFactor,
+            alpha_op: BlendOp,
+        };
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setColorBlend(self: *Cmd, first_attachment: u32, blend: []const Blend) void {
+            Impl.get().setColorBlend(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                first_attachment,
+                blend,
+            );
+        }
+
+        pub const ColorMask = union(enum) {
+            all,
+            mask: packed struct {
+                r: bool,
+                g: bool,
+                b: bool,
+                a: bool,
+            },
+        };
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setColorWrite(
+            self: *Cmd,
+            first_attachment: u32,
+            write_masks: []const ColorMask,
+        ) void {
+            Impl.get().setColorWrite(
+                self.allocator,
+                self.device.impl,
+                self.command_buffer.impl,
+                first_attachment,
+                write_masks,
+            );
+        }
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
         pub fn setBlendConstants(self: *Cmd, constants: [4]f32) void {
             Impl.get().setBlendConstants(self.device.impl, self.command_buffer.impl, constants);
         }
