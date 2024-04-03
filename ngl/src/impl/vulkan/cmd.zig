@@ -555,6 +555,38 @@ pub const CommandBuffer = packed struct {
         @panic("Not yet implemented");
     }
 
+    pub fn setStencilTestEnable(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        enable: bool,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = enable;
+        @panic("Not yet implemented");
+    }
+
+    pub fn setStencilOp(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        stencil_face: ngl.Cmd.StencilFace,
+        fail_op: ngl.Cmd.StencilOp,
+        pass_op: ngl.Cmd.StencilOp,
+        depth_fail_op: ngl.Cmd.StencilOp,
+        compare_op: ngl.CompareOp,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = stencil_face;
+        _ = fail_op;
+        _ = pass_op;
+        _ = depth_fail_op;
+        _ = compare_op;
+        @panic("Not yet implemented");
+    }
+
     pub fn setStencilReadMask(
         _: *anyopaque,
         device: Impl.Device,

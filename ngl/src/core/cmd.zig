@@ -514,11 +514,59 @@ pub const CommandBuffer = struct {
             Impl.get().setDepthWriteEnable(self.device.impl, self.command_buffer.impl, enable);
         }
 
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setStencilTestEnable(self: *Cmd, enable: bool) void {
+            Impl.get().setStencilTestEnable(self.device.impl, self.command_buffer.impl, enable);
+        }
+
         pub const StencilFace = enum {
             front,
             back,
             front_and_back,
         };
+
+        pub const StencilOp = enum {
+            keep,
+            zero,
+            replace,
+            increment_clamp,
+            decrement_clamp,
+            invert,
+            increment_wrap,
+            decrement_wrap,
+        };
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setStencilOp(
+            self: *Cmd,
+            stencil_face: StencilFace,
+            fail_op: StencilOp,
+            pass_op: StencilOp,
+            depth_fail_op: StencilOp,
+            compare_op: CompareOp,
+        ) void {
+            Impl.get().setStencilOp(
+                self.device.impl,
+                self.command_buffer.impl,
+                stencil_face,
+                fail_op,
+                pass_op,
+                depth_fail_op,
+                compare_op,
+            );
+        }
 
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer

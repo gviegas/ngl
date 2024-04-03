@@ -360,6 +360,24 @@ pub const VTable = struct {
         enable: bool,
     ) void,
 
+    setStencilTestEnable: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        enable: bool,
+    ) void,
+
+    setStencilOp: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        stencil_face: ngl.Cmd.StencilFace,
+        fail_op: ngl.Cmd.StencilOp,
+        pass_op: ngl.Cmd.StencilOp,
+        depth_fail_op: ngl.Cmd.StencilOp,
+        compare_op: ngl.CompareOp,
+    ) void,
+
     setStencilReadMask: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1530,6 +1548,37 @@ pub fn setDepthWriteEnable(
     enable: bool,
 ) void {
     self.vtable.setDepthWriteEnable(self.ptr, device, command_buffer, enable);
+}
+
+pub fn setStencilTestEnable(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    enable: bool,
+) void {
+    self.vtable.setStencilTestEnable(self.ptr, device, command_buffer, enable);
+}
+
+pub fn setStencilOp(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    stencil_face: ngl.Cmd.StencilFace,
+    fail_op: ngl.Cmd.StencilOp,
+    pass_op: ngl.Cmd.StencilOp,
+    depth_fail_op: ngl.Cmd.StencilOp,
+    compare_op: ngl.CompareOp,
+) void {
+    self.vtable.setStencilOp(
+        self.ptr,
+        device,
+        command_buffer,
+        stencil_face,
+        fail_op,
+        pass_op,
+        depth_fail_op,
+        compare_op,
+    );
 }
 
 pub fn setStencilReadMask(
