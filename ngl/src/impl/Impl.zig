@@ -330,6 +330,13 @@ pub const VTable = struct {
         sample_mask: u64,
     ) void,
 
+    setDepthBiasEnable: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        enable: bool,
+    ) void,
+
     setDepthBias: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1537,6 +1544,15 @@ pub fn setSampleMask(
     sample_mask: u64,
 ) void {
     self.vtable.setSampleMask(self.ptr, device, command_buffer, sample_mask);
+}
+
+pub fn setDepthBiasEnable(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    enable: bool,
+) void {
+    self.vtable.setDepthBiasEnable(self.ptr, device, command_buffer, enable);
 }
 
 pub fn setDepthBias(

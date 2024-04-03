@@ -471,6 +471,17 @@ pub const CommandBuffer = struct {
         /// ✔ Graphics queue
         /// ✘ Compute queue
         /// ✘ Transfer queue
+        pub fn setDepthBiasEnable(self: *Cmd, enable: bool) void {
+            Impl.get().setDepthBiasEnable(self.device.impl, self.command_buffer.impl, enable);
+        }
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
         pub fn setDepthBias(self: *Cmd, value: f32, slope: f32, clamp: f32) void {
             Impl.get().setDepthBias(
                 self.device.impl,

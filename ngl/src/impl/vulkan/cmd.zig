@@ -508,6 +508,18 @@ pub const CommandBuffer = packed struct {
         @panic("Not yet implemented");
     }
 
+    pub fn setDepthBiasEnable(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        enable: bool,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = enable;
+        @panic("Not yet implemented");
+    }
+
     pub fn setDepthBias(
         _: *anyopaque,
         device: Impl.Device,
