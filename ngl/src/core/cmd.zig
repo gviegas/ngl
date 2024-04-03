@@ -8,6 +8,7 @@ const SampleCount = ngl.SampleCount;
 const Buffer = ngl.Buffer;
 const Image = ngl.Image;
 const ImageView = ngl.ImageView;
+const CompareOp = ngl.CompareOp;
 const Stage = ngl.Stage;
 const Access = ngl.Access;
 const RenderPass = ngl.RenderPass;
@@ -478,6 +479,39 @@ pub const CommandBuffer = struct {
                 slope,
                 clamp,
             );
+        }
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setDepthTestEnable(self: *Cmd, enable: bool) void {
+            Impl.get().setDepthTestEnable(self.device.impl, self.command_buffer.impl, enable);
+        }
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setDepthCompareOp(self: *Cmd, compare_op: CompareOp) void {
+            Impl.get().setDepthCompareOp(self.device.impl, self.command_buffer.impl, compare_op);
+        }
+
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setDepthWriteEnable(self: *Cmd, enable: bool) void {
+            Impl.get().setDepthWriteEnable(self.device.impl, self.command_buffer.impl, enable);
         }
 
         pub const StencilFace = enum {

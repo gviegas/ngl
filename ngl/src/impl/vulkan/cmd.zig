@@ -519,6 +519,42 @@ pub const CommandBuffer = packed struct {
         Device.cast(device).vkCmdSetDepthBias(cast(command_buffer).handle, value, clamp, slope);
     }
 
+    pub fn setDepthTestEnable(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        enable: bool,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = enable;
+        @panic("Not yet implemented");
+    }
+
+    pub fn setDepthCompareOp(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        compare_op: ngl.CompareOp,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = compare_op;
+        @panic("Not yet implemented");
+    }
+
+    pub fn setDepthWriteEnable(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        enable: bool,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = enable;
+        @panic("Not yet implemented");
+    }
+
     pub fn setStencilReadMask(
         _: *anyopaque,
         device: Impl.Device,

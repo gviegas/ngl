@@ -339,6 +339,27 @@ pub const VTable = struct {
         clamp: f32,
     ) void,
 
+    setDepthTestEnable: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        enable: bool,
+    ) void,
+
+    setDepthCompareOp: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        compare_op: ngl.CompareOp,
+    ) void,
+
+    setDepthWriteEnable: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        enable: bool,
+    ) void,
+
     setStencilReadMask: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1482,6 +1503,33 @@ pub fn setDepthBias(
     clamp: f32,
 ) void {
     self.vtable.setDepthBias(self.ptr, device, command_buffer, value, slope, clamp);
+}
+
+pub fn setDepthTestEnable(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    enable: bool,
+) void {
+    self.vtable.setDepthTestEnable(self.ptr, device, command_buffer, enable);
+}
+
+pub fn setDepthCompareOp(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    compare_op: ngl.CompareOp,
+) void {
+    self.vtable.setDepthCompareOp(self.ptr, device, command_buffer, compare_op);
+}
+
+pub fn setDepthWriteEnable(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    enable: bool,
+) void {
+    self.vtable.setDepthWriteEnable(self.ptr, device, command_buffer, enable);
 }
 
 pub fn setStencilReadMask(
