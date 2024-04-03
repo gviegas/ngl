@@ -3059,6 +3059,7 @@ const vtable = Impl.VTable{
     .setVertexBuffers = @import("cmd.zig").CommandBuffer.setVertexBuffers,
     .setViewports = @import("cmd.zig").CommandBuffer.setViewports,
     .setScissorRects = @import("cmd.zig").CommandBuffer.setScissorRects,
+    .setRasterizationEnable = @import("cmd.zig").CommandBuffer.setRasterizationEnable,
     .setPolygonMode = @import("cmd.zig").CommandBuffer.setPolygonMode,
     .setCullMode = @import("cmd.zig").CommandBuffer.setCullMode,
     .setFrontFace = @import("cmd.zig").CommandBuffer.setFrontFace,

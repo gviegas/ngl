@@ -295,6 +295,13 @@ pub const VTable = struct {
         scissor_rects: []const ngl.Cmd.ScissorRect,
     ) void,
 
+    setRasterizationEnable: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        enable: bool,
+    ) void,
+
     setPolygonMode: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1499,6 +1506,15 @@ pub fn setScissorRects(
     scissor_rects: []const ngl.Cmd.ScissorRect,
 ) void {
     self.vtable.setScissorRects(self.ptr, allocator, device, command_buffer, scissor_rects);
+}
+
+pub fn setRasterizationEnable(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    enable: bool,
+) void {
+    self.vtable.setRasterizationEnable(self.ptr, device, command_buffer, enable);
 }
 
 pub fn setPolygonMode(

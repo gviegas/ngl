@@ -393,6 +393,17 @@ pub const CommandBuffer = struct {
             );
         }
 
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setRasterizationEnable(self: *Cmd, enable: bool) void {
+            Impl.get().setRasterizationEnable(self.device.impl, self.command_buffer.impl, enable);
+        }
+
         pub const PolygonMode = enum {
             fill,
             line,

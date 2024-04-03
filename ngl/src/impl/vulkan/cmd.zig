@@ -448,6 +448,18 @@ pub const CommandBuffer = packed struct {
         );
     }
 
+    pub fn setRasterizationEnable(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        enable: bool,
+    ) void {
+        _ = device;
+        _ = command_buffer;
+        _ = enable;
+        @panic("Not yet implemented");
+    }
+
     pub fn setPolygonMode(
         _: *anyopaque,
         device: Impl.Device,
