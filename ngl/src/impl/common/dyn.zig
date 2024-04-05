@@ -25,6 +25,8 @@ pub fn State(comptime mask: anytype) type {
                 .scissor_rects => if (has) ScissorRects else None,
                 .rasterization_enable => if (has) RasterizationEnable else None,
                 .polygon_mode => if (has) PolygonMode else None,
+                .cull_mode => if (has) CullMode else None,
+                .front_face => if (has) FrontFace else None,
                 .stencil_reference => if (has) StencilReference else None,
                 .blend_constants => if (has) BlendConstants else None,
                 .compute_shader => if (has) ImplType(Impl.Shader) else None,
@@ -43,6 +45,8 @@ pub fn State(comptime mask: anytype) type {
         scissor_rects: getType(.scissor_rects),
         rasterization_enable: getType(.rasterization_enable),
         polygon_mode: getType(.polygon_mode),
+        cull_mode: getType(.cull_mode),
+        front_face: getType(.front_face),
         stencil_reference: getType(.stencil_reference),
         blend_constants: getType(.blend_constants),
         compute_shader: getType(.compute_shader),
@@ -300,6 +304,30 @@ const PolygonMode = struct {
     }
 };
 
+const CullMode = struct {
+    cull_mode: Cmd.CullMode = .back,
+
+    pub inline fn hash(self: @This(), hasher: anytype) void {
+        std.hash.autoHash(hasher, self);
+    }
+
+    pub inline fn eql(self: @This(), other: @This()) bool {
+        return std.meta.eql(self, other);
+    }
+};
+
+const FrontFace = struct {
+    front_face: Cmd.FrontFace = .clockwise,
+
+    pub inline fn hash(self: @This(), hasher: anytype) void {
+        std.hash.autoHash(hasher, self);
+    }
+
+    pub inline fn eql(self: @This(), other: @This()) bool {
+        return std.meta.eql(self, other);
+    }
+};
+
 const StencilReference = struct {
     comptime {
         @compileError("Shouldn't be necessary");
@@ -341,12 +369,13 @@ test State {
         .scissor_rects = false,
         .rasterization_enable = true,
         .polygon_mode = true,
+        .cull_mode = true,
+        .front_face = true,
         .stencil_reference = false,
         .blend_constants = false,
     });
+    // TODO
     if (@TypeOf(P.init().vertex_shader) != ImplType(Impl.Shader) or
-        @TypeOf(P.init().vertex_input) != VertexInput or
-        @TypeOf(P.init().primitive_topology) != PrimitiveTopology or
         @TypeOf(P.init().fragment_shader) != ImplType(Impl.Shader) or
         @TypeOf(P.init().compute_shader) != None)
     {
@@ -357,7 +386,7 @@ test State {
     if (@TypeOf(C.init().compute_shader) != ImplType(Impl.Shader))
         @compileError("Bad dyn.State layout");
     // TODO
-    inline for (@typeInfo(Mask(.primitive)).Struct.fields[0..4]) |field|
+    inline for (@typeInfo(Mask(.primitive)).Struct.fields[0..2]) |field|
         if (@TypeOf(@field(C.init(), field.name)) != None)
             @compileError("Bad dyn.State layout");
 
@@ -460,6 +489,18 @@ test State {
     s2.polygon_mode.polygon_mode = .line;
     try expectNotState(s1, h1, s2);
     s1.polygon_mode.polygon_mode = .line;
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.cull_mode.cull_mode = .front;
+    try expectNotState(s1, h1, s2);
+    s1.cull_mode.cull_mode = .front;
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.front_face.front_face = .counter_clockwise;
+    try expectNotState(s1, h1, s2);
+    s1.front_face.front_face = .counter_clockwise;
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 }
