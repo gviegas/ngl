@@ -186,13 +186,35 @@ const common_render = [_][:0]const u8{
     "blend_constants",
 };
 
+fn getDefaultHashFn(comptime K: type) (fn (K, hasher: anytype) void) {
+    return struct {
+        fn hash(key: K, hasher: anytype) void {
+            std.hash.autoHash(hasher, key);
+        }
+    }.hash;
+}
+
+fn getDefaultEqlFn(comptime K: type) (fn (K, K) bool) {
+    return struct {
+        fn eql(key: K, other: K) bool {
+            return std.meta.eql(key, other);
+        }
+    }.eql;
+}
+
+fn approxEql(x: f32, y: f32) bool {
+    // TODO: Tune this.
+    const tolerance = std.math.floatEps(f32);
+    return std.math.approxEqAbs(f32, x, y, tolerance);
+}
+
 const None = struct {
-    pub inline fn hash(self: @This(), hasher: anytype) void {
+    pub fn hash(self: @This(), hasher: anytype) void {
         _ = self;
         _ = hasher;
     }
 
-    pub inline fn eql(self: @This(), other: @This()) bool {
+    pub fn eql(self: @This(), other: @This()) bool {
         _ = self;
         _ = other;
         return true;
@@ -203,12 +225,11 @@ fn ImplType(comptime T: anytype) type {
     return struct {
         impl: T = .{ .val = 0 },
 
-        pub inline fn hash(self: @This(), hasher: anytype) void {
-            std.hash.autoHash(hasher, self);
-        }
+        pub const hash = getDefaultHashFn(@This());
+        pub const eql = getDefaultEqlFn(@This());
 
-        pub inline fn eql(self: @This(), other: @This()) bool {
-            return std.meta.eql(self, other);
+        pub fn set(self: *@This(), impl: T) void {
+            self.impl = impl;
         }
     };
 }
@@ -217,14 +238,14 @@ const VertexInput = struct {
     bindings: std.ArrayListUnmanaged(Cmd.VertexInputBinding) = .{},
     attributes: std.ArrayListUnmanaged(Cmd.VertexInputAttribute) = .{},
 
-    pub inline fn hash(self: @This(), hasher: anytype) void {
+    pub fn hash(self: @This(), hasher: anytype) void {
         for (self.bindings.items) |bind|
             std.hash.autoHash(hasher, bind);
         for (self.attributes.items) |attr|
             std.hash.autoHash(hasher, attr);
     }
 
-    pub inline fn eql(self: @This(), other: @This()) bool {
+    pub fn eql(self: @This(), other: @This()) bool {
         if (self.bindings.items.len != other.bindings.items.len or
             self.attributes.items.len != other.attributes.items.len)
         {
@@ -267,12 +288,11 @@ const VertexInput = struct {
 const PrimitiveTopology = struct {
     topology: Cmd.PrimitiveTopology = .triangle_list,
 
-    pub inline fn hash(self: @This(), hasher: anytype) void {
-        std.hash.autoHash(hasher, self);
-    }
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
 
-    pub inline fn eql(self: @This(), other: @This()) bool {
-        return std.meta.eql(self, other);
+    pub fn set(self: *@This(), topology: Cmd.PrimitiveTopology) void {
+        self.topology = topology;
     }
 };
 
@@ -291,84 +311,77 @@ const ScissorRects = struct {
 const RasterizationEnable = struct {
     enable: bool = true,
 
-    pub inline fn hash(self: @This(), hasher: anytype) void {
-        std.hash.autoHash(hasher, self);
-    }
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
 
-    pub inline fn eql(self: @This(), other: @This()) bool {
-        return std.meta.eql(self, other);
+    pub fn set(self: *@This(), enable: bool) void {
+        self.enable = enable;
     }
 };
 
 const PolygonMode = struct {
     polygon_mode: Cmd.PolygonMode = .fill,
 
-    pub inline fn hash(self: @This(), hasher: anytype) void {
-        std.hash.autoHash(hasher, self);
-    }
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
 
-    pub inline fn eql(self: @This(), other: @This()) bool {
-        return std.meta.eql(self, other);
+    pub fn set(self: *@This(), polygon_mode: Cmd.PolygonMode) void {
+        self.polygon_mode = polygon_mode;
     }
 };
 
 const CullMode = struct {
     cull_mode: Cmd.CullMode = .back,
 
-    pub inline fn hash(self: @This(), hasher: anytype) void {
-        std.hash.autoHash(hasher, self);
-    }
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
 
-    pub inline fn eql(self: @This(), other: @This()) bool {
-        return std.meta.eql(self, other);
+    pub fn set(self: *@This(), cull_mode: Cmd.CullMode) void {
+        self.cull_mode = cull_mode;
     }
 };
 
 const FrontFace = struct {
     front_face: Cmd.FrontFace = .clockwise,
 
-    pub inline fn hash(self: @This(), hasher: anytype) void {
-        std.hash.autoHash(hasher, self);
-    }
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
 
-    pub inline fn eql(self: @This(), other: @This()) bool {
-        return std.meta.eql(self, other);
+    pub fn set(self: *@This(), front_face: Cmd.FrontFace) void {
+        self.front_face = front_face;
     }
 };
 
 const SampleCount = struct {
     sample_count: ngl.SampleCount = .@"1",
 
-    pub inline fn hash(self: @This(), hasher: anytype) void {
-        std.hash.autoHash(hasher, self);
-    }
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
 
-    pub inline fn eql(self: @This(), other: @This()) bool {
-        return std.meta.eql(self, other);
+    pub fn set(self: *@This(), sample_count: ngl.SampleCount) void {
+        self.sample_count = sample_count;
     }
 };
 
 const SampleMask = struct {
     sample_mask: u64 = ~@as(u64, 0),
 
-    pub inline fn hash(self: @This(), hasher: anytype) void {
-        std.hash.autoHash(hasher, self);
-    }
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
 
-    pub inline fn eql(self: @This(), other: @This()) bool {
-        return std.meta.eql(self, other);
+    pub fn set(self: *@This(), sample_mask: u64) void {
+        self.sample_mask = sample_mask;
     }
 };
 
 const DepthBiasEnable = struct {
     enable: bool = false,
 
-    pub inline fn hash(self: @This(), hasher: anytype) void {
-        std.hash.autoHash(hasher, self);
-    }
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
 
-    pub inline fn eql(self: @This(), other: @This()) bool {
-        return std.meta.eql(self, other);
+    pub fn set(self: *@This(), enable: bool) void {
+        self.enable = enable;
     }
 };
 
@@ -377,15 +390,21 @@ const DepthBias = struct {
     slope: f32 = 0,
     clamp: f32 = 0,
 
-    pub inline fn hash(self: @This(), hasher: anytype) void {
+    pub fn hash(self: @This(), hasher: anytype) void {
         _ = self;
         _ = hasher;
     }
 
-    pub inline fn eql(self: @This(), other: @This()) bool {
-        return std.math.approxEqAbs(f32, self.value, other.value, std.math.floatEps(f32)) and
-            std.math.approxEqAbs(f32, self.slope, other.slope, std.math.floatEps(f32)) and
-            std.math.approxEqAbs(f32, self.clamp, other.clamp, std.math.floatEps(f32));
+    pub fn eql(self: @This(), other: @This()) bool {
+        return approxEql(self.value, other.value) and
+            approxEql(self.slope, other.slope) and
+            approxEql(self.clamp, other.clamp);
+    }
+
+    pub fn set(self: *@This(), value: f32, slope: f32, clamp: f32) void {
+        self.value = value;
+        self.slope = slope;
+        self.clamp = clamp;
     }
 };
 
@@ -473,7 +492,7 @@ test State {
         const ctx = T.HashCtx{};
         const hb = ctx.hash(b);
 
-        @field(a, field_name) = .{ .impl = .{ .val = 1 } };
+        @field(a, field_name).set(.{ .val = 1 });
         try expectNotState(b, hb, a);
 
         @field(a, field_name) = .{};
@@ -486,7 +505,7 @@ test State {
         const ctx = T.HashCtx{};
         const ha = ctx.hash(a);
 
-        @field(b, field_name) = .{ .impl = .{ .val = 2 } };
+        @field(b, field_name).set(.{ .val = 2 });
         try expectNotState(a, ha, b);
 
         b.clear(null);
@@ -532,11 +551,11 @@ test State {
     s2.vertex_input.bindings.items[0].binding +%= 1;
     try expectNotState(s0, h0, s2);
     try expectNotState(s1, h1, s2);
-    s1.primitive_topology.topology = .line_list;
+    s1.primitive_topology.set(.line_list);
     h1 = ctx.hash(s1);
     s2.vertex_input.bindings.items[0].binding -%= 1;
     try expectNotState(s1, h1, s2);
-    s2.primitive_topology.topology = .line_list;
+    s2.primitive_topology.set(.line_list);
     try expectState(s1, h1, s2);
 
     s1.vertex_input.clear(testing.allocator);
@@ -545,51 +564,52 @@ test State {
     s2.vertex_input.clear(testing.allocator);
     try expectState(s1, h1, s2);
 
-    s2.rasterization_enable.enable = false;
+    s2.rasterization_enable.set(false);
     try expectNotState(s1, h1, s2);
-    s1.rasterization_enable.enable = false;
+    s1.rasterization_enable.set(false);
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 
-    s2.polygon_mode.polygon_mode = .line;
+    s2.polygon_mode.set(.line);
     try expectNotState(s1, h1, s2);
-    s1.polygon_mode.polygon_mode = .line;
+    s1.polygon_mode.set(.line);
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 
-    s2.cull_mode.cull_mode = .front;
+    s2.cull_mode.set(.front);
     try expectNotState(s1, h1, s2);
-    s1.cull_mode.cull_mode = .front;
+    s1.cull_mode.set(.front);
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 
-    s2.front_face.front_face = .counter_clockwise;
+    s2.front_face.set(.counter_clockwise);
     try expectNotState(s1, h1, s2);
-    s1.front_face.front_face = .counter_clockwise;
+    s1.front_face.set(.counter_clockwise);
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 
-    s2.sample_count.sample_count = .@"4";
+    s2.sample_count.set(.@"4");
     try expectNotState(s1, h1, s2);
-    s1.sample_count.sample_count = .@"4";
+    s1.sample_count.set(.@"4");
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 
-    s2.sample_mask.sample_mask = 0b1111;
+    s2.sample_mask.set(0b1111);
     try expectNotState(s1, h1, s2);
-    s1.sample_mask.sample_mask = 0xf;
+    s1.sample_mask.set(0xf);
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 
-    s2.depth_bias_enable.enable = true;
+    s2.depth_bias_enable.set(true);
     try expectNotState(s1, h1, s2);
-    s1.depth_bias_enable.enable = true;
+    s1.depth_bias_enable.set(true);
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 
-    s2.depth_bias.value = 1;
+    s2.depth_bias.set(0.01, 2, 0);
     try expectNotState(s1, h1, s2); // Clash.
-    s1.depth_bias.value = 1;
+    s1.depth_bias.value = 0.01;
+    s1.depth_bias.slope = 2;
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 }
