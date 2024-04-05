@@ -23,6 +23,8 @@ pub fn State(comptime mask: anytype) type {
                 .fragment_shader => if (has) ImplType(Impl.Shader) else None,
                 .viewports => if (has) Viewports else None,
                 .scissor_rects => if (has) ScissorRects else None,
+                .rasterization_enable => if (has) RasterizationEnable else None,
+                .polygon_mode => if (has) PolygonMode else None,
                 .stencil_reference => if (has) StencilReference else None,
                 .blend_constants => if (has) BlendConstants else None,
                 .compute_shader => if (has) ImplType(Impl.Shader) else None,
@@ -39,6 +41,8 @@ pub fn State(comptime mask: anytype) type {
         fragment_shader: getType(.fragment_shader),
         viewports: getType(.viewports),
         scissor_rects: getType(.scissor_rects),
+        rasterization_enable: getType(.rasterization_enable),
+        polygon_mode: getType(.polygon_mode),
         stencil_reference: getType(.stencil_reference),
         blend_constants: getType(.blend_constants),
         compute_shader: getType(.compute_shader),
@@ -188,11 +192,11 @@ fn ImplType(comptime T: anytype) type {
         impl: T = .{ .val = 0 },
 
         pub inline fn hash(self: @This(), hasher: anytype) void {
-            std.hash.autoHash(hasher, self.impl.val);
+            std.hash.autoHash(hasher, self);
         }
 
         pub inline fn eql(self: @This(), other: @This()) bool {
-            return std.meta.eql(self.impl.val, other.impl.val);
+            return std.meta.eql(self, other);
         }
     };
 }
@@ -252,7 +256,7 @@ const PrimitiveTopology = struct {
     topology: Cmd.PrimitiveTopology = .triangle_list,
 
     pub inline fn hash(self: @This(), hasher: anytype) void {
-        std.hash.autoHash(hasher, self.topology);
+        std.hash.autoHash(hasher, self);
     }
 
     pub inline fn eql(self: @This(), other: @This()) bool {
@@ -272,6 +276,30 @@ const ScissorRects = struct {
     }
 };
 
+const RasterizationEnable = struct {
+    enable: bool = true,
+
+    pub inline fn hash(self: @This(), hasher: anytype) void {
+        std.hash.autoHash(hasher, self);
+    }
+
+    pub inline fn eql(self: @This(), other: @This()) bool {
+        return std.meta.eql(self, other);
+    }
+};
+
+const PolygonMode = struct {
+    polygon_mode: Cmd.PolygonMode = .fill,
+
+    pub inline fn hash(self: @This(), hasher: anytype) void {
+        std.hash.autoHash(hasher, self);
+    }
+
+    pub inline fn eql(self: @This(), other: @This()) bool {
+        return std.meta.eql(self, other);
+    }
+};
+
 const StencilReference = struct {
     comptime {
         @compileError("Shouldn't be necessary");
@@ -286,6 +314,23 @@ const BlendConstants = struct {
 
 const testing = std.testing;
 
+fn expectState(state: anytype, hash: u64, other_state: @TypeOf(state)) !void {
+    const ctx = @TypeOf(state).HashCtx{};
+    const other_hash = ctx.hash(other_state);
+    try testing.expect(hash == other_hash and hash != 0);
+    try testing.expect(ctx.eql(state, other_state));
+    try testing.expect(ctx.eql(other_state, state));
+}
+
+fn expectNotState(state: anytype, hash: u64, other_state: @TypeOf(state)) !void {
+    const ctx = @TypeOf(state).HashCtx{};
+    const other_hash = ctx.hash(other_state);
+    try testing.expect(hash != 0 and other_hash != 0);
+    if (hash == other_hash) std.log.warn("{s}: Hash value clash", .{@src().file});
+    try testing.expect(!ctx.eql(state, other_state));
+    try testing.expect(!ctx.eql(other_state, state));
+}
+
 test State {
     const P = State(Mask(.primitive){
         .vertex_shader = true,
@@ -294,6 +339,8 @@ test State {
         .fragment_shader = true,
         .viewports = false,
         .scissor_rects = false,
+        .rasterization_enable = true,
+        .polygon_mode = true,
         .stencil_reference = false,
         .blend_constants = false,
     });
@@ -323,11 +370,7 @@ test State {
         const a = T.init();
         const b = T.init();
         const ctx = T.HashCtx{};
-        const ha = ctx.hash(a);
-        const hb = ctx.hash(b);
-        try testing.expect(ha == hb and ha != 0);
-        try testing.expect(ctx.eql(a, b));
-        try testing.expect(ctx.eql(b, a));
+        try expectState(a, ctx.hash(a), b);
     }
 
     inline for (.{ P, C }, .{ "fragment_shader", "compute_shader" }) |T, field_name| {
@@ -337,50 +380,38 @@ test State {
         const hb = ctx.hash(b);
 
         @field(a, field_name) = .{ .impl = .{ .val = 1 } };
-        var ha = ctx.hash(a);
-        try testing.expect(ha != hb and ha != 0);
-        try testing.expect(!ctx.eql(a, b));
-        try testing.expect(!ctx.eql(b, a));
+        try expectNotState(b, hb, a);
 
         @field(a, field_name) = .{};
-        ha = ctx.hash(a);
-        try testing.expect(ha == hb and ha != 0);
-        try testing.expect(ctx.eql(a, b));
-        try testing.expect(ctx.eql(b, a));
+        try expectState(b, hb, a);
     }
 
     inline for (.{ P, C }, .{ "vertex_shader", "compute_shader" }) |T, field_name| {
         var a = T.init();
         var b = T.init();
         const ctx = T.HashCtx{};
-        var ha = ctx.hash(a);
+        const ha = ctx.hash(a);
 
         @field(b, field_name) = .{ .impl = .{ .val = 2 } };
-        var hb = ctx.hash(b);
-        try testing.expect(ha != hb and ha != 0);
-        try testing.expect(!ctx.eql(a, b));
-        try testing.expect(!ctx.eql(b, a));
+        try expectNotState(a, ha, b);
 
         b.clear(null);
-        hb = ctx.hash(b);
-        try testing.expect(ha == hb and ha != 0);
-        try testing.expect(ctx.eql(a, b));
-        try testing.expect(ctx.eql(b, a));
+        try expectState(a, ha, b);
 
         a.clear(null);
-        ha = ctx.hash(a);
-        try testing.expect(ha == hb and ha != 0);
-        try testing.expect(ctx.eql(a, b));
-        try testing.expect(ctx.eql(b, a));
+        try expectState(b, ctx.hash(b), a);
     }
 
     const ctx = P.HashCtx{};
     const s0 = P.init();
     const h0 = ctx.hash(s0);
-    var s = P.init();
-    var h: u64 = undefined;
+    var s1 = P.init();
+    defer s1.clear(testing.allocator);
+    var h1: u64 = undefined;
+    var s2 = P.init();
+    defer s2.clear(testing.allocator);
 
-    try s.vertex_input.set(testing.allocator, &.{.{
+    try s1.vertex_input.set(testing.allocator, &.{.{
         .binding = 0,
         .stride = 12,
         .step_rate = .vertex,
@@ -390,23 +421,45 @@ test State {
         .format = .rgb32_sfloat,
         .offset = 0,
     }});
-    h = ctx.hash(s);
-    try testing.expect(h != h0 and h != 0);
-    try testing.expect(!ctx.eql(s, s0));
-    try testing.expect(!ctx.eql(s0, s));
+    h1 = ctx.hash(s1);
+    try expectNotState(s0, h0, s1);
 
-    s.primitive_topology.topology = .line_list;
-    try testing.expect(ctx.hash(s) != h0 and ctx.hash(s) != h and ctx.hash(s) != 0);
-    try testing.expect(!ctx.eql(s, s0));
-    try testing.expect(!ctx.eql(s0, s));
+    try s2.vertex_input.set(testing.allocator, s1.vertex_input.bindings.items, &.{});
+    try expectNotState(s0, h0, s2);
+    try expectNotState(s1, h1, s2);
+    try s2.vertex_input.set(
+        testing.allocator,
+        s1.vertex_input.bindings.items,
+        s1.vertex_input.attributes.items,
+    );
+    try expectNotState(s0, h0, s2);
+    try expectState(s1, h1, s2);
 
-    s.primitive_topology = .{};
-    try testing.expect(ctx.hash(s) == h);
-    try testing.expect(!ctx.eql(s, s0));
-    try testing.expect(!ctx.eql(s0, s));
+    s2.vertex_input.bindings.items[0].binding +%= 1;
+    try expectNotState(s0, h0, s2);
+    try expectNotState(s1, h1, s2);
+    s1.primitive_topology.topology = .line_list;
+    h1 = ctx.hash(s1);
+    s2.vertex_input.bindings.items[0].binding -%= 1;
+    try expectNotState(s1, h1, s2);
+    s2.primitive_topology.topology = .line_list;
+    try expectState(s1, h1, s2);
 
-    s.vertex_input.clear(testing.allocator);
-    try testing.expect(ctx.hash(s) == h0);
-    try testing.expect(ctx.eql(s, s0));
-    try testing.expect(ctx.eql(s0, s));
+    s1.vertex_input.clear(testing.allocator);
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    s2.vertex_input.clear(testing.allocator);
+    try expectState(s1, h1, s2);
+
+    s2.rasterization_enable.enable = false;
+    try expectNotState(s1, h1, s2);
+    s1.rasterization_enable.enable = false;
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.polygon_mode.polygon_mode = .line;
+    try expectNotState(s1, h1, s2);
+    s1.polygon_mode.polygon_mode = .line;
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
 }
