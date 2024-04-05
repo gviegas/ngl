@@ -31,6 +31,9 @@ pub fn State(comptime mask: anytype) type {
                 .sample_mask => if (has) SampleMask else None,
                 .depth_bias_enable => if (has) DepthBiasEnable else None,
                 .depth_bias => if (has) DepthBias else None,
+                .depth_test_enable => if (has) DepthTestEnable else None,
+                .depth_compare_op => if (has) DepthCompareOp else None,
+                .depth_write_enable => if (has) DepthWriteEnable else None,
                 .stencil_reference => if (has) StencilReference else None,
                 .blend_constants => if (has) BlendConstants else None,
                 .compute_shader => if (has) ImplType(Impl.Shader) else None,
@@ -55,6 +58,9 @@ pub fn State(comptime mask: anytype) type {
         sample_mask: getType(.sample_mask),
         depth_bias_enable: getType(.depth_bias_enable),
         depth_bias: getType(.depth_bias),
+        depth_test_enable: getType(.depth_test_enable),
+        depth_compare_op: getType(.depth_compare_op),
+        depth_write_enable: getType(.depth_write_enable),
         stencil_reference: getType(.stencil_reference),
         blend_constants: getType(.blend_constants),
         compute_shader: getType(.compute_shader),
@@ -408,6 +414,39 @@ const DepthBias = struct {
     }
 };
 
+const DepthTestEnable = struct {
+    enable: bool = false,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), enable: bool) void {
+        self.enable = enable;
+    }
+};
+
+const DepthCompareOp = struct {
+    compare_op: ngl.CompareOp = .never,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), compare_op: ngl.CompareOp) void {
+        self.compare_op = compare_op;
+    }
+};
+
+const DepthWriteEnable = struct {
+    enable: bool = false,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), enable: bool) void {
+        self.enable = enable;
+    }
+};
+
 const StencilReference = struct {
     comptime {
         @compileError("Shouldn't be necessary");
@@ -455,6 +494,9 @@ test State {
         .sample_mask = true,
         .depth_bias_enable = true,
         .depth_bias = true,
+        .depth_test_enable = true,
+        .depth_compare_op = true,
+        .depth_write_enable = true,
         .stencil_reference = false,
         .blend_constants = false,
     });
@@ -610,6 +652,24 @@ test State {
     try expectNotState(s1, h1, s2); // Clash.
     s1.depth_bias.value = 0.01;
     s1.depth_bias.slope = 2;
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.depth_test_enable.set(true);
+    try expectNotState(s1, h1, s2);
+    s1.depth_test_enable.set(true);
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.depth_compare_op.set(.less_equal);
+    try expectNotState(s1, h1, s2);
+    s1.depth_compare_op.set(.less_equal);
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.depth_write_enable.set(true);
+    try expectNotState(s1, h1, s2);
+    s1.depth_write_enable.set(true);
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 }
