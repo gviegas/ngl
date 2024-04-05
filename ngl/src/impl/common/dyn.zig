@@ -12,30 +12,36 @@ pub fn State(comptime mask: anytype) type {
         else => @compileError("dyn.State's argument must be of type dyn.Mask"),
     }
 
+    const getType = struct {
+        fn getType(comptime ident: anytype) type {
+            const name = @tagName(ident);
+            const has = @hasField(@TypeOf(mask), name) and @field(mask, name);
+            return switch (ident) {
+                .vertex_shader => if (has) ImplType(Impl.Shader) else None,
+                .vertex_input => if (has) VertexInput else None,
+                .primitive_topology => if (has) PrimitiveTopology else None,
+                .fragment_shader => if (has) ImplType(Impl.Shader) else None,
+                .viewports => if (has) Viewports else None,
+                .scissor_rects => if (has) ScissorRects else None,
+                .stencil_reference => if (has) StencilReference else None,
+                .blend_constants => if (has) BlendConstants else None,
+                .compute_shader => if (has) ImplType(Impl.Shader) else None,
+                else => unreachable,
+            };
+        }
+    }.getType;
+
     // TODO
     return struct {
-        vertex_shader: if (@hasField(M, "vertex_shader") and mask.vertex_shader)
-            ImplType(Impl.Shader)
-        else
-            None,
-        vertex_input: if (@hasField(M, "vertex_input") and mask.vertex_input)
-            VertexInput
-        else
-            None,
-        primitive_topology: if (@hasField(M, "primitive_topology") and mask.primitive_topology)
-            PrimitiveTopology
-        else
-            None,
-
-        fragment_shader: if (@hasField(M, "fragment_shader") and mask.fragment_shader)
-            ImplType(Impl.Shader)
-        else
-            None,
-
-        compute_shader: if (@hasField(M, "compute_shader") and mask.compute_shader)
-            ImplType(Impl.Shader)
-        else
-            None,
+        vertex_shader: getType(.vertex_shader),
+        vertex_input: getType(.vertex_input),
+        primitive_topology: getType(.primitive_topology),
+        fragment_shader: getType(.fragment_shader),
+        viewports: getType(.viewports),
+        scissor_rects: getType(.scissor_rects),
+        stencil_reference: getType(.stencil_reference),
+        blend_constants: getType(.blend_constants),
+        compute_shader: getType(.compute_shader),
 
         const Self = @This();
 
@@ -254,6 +260,30 @@ const PrimitiveTopology = struct {
     }
 };
 
+const Viewports = struct {
+    comptime {
+        @compileError("Shouldn't be necessary");
+    }
+};
+
+const ScissorRects = struct {
+    comptime {
+        @compileError("Shouldn't be necessary");
+    }
+};
+
+const StencilReference = struct {
+    comptime {
+        @compileError("Shouldn't be necessary");
+    }
+};
+
+const BlendConstants = struct {
+    comptime {
+        @compileError("Shouldn't be necessary");
+    }
+};
+
 const testing = std.testing;
 
 test State {
@@ -262,6 +292,10 @@ test State {
         .vertex_input = true,
         .primitive_topology = true,
         .fragment_shader = true,
+        .viewports = false,
+        .scissor_rects = false,
+        .stencil_reference = false,
+        .blend_constants = false,
     });
     if (@TypeOf(P.init().vertex_shader) != ImplType(Impl.Shader) or
         @TypeOf(P.init().vertex_input) != VertexInput or
