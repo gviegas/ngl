@@ -27,6 +27,8 @@ pub fn State(comptime mask: anytype) type {
                 .polygon_mode => if (has) PolygonMode else None,
                 .cull_mode => if (has) CullMode else None,
                 .front_face => if (has) FrontFace else None,
+                .sample_count => if (has) SampleCount else None,
+                .sample_mask => if (has) SampleMask else None,
                 .stencil_reference => if (has) StencilReference else None,
                 .blend_constants => if (has) BlendConstants else None,
                 .compute_shader => if (has) ImplType(Impl.Shader) else None,
@@ -47,6 +49,8 @@ pub fn State(comptime mask: anytype) type {
         polygon_mode: getType(.polygon_mode),
         cull_mode: getType(.cull_mode),
         front_face: getType(.front_face),
+        sample_count: getType(.sample_count),
+        sample_mask: getType(.sample_mask),
         stencil_reference: getType(.stencil_reference),
         blend_constants: getType(.blend_constants),
         compute_shader: getType(.compute_shader),
@@ -328,6 +332,30 @@ const FrontFace = struct {
     }
 };
 
+const SampleCount = struct {
+    sample_count: ngl.SampleCount = .@"1",
+
+    pub inline fn hash(self: @This(), hasher: anytype) void {
+        std.hash.autoHash(hasher, self);
+    }
+
+    pub inline fn eql(self: @This(), other: @This()) bool {
+        return std.meta.eql(self, other);
+    }
+};
+
+const SampleMask = struct {
+    sample_mask: u64 = ~@as(u64, 0),
+
+    pub inline fn hash(self: @This(), hasher: anytype) void {
+        std.hash.autoHash(hasher, self);
+    }
+
+    pub inline fn eql(self: @This(), other: @This()) bool {
+        return std.meta.eql(self, other);
+    }
+};
+
 const StencilReference = struct {
     comptime {
         @compileError("Shouldn't be necessary");
@@ -371,6 +399,8 @@ test State {
         .polygon_mode = true,
         .cull_mode = true,
         .front_face = true,
+        .sample_count = true,
+        .sample_mask = true,
         .stencil_reference = false,
         .blend_constants = false,
     });
@@ -501,6 +531,18 @@ test State {
     s2.front_face.front_face = .counter_clockwise;
     try expectNotState(s1, h1, s2);
     s1.front_face.front_face = .counter_clockwise;
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.sample_count.sample_count = .@"4";
+    try expectNotState(s1, h1, s2);
+    s1.sample_count.sample_count = .@"4";
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.sample_mask.sample_mask = 0b1111;
+    try expectNotState(s1, h1, s2);
+    s1.sample_mask.sample_mask = 0xf;
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 }
