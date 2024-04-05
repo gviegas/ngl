@@ -29,6 +29,8 @@ pub fn State(comptime mask: anytype) type {
                 .front_face => if (has) FrontFace else None,
                 .sample_count => if (has) SampleCount else None,
                 .sample_mask => if (has) SampleMask else None,
+                .depth_bias_enable => if (has) DepthBiasEnable else None,
+                .depth_bias => if (has) DepthBias else None,
                 .stencil_reference => if (has) StencilReference else None,
                 .blend_constants => if (has) BlendConstants else None,
                 .compute_shader => if (has) ImplType(Impl.Shader) else None,
@@ -51,6 +53,8 @@ pub fn State(comptime mask: anytype) type {
         front_face: getType(.front_face),
         sample_count: getType(.sample_count),
         sample_mask: getType(.sample_mask),
+        depth_bias_enable: getType(.depth_bias_enable),
+        depth_bias: getType(.depth_bias),
         stencil_reference: getType(.stencil_reference),
         blend_constants: getType(.blend_constants),
         compute_shader: getType(.compute_shader),
@@ -356,6 +360,35 @@ const SampleMask = struct {
     }
 };
 
+const DepthBiasEnable = struct {
+    enable: bool = false,
+
+    pub inline fn hash(self: @This(), hasher: anytype) void {
+        std.hash.autoHash(hasher, self);
+    }
+
+    pub inline fn eql(self: @This(), other: @This()) bool {
+        return std.meta.eql(self, other);
+    }
+};
+
+const DepthBias = struct {
+    value: f32 = 0,
+    slope: f32 = 0,
+    clamp: f32 = 0,
+
+    pub inline fn hash(self: @This(), hasher: anytype) void {
+        _ = self;
+        _ = hasher;
+    }
+
+    pub inline fn eql(self: @This(), other: @This()) bool {
+        return std.math.approxEqAbs(f32, self.value, other.value, std.math.floatEps(f32)) and
+            std.math.approxEqAbs(f32, self.slope, other.slope, std.math.floatEps(f32)) and
+            std.math.approxEqAbs(f32, self.clamp, other.clamp, std.math.floatEps(f32));
+    }
+};
+
 const StencilReference = struct {
     comptime {
         @compileError("Shouldn't be necessary");
@@ -401,6 +434,8 @@ test State {
         .front_face = true,
         .sample_count = true,
         .sample_mask = true,
+        .depth_bias_enable = true,
+        .depth_bias = true,
         .stencil_reference = false,
         .blend_constants = false,
     });
@@ -543,6 +578,18 @@ test State {
     s2.sample_mask.sample_mask = 0b1111;
     try expectNotState(s1, h1, s2);
     s1.sample_mask.sample_mask = 0xf;
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.depth_bias_enable.enable = true;
+    try expectNotState(s1, h1, s2);
+    s1.depth_bias_enable.enable = true;
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.depth_bias.value = 1;
+    try expectNotState(s1, h1, s2); // Clash.
+    s1.depth_bias.value = 1;
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 }
