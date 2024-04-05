@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const ngl = @import("../../ngl.zig");
+const Cmd = ngl.Cmd;
 const Impl = @import("../Impl.zig");
 
 pub fn State(comptime mask: anytype) type {
@@ -17,10 +18,20 @@ pub fn State(comptime mask: anytype) type {
             ImplType(Impl.Shader)
         else
             None,
+        vertex_input: if (@hasField(M, "vertex_input") and mask.vertex_input)
+            VertexInput
+        else
+            None,
+        primitive_topology: if (@hasField(M, "primitive_topology") and mask.primitive_topology)
+            PrimitiveTopology
+        else
+            None,
+
         fragment_shader: if (@hasField(M, "fragment_shader") and mask.fragment_shader)
             ImplType(Impl.Shader)
         else
             None,
+
         compute_shader: if (@hasField(M, "compute_shader") and mask.compute_shader)
             ImplType(Impl.Shader)
         else
@@ -180,14 +191,81 @@ fn ImplType(comptime T: anytype) type {
     };
 }
 
+const VertexInput = struct {
+    bindings: std.ArrayListUnmanaged(Cmd.VertexInputBinding) = .{},
+    attributes: std.ArrayListUnmanaged(Cmd.VertexInputAttribute) = .{},
+
+    pub inline fn hash(self: @This(), hasher: anytype) void {
+        for (self.bindings.items) |bind|
+            std.hash.autoHash(hasher, bind);
+        for (self.attributes.items) |attr|
+            std.hash.autoHash(hasher, attr);
+    }
+
+    pub inline fn eql(self: @This(), other: @This()) bool {
+        if (self.bindings.items.len != other.bindings.items.len or
+            self.attributes.items.len != other.attributes.items.len)
+        {
+            return false;
+        }
+        for (self.bindings.items, other.bindings.items) |x, y|
+            if (!std.meta.eql(x, y))
+                return false;
+        for (self.attributes.items, other.attributes.items) |x, y|
+            if (!std.meta.eql(x, y))
+                return false;
+        return true;
+    }
+
+    pub fn set(
+        self: *@This(),
+        allocator: std.mem.Allocator,
+        bindings: []const Cmd.VertexInputBinding,
+        attributes: []const Cmd.VertexInputAttribute,
+    ) !void {
+        try self.bindings.ensureTotalCapacity(allocator, bindings.len);
+        try self.attributes.ensureTotalCapacity(allocator, attributes.len);
+        self.bindings.clearRetainingCapacity();
+        self.attributes.clearRetainingCapacity();
+        self.bindings.appendSliceAssumeCapacity(bindings);
+        self.attributes.appendSliceAssumeCapacity(attributes);
+    }
+
+    pub fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
+        if (allocator) |x| {
+            self.bindings.clearAndFree(x);
+            self.attributes.clearAndFree(x);
+        } else {
+            self.bindings.clearRetainingCapacity();
+            self.attributes.clearRetainingCapacity();
+        }
+    }
+};
+
+const PrimitiveTopology = struct {
+    topology: Cmd.PrimitiveTopology = .triangle_list,
+
+    pub inline fn hash(self: @This(), hasher: anytype) void {
+        std.hash.autoHash(hasher, self.topology);
+    }
+
+    pub inline fn eql(self: @This(), other: @This()) bool {
+        return std.meta.eql(self, other);
+    }
+};
+
 const testing = std.testing;
 
 test State {
     const P = State(Mask(.primitive){
         .vertex_shader = true,
+        .vertex_input = true,
+        .primitive_topology = true,
         .fragment_shader = true,
     });
     if (@TypeOf(P.init().vertex_shader) != ImplType(Impl.Shader) or
+        @TypeOf(P.init().vertex_input) != VertexInput or
+        @TypeOf(P.init().primitive_topology) != PrimitiveTopology or
         @TypeOf(P.init().fragment_shader) != ImplType(Impl.Shader) or
         @TypeOf(P.init().compute_shader) != None)
     {
@@ -195,13 +273,12 @@ test State {
     }
 
     const C = State(Mask(.compute){ .compute_shader = true });
-    if (@sizeOf(C) >= @sizeOf(P) or
-        @TypeOf(C.init().vertex_shader) != None or
-        @TypeOf(C.init().fragment_shader) != None or
-        @TypeOf(C.init().compute_shader) != ImplType(Impl.Shader))
-    {
+    if (@TypeOf(C.init().compute_shader) != ImplType(Impl.Shader))
         @compileError("Bad dyn.State layout");
-    }
+    // TODO
+    inline for (@typeInfo(Mask(.primitive)).Struct.fields[0..4]) |field|
+        if (@TypeOf(@field(C.init(), field.name)) != None)
+            @compileError("Bad dyn.State layout");
 
     // TODO: Consider disallowing this case.
     const X = State(Mask(.primitive){});
@@ -262,4 +339,40 @@ test State {
         try testing.expect(ctx.eql(a, b));
         try testing.expect(ctx.eql(b, a));
     }
+
+    const ctx = P.HashCtx{};
+    const s0 = P.init();
+    const h0 = ctx.hash(s0);
+    var s = P.init();
+    var h: u64 = undefined;
+
+    try s.vertex_input.set(testing.allocator, &.{.{
+        .binding = 0,
+        .stride = 12,
+        .step_rate = .vertex,
+    }}, &.{.{
+        .location = 0,
+        .binding = 0,
+        .format = .rgb32_sfloat,
+        .offset = 0,
+    }});
+    h = ctx.hash(s);
+    try testing.expect(h != h0 and h != 0);
+    try testing.expect(!ctx.eql(s, s0));
+    try testing.expect(!ctx.eql(s0, s));
+
+    s.primitive_topology.topology = .line_list;
+    try testing.expect(ctx.hash(s) != h0 and ctx.hash(s) != h and ctx.hash(s) != 0);
+    try testing.expect(!ctx.eql(s, s0));
+    try testing.expect(!ctx.eql(s0, s));
+
+    s.primitive_topology = .{};
+    try testing.expect(ctx.hash(s) == h);
+    try testing.expect(!ctx.eql(s, s0));
+    try testing.expect(!ctx.eql(s0, s));
+
+    s.vertex_input.clear(testing.allocator);
+    try testing.expect(ctx.hash(s) == h0);
+    try testing.expect(ctx.eql(s, s0));
+    try testing.expect(ctx.eql(s0, s));
 }
