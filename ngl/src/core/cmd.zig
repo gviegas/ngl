@@ -638,6 +638,9 @@ pub const CommandBuffer = struct {
             );
         }
 
+        // TODO: Upper-bound in `Feature.core`.
+        pub const ColorAttachmentIndex = u3;
+
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope
@@ -645,7 +648,11 @@ pub const CommandBuffer = struct {
         /// ✔ Graphics queue
         /// ✘ Compute queue
         /// ✘ Transfer queue
-        pub fn setColorBlendEnable(self: *Cmd, first_attachment: u32, enable: []const bool) void {
+        pub fn setColorBlendEnable(
+            self: *Cmd,
+            first_attachment: ColorAttachmentIndex,
+            enable: []const bool,
+        ) void {
             Impl.get().setColorBlendEnable(
                 self.allocator,
                 self.device.impl,
@@ -697,7 +704,11 @@ pub const CommandBuffer = struct {
         /// ✔ Graphics queue
         /// ✘ Compute queue
         /// ✘ Transfer queue
-        pub fn setColorBlend(self: *Cmd, first_attachment: u32, blend: []const Blend) void {
+        pub fn setColorBlend(
+            self: *Cmd,
+            first_attachment: ColorAttachmentIndex,
+            blend: []const Blend,
+        ) void {
             Impl.get().setColorBlend(
                 self.allocator,
                 self.device.impl,
@@ -726,7 +737,7 @@ pub const CommandBuffer = struct {
         /// ✘ Transfer queue
         pub fn setColorWrite(
             self: *Cmd,
-            first_attachment: u32,
+            first_attachment: ColorAttachmentIndex,
             write_masks: []const ColorMask,
         ) void {
             Impl.get().setColorWrite(

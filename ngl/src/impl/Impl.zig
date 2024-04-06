@@ -421,7 +421,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        first_attachment: u32,
+        first_attachment: ngl.Cmd.ColorAttachmentIndex,
         enable: []const bool,
     ) void,
 
@@ -430,7 +430,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        first_attachment: u32,
+        first_attachment: ngl.Cmd.ColorAttachmentIndex,
         blend: []const ngl.Cmd.Blend,
     ) void,
 
@@ -439,7 +439,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        first_attachment: u32,
+        first_attachment: ngl.Cmd.ColorAttachmentIndex,
         write_masks: []const ngl.Cmd.ColorMask,
     ) void,
 
@@ -1675,7 +1675,7 @@ pub fn setColorBlendEnable(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    first_attachment: u32,
+    first_attachment: ngl.Cmd.ColorAttachmentIndex,
     enable: []const bool,
 ) void {
     self.vtable.setColorBlendEnable(
@@ -1693,7 +1693,7 @@ pub fn setColorBlend(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    first_attachment: u32,
+    first_attachment: ngl.Cmd.ColorAttachmentIndex,
     blend: []const ngl.Cmd.Blend,
 ) void {
     self.vtable.setColorBlend(self.ptr, allocator, device, command_buffer, first_attachment, blend);
@@ -1704,7 +1704,7 @@ pub fn setColorWrite(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    first_attachment: u32,
+    first_attachment: ngl.Cmd.ColorAttachmentIndex,
     write_masks: []const ngl.Cmd.ColorMask,
 ) void {
     self.vtable.setColorWrite(

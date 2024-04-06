@@ -658,7 +658,7 @@ pub const CommandBuffer = packed struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        first_attachment: u32,
+        first_attachment: ngl.Cmd.ColorAttachmentIndex,
         enable: []const bool,
     ) void {
         _ = allocator;
@@ -674,7 +674,7 @@ pub const CommandBuffer = packed struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        first_attachment: u32,
+        first_attachment: ngl.Cmd.ColorAttachmentIndex,
         blend: []const ngl.Cmd.Blend,
     ) void {
         _ = allocator;
@@ -690,7 +690,7 @@ pub const CommandBuffer = packed struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        first_attachment: u32,
+        first_attachment: ngl.Cmd.ColorAttachmentIndex,
         write_masks: []const ngl.Cmd.ColorMask,
     ) void {
         _ = allocator;
