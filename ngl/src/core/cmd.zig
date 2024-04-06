@@ -864,7 +864,7 @@ pub const CommandBuffer = struct {
         };
 
         pub const Rendering = struct {
-            colors: []Attachment,
+            colors: []const Attachment,
             depth: ?Attachment,
             stencil: ?Attachment,
             render_area: struct {
