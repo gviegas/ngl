@@ -34,6 +34,10 @@ pub fn State(comptime mask: anytype) type {
                 .depth_test_enable => if (has) DepthTestEnable else None,
                 .depth_compare_op => if (has) DepthCompareOp else None,
                 .depth_write_enable => if (has) DepthWriteEnable else None,
+                .stencil_test_enable => if (has) StencilTestEnable else None,
+                .stencil_op => if (has) StencilOp else None,
+                .stencil_read_mask => if (has) StencilReadMask else None,
+                .stencil_write_mask => if (has) StencilWriteMask else None,
                 .stencil_reference => if (has) StencilReference else None,
                 .blend_constants => if (has) BlendConstants else None,
                 .compute_shader => if (has) ImplType(Impl.Shader) else None,
@@ -61,6 +65,10 @@ pub fn State(comptime mask: anytype) type {
         depth_test_enable: getType(.depth_test_enable),
         depth_compare_op: getType(.depth_compare_op),
         depth_write_enable: getType(.depth_write_enable),
+        stencil_test_enable: getType(.stencil_test_enable),
+        stencil_op: getType(.stencil_op),
+        stencil_read_mask: getType(.stencil_read_mask),
+        stencil_write_mask: getType(.stencil_write_mask),
         stencil_reference: getType(.stencil_reference),
         blend_constants: getType(.blend_constants),
         compute_shader: getType(.compute_shader),
@@ -447,6 +455,94 @@ const DepthWriteEnable = struct {
     }
 };
 
+const StencilTestEnable = struct {
+    enable: bool = false,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), enable: bool) void {
+        self.enable = enable;
+    }
+};
+
+const StencilOp = struct {
+    front: Op = .{},
+    back: Op = .{},
+
+    pub const Op = struct {
+        fail_op: Cmd.StencilOp = .keep,
+        pass_op: Cmd.StencilOp = .keep,
+        depth_fail_op: Cmd.StencilOp = .keep,
+        compare_op: ngl.CompareOp = .never,
+    };
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(
+        self: *@This(),
+        stencil_face: Cmd.StencilFace,
+        fail_op: Cmd.StencilOp,
+        pass_op: Cmd.StencilOp,
+        depth_fail_op: Cmd.StencilOp,
+        compare_op: ngl.CompareOp,
+    ) void {
+        const op = Op{
+            .fail_op = fail_op,
+            .pass_op = pass_op,
+            .depth_fail_op = depth_fail_op,
+            .compare_op = compare_op,
+        };
+        switch (stencil_face) {
+            .front => self.front = op,
+            .back => self.back = op,
+            .front_and_back => {
+                self.front = op;
+                self.back = op;
+            },
+        }
+    }
+};
+
+const StencilReadMask = struct {
+    front: u32 = 0,
+    back: u32 = 0,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), stencil_face: Cmd.StencilFace, mask: u32) void {
+        switch (stencil_face) {
+            .front => self.front = mask,
+            .back => self.back = mask,
+            .front_and_back => {
+                self.front = mask;
+                self.back = mask;
+            },
+        }
+    }
+};
+
+const StencilWriteMask = struct {
+    front: u32 = 0,
+    back: u32 = 0,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), stencil_face: Cmd.StencilFace, mask: u32) void {
+        switch (stencil_face) {
+            .front => self.front = mask,
+            .back => self.back = mask,
+            .front_and_back => {
+                self.front = mask;
+                self.back = mask;
+            },
+        }
+    }
+};
+
 const StencilReference = struct {
     comptime {
         @compileError("Shouldn't be necessary");
@@ -497,6 +593,10 @@ test State {
         .depth_test_enable = true,
         .depth_compare_op = true,
         .depth_write_enable = true,
+        .stencil_test_enable = true,
+        .stencil_op = true,
+        .stencil_read_mask = true,
+        .stencil_write_mask = true,
         .stencil_reference = false,
         .blend_constants = false,
     });
@@ -671,5 +771,67 @@ test State {
     try expectNotState(s1, h1, s2);
     s1.depth_write_enable.set(true);
     h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.stencil_test_enable.set(true);
+    try expectNotState(s1, h1, s2);
+    s1.stencil_test_enable.set(true);
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.stencil_op.set(.front, .zero, .replace, .invert, .equal);
+    try expectNotState(s1, h1, s2);
+    s1.stencil_op.set(.front, .zero, .invert, .replace, .equal);
+    try expectNotState(s1, h1, s2);
+    s1.stencil_op.set(.front, .zero, .replace, .invert, .equal);
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+    s2.stencil_op.set(.back, .keep, .increment_wrap, .keep, .greater);
+    try expectNotState(s1, h1, s2);
+    s1.stencil_op.set(.back, .keep, .increment_wrap, .keep, .greater);
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+    s2.stencil_op.set(.front_and_back, .decrement_clamp, .increment_clamp, .zero, .greater);
+    try expectNotState(s1, h1, s2);
+    s1.stencil_op.set(.front, .decrement_clamp, .increment_clamp, .zero, .greater);
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    s1.stencil_op.set(.back, .decrement_clamp, .increment_clamp, .zero, .greater);
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    s2.stencil_read_mask.set(.back, 0x80);
+    try expectNotState(s1, h1, s2);
+    s1.stencil_read_mask.set(.front, 0x80);
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    s2.stencil_read_mask.set(.front, 0x80);
+    try expectNotState(s1, h1, s2);
+    s1.stencil_read_mask.set(.back, 0x80);
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+    s2.stencil_read_mask.set(.front_and_back, 0x80);
+    try expectState(s1, h1, s2);
+    s2.stencil_read_mask.set(.front_and_back, 0x1);
+    try expectNotState(s1, h1, s2);
+    s2.stencil_read_mask.set(.front, 0x80);
+    try expectNotState(s1, h1, s2);
+    s2.stencil_read_mask.set(.back, 0x80);
+    try expectState(s1, h1, s2);
+
+    s2.stencil_write_mask.set(.front, 0x7f);
+    try expectNotState(s1, h1, s2);
+    s1.stencil_write_mask.set(.front, 0x7f);
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+    s1.stencil_write_mask.set(.back, 0x7f);
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    s2.stencil_write_mask.set(.back, 0x7f);
+    try expectState(s1, h1, s2);
+    s1.stencil_write_mask.set(.front_and_back, 0xfe);
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    s2.stencil_write_mask.set(.front_and_back, 0xfe);
     try expectState(s1, h1, s2);
 }
