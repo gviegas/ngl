@@ -4,8 +4,8 @@ const ngl = @import("../../ngl.zig");
 const Cmd = ngl.Cmd;
 const Impl = @import("../Impl.zig");
 
-pub fn State(comptime mask: anytype) type {
-    const M = @TypeOf(mask);
+pub fn State(comptime state_mask: anytype) type {
+    const M = @TypeOf(state_mask);
 
     switch (M) {
         Mask(.primitive), Mask(.compute) => {},
@@ -15,7 +15,7 @@ pub fn State(comptime mask: anytype) type {
     const getType = struct {
         fn getType(comptime ident: anytype) type {
             const name = @tagName(ident);
-            const has = @hasField(@TypeOf(mask), name) and @field(mask, name);
+            const has = @hasField(@TypeOf(state_mask), name) and @field(state_mask, name);
             return switch (ident) {
                 .vertex_shader => if (has) ImplType(Impl.Shader) else None,
                 .vertex_input => if (has) VertexInput else None,
@@ -77,6 +77,8 @@ pub fn State(comptime mask: anytype) type {
         color_write: getType(.color_write),
         blend_constants: getType(.blend_constants),
         compute_shader: getType(.compute_shader),
+
+        const mask = state_mask;
 
         const Self = @This();
 
@@ -649,7 +651,7 @@ fn expectNotState(state: anytype, hash: u64, other_state: @TypeOf(state)) !void 
 }
 
 test State {
-    const pm = Mask(.primitive){
+    const P = State(Mask(.primitive){
         .vertex_shader = true,
         .vertex_input = true,
         .primitive_topology = true,
@@ -676,19 +678,17 @@ test State {
         .color_blend = true,
         .color_write = true,
         .blend_constants = false,
-    };
-    const P = State(pm);
+    });
     if (@TypeOf(P.init().compute_shader) != None)
         @compileError("Bad dyn.State layout");
-    inline for (@typeInfo(@TypeOf(pm)).Struct.fields) |field|
-        if (@field(pm, field.name) and @TypeOf(@field(P.init(), field.name)) == None)
+    inline for (@typeInfo(@TypeOf(P.mask)).Struct.fields) |field|
+        if (@field(P.mask, field.name) and @TypeOf(@field(P.init(), field.name)) == None)
             @compileError("Bad dyn.State layout");
 
-    const cm = Mask(.compute){ .compute_shader = true };
-    const C = State(cm);
+    const C = State(Mask(.compute){ .compute_shader = true });
     if (@TypeOf(C.init().compute_shader) != ImplType(Impl.Shader))
         @compileError("Bad dyn.State layout");
-    inline for (@typeInfo(@TypeOf(pm)).Struct.fields) |field|
+    inline for (@typeInfo(@TypeOf(P.mask)).Struct.fields) |field|
         if (@TypeOf(@field(C.init(), field.name)) != None)
             @compileError("Bad dyn.State layout");
 
