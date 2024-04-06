@@ -41,6 +41,7 @@ pub fn State(comptime mask: anytype) type {
                 .stencil_reference => if (has) StencilReference else None,
                 .color_blend_enable => if (has) ColorBlendEnable else None,
                 .color_blend => if (has) ColorBlend else None,
+                .color_write => if (has) ColorWrite else None,
                 .blend_constants => if (has) BlendConstants else None,
                 .compute_shader => if (has) ImplType(Impl.Shader) else None,
                 else => unreachable,
@@ -74,6 +75,7 @@ pub fn State(comptime mask: anytype) type {
         stencil_reference: getType(.stencil_reference),
         color_blend_enable: getType(.color_blend_enable),
         color_blend: getType(.color_blend),
+        color_write: getType(.color_write),
         blend_constants: getType(.blend_constants),
         compute_shader: getType(.compute_shader),
 
@@ -553,6 +555,7 @@ const StencilReference = struct {
     }
 };
 
+// TODO: Accumulate.
 const ColorBlendEnable = struct {
     first_attachment: u32 = 0,
     enable: std.ArrayListUnmanaged(bool) = .{},
@@ -596,6 +599,7 @@ const ColorBlendEnable = struct {
     }
 };
 
+// TODO: Accumulate.
 const ColorBlend = struct {
     first_attachment: u32 = 0,
     blend: std.ArrayListUnmanaged(Cmd.Blend) = .{},
@@ -634,6 +638,49 @@ const ColorBlend = struct {
             self.blend.clearAndFree(x)
         else
             self.blend.clearRetainingCapacity();
+    }
+};
+
+// TODO: Accumulate.
+const ColorWrite = struct {
+    first_attachment: u32 = 0,
+    write_masks: std.ArrayListUnmanaged(Cmd.ColorMask) = .{},
+
+    pub fn hash(self: @This(), hasher: anytype) void {
+        if (self.write_masks.items.len == 0) return;
+        std.hash.autoHash(hasher, self.first_attachment);
+        for (self.write_masks.items) |write_mask|
+            std.hash.autoHash(hasher, write_mask);
+    }
+
+    pub fn eql(self: @This(), other: @This()) bool {
+        if (self.write_masks.items.len != other.write_masks.items.len) return false;
+        if (self.write_masks.items.len == 0) return true;
+        if (self.first_attachment != other.first_attachment) return false;
+        for (self.write_masks.items, other.write_masks.items) |x, y|
+            // TODO: `all` should compare equal to `mask` w/ all bits set.
+            if (!std.meta.eql(x, y))
+                return false;
+        return true;
+    }
+
+    pub fn set(
+        self: *@This(),
+        allocator: std.mem.Allocator,
+        first_attachment: u32,
+        write_masks: []const Cmd.ColorMask,
+    ) !void {
+        self.first_attachment = first_attachment;
+        try self.write_masks.ensureTotalCapacity(allocator, write_masks.len);
+        self.write_masks.clearRetainingCapacity();
+        self.write_masks.appendSliceAssumeCapacity(write_masks);
+    }
+
+    pub fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
+        if (allocator) |x|
+            self.write_masks.clearAndFree(x)
+        else
+            self.write_masks.clearRetainingCapacity();
     }
 };
 
@@ -688,6 +735,7 @@ test State {
         .stencil_reference = false,
         .color_blend_enable = true,
         .color_blend = true,
+        .color_write = true,
         .blend_constants = false,
     });
     // TODO
@@ -1006,6 +1054,37 @@ test State {
     s2.clear(null);
     try expectNotState(s1, h1, s2);
     s1.clear(testing.allocator);
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    try s2.color_write.set(testing.allocator, 0, &.{});
+    try expectState(s1, h1, s2);
+    try s2.color_write.set(testing.allocator, 1, &.{});
+    try expectState(s1, h1, s2);
+    try s2.color_write.set(testing.allocator, 1, &.{.all});
+    try expectNotState(s1, h1, s2);
+    try s1.color_write.set(testing.allocator, 0, &.{.all});
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    try s1.color_write.set(testing.allocator, 1, &.{
+        .all,
+        .{ .mask = .{ .r = true, .g = false, .b = false, .a = false } },
+    });
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    try s1.color_write.set(testing.allocator, 1, &.{.all});
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+    try s2.color_write.set(testing.allocator, 1, &.{.{ .mask = .{
+        .r = true,
+        .g = false,
+        .b = false,
+        .a = false,
+    } }});
+    try expectNotState(s1, h1, s2);
+    s2.clear(testing.allocator);
+    try expectNotState(s1, h1, s2);
+    s1.clear(null);
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 }
