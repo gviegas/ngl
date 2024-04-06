@@ -555,132 +555,72 @@ const StencilReference = struct {
     }
 };
 
-// TODO: Accumulate.
+const max_color_attachment = 1 + @as(comptime_int, ~@as(Cmd.ColorAttachmentIndex, 0));
+
+// May want to use dynamic allocation in this case.
+comptime {
+    if (max_color_attachment > 16) unreachable;
+}
+
 const ColorBlendEnable = struct {
-    first_attachment: u32 = 0,
-    enable: std.ArrayListUnmanaged(bool) = .{},
+    enable: [max_color_attachment]bool = [_]bool{false} ** max_color_attachment,
 
-    pub fn hash(self: @This(), hasher: anytype) void {
-        if (self.enable.items.len == 0) return;
-        std.hash.autoHash(hasher, self.first_attachment);
-        //hasher.update(@as([*]const u8, @ptrCast(self.enable.items.ptr))[0..self.enable.items.len]);
-        for (self.enable.items) |enable|
-            std.hash.autoHash(hasher, enable);
-    }
-
-    pub fn eql(self: @This(), other: @This()) bool {
-        if (self.enable.items.len != other.enable.items.len) return false;
-        if (self.enable.items.len == 0) return true;
-        if (self.first_attachment != other.first_attachment) return false;
-        //return std.mem.eql(bool, self.enable.items, other.enable.items);
-        for (self.enable.items, other.enable.items) |x, y|
-            if (x != y)
-                return false;
-        return true;
-    }
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
 
     pub fn set(
         self: *@This(),
-        allocator: std.mem.Allocator,
-        first_attachment: u32,
+        first_attachment: Cmd.ColorAttachmentIndex,
         enable: []const bool,
-    ) !void {
-        self.first_attachment = first_attachment;
-        try self.enable.ensureTotalCapacity(allocator, enable.len);
-        self.enable.clearRetainingCapacity();
-        self.enable.appendSliceAssumeCapacity(enable);
-    }
-
-    pub fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
-        if (allocator) |x|
-            self.enable.clearAndFree(x)
-        else
-            self.enable.clearRetainingCapacity();
+    ) void {
+        @memcpy(
+            self.enable[first_attachment .. first_attachment + enable.len],
+            enable,
+        );
     }
 };
 
-// TODO: Accumulate.
 const ColorBlend = struct {
-    first_attachment: u32 = 0,
-    blend: std.ArrayListUnmanaged(Cmd.Blend) = .{},
+    blend: [max_color_attachment]Cmd.Blend = [_]Cmd.Blend{.{}} ** max_color_attachment,
 
-    pub fn hash(self: @This(), hasher: anytype) void {
-        if (self.blend.items.len == 0) return;
-        std.hash.autoHash(hasher, self.first_attachment);
-        for (self.blend.items) |blend|
-            std.hash.autoHash(hasher, blend);
-    }
-
-    pub fn eql(self: @This(), other: @This()) bool {
-        if (self.blend.items.len != other.blend.items.len) return false;
-        if (self.blend.items.len == 0) return true;
-        if (self.first_attachment != other.first_attachment) return false;
-        for (self.blend.items, other.blend.items) |x, y|
-            if (!std.meta.eql(x, y))
-                return false;
-        return true;
-    }
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
 
     pub fn set(
         self: *@This(),
-        allocator: std.mem.Allocator,
-        first_attachment: u32,
+        first_attachment: Cmd.ColorAttachmentIndex,
         blend: []const Cmd.Blend,
-    ) !void {
-        self.first_attachment = first_attachment;
-        try self.blend.ensureTotalCapacity(allocator, blend.len);
-        self.blend.clearRetainingCapacity();
-        self.blend.appendSliceAssumeCapacity(blend);
-    }
-
-    pub fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
-        if (allocator) |x|
-            self.blend.clearAndFree(x)
-        else
-            self.blend.clearRetainingCapacity();
+    ) void {
+        @memcpy(
+            self.blend[first_attachment .. first_attachment + blend.len],
+            blend,
+        );
     }
 };
 
-// TODO: Accumulate.
 const ColorWrite = struct {
-    first_attachment: u32 = 0,
-    write_masks: std.ArrayListUnmanaged(Cmd.ColorMask) = .{},
+    write_masks: [max_color_attachment]Cmd.ColorMask =
+        [_]Cmd.ColorMask{.all} ** max_color_attachment,
 
-    pub fn hash(self: @This(), hasher: anytype) void {
-        if (self.write_masks.items.len == 0) return;
-        std.hash.autoHash(hasher, self.first_attachment);
-        for (self.write_masks.items) |write_mask|
-            std.hash.autoHash(hasher, write_mask);
-    }
-
-    pub fn eql(self: @This(), other: @This()) bool {
-        if (self.write_masks.items.len != other.write_masks.items.len) return false;
-        if (self.write_masks.items.len == 0) return true;
-        if (self.first_attachment != other.first_attachment) return false;
-        for (self.write_masks.items, other.write_masks.items) |x, y|
-            // TODO: `all` should compare equal to `mask` w/ all bits set.
-            if (!std.meta.eql(x, y))
-                return false;
-        return true;
-    }
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
 
     pub fn set(
         self: *@This(),
-        allocator: std.mem.Allocator,
-        first_attachment: u32,
+        first_attachment: Cmd.ColorAttachmentIndex,
         write_masks: []const Cmd.ColorMask,
-    ) !void {
-        self.first_attachment = first_attachment;
-        try self.write_masks.ensureTotalCapacity(allocator, write_masks.len);
-        self.write_masks.clearRetainingCapacity();
-        self.write_masks.appendSliceAssumeCapacity(write_masks);
-    }
-
-    pub fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
-        if (allocator) |x|
-            self.write_masks.clearAndFree(x)
-        else
-            self.write_masks.clearRetainingCapacity();
+    ) void {
+        const dest = self.write_masks[first_attachment .. first_attachment + write_masks.len];
+        @memcpy(dest, write_masks);
+        for (dest) |*write_mask|
+            switch (write_mask.*) {
+                .all => {},
+                .mask => |x| {
+                    const U = @typeInfo(@TypeOf(x)).Struct.backing_integer.?;
+                    if (@as(U, @bitCast(x)) == ~@as(U, 0))
+                        write_mask.* = .all;
+                },
+            };
     }
 };
 
@@ -973,36 +913,26 @@ test State {
     s2.stencil_write_mask.set(.front_and_back, 0xfe);
     try expectState(s1, h1, s2);
 
-    try s2.color_blend_enable.set(testing.allocator, 1, &.{});
+    s2.color_blend_enable.set(1, &.{});
     try expectState(s1, h1, s2);
-    try s2.color_blend_enable.set(testing.allocator, 1, &.{true});
+    s2.color_blend_enable.set(1, &.{true});
     try expectNotState(s1, h1, s2);
-    try s2.color_blend_enable.set(testing.allocator, 1, &.{false});
-    try expectNotState(s1, h1, s2);
-    try s2.color_blend_enable.set(testing.allocator, 0, &.{false});
-    try expectNotState(s1, h1, s2);
-    try s1.color_blend_enable.set(testing.allocator, 0, &.{false});
-    h1 = ctx.hash(s1);
+    s2.color_blend_enable.set(1, &.{false});
     try expectState(s1, h1, s2);
-    try s1.color_blend_enable.set(testing.allocator, 1, &.{false});
+    s2.color_blend_enable.set(1, &.{false});
+    try expectState(s1, h1, s2);
+    s1.color_blend_enable.set(2, &.{true});
     h1 = ctx.hash(s1);
     try expectNotState(s1, h1, s2);
-    try s1.color_blend_enable.set(testing.allocator, 0, &.{true});
+    s1.color_blend_enable.set(1, &.{true});
     h1 = ctx.hash(s1);
     try expectNotState(s1, h1, s2);
-    try s1.color_blend_enable.set(testing.allocator, 0, &.{ false, true });
-    h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
-    s1.color_blend_enable.clear(null);
-    h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
-    try s1.color_blend_enable.set(testing.allocator, 0, &.{false});
-    h1 = ctx.hash(s1);
+    s2.color_blend_enable.set(1, &.{ true, true });
     try expectState(s1, h1, s2);
 
-    try s2.color_blend.set(testing.allocator, 2, &.{});
+    s2.color_blend.set(2, &.{});
     try expectState(s1, h1, s2);
-    try s2.color_blend.set(testing.allocator, 2, &.{.{
+    s2.color_blend.set(2, &.{.{
         .color_source_factor = .source_color,
         .color_dest_factor = .one,
         .color_op = .min,
@@ -1011,7 +941,7 @@ test State {
         .alpha_op = .max,
     }});
     try expectNotState(s1, h1, s2);
-    try s1.color_blend.set(testing.allocator, 1, &.{.{
+    s1.color_blend.set(1, &.{.{
         .color_source_factor = .source_color,
         .color_dest_factor = .one,
         .color_op = .min,
@@ -1021,17 +951,17 @@ test State {
     }});
     h1 = ctx.hash(s1);
     try expectNotState(s1, h1, s2);
-    try s1.color_blend.set(testing.allocator, 2, &[_]Cmd.Blend{.{
+    s1.color_blend.set(1, &[_]Cmd.Blend{.{
         .color_source_factor = .source_color,
         .color_dest_factor = .one,
         .color_op = .min,
         .alpha_source_factor = .source_alpha,
         .alpha_dest_factor = .zero,
         .alpha_op = .max,
-    }} ** 2);
+    }} ** 3);
     h1 = ctx.hash(s1);
     try expectNotState(s1, h1, s2);
-    try s1.color_blend.set(testing.allocator, 2, &.{.{
+    s2.color_blend.set(1, &.{.{
         .color_source_factor = .source_color,
         .color_dest_factor = .one,
         .color_op = .min,
@@ -1039,9 +969,11 @@ test State {
         .alpha_dest_factor = .zero,
         .alpha_op = .max,
     }});
+    try expectNotState(s1, h1, s2);
+    s1.color_blend.set(3, &.{.{}});
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
-    try s1.color_blend.set(testing.allocator, 2, &.{.{
+    s1.color_blend.set(2, &.{.{
         .color_source_factor = .source_color,
         .color_dest_factor = .dest_color,
         .color_op = .min,
@@ -1051,40 +983,35 @@ test State {
     }});
     h1 = ctx.hash(s1);
     try expectNotState(s1, h1, s2);
-    s2.clear(null);
+    s2.color_blend = .{};
     try expectNotState(s1, h1, s2);
-    s1.clear(testing.allocator);
+    s1.color_blend.set(0, &[_]Cmd.Blend{.{}} ** max_color_attachment);
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 
-    try s2.color_write.set(testing.allocator, 0, &.{});
+    s2.color_write.set(0, &.{});
     try expectState(s1, h1, s2);
-    try s2.color_write.set(testing.allocator, 1, &.{});
+    s2.color_write.set(1, &.{});
     try expectState(s1, h1, s2);
-    try s2.color_write.set(testing.allocator, 1, &.{.all});
-    try expectNotState(s1, h1, s2);
-    try s1.color_write.set(testing.allocator, 0, &.{.all});
-    h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
-    try s1.color_write.set(testing.allocator, 1, &.{
-        .all,
-        .{ .mask = .{ .r = true, .g = false, .b = false, .a = false } },
-    });
-    h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
-    try s1.color_write.set(testing.allocator, 1, &.{.all});
+    s2.color_write.set(1, &.{.all});
+    try expectState(s1, h1, s2);
+    s1.color_write.set(0, &.{.all});
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
-    try s2.color_write.set(testing.allocator, 1, &.{.{ .mask = .{
-        .r = true,
-        .g = false,
-        .b = false,
-        .a = false,
-    } }});
+    s1.color_write.set(1, &.{ .all, .{ .mask = .{ .r = true, .g = true, .b = true, .a = true } } });
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+    s1.color_write.set(2, &.{.all});
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+    s2.color_write.set(2, &.{.{ .mask = .{ .r = true } }});
     try expectNotState(s1, h1, s2);
-    s2.clear(testing.allocator);
+    s2.color_write.set(1, &[_]Cmd.ColorMask{.{ .mask = .{} }} ** (max_color_attachment - 1));
     try expectNotState(s1, h1, s2);
-    s1.clear(null);
+    s1.color_write.set(0, &[_]Cmd.ColorMask{.{ .mask = .{} }} ** max_color_attachment);
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    s1.color_write.set(0, &.{.all});
     h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 }
