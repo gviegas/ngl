@@ -689,12 +689,12 @@ pub const CommandBuffer = struct {
         };
 
         pub const Blend = struct {
-            color_source_factor: BlendFactor,
-            color_dest_factor: BlendFactor,
-            color_op: BlendOp,
-            alpha_source_factor: BlendFactor,
-            alpha_dest_factor: BlendFactor,
-            alpha_op: BlendOp,
+            color_source_factor: BlendFactor = .one,
+            color_dest_factor: BlendFactor = .zero,
+            color_op: BlendOp = .add,
+            alpha_source_factor: BlendFactor = .one,
+            alpha_dest_factor: BlendFactor = .zero,
+            alpha_op: BlendOp = .add,
         };
 
         /// ✔ Primary command buffer
