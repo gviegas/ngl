@@ -49,7 +49,6 @@ pub fn State(comptime mask: anytype) type {
         }
     }.getType;
 
-    // TODO
     return struct {
         vertex_shader: getType(.vertex_shader),
         vertex_input: getType(.vertex_input),
@@ -650,7 +649,7 @@ fn expectNotState(state: anytype, hash: u64, other_state: @TypeOf(state)) !void 
 }
 
 test State {
-    const P = State(Mask(.primitive){
+    const pm = Mask(.primitive){
         .vertex_shader = true,
         .vertex_input = true,
         .primitive_topology = true,
@@ -677,20 +676,19 @@ test State {
         .color_blend = true,
         .color_write = true,
         .blend_constants = false,
-    });
-    // TODO
-    if (@TypeOf(P.init().vertex_shader) != ImplType(Impl.Shader) or
-        @TypeOf(P.init().fragment_shader) != ImplType(Impl.Shader) or
-        @TypeOf(P.init().compute_shader) != None)
-    {
+    };
+    const P = State(pm);
+    if (@TypeOf(P.init().compute_shader) != None)
         @compileError("Bad dyn.State layout");
-    }
+    inline for (@typeInfo(@TypeOf(pm)).Struct.fields) |field|
+        if (@field(pm, field.name) and @TypeOf(@field(P.init(), field.name)) == None)
+            @compileError("Bad dyn.State layout");
 
-    const C = State(Mask(.compute){ .compute_shader = true });
+    const cm = Mask(.compute){ .compute_shader = true };
+    const C = State(cm);
     if (@TypeOf(C.init().compute_shader) != ImplType(Impl.Shader))
         @compileError("Bad dyn.State layout");
-    // TODO
-    inline for (@typeInfo(Mask(.primitive)).Struct.fields[0..2]) |field|
+    inline for (@typeInfo(@TypeOf(pm)).Struct.fields) |field|
         if (@TypeOf(@field(C.init(), field.name)) != None)
             @compileError("Bad dyn.State layout");
 
