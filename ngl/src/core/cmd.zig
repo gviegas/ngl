@@ -721,10 +721,10 @@ pub const CommandBuffer = struct {
         pub const ColorMask = union(enum) {
             all,
             mask: packed struct {
-                r: bool,
-                g: bool,
-                b: bool,
-                a: bool,
+                r: bool = false,
+                g: bool = false,
+                b: bool = false,
+                a: bool = false,
             },
         };
 
