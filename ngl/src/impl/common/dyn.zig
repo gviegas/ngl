@@ -39,6 +39,8 @@ pub fn State(comptime mask: anytype) type {
                 .stencil_read_mask => if (has) StencilReadMask else None,
                 .stencil_write_mask => if (has) StencilWriteMask else None,
                 .stencil_reference => if (has) StencilReference else None,
+                .color_blend_enable => if (has) ColorBlendEnable else None,
+                .color_blend => if (has) ColorBlend else None,
                 .blend_constants => if (has) BlendConstants else None,
                 .compute_shader => if (has) ImplType(Impl.Shader) else None,
                 else => unreachable,
@@ -70,6 +72,8 @@ pub fn State(comptime mask: anytype) type {
         stencil_read_mask: getType(.stencil_read_mask),
         stencil_write_mask: getType(.stencil_write_mask),
         stencil_reference: getType(.stencil_reference),
+        color_blend_enable: getType(.color_blend_enable),
+        color_blend: getType(.color_blend),
         blend_constants: getType(.blend_constants),
         compute_shader: getType(.compute_shader),
 
@@ -549,6 +553,90 @@ const StencilReference = struct {
     }
 };
 
+const ColorBlendEnable = struct {
+    first_attachment: u32 = 0,
+    enable: std.ArrayListUnmanaged(bool) = .{},
+
+    pub fn hash(self: @This(), hasher: anytype) void {
+        if (self.enable.items.len == 0) return;
+        std.hash.autoHash(hasher, self.first_attachment);
+        //hasher.update(@as([*]const u8, @ptrCast(self.enable.items.ptr))[0..self.enable.items.len]);
+        for (self.enable.items) |enable|
+            std.hash.autoHash(hasher, enable);
+    }
+
+    pub fn eql(self: @This(), other: @This()) bool {
+        if (self.enable.items.len != other.enable.items.len) return false;
+        if (self.enable.items.len == 0) return true;
+        if (self.first_attachment != other.first_attachment) return false;
+        //return std.mem.eql(bool, self.enable.items, other.enable.items);
+        for (self.enable.items, other.enable.items) |x, y|
+            if (x != y)
+                return false;
+        return true;
+    }
+
+    pub fn set(
+        self: *@This(),
+        allocator: std.mem.Allocator,
+        first_attachment: u32,
+        enable: []const bool,
+    ) !void {
+        self.first_attachment = first_attachment;
+        try self.enable.ensureTotalCapacity(allocator, enable.len);
+        self.enable.clearRetainingCapacity();
+        self.enable.appendSliceAssumeCapacity(enable);
+    }
+
+    pub fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
+        if (allocator) |x|
+            self.enable.clearAndFree(x)
+        else
+            self.enable.clearRetainingCapacity();
+    }
+};
+
+const ColorBlend = struct {
+    first_attachment: u32 = 0,
+    blend: std.ArrayListUnmanaged(Cmd.Blend) = .{},
+
+    pub fn hash(self: @This(), hasher: anytype) void {
+        if (self.blend.items.len == 0) return;
+        std.hash.autoHash(hasher, self.first_attachment);
+        for (self.blend.items) |blend|
+            std.hash.autoHash(hasher, blend);
+    }
+
+    pub fn eql(self: @This(), other: @This()) bool {
+        if (self.blend.items.len != other.blend.items.len) return false;
+        if (self.blend.items.len == 0) return true;
+        if (self.first_attachment != other.first_attachment) return false;
+        for (self.blend.items, other.blend.items) |x, y|
+            if (!std.meta.eql(x, y))
+                return false;
+        return true;
+    }
+
+    pub fn set(
+        self: *@This(),
+        allocator: std.mem.Allocator,
+        first_attachment: u32,
+        blend: []const Cmd.Blend,
+    ) !void {
+        self.first_attachment = first_attachment;
+        try self.blend.ensureTotalCapacity(allocator, blend.len);
+        self.blend.clearRetainingCapacity();
+        self.blend.appendSliceAssumeCapacity(blend);
+    }
+
+    pub fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
+        if (allocator) |x|
+            self.blend.clearAndFree(x)
+        else
+            self.blend.clearRetainingCapacity();
+    }
+};
+
 const BlendConstants = struct {
     comptime {
         @compileError("Shouldn't be necessary");
@@ -598,6 +686,8 @@ test State {
         .stencil_read_mask = true,
         .stencil_write_mask = true,
         .stencil_reference = false,
+        .color_blend_enable = true,
+        .color_blend = true,
         .blend_constants = false,
     });
     // TODO
@@ -833,5 +923,89 @@ test State {
     h1 = ctx.hash(s1);
     try expectNotState(s1, h1, s2);
     s2.stencil_write_mask.set(.front_and_back, 0xfe);
+    try expectState(s1, h1, s2);
+
+    try s2.color_blend_enable.set(testing.allocator, 1, &.{});
+    try expectState(s1, h1, s2);
+    try s2.color_blend_enable.set(testing.allocator, 1, &.{true});
+    try expectNotState(s1, h1, s2);
+    try s2.color_blend_enable.set(testing.allocator, 1, &.{false});
+    try expectNotState(s1, h1, s2);
+    try s2.color_blend_enable.set(testing.allocator, 0, &.{false});
+    try expectNotState(s1, h1, s2);
+    try s1.color_blend_enable.set(testing.allocator, 0, &.{false});
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+    try s1.color_blend_enable.set(testing.allocator, 1, &.{false});
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    try s1.color_blend_enable.set(testing.allocator, 0, &.{true});
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    try s1.color_blend_enable.set(testing.allocator, 0, &.{ false, true });
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    s1.color_blend_enable.clear(null);
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    try s1.color_blend_enable.set(testing.allocator, 0, &.{false});
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+
+    try s2.color_blend.set(testing.allocator, 2, &.{});
+    try expectState(s1, h1, s2);
+    try s2.color_blend.set(testing.allocator, 2, &.{.{
+        .color_source_factor = .source_color,
+        .color_dest_factor = .one,
+        .color_op = .min,
+        .alpha_source_factor = .source_alpha,
+        .alpha_dest_factor = .zero,
+        .alpha_op = .max,
+    }});
+    try expectNotState(s1, h1, s2);
+    try s1.color_blend.set(testing.allocator, 1, &.{.{
+        .color_source_factor = .source_color,
+        .color_dest_factor = .one,
+        .color_op = .min,
+        .alpha_source_factor = .source_alpha,
+        .alpha_dest_factor = .zero,
+        .alpha_op = .max,
+    }});
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    try s1.color_blend.set(testing.allocator, 2, &[_]Cmd.Blend{.{
+        .color_source_factor = .source_color,
+        .color_dest_factor = .one,
+        .color_op = .min,
+        .alpha_source_factor = .source_alpha,
+        .alpha_dest_factor = .zero,
+        .alpha_op = .max,
+    }} ** 2);
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    try s1.color_blend.set(testing.allocator, 2, &.{.{
+        .color_source_factor = .source_color,
+        .color_dest_factor = .one,
+        .color_op = .min,
+        .alpha_source_factor = .source_alpha,
+        .alpha_dest_factor = .zero,
+        .alpha_op = .max,
+    }});
+    h1 = ctx.hash(s1);
+    try expectState(s1, h1, s2);
+    try s1.color_blend.set(testing.allocator, 2, &.{.{
+        .color_source_factor = .source_color,
+        .color_dest_factor = .dest_color,
+        .color_op = .min,
+        .alpha_source_factor = .source_alpha,
+        .alpha_dest_factor = .zero,
+        .alpha_op = .max,
+    }});
+    h1 = ctx.hash(s1);
+    try expectNotState(s1, h1, s2);
+    s2.clear(null);
+    try expectNotState(s1, h1, s2);
+    s1.clear(testing.allocator);
+    h1 = ctx.hash(s1);
     try expectState(s1, h1, s2);
 }
