@@ -69,18 +69,18 @@ pub fn State(comptime state_mask: anytype) type {
                 .fragment_shader => if (has) ImplType(Impl.Shader) else None,
                 .viewports => if (has) Viewports else None,
                 .scissor_rects => if (has) ScissorRects else None,
-                .rasterization_enable => if (has) RasterizationEnable else None,
+                .rasterization_enable => if (has) Enable(true) else None,
                 .polygon_mode => if (has) PolygonMode else None,
                 .cull_mode => if (has) CullMode else None,
                 .front_face => if (has) FrontFace else None,
                 .sample_count => if (has) SampleCount else None,
                 .sample_mask => if (has) SampleMask else None,
-                .depth_bias_enable => if (has) DepthBiasEnable else None,
+                .depth_bias_enable => if (has) Enable(false) else None,
                 .depth_bias => if (has) DepthBias else None,
-                .depth_test_enable => if (has) DepthTestEnable else None,
+                .depth_test_enable => if (has) Enable(false) else None,
                 .depth_compare_op => if (has) DepthCompareOp else None,
-                .depth_write_enable => if (has) DepthWriteEnable else None,
-                .stencil_test_enable => if (has) StencilTestEnable else None,
+                .depth_write_enable => if (has) Enable(false) else None,
+                .stencil_test_enable => if (has) Enable(false) else None,
                 .stencil_op => if (has) StencilOp else None,
                 .stencil_read_mask => if (has) StencilReadMask else None,
                 .stencil_write_mask => if (has) StencilWriteMask else None,
@@ -384,6 +384,19 @@ fn ImplType(comptime T: anytype) type {
     };
 }
 
+fn Enable(comptime default: bool) type {
+    return struct {
+        enable: bool = default,
+
+        pub const hash = getDefaultHashFn(@This());
+        pub const eql = getDefaultEqlFn(@This());
+
+        pub fn set(self: *@This(), enable: bool) void {
+            self.enable = enable;
+        }
+    };
+}
+
 const VertexInput = struct {
     bindings: std.ArrayListUnmanaged(Cmd.VertexInputBinding) = .{},
     attributes: std.ArrayListUnmanaged(Cmd.VertexInputAttribute) = .{},
@@ -458,17 +471,6 @@ const ScissorRects = struct {
     }
 };
 
-const RasterizationEnable = struct {
-    enable: bool = true,
-
-    pub const hash = getDefaultHashFn(@This());
-    pub const eql = getDefaultEqlFn(@This());
-
-    pub fn set(self: *@This(), enable: bool) void {
-        self.enable = enable;
-    }
-};
-
 const PolygonMode = struct {
     polygon_mode: Cmd.PolygonMode = .fill,
 
@@ -524,17 +526,6 @@ const SampleMask = struct {
     }
 };
 
-const DepthBiasEnable = struct {
-    enable: bool = false,
-
-    pub const hash = getDefaultHashFn(@This());
-    pub const eql = getDefaultEqlFn(@This());
-
-    pub fn set(self: *@This(), enable: bool) void {
-        self.enable = enable;
-    }
-};
-
 const DepthBias = struct {
     value: f32 = 0,
     slope: f32 = 0,
@@ -558,17 +549,6 @@ const DepthBias = struct {
     }
 };
 
-const DepthTestEnable = struct {
-    enable: bool = false,
-
-    pub const hash = getDefaultHashFn(@This());
-    pub const eql = getDefaultEqlFn(@This());
-
-    pub fn set(self: *@This(), enable: bool) void {
-        self.enable = enable;
-    }
-};
-
 const DepthCompareOp = struct {
     compare_op: ngl.CompareOp = .never,
 
@@ -577,28 +557,6 @@ const DepthCompareOp = struct {
 
     pub fn set(self: *@This(), compare_op: ngl.CompareOp) void {
         self.compare_op = compare_op;
-    }
-};
-
-const DepthWriteEnable = struct {
-    enable: bool = false,
-
-    pub const hash = getDefaultHashFn(@This());
-    pub const eql = getDefaultEqlFn(@This());
-
-    pub fn set(self: *@This(), enable: bool) void {
-        self.enable = enable;
-    }
-};
-
-const StencilTestEnable = struct {
-    enable: bool = false,
-
-    pub const hash = getDefaultHashFn(@This());
-    pub const eql = getDefaultEqlFn(@This());
-
-    pub fn set(self: *@This(), enable: bool) void {
-        self.enable = enable;
     }
 };
 
