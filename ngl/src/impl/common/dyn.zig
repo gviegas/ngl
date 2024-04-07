@@ -4,6 +4,52 @@ const ngl = @import("../../ngl.zig");
 const Cmd = ngl.Cmd;
 const Impl = @import("../Impl.zig");
 
+/// Every field of `K` must have `hash` (update) and `eql` methods.
+fn HashContext(comptime K: type) type {
+    return struct {
+        pub fn hash(_: @This(), key: K) u64 {
+            var hasher = std.hash.Wyhash.init(0);
+            inline for (@typeInfo(K).Struct.fields) |field|
+                @field(key, field.name).hash(&hasher);
+            return hasher.final();
+        }
+
+        pub fn eql(_: @This(), key: K, other: K) bool {
+            inline for (@typeInfo(K).Struct.fields) |field|
+                if (!@field(key, field.name).eql(@field(other, field.name)))
+                    return false;
+            return true;
+        }
+    };
+}
+
+/// Every field of `K` must support default initialization.
+fn getInitFn(comptime K: type) (fn () K) {
+    return struct {
+        fn init() K {
+            var self: K = undefined;
+            inline for (@typeInfo(K).Struct.fields) |field|
+                @field(self, field.name) = .{};
+            return self;
+        }
+    }.init;
+}
+
+/// Every field of `K` must either support default initialization
+/// or have a `clear` method taking an optional allocator.
+fn getClearFn(comptime K: type) (fn (*K, ?std.mem.Allocator) void) {
+    return struct {
+        fn clear(self: *K, allocator: ?std.mem.Allocator) void {
+            inline for (@typeInfo(K).Struct.fields) |field| {
+                if (@hasDecl(field.type, "clear"))
+                    @field(self, field.name).clear(allocator)
+                else
+                    @field(self, field.name) = .{};
+            }
+        }
+    }.clear;
+}
+
 pub fn State(comptime state_mask: anytype) type {
     const M = @TypeOf(state_mask);
 
@@ -78,45 +124,12 @@ pub fn State(comptime state_mask: anytype) type {
         blend_constants: getType(.blend_constants),
         compute_shader: getType(.compute_shader),
 
-        const mask = state_mask;
+        pub const mask = state_mask;
 
-        const Self = @This();
+        pub const HashCtx = HashContext(@This());
 
-        pub const HashCtx = struct {
-            pub fn hash(_: @This(), state: Self) u64 {
-                var hasher = std.hash.Wyhash.init(0);
-                inline for (fields()) |field|
-                    @field(state, field.name).hash(&hasher);
-                return hasher.final();
-            }
-
-            pub fn eql(_: @This(), state: Self, other: Self) bool {
-                inline for (fields()) |field|
-                    if (!@field(state, field.name).eql(@field(other, field.name)))
-                        return false;
-                return true;
-            }
-        };
-
-        pub fn init() Self {
-            var self: Self = undefined;
-            inline for (fields()) |field|
-                @field(self, field.name) = .{};
-            return self;
-        }
-
-        pub fn clear(self: *Self, allocator: ?std.mem.Allocator) void {
-            inline for (fields()) |field| {
-                if (@hasDecl(field.type, "clear"))
-                    @field(self, field.name).clear(allocator)
-                else
-                    @field(self, field.name) = .{};
-            }
-        }
-
-        fn fields() @TypeOf(@typeInfo(Self).Struct.fields) {
-            return @typeInfo(Self).Struct.fields;
-        }
+        pub const init = getInitFn(@This());
+        pub const clear = getClearFn(@This());
     };
 }
 
@@ -124,6 +137,55 @@ pub fn StateMask(comptime kind: enum {
     primitive,
     compute,
 }) type {
+    const common_render = [_][:0]const u8{
+        // `Cmd.setShaders`.
+        "fragment_shader",
+        // `Cmd.setViewports`.
+        "viewports",
+        // `Cmd.setScissorRects`.
+        "scissor_rects",
+        // `Cmd.setRasterizationEnable`.
+        "rasterization_enable",
+        // `Cmd.setPolygonMode`.
+        "polygon_mode",
+        // `Cmd.setCullMode`.
+        "cull_mode",
+        // `Cmd.setFrontFace`.
+        "front_face",
+        // `Cmd.setSampleCount`.
+        "sample_count",
+        // `Cmd.setSampleMask`.
+        "sample_mask",
+        // `Cmd.setDepthBiasEnable`.
+        "depth_bias_enable",
+        // `Cmd.setDepthBias`.
+        "depth_bias",
+        // `Cmd.setDepthTestEnable`.
+        "depth_test_enable",
+        // `Cmd.setDepthCompareOp`.
+        "depth_compare_op",
+        // `Cmd.setDepthWriteEnable`.
+        "depth_write_enable",
+        // `Cmd.setStencilTestEnable`.
+        "stencil_test_enable",
+        // `Cmd.setStencilOp`.
+        "stencil_op",
+        // `Cmd.setStencilReadMask`.
+        "stencil_read_mask",
+        // `Cmd.setStencilWriteMask`.
+        "stencil_write_mask",
+        // `Cmd.setStencilReference`.
+        "stencil_reference",
+        // `Cmd.setColorBlendEnable.`
+        "color_blend_enable",
+        // `Cmd.setColorBlend.`
+        "color_blend",
+        // `Cmd.setColorWrite.`
+        "color_write",
+        // `Cmd.setBlendConstants.`
+        "blend_constants",
+    };
+
     const names = switch (kind) {
         .primitive => &[_][:0]const u8{
             // `Cmd.setShaders`.
@@ -158,66 +220,133 @@ pub fn StateMask(comptime kind: enum {
     } });
 }
 
-const common_render = [_][:0]const u8{
-    // `Cmd.setShaders`.
-    "fragment_shader",
-    // `Cmd.setViewports`.
-    "viewports",
-    // `Cmd.setScissorRects`.
-    "scissor_rects",
-    // `Cmd.setRasterizationEnable`.
-    "rasterization_enable",
-    // `Cmd.setPolygonMode`.
-    "polygon_mode",
-    // `Cmd.setCullMode`.
-    "cull_mode",
-    // `Cmd.setFrontFace`.
-    "front_face",
-    // `Cmd.setSampleCount`.
-    "sample_count",
-    // `Cmd.setSampleMask`.
-    "sample_mask",
-    // `Cmd.setDepthBiasEnable`.
-    "depth_bias_enable",
-    // `Cmd.setDepthBias`.
-    "depth_bias",
-    // `Cmd.setDepthTestEnable`.
-    "depth_test_enable",
-    // `Cmd.setDepthCompareOp`.
-    "depth_compare_op",
-    // `Cmd.setDepthWriteEnable`.
-    "depth_write_enable",
-    // `Cmd.setStencilTestEnable`.
-    "stencil_test_enable",
-    // `Cmd.setStencilOp`.
-    "stencil_op",
-    // `Cmd.setStencilReadMask`.
-    "stencil_read_mask",
-    // `Cmd.setStencilWriteMask`.
-    "stencil_write_mask",
-    // `Cmd.setStencilReference`.
-    "stencil_reference",
-    // `Cmd.setColorBlendEnable.`
-    "color_blend_enable",
-    // `Cmd.setColorBlend.`
-    "color_blend",
-    // `Cmd.setColorWrite.`
-    "color_write",
-    // `Cmd.setBlendConstants.`
-    "blend_constants",
+pub fn Rendering(comptime rendering_mask: RenderingMask) type {
+    const getType = struct {
+        fn getType(comptime ident: anytype) type {
+            const has = @field(rendering_mask, @tagName(ident));
+            // TODO
+            return switch (ident) {
+                .color_view => if (has) None else None,
+                .color_format => if (has) None else None,
+                .color_layout => if (has) None else None,
+                .color_op => if (has) None else None,
+                .color_clear_value => if (has) None else None,
+                .color_resolve_view => if (has) None else None,
+                .color_resolve_layout => if (has) None else None,
+                .color_resolve_mode => if (has) None else None,
+                .depth_view => if (has) None else None,
+                .depth_format => if (has) None else None,
+                .depth_layout => if (has) None else None,
+                .depth_op => if (has) None else None,
+                .depth_clear_value => if (has) None else None,
+                .depth_resolve_view => if (has) None else None,
+                .depth_resolve_layout => if (has) None else None,
+                .depth_resolve_mode => if (has) None else None,
+                .stencil_view => if (has) None else None,
+                .stencil_format => if (has) None else None,
+                .stencil_layout => if (has) None else None,
+                .stencil_op => if (has) None else None,
+                .stencil_clear_value => if (has) None else None,
+                .stencil_resolve_view => if (has) None else None,
+                .stencil_resolve_layout => if (has) None else None,
+                .stencil_resolve_mode => if (has) None else None,
+                .render_area => if (has) None else None,
+                .layers => if (has) None else None,
+                .view_mask => if (has) None else None,
+                .context => if (has) None else None,
+                else => unreachable,
+            };
+        }
+    }.getType;
+
+    return struct {
+        color_view: getType(.color_view),
+        color_format: getType(.color_format),
+        color_layout: getType(.color_layout),
+        color_op: getType(.color_op),
+        color_clear_value: getType(.color_clear_value),
+        color_resolve_view: getType(.color_resolve_view),
+        color_resolve_layout: getType(.color_resolve_layout),
+        color_resolve_mode: getType(.color_resolve_mode),
+        depth_view: getType(.depth_view),
+        depth_format: getType(.depth_format),
+        depth_layout: getType(.depth_layout),
+        depth_op: getType(.depth_op),
+        depth_clear_value: getType(.depth_clear_value),
+        depth_resolve_view: getType(.depth_resolve_view),
+        depth_resolve_layout: getType(.depth_resolve_layout),
+        depth_resolve_mode: getType(.depth_resolve_mode),
+        stencil_view: getType(.stencil_view),
+        stencil_format: getType(.stencil_format),
+        stencil_layout: getType(.stencil_layout),
+        stencil_op: getType(.stencil_op),
+        stencil_clear_value: getType(.stencil_clear_value),
+        stencil_resolve_view: getType(.stencil_resolve_view),
+        stencil_resolve_layout: getType(.stencil_resolve_layout),
+        stencil_resolve_mode: getType(.stencil_resolve_mode),
+        render_area: getType(.render_area),
+        layers: getType(.layers),
+        view_mask: getType(.view_mask),
+        context: getType(.context),
+
+        pub const mask = rendering_mask;
+
+        pub const HashCtx = HashContext(@This());
+
+        pub const init = getInitFn(@This());
+        pub const clear = getClearFn(@This());
+    };
+}
+
+pub const RenderingMask = packed struct {
+    // `Cmd.Rendering.colors`.
+    color_view: bool = false,
+    color_format: bool = false,
+    color_layout: bool = false,
+    color_op: bool = false,
+    color_clear_value: bool = false,
+    color_resolve_view: bool = false,
+    color_resolve_layout: bool = false,
+    color_resolve_mode: bool = false,
+    // `Cmd.Rendering.depth`.
+    depth_view: bool = false,
+    depth_format: bool = false,
+    depth_layout: bool = false,
+    depth_op: bool = false,
+    depth_clear_value: bool = false,
+    depth_resolve_view: bool = false,
+    depth_resolve_layout: bool = false,
+    depth_resolve_mode: bool = false,
+    // `Cmd.Rendering.stencil`.
+    stencil_view: bool = false,
+    stencil_format: bool = false,
+    stencil_layout: bool = false,
+    stencil_op: bool = false,
+    stencil_clear_value: bool = false,
+    stencil_resolve_view: bool = false,
+    stencil_resolve_layout: bool = false,
+    stencil_resolve_mode: bool = false,
+    // `Cmd.Rendering.render_area`.
+    render_area: bool = false,
+    // `Cmd.Rendering.layers`.
+    layers: bool = false,
+    // `Cmd.Rendering.view_mask`.
+    view_mask: bool = false,
+    // `Cmd.Rendering.context`.
+    context: bool = false,
 };
 
-fn getDefaultHashFn(comptime K: type) (fn (K, hasher: anytype) void) {
+fn getDefaultHashFn(comptime InnerK: type) (fn (InnerK, hasher: anytype) void) {
     return struct {
-        fn hash(key: K, hasher: anytype) void {
+        fn hash(key: InnerK, hasher: anytype) void {
             std.hash.autoHash(hasher, key);
         }
     }.hash;
 }
 
-fn getDefaultEqlFn(comptime K: type) (fn (K, K) bool) {
+fn getDefaultEqlFn(comptime InnerK: type) (fn (InnerK, InnerK) bool) {
     return struct {
-        fn eql(key: K, other: K) bool {
+        fn eql(key: InnerK, other: InnerK) bool {
             return std.meta.eql(key, other);
         }
     }.eql;
@@ -633,21 +762,21 @@ const BlendConstants = struct {
 
 const testing = std.testing;
 
-fn expectState(state: anytype, hash: u64, other_state: @TypeOf(state)) !void {
-    const ctx = @TypeOf(state).HashCtx{};
-    const other_hash = ctx.hash(other_state);
+fn expectEql(key: anytype, hash: u64, other_key: @TypeOf(key)) !void {
+    const ctx = @TypeOf(key).HashCtx{};
+    const other_hash = ctx.hash(other_key);
     try testing.expect(hash == other_hash and hash != 0);
-    try testing.expect(ctx.eql(state, other_state));
-    try testing.expect(ctx.eql(other_state, state));
+    try testing.expect(ctx.eql(key, other_key));
+    try testing.expect(ctx.eql(other_key, key));
 }
 
-fn expectNotState(state: anytype, hash: u64, other_state: @TypeOf(state)) !void {
-    const ctx = @TypeOf(state).HashCtx{};
-    const other_hash = ctx.hash(other_state);
+fn expectNotEql(key: anytype, hash: u64, other_key: @TypeOf(key)) !void {
+    const ctx = @TypeOf(key).HashCtx{};
+    const other_hash = ctx.hash(other_key);
     try testing.expect(hash != 0 and other_hash != 0);
     if (hash == other_hash) std.log.warn("{s}: Hash value clash", .{@src().file});
-    try testing.expect(!ctx.eql(state, other_state));
-    try testing.expect(!ctx.eql(other_state, state));
+    try testing.expect(!ctx.eql(key, other_key));
+    try testing.expect(!ctx.eql(other_key, key));
 }
 
 test State {
@@ -701,7 +830,7 @@ test State {
         const a = T.init();
         const b = T.init();
         const ctx = T.HashCtx{};
-        try expectState(a, ctx.hash(a), b);
+        try expectEql(a, ctx.hash(a), b);
     }
 
     inline for (.{ P, C }, .{ "fragment_shader", "compute_shader" }) |T, field_name| {
@@ -711,10 +840,10 @@ test State {
         const hb = ctx.hash(b);
 
         @field(a, field_name).set(.{ .val = 1 });
-        try expectNotState(b, hb, a);
+        try expectNotEql(b, hb, a);
 
         @field(a, field_name) = .{};
-        try expectState(b, hb, a);
+        try expectEql(b, hb, a);
     }
 
     inline for (.{ P, C }, .{ "vertex_shader", "compute_shader" }) |T, field_name| {
@@ -724,13 +853,13 @@ test State {
         const ha = ctx.hash(a);
 
         @field(b, field_name).set(.{ .val = 2 });
-        try expectNotState(a, ha, b);
+        try expectNotEql(a, ha, b);
 
         b.clear(null);
-        try expectState(a, ha, b);
+        try expectEql(a, ha, b);
 
         a.clear(null);
-        try expectState(b, ctx.hash(b), a);
+        try expectEql(b, ctx.hash(b), a);
     }
 
     const ctx = P.HashCtx{};
@@ -753,183 +882,183 @@ test State {
         .offset = 0,
     }});
     h1 = ctx.hash(s1);
-    try expectNotState(s0, h0, s1);
+    try expectNotEql(s0, h0, s1);
 
     try s2.vertex_input.set(testing.allocator, s1.vertex_input.bindings.items, &.{});
-    try expectNotState(s0, h0, s2);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s0, h0, s2);
+    try expectNotEql(s1, h1, s2);
     try s2.vertex_input.set(
         testing.allocator,
         s1.vertex_input.bindings.items,
         s1.vertex_input.attributes.items,
     );
-    try expectNotState(s0, h0, s2);
-    try expectState(s1, h1, s2);
+    try expectNotEql(s0, h0, s2);
+    try expectEql(s1, h1, s2);
 
     s2.vertex_input.bindings.items[0].binding +%= 1;
-    try expectNotState(s0, h0, s2);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s0, h0, s2);
+    try expectNotEql(s1, h1, s2);
     s1.primitive_topology.set(.line_list);
     h1 = ctx.hash(s1);
     s2.vertex_input.bindings.items[0].binding -%= 1;
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.primitive_topology.set(.line_list);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s1.vertex_input.clear(testing.allocator);
     h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.vertex_input.clear(testing.allocator);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.rasterization_enable.set(false);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.rasterization_enable.set(false);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.polygon_mode.set(.line);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.polygon_mode.set(.line);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.cull_mode.set(.front);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.cull_mode.set(.front);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.front_face.set(.counter_clockwise);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.front_face.set(.counter_clockwise);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.sample_count.set(.@"4");
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.sample_count.set(.@"4");
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.sample_mask.set(0b1111);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.sample_mask.set(0xf);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.depth_bias_enable.set(true);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.depth_bias_enable.set(true);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.depth_bias.set(0.01, 2, 0);
-    try expectNotState(s1, h1, s2); // Clash.
+    try expectNotEql(s1, h1, s2); // Clash.
     s1.depth_bias.value = 0.01;
     s1.depth_bias.slope = 2;
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.depth_test_enable.set(true);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.depth_test_enable.set(true);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.depth_compare_op.set(.less_equal);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.depth_compare_op.set(.less_equal);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.depth_write_enable.set(true);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.depth_write_enable.set(true);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.stencil_test_enable.set(true);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.stencil_test_enable.set(true);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.stencil_op.set(.front, .zero, .replace, .invert, .equal);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.stencil_op.set(.front, .zero, .invert, .replace, .equal);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.stencil_op.set(.front, .zero, .replace, .invert, .equal);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s2.stencil_op.set(.back, .keep, .increment_wrap, .keep, .greater);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.stencil_op.set(.back, .keep, .increment_wrap, .keep, .greater);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s2.stencil_op.set(.front_and_back, .decrement_clamp, .increment_clamp, .zero, .greater);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.stencil_op.set(.front, .decrement_clamp, .increment_clamp, .zero, .greater);
     h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.stencil_op.set(.back, .decrement_clamp, .increment_clamp, .zero, .greater);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.stencil_read_mask.set(.back, 0x80);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.stencil_read_mask.set(.front, 0x80);
     h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.stencil_read_mask.set(.front, 0x80);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.stencil_read_mask.set(.back, 0x80);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s2.stencil_read_mask.set(.front_and_back, 0x80);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s2.stencil_read_mask.set(.front_and_back, 0x1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.stencil_read_mask.set(.front, 0x80);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.stencil_read_mask.set(.back, 0x80);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.stencil_write_mask.set(.front, 0x7f);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.stencil_write_mask.set(.front, 0x7f);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s1.stencil_write_mask.set(.back, 0x7f);
     h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.stencil_write_mask.set(.back, 0x7f);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s1.stencil_write_mask.set(.front_and_back, 0xfe);
     h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.stencil_write_mask.set(.front_and_back, 0xfe);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.color_blend_enable.set(1, &.{});
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s2.color_blend_enable.set(1, &.{true});
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.color_blend_enable.set(1, &.{false});
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s2.color_blend_enable.set(1, &.{false});
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s1.color_blend_enable.set(2, &.{true});
     h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.color_blend_enable.set(1, &.{true});
     h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.color_blend_enable.set(1, &.{ true, true });
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.color_blend.set(2, &.{});
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s2.color_blend.set(2, &.{.{
         .color_source_factor = .source_color,
         .color_dest_factor = .one,
@@ -938,7 +1067,7 @@ test State {
         .alpha_dest_factor = .zero,
         .alpha_op = .max,
     }});
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.color_blend.set(1, &.{.{
         .color_source_factor = .source_color,
         .color_dest_factor = .one,
@@ -948,7 +1077,7 @@ test State {
         .alpha_op = .max,
     }});
     h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.color_blend.set(1, &[_]Cmd.Blend{.{
         .color_source_factor = .source_color,
         .color_dest_factor = .one,
@@ -958,7 +1087,7 @@ test State {
         .alpha_op = .max,
     }} ** 3);
     h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.color_blend.set(1, &.{.{
         .color_source_factor = .source_color,
         .color_dest_factor = .one,
@@ -967,10 +1096,10 @@ test State {
         .alpha_dest_factor = .zero,
         .alpha_op = .max,
     }});
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.color_blend.set(3, &.{.{}});
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s1.color_blend.set(2, &.{.{
         .color_source_factor = .source_color,
         .color_dest_factor = .dest_color,
@@ -980,36 +1109,98 @@ test State {
         .alpha_op = .max,
     }});
     h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.color_blend = .{};
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.color_blend.set(0, &[_]Cmd.Blend{.{}} ** max_color_attachment);
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
 
     s2.color_write.set(0, &.{});
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s2.color_write.set(1, &.{});
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s2.color_write.set(1, &.{.all});
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s1.color_write.set(0, &.{.all});
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s1.color_write.set(1, &.{ .all, .{ .mask = .{ .r = true, .g = true, .b = true, .a = true } } });
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s1.color_write.set(2, &.{.all});
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
     s2.color_write.set(2, &.{.{ .mask = .{ .r = true } }});
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s2.color_write.set(1, &[_]Cmd.ColorMask{.{ .mask = .{} }} ** (max_color_attachment - 1));
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.color_write.set(0, &[_]Cmd.ColorMask{.{ .mask = .{} }} ** max_color_attachment);
     h1 = ctx.hash(s1);
-    try expectNotState(s1, h1, s2);
+    try expectNotEql(s1, h1, s2);
     s1.color_write.set(0, &.{.all});
     h1 = ctx.hash(s1);
-    try expectState(s1, h1, s2);
+    try expectEql(s1, h1, s2);
+}
+
+test Rendering {
+    const U = @typeInfo(RenderingMask).Struct.backing_integer.?;
+
+    const R = Rendering(.{
+        .color_view = true,
+        .color_format = true,
+        .color_layout = true,
+        .color_op = true,
+        .color_clear_value = true,
+        .color_resolve_view = true,
+        .color_resolve_layout = true,
+        .color_resolve_mode = true,
+        .depth_view = true,
+        .depth_format = true,
+        .depth_layout = true,
+        .depth_op = true,
+        .depth_clear_value = true,
+        .depth_resolve_view = true,
+        .depth_resolve_layout = true,
+        .depth_resolve_mode = true,
+        .stencil_view = true,
+        .stencil_format = true,
+        .stencil_layout = true,
+        .stencil_op = true,
+        .stencil_clear_value = true,
+        .stencil_resolve_view = true,
+        .stencil_resolve_layout = true,
+        .stencil_resolve_mode = true,
+        .render_area = true,
+        .layers = true,
+        .view_mask = true,
+        .context = true,
+    });
+    if (@as(U, @bitCast(R.mask)) != ~@as(U, 0))
+        @compileError("Bad dyn.Rendering layout");
+    // TODO
+    //inline for (@typeInfo(R).Struct.fields) |field|
+    //    if (field.type == None)
+    //        @compileError("Bad dyn.Rendering layout");
+
+    // TODO: Consider disallowing this case.
+    const X = Rendering(.{});
+    if (@as(U, @bitCast(X.mask)) != @as(U, 0) or @sizeOf(X) != 0)
+        @compileError("Bad dyn.Rendering layout");
+
+    const ctx = R.HashCtx{};
+    const r0 = R.init();
+    const h0 = ctx.hash(r0);
+    var r1 = R.init();
+    var h1: u64 = undefined;
+    var r2 = R.init();
+
+    try expectEql(r0, h0, r1);
+    try expectEql(r0, h0, r2);
+    r1.clear(null);
+    r2.clear(testing.allocator);
+    try expectEql(r0, h0, r1);
+    try expectEql(r0, h0, r2);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
 }
