@@ -8,8 +8,8 @@ pub fn State(comptime state_mask: anytype) type {
     const M = @TypeOf(state_mask);
 
     switch (M) {
-        Mask(.primitive), Mask(.compute) => {},
-        else => @compileError("dyn.State's argument must be of type dyn.Mask"),
+        StateMask(.primitive), StateMask(.compute) => {},
+        else => @compileError("dyn.State's argument must be of type dyn.StateMask"),
     }
 
     const getType = struct {
@@ -120,7 +120,7 @@ pub fn State(comptime state_mask: anytype) type {
     };
 }
 
-pub fn Mask(comptime kind: enum {
+pub fn StateMask(comptime kind: enum {
     primitive,
     compute,
 }) type {
@@ -651,7 +651,7 @@ fn expectNotState(state: anytype, hash: u64, other_state: @TypeOf(state)) !void 
 }
 
 test State {
-    const P = State(Mask(.primitive){
+    const P = State(StateMask(.primitive){
         .vertex_shader = true,
         .vertex_input = true,
         .primitive_topology = true,
@@ -685,7 +685,7 @@ test State {
         if (@field(P.mask, field.name) and @TypeOf(@field(P.init(), field.name)) == None)
             @compileError("Bad dyn.State layout");
 
-    const C = State(Mask(.compute){ .compute_shader = true });
+    const C = State(StateMask(.compute){ .compute_shader = true });
     if (@TypeOf(C.init().compute_shader) != ImplType(Impl.Shader))
         @compileError("Bad dyn.State layout");
     inline for (@typeInfo(@TypeOf(P.mask)).Struct.fields) |field|
@@ -693,7 +693,7 @@ test State {
             @compileError("Bad dyn.State layout");
 
     // TODO: Consider disallowing this case.
-    const X = State(Mask(.primitive){});
+    const X = State(StateMask(.primitive){});
     if (@sizeOf(X) != 0)
         @compileError("Bad dyn.State layout");
 
