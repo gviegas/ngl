@@ -226,9 +226,9 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .color_layout => if (has) ColorLayout else None,
                 .color_op => if (has) ColorOp else None,
                 .color_clear_value => if (has) ColorClearValue else None,
-                .color_resolve_view => if (has) None else None,
-                .color_resolve_layout => if (has) None else None,
-                .color_resolve_mode => if (has) None else None,
+                .color_resolve_view => if (has) ColorResolveView else None,
+                .color_resolve_layout => if (has) ColorResolveLayout else None,
+                .color_resolve_mode => if (has) ColorResolveMode else None,
                 .depth_view => if (has) None else None,
                 .depth_format => if (has) None else None,
                 .depth_layout => if (has) None else None,
@@ -787,6 +787,48 @@ const ColorClearValue = struct {
     }
 };
 
+const ColorResolveView = struct {
+    views: [max_color_attachment]Impl.ImageView =
+        [_]Impl.ImageView{.{ .val = 0 }} ** max_color_attachment,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+        for (self.views[0..rendering.colors.len], rendering.colors) |*impl, attach|
+            impl.* = if (attach.resolve) |x| x.view.impl else .{ .val = 0 };
+        @memset(self.views[rendering.colors.len..], .{ .val = 0 });
+    }
+};
+
+const ColorResolveLayout = struct {
+    layouts: [max_color_attachment]ngl.Image.Layout =
+        [_]ngl.Image.Layout{.unknown} ** max_color_attachment,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+        for (self.layouts[0..rendering.colors.len], rendering.colors) |*layout, attach|
+            layout.* = if (attach.resolve) |x| x.layout else .unknown;
+        @memset(self.layouts[rendering.colors.len..], .unknown);
+    }
+};
+
+const ColorResolveMode = struct {
+    resolve_modes: [max_color_attachment]Cmd.ResolveMode =
+        [_]Cmd.ResolveMode{.average} ** max_color_attachment,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+        for (self.resolve_modes[0..rendering.colors.len], rendering.colors) |*mode, attach|
+            mode.* = if (attach.resolve) |x| x.mode else .average;
+        @memset(self.resolve_modes[rendering.colors.len..], .average);
+    }
+};
+
 fn DsClearValue(comptime _: enum { depth, stencil }) type {
     comptime {
         @compileError("Shouldn't be necessary");
@@ -1267,8 +1309,9 @@ test Rendering {
         .{ .impl = .{ .val = 2 }, .format = .rgba8_unorm },
         .{ .impl = .{ .val = 3 }, .format = .rgba16_sfloat },
         .{ .impl = .{ .val = 4 }, .format = .rgba16_sfloat },
-        .{ .impl = .{ .val = 5 }, .format = .d32_sfloat_s8_uint },
+        .{ .impl = .{ .val = 5 }, .format = .a2bgr10_unorm },
         .{ .impl = .{ .val = 6 }, .format = .d32_sfloat_s8_uint },
+        .{ .impl = .{ .val = 7 }, .format = .d32_sfloat_s8_uint },
     };
     const rend_empty = Cmd.Rendering{
         .colors = &.{},
@@ -1303,27 +1346,35 @@ test Rendering {
                     .mode = .average,
                 },
             },
+            .{
+                .view = &views[4],
+                .layout = .color_attachment_optimal,
+                .load_op = .load,
+                .store_op = .store,
+                .clear_value = .{ .color_f32 = .{ 0, 0, 0, 0 } },
+                .resolve = null,
+            },
         },
         .depth = .{
-            .view = &views[4],
+            .view = &views[5],
             .layout = .depth_stencil_attachment_optimal,
             .load_op = .clear,
             .store_op = .dont_care,
             .clear_value = .{ .depth_stencil = .{ 1, undefined } },
             .resolve = .{
-                .view = &views[5],
+                .view = &views[6],
                 .layout = .depth_stencil_attachment_optimal,
                 .mode = .sample_zero,
             },
         },
         .stencil = .{
-            .view = &views[4],
+            .view = &views[5],
             .layout = .depth_stencil_attachment_optimal,
             .load_op = .clear,
             .store_op = .dont_care,
             .clear_value = .{ .depth_stencil = .{ undefined, 0xff } },
             .resolve = .{
-                .view = &views[5],
+                .view = &views[6],
                 .layout = .depth_stencil_attachment_optimal,
                 .mode = .sample_zero,
             },
@@ -1344,7 +1395,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     r2.color_view.set(rend_empty);
     try expectEql(r1, h1, r2);
-    @memset(&r2.color_view.views, views[1].impl);
+    @memset(&r2.color_view.views, views[0].impl);
     try expectNotEql(r1, h1, r2);
     r2.color_view.set(rend_empty);
     try expectEql(r1, h1, r2);
@@ -1392,5 +1443,45 @@ test Rendering {
     h1 = ctx.hash(r1);
     try expectNotEql(r1, h1, r2);
     @memset(&r2.color_op.load, .dont_care);
+    try expectEql(r1, h1, r2);
+
+    r2.color_resolve_view.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.color_resolve_view.set(rend);
+    try expectNotEql(r1, h1, r2);
+    r1.color_resolve_view.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+    r1.color_resolve_view = .{};
+    h1 = ctx.hash(r1);
+    try expectNotEql(r1, h1, r2);
+    r2.color_resolve_view.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    @memset(&r2.color_resolve_view.views, views[1].impl);
+    try expectNotEql(r1, h1, r2);
+    r2.color_resolve_view.set(rend_empty);
+    try expectEql(r1, h1, r2);
+
+    r2.color_resolve_layout.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.color_resolve_layout.set(rend);
+    try expectNotEql(r1, h1, r2);
+    for (r1.color_resolve_layout.layouts[0..rend.colors.len], rend.colors) |*layout, attach|
+        layout.* = if (attach.resolve) |x| x.layout else .unknown;
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+    r1.color_resolve_layout.set(rend_empty);
+    h1 = ctx.hash(r1);
+    try expectNotEql(r1, h1, r2);
+    r2.color_resolve_layout = .{};
+    try expectEql(r1, h1, r2);
+
+    r2.color_resolve_mode.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.color_resolve_mode.set(rend);
+    try expectEql(r1, h1, r2);
+    r2.color_resolve_mode.resolve_modes[1] = .min;
+    try expectNotEql(r1, h1, r2);
+    r2.color_resolve_mode = .{};
     try expectEql(r1, h1, r2);
 }
