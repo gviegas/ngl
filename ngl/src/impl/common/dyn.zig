@@ -706,10 +706,10 @@ const ColorView = struct {
     pub const hash = getDefaultHashFn(@This());
     pub const eql = getDefaultEqlFn(@This());
 
-    pub fn set(self: *@This(), views: []const ngl.ImageView) void {
-        for (self.views[0..views.len], views) |*impl, view|
-            impl.* = view.impl;
-        for (self.views[views.len..]) |*impl|
+    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+        for (self.views[0..rendering.colors.len], rendering.colors) |*impl, attach|
+            impl.* = attach.view.impl;
+        for (self.views[rendering.colors.len..]) |*impl|
             impl.* = .{ .val = 0 };
     }
 };
@@ -1158,27 +1158,90 @@ test Rendering {
     h1 = ctx.hash(r1);
     try expectEql(r1, h1, r2);
 
-    r2.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 0 } }} ** max_color_attachment);
+    var views = [_]ngl.ImageView{
+        .{ .impl = .{ .val = 1 } },
+        .{ .impl = .{ .val = 2 } },
+        .{ .impl = .{ .val = 3 } },
+        .{ .impl = .{ .val = 4 } },
+        .{ .impl = .{ .val = 5 } },
+        .{ .impl = .{ .val = 6 } },
+    };
+    const rend_empty = Cmd.Rendering{
+        .colors = &.{},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = 480, .height = 270 },
+        .layers = 1,
+    };
+    const rend = Cmd.Rendering{
+        .colors = &.{
+            .{
+                .view = &views[0],
+                .layout = .color_attachment_optimal,
+                .load_op = .clear,
+                .store_op = .dont_care,
+                .clear_value = .{ .color_f32 = .{ 0, 0, 0, 0 } },
+                .resolve = .{
+                    .view = &views[1],
+                    .layout = .color_attachment_optimal,
+                    .mode = .average,
+                },
+            },
+            .{
+                .view = &views[2],
+                .layout = .color_attachment_optimal,
+                .load_op = .clear,
+                .store_op = .store,
+                .clear_value = .{ .color_f32 = .{ 1, 1, 1, 1 } },
+                .resolve = .{
+                    .view = &views[3],
+                    .layout = .color_attachment_optimal,
+                    .mode = .average,
+                },
+            },
+        },
+        .depth = .{
+            .view = &views[4],
+            .layout = .depth_stencil_attachment_optimal,
+            .load_op = .clear,
+            .store_op = .store,
+            .clear_value = .{ .depth_stencil = .{ 1, undefined } },
+            .resolve = .{
+                .view = &views[5],
+                .layout = .depth_stencil_attachment_optimal,
+                .mode = .sample_zero,
+            },
+        },
+        .stencil = .{
+            .view = &views[4],
+            .layout = .depth_stencil_attachment_optimal,
+            .load_op = .clear,
+            .store_op = .store,
+            .clear_value = .{ .depth_stencil = .{ undefined, 0xff } },
+            .resolve = .{
+                .view = &views[5],
+                .layout = .depth_stencil_attachment_optimal,
+                .mode = .sample_zero,
+            },
+        },
+        .render_area = .{ .width = 480, .height = 270 },
+        .layers = 1,
+    };
+
+    r2.color_view.set(rend_empty);
     try expectEql(r1, h1, r2);
-    r2.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 0 } }} ** (max_color_attachment / 2));
-    try expectEql(r1, h1, r2);
-    r2.color_view.set(&.{.{ .impl = .{ .val = 0 } }});
-    try expectEql(r1, h1, r2);
-    r2.color_view.set(&.{});
-    try expectEql(r1, h1, r2);
-    r2.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 1 } }} ** max_color_attachment);
+    r2.color_view.set(rend);
     try expectNotEql(r1, h1, r2);
-    r1.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 2 } }} ** max_color_attachment);
+    r1.color_view.set(rend);
     h1 = ctx.hash(r1);
-    try expectNotEql(r1, h1, r2);
-    r2.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 2 } }} ** (max_color_attachment / 2));
-    try expectNotEql(r1, h1, r2);
-    r1.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 2 } }} ** (max_color_attachment / 2));
-    h1 = ctx.hash(r1);
     try expectEql(r1, h1, r2);
-    r2.color_view.set(&.{});
-    try expectNotEql(r1, h1, r2);
     r1.color_view = .{};
     h1 = ctx.hash(r1);
+    try expectNotEql(r1, h1, r2);
+    r2.color_view.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    @memset(&r2.color_view.views, views[1].impl);
+    try expectNotEql(r1, h1, r2);
+    r2.color_view.set(rend_empty);
     try expectEql(r1, h1, r2);
 }
