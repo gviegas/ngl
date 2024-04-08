@@ -53,20 +53,20 @@ fn getClearFn(comptime K: type) (fn (*K, ?std.mem.Allocator) void) {
 pub fn State(comptime state_mask: anytype) type {
     const M = @TypeOf(state_mask);
 
-    switch (M) {
-        StateMask(.primitive), StateMask(.compute) => {},
+    const kind = switch (M) {
+        StateMask(.primitive) => .primitive,
+        StateMask(.compute) => .compute,
         else => @compileError("dyn.State's argument must be of type dyn.StateMask"),
-    }
+    };
 
     const getType = struct {
         fn getType(comptime ident: anytype) type {
             const name = @tagName(ident);
-            const has = @hasField(@TypeOf(state_mask), name) and @field(state_mask, name);
+            const has = @hasField(M, name) and @field(state_mask, name);
             return switch (ident) {
-                .vertex_shader => if (has) ImplType(Impl.Shader) else None,
+                .shaders => if (has) Shaders(kind) else None,
                 .vertex_input => if (has) VertexInput else None,
                 .primitive_topology => if (has) PrimitiveTopology else None,
-                .fragment_shader => if (has) ImplType(Impl.Shader) else None,
                 .viewports => if (has) Viewports else None,
                 .scissor_rects => if (has) ScissorRects else None,
                 .rasterization_enable => if (has) Enable(true) else None,
@@ -89,17 +89,15 @@ pub fn State(comptime state_mask: anytype) type {
                 .color_blend => if (has) ColorBlend else None,
                 .color_write => if (has) ColorWrite else None,
                 .blend_constants => if (has) BlendConstants else None,
-                .compute_shader => if (has) ImplType(Impl.Shader) else None,
                 else => unreachable,
             };
         }
     }.getType;
 
     return struct {
-        vertex_shader: getType(.vertex_shader),
+        shaders: getType(.shaders),
         vertex_input: getType(.vertex_input),
         primitive_topology: getType(.primitive_topology),
-        fragment_shader: getType(.fragment_shader),
         viewports: getType(.viewports),
         scissor_rects: getType(.scissor_rects),
         rasterization_enable: getType(.rasterization_enable),
@@ -122,7 +120,6 @@ pub fn State(comptime state_mask: anytype) type {
         color_blend: getType(.color_blend),
         color_write: getType(.color_write),
         blend_constants: getType(.blend_constants),
-        compute_shader: getType(.compute_shader),
 
         pub const mask = state_mask;
 
@@ -137,9 +134,12 @@ pub fn StateMask(comptime kind: enum {
     primitive,
     compute,
 }) type {
-    const common_render = [_][:0]const u8{
+    const common = [_][:0]const u8{
         // `Cmd.setShaders`.
-        "fragment_shader",
+        "shaders",
+    };
+
+    const common_render = [_][:0]const u8{
         // `Cmd.setViewports`.
         "viewports",
         // `Cmd.setScissorRects`.
@@ -186,19 +186,14 @@ pub fn StateMask(comptime kind: enum {
         "blend_constants",
     };
 
-    const names = switch (kind) {
+    const names = &common ++ switch (kind) {
         .primitive => &[_][:0]const u8{
-            // `Cmd.setShaders`.
-            "vertex_shader",
             // `Cmd.setVertexInput`.
             "vertex_input",
             // `Cmd.setPrimitiveTopology`.
             "primitive_topology",
         } ++ &common_render,
-        .compute => &[_][:0]const u8{
-            // `Cmd.setShaders`.
-            "compute_shader",
-        },
+        .compute => &[_][:0]const u8{},
     };
 
     const StructField = std.builtin.Type.StructField;
@@ -371,15 +366,43 @@ const None = struct {
     }
 };
 
-fn ImplType(comptime T: anytype) type {
+fn Shaders(comptime kind: enum {
+    primitive,
+    compute,
+}) type {
     return struct {
-        impl: T = .{ .val = 0 },
+        shader: switch (kind) {
+            .primitive => struct {
+                vertex: Impl.Shader = .{ .val = 0 },
+                fragment: Impl.Shader = .{ .val = 0 },
+            },
+            .compute => struct {
+                compute: Impl.Shader = .{ .val = 0 },
+            },
+        } = .{},
 
         pub const hash = getDefaultHashFn(@This());
         pub const eql = getDefaultEqlFn(@This());
 
-        pub fn set(self: *@This(), impl: T) void {
-            self.impl = impl;
+        pub fn set(
+            self: *@This(),
+            types: []const ngl.Shader.Type,
+            shaders: []const ?*ngl.Shader,
+        ) void {
+            const dfl = Impl.Shader{ .val = 0 };
+            for (types, shaders) |@"type", shader| {
+                switch (kind) {
+                    .primitive => switch (@"type") {
+                        .vertex => self.shader.vertex = if (shader) |x| x.impl else dfl,
+                        .fragment => self.shader.fragment = if (shader) |x| x.impl else dfl,
+                        else => unreachable,
+                    },
+                    .compute => switch (@"type") {
+                        .compute => self.shader.compute = if (shader) |x| x.impl else dfl,
+                        else => unreachable,
+                    },
+                }
+            }
         }
     };
 }
@@ -626,9 +649,9 @@ const StencilReference = struct {
 
 const max_color_attachment = 1 + @as(comptime_int, ~@as(Cmd.ColorAttachmentIndex, 0));
 
-// May want to use dynamic allocation in this case.
 comptime {
-    if (max_color_attachment > 16) unreachable;
+    if (max_color_attachment > 16)
+        @compileError("May want to use dynamic allocation in this case");
 }
 
 const ColorBlendEnable = struct {
@@ -735,10 +758,9 @@ fn expectNotEql(key: anytype, hash: u64, other_key: @TypeOf(key)) !void {
 
 test State {
     const P = State(StateMask(.primitive){
-        .vertex_shader = true,
+        .shaders = true,
         .vertex_input = true,
         .primitive_topology = true,
-        .fragment_shader = true,
         .viewports = false,
         .scissor_rects = false,
         .rasterization_enable = true,
@@ -762,16 +784,16 @@ test State {
         .color_write = true,
         .blend_constants = false,
     });
-    if (@TypeOf(P.init().compute_shader) != None)
+    if (@TypeOf(P.init().shaders) != Shaders(.primitive))
         @compileError("Bad dyn.State layout");
     inline for (@typeInfo(@TypeOf(P.mask)).Struct.fields) |field|
         if (@field(P.mask, field.name) and @TypeOf(@field(P.init(), field.name)) == None)
             @compileError("Bad dyn.State layout");
 
-    const C = State(StateMask(.compute){ .compute_shader = true });
-    if (@TypeOf(C.init().compute_shader) != ImplType(Impl.Shader))
+    const C = State(StateMask(.compute){ .shaders = true });
+    if (@TypeOf(C.init().shaders) != Shaders(.compute))
         @compileError("Bad dyn.State layout");
-    inline for (@typeInfo(@TypeOf(P.mask)).Struct.fields) |field|
+    inline for (@typeInfo(@TypeOf(P.mask)).Struct.fields[1..]) |field|
         if (@TypeOf(@field(C.init(), field.name)) != None)
             @compileError("Bad dyn.State layout");
 
@@ -781,39 +803,59 @@ test State {
         @compileError("Bad dyn.State layout");
 
     inline for (.{ P, C, X }) |T| {
+        const ctx = T.HashCtx{};
         const a = T.init();
         const b = T.init();
-        const ctx = T.HashCtx{};
         try expectEql(a, ctx.hash(a), b);
     }
 
-    inline for (.{ P, C }, .{ "fragment_shader", "compute_shader" }) |T, field_name| {
-        var a = T.init();
-        const b = T.init();
+    var shaders: [3]ngl.Shader = .{
+        .{ .impl = .{ .val = 1 } },
+        .{ .impl = .{ .val = 2 } },
+        .{ .impl = .{ .val = 3 } },
+    };
+    inline for (
+        .{ P, C },
+        .{
+            .{
+                &[_]ngl.Shader.Type{ .fragment, .vertex },
+                &[_]*ngl.Shader{ &shaders[0], &shaders[1] },
+            },
+            .{
+                &[_]ngl.Shader.Type{.compute},
+                &[_]*ngl.Shader{&shaders[2]},
+            },
+        },
+    ) |T, params| {
         const ctx = T.HashCtx{};
-        const hb = ctx.hash(b);
-
-        @field(a, field_name).set(.{ .val = 1 });
-        try expectNotEql(b, hb, a);
-
-        @field(a, field_name) = .{};
-        try expectEql(b, hb, a);
-    }
-
-    inline for (.{ P, C }, .{ "vertex_shader", "compute_shader" }) |T, field_name| {
         var a = T.init();
         var b = T.init();
-        const ctx = T.HashCtx{};
-        const ha = ctx.hash(a);
+        var hb = ctx.hash(b);
 
-        @field(b, field_name).set(.{ .val = 2 });
-        try expectNotEql(a, ha, b);
+        a.shaders.set(params[0], params[1]);
+        try expectNotEql(b, hb, a);
 
-        b.clear(null);
-        try expectEql(a, ha, b);
+        a.shaders = .{};
+        try expectEql(b, hb, a);
 
-        a.clear(null);
-        try expectEql(b, ctx.hash(b), a);
+        for (params[0], params[1]) |t, s| {
+            a.shaders.set(&.{t}, &.{s});
+            try expectNotEql(b, hb, a);
+            b.shaders.set(&.{t}, &.{s});
+            hb = ctx.hash(b);
+        }
+        try expectEql(b, hb, a);
+
+        a.shaders = .{};
+        try expectNotEql(b, hb, a);
+        var p0 = params[0].*;
+        std.mem.reverse(ngl.Shader.Type, &p0);
+        a.shaders.set(&p0, params[1]);
+        try if (p0.len > 1) expectNotEql(b, hb, a) else expectEql(b, hb, a);
+        var p1 = params[1].*;
+        std.mem.reverse(*ngl.Shader, &p1);
+        a.shaders.set(&p0, &p1);
+        try expectEql(b, hb, a);
     }
 
     const ctx = P.HashCtx{};
