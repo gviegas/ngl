@@ -224,7 +224,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .color_view => if (has) ColorView else None,
                 .color_format => if (has) ColorFormat else None,
                 .color_layout => if (has) ColorLayout else None,
-                .color_op => if (has) None else None,
+                .color_op => if (has) ColorOp else None,
                 .color_clear_value => if (has) None else None,
                 .color_resolve_view => if (has) None else None,
                 .color_resolve_layout => if (has) None else None,
@@ -732,8 +732,7 @@ const ColorView = struct {
     pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
         for (self.views[0..rendering.colors.len], rendering.colors) |*impl, attach|
             impl.* = attach.view.impl;
-        for (self.views[rendering.colors.len..]) |*impl|
-            impl.* = .{ .val = 0 };
+        @memset(self.views[rendering.colors.len..], .{ .val = 0 });
     }
 };
 
@@ -746,8 +745,7 @@ const ColorFormat = struct {
     pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
         for (self.formats[0..rendering.colors.len], rendering.colors) |*format, attach|
             format.* = attach.view.format;
-        for (self.formats[rendering.colors.len..]) |*format|
-            format.* = .unknown;
+        @memset(self.formats[rendering.colors.len..], .unknown);
     }
 };
 
@@ -761,8 +759,25 @@ const ColorLayout = struct {
     pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
         for (self.layouts[0..rendering.colors.len], rendering.colors) |*layout, attach|
             layout.* = attach.layout;
-        for (self.layouts[rendering.colors.len..]) |*layout|
-            layout.* = .unknown;
+        @memset(self.layouts[rendering.colors.len..], .unknown);
+    }
+};
+
+const ColorOp = struct {
+    load: [max_color_attachment]Cmd.LoadOp = [_]Cmd.LoadOp{.dont_care} ** max_color_attachment,
+    store: [max_color_attachment]Cmd.StoreOp = [_]Cmd.StoreOp{.dont_care} ** max_color_attachment,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+        const n = rendering.colors.len;
+        for (self.load[0..n], self.store[0..n], rendering.colors) |*load, *store, attach| {
+            load.* = attach.load_op;
+            store.* = attach.store_op;
+        }
+        @memset(self.load[n..], .dont_care);
+        @memset(self.store[n..], .dont_care);
     }
 };
 
@@ -1341,5 +1356,23 @@ test Rendering {
     h1 = ctx.hash(r1);
     try expectNotEql(r1, h1, r2);
     r2.color_layout = .{};
+    try expectEql(r1, h1, r2);
+
+    r2.color_op.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.color_op.set(rend);
+    try expectNotEql(r1, h1, r2);
+    for (0..rend.colors.len) |i| {
+        r1.color_op.load[i] = rend.colors[i].load_op;
+        r1.color_op.store[i] = rend.colors[i].store_op;
+    }
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+    @memset(&r2.color_op.store, .dont_care);
+    try expectNotEql(r1, h1, r2);
+    r1.color_op = .{};
+    h1 = ctx.hash(r1);
+    try expectNotEql(r1, h1, r2);
+    @memset(&r2.color_op.load, .dont_care);
     try expectEql(r1, h1, r2);
 }
