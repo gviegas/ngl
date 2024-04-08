@@ -226,7 +226,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
             const has = @field(rendering_mask, @tagName(ident));
             // TODO
             return switch (ident) {
-                .color_view => if (has) None else None,
+                .color_view => if (has) ColorView else None,
                 .color_format => if (has) None else None,
                 .color_layout => if (has) None else None,
                 .color_op => if (has) None else None,
@@ -699,6 +699,21 @@ const BlendConstants = struct {
     }
 };
 
+const ColorView = struct {
+    views: [max_color_attachment]Impl.ImageView =
+        [_]Impl.ImageView{.{ .val = 0 }} ** max_color_attachment,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), views: []const ngl.ImageView) void {
+        for (self.views[0..views.len], views) |*impl, view|
+            impl.* = view.impl;
+        for (self.views[views.len..]) |*impl|
+            impl.* = .{ .val = 0 };
+    }
+};
+
 const testing = std.testing;
 
 fn expectEql(key: anytype, hash: u64, other_key: @TypeOf(key)) !void {
@@ -1140,6 +1155,30 @@ test Rendering {
     r2.clear(testing.allocator);
     try expectEql(r0, h0, r1);
     try expectEql(r0, h0, r2);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+
+    r2.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 0 } }} ** max_color_attachment);
+    try expectEql(r1, h1, r2);
+    r2.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 0 } }} ** (max_color_attachment / 2));
+    try expectEql(r1, h1, r2);
+    r2.color_view.set(&.{.{ .impl = .{ .val = 0 } }});
+    try expectEql(r1, h1, r2);
+    r2.color_view.set(&.{});
+    try expectEql(r1, h1, r2);
+    r2.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 1 } }} ** max_color_attachment);
+    try expectNotEql(r1, h1, r2);
+    r1.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 2 } }} ** max_color_attachment);
+    h1 = ctx.hash(r1);
+    try expectNotEql(r1, h1, r2);
+    r2.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 2 } }} ** (max_color_attachment / 2));
+    try expectNotEql(r1, h1, r2);
+    r1.color_view.set(&[_]ngl.ImageView{.{ .impl = .{ .val = 2 } }} ** (max_color_attachment / 2));
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+    r2.color_view.set(&.{});
+    try expectNotEql(r1, h1, r2);
+    r1.color_view = .{};
     h1 = ctx.hash(r1);
     try expectEql(r1, h1, r2);
 }
