@@ -82,8 +82,8 @@ pub fn State(comptime state_mask: anytype) type {
                 .depth_write_enable => if (has) Enable(false) else None,
                 .stencil_test_enable => if (has) Enable(false) else None,
                 .stencil_op => if (has) StencilOp else None,
-                .stencil_read_mask => if (has) StencilReadMask else None,
-                .stencil_write_mask => if (has) StencilWriteMask else None,
+                .stencil_read_mask => if (has) StencilMask else None,
+                .stencil_write_mask => if (has) StencilMask else None,
                 .stencil_reference => if (has) StencilReference else None,
                 .color_blend_enable => if (has) ColorBlendEnable else None,
                 .color_blend => if (has) ColorBlend else None,
@@ -599,26 +599,7 @@ const StencilOp = struct {
     }
 };
 
-const StencilReadMask = struct {
-    front: u32 = 0,
-    back: u32 = 0,
-
-    pub const hash = getDefaultHashFn(@This());
-    pub const eql = getDefaultEqlFn(@This());
-
-    pub fn set(self: *@This(), stencil_face: Cmd.StencilFace, mask: u32) void {
-        switch (stencil_face) {
-            .front => self.front = mask,
-            .back => self.back = mask,
-            .front_and_back => {
-                self.front = mask;
-                self.back = mask;
-            },
-        }
-    }
-};
-
-const StencilWriteMask = struct {
+const StencilMask = struct {
     front: u32 = 0,
     back: u32 = 0,
 
