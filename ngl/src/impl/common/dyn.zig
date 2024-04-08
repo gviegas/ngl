@@ -222,7 +222,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
             // TODO
             return switch (ident) {
                 .color_view => if (has) ColorView else None,
-                .color_format => if (has) None else None,
+                .color_format => if (has) ColorFormat else None,
                 .color_layout => if (has) None else None,
                 .color_op => if (has) None else None,
                 .color_clear_value => if (has) None else None,
@@ -734,6 +734,20 @@ const ColorView = struct {
             impl.* = attach.view.impl;
         for (self.views[rendering.colors.len..]) |*impl|
             impl.* = .{ .val = 0 };
+    }
+};
+
+const ColorFormat = struct {
+    formats: [max_color_attachment]ngl.Format = [_]ngl.Format{.unknown} ** max_color_attachment,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+        for (self.formats[0..rendering.colors.len], rendering.colors) |*format, attach|
+            format.* = attach.view.format;
+        for (self.formats[rendering.colors.len..]) |*format|
+            format.* = .unknown;
     }
 };
 
@@ -1285,5 +1299,18 @@ test Rendering {
     @memset(&r2.color_view.views, views[1].impl);
     try expectNotEql(r1, h1, r2);
     r2.color_view.set(rend_empty);
+    try expectEql(r1, h1, r2);
+
+    r2.color_format.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.color_format.set(rend);
+    try expectNotEql(r1, h1, r2);
+    r1.color_format.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+    r2.color_format = .{};
+    try expectNotEql(r1, h1, r2);
+    for (r2.color_format.formats[0..rend.colors.len], rend.colors) |*format, attach|
+        format.* = attach.view.format;
     try expectEql(r1, h1, r2);
 }
