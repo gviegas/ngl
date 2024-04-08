@@ -1201,12 +1201,12 @@ test Rendering {
     try expectEql(r1, h1, r2);
 
     var views = [_]ngl.ImageView{
-        .{ .impl = .{ .val = 1 } },
-        .{ .impl = .{ .val = 2 } },
-        .{ .impl = .{ .val = 3 } },
-        .{ .impl = .{ .val = 4 } },
-        .{ .impl = .{ .val = 5 } },
-        .{ .impl = .{ .val = 6 } },
+        .{ .impl = .{ .val = 1 }, .format = .rgba8_unorm },
+        .{ .impl = .{ .val = 2 }, .format = .rgba8_unorm },
+        .{ .impl = .{ .val = 3 }, .format = .rgba16_sfloat },
+        .{ .impl = .{ .val = 4 }, .format = .rgba16_sfloat },
+        .{ .impl = .{ .val = 5 }, .format = .d32_sfloat_s8_uint },
+        .{ .impl = .{ .val = 6 }, .format = .d32_sfloat_s8_uint },
     };
     const rend_empty = Cmd.Rendering{
         .colors = &.{},
@@ -1246,7 +1246,7 @@ test Rendering {
             .view = &views[4],
             .layout = .depth_stencil_attachment_optimal,
             .load_op = .clear,
-            .store_op = .store,
+            .store_op = .dont_care,
             .clear_value = .{ .depth_stencil = .{ 1, undefined } },
             .resolve = .{
                 .view = &views[5],
@@ -1258,7 +1258,7 @@ test Rendering {
             .view = &views[4],
             .layout = .depth_stencil_attachment_optimal,
             .load_op = .clear,
-            .store_op = .store,
+            .store_op = .dont_care,
             .clear_value = .{ .depth_stencil = .{ undefined, 0xff } },
             .resolve = .{
                 .view = &views[5],

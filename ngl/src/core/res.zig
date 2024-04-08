@@ -1488,6 +1488,7 @@ pub const Image = struct {
 
 pub const ImageView = struct {
     impl: Impl.ImageView,
+    format: Format, // TODO: `dyn.Rendering` needs this.
 
     pub const Type = enum {
         @"1d",
@@ -1511,7 +1512,10 @@ pub const ImageView = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
-        return .{ .impl = try Impl.get().initImageView(allocator, device.impl, desc) };
+        return .{
+            .impl = try Impl.get().initImageView(allocator, device.impl, desc),
+            .format = desc.format,
+        };
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
