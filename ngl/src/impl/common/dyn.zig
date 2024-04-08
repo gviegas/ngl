@@ -230,7 +230,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .color_resolve_layout => if (has) ColorResolveLayout else None,
                 .color_resolve_mode => if (has) ColorResolveMode else None,
                 .depth_view => if (has) DsView(.depth) else None,
-                .depth_format => if (has) None else None,
+                .depth_format => if (has) DsFormat(.depth) else None,
                 .depth_layout => if (has) None else None,
                 .depth_op => if (has) None else None,
                 .depth_clear_value => if (has) DsClearValue(.depth) else None,
@@ -238,7 +238,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .depth_resolve_layout => if (has) None else None,
                 .depth_resolve_mode => if (has) None else None,
                 .stencil_view => if (has) DsView(.stencil) else None,
-                .stencil_format => if (has) None else None,
+                .stencil_format => if (has) DsFormat(.stencil) else None,
                 .stencil_layout => if (has) None else None,
                 .stencil_op => if (has) None else None,
                 .stencil_clear_value => if (has) DsClearValue(.stencil) else None,
@@ -838,6 +838,19 @@ fn DsView(comptime aspect: enum { depth, stencil }) type {
 
         pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
             self.view = if (@field(rendering, @tagName(aspect))) |x| x.view.impl else .{ .val = 0 };
+        }
+    };
+}
+
+fn DsFormat(comptime aspect: enum { depth, stencil }) type {
+    return struct {
+        format: ngl.Format = .unknown,
+
+        pub const hash = getDefaultHashFn(@This());
+        pub const eql = getDefaultEqlFn(@This());
+
+        pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+            self.format = if (@field(rendering, @tagName(aspect))) |x| x.view.format else .unknown;
         }
     };
 }
@@ -1513,6 +1526,24 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.depth_view.eql(r1.depth_view));
     r1.stencil_view.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+
+    r2.depth_format.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.depth_format.set(rend);
+    try expectNotEql(r1, h1, r2);
+    try testing.expect(r2.stencil_format.eql(r1.stencil_format));
+    r1.depth_format.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+
+    r2.stencil_format.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.stencil_format.set(rend);
+    try expectNotEql(r1, h1, r2);
+    try testing.expect(r2.depth_format.eql(r1.depth_format));
+    r1.stencil_format.set(rend);
     h1 = ctx.hash(r1);
     try expectEql(r1, h1, r2);
 }
