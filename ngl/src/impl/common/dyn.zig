@@ -225,7 +225,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .color_format => if (has) ColorFormat else None,
                 .color_layout => if (has) ColorLayout else None,
                 .color_op => if (has) ColorOp else None,
-                .color_clear_value => if (has) None else None,
+                .color_clear_value => if (has) ColorClearValue else None,
                 .color_resolve_view => if (has) None else None,
                 .color_resolve_layout => if (has) None else None,
                 .color_resolve_mode => if (has) None else None,
@@ -233,7 +233,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .depth_format => if (has) None else None,
                 .depth_layout => if (has) None else None,
                 .depth_op => if (has) None else None,
-                .depth_clear_value => if (has) None else None,
+                .depth_clear_value => if (has) DsClearValue(.depth) else None,
                 .depth_resolve_view => if (has) None else None,
                 .depth_resolve_layout => if (has) None else None,
                 .depth_resolve_mode => if (has) None else None,
@@ -241,11 +241,11 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .stencil_format => if (has) None else None,
                 .stencil_layout => if (has) None else None,
                 .stencil_op => if (has) None else None,
-                .stencil_clear_value => if (has) None else None,
+                .stencil_clear_value => if (has) DsClearValue(.stencil) else None,
                 .stencil_resolve_view => if (has) None else None,
                 .stencil_resolve_layout => if (has) None else None,
                 .stencil_resolve_mode => if (has) None else None,
-                .render_area => if (has) None else None,
+                .render_area => if (has) RenderArea else None,
                 .layers => if (has) None else None,
                 .view_mask => if (has) None else None,
                 .context => if (has) None else None,
@@ -781,6 +781,24 @@ const ColorOp = struct {
     }
 };
 
+const ColorClearValue = struct {
+    comptime {
+        @compileError("Shouldn't be necessary");
+    }
+};
+
+fn DsClearValue(comptime _: enum { depth, stencil }) type {
+    comptime {
+        @compileError("Shouldn't be necessary");
+    }
+}
+
+const RenderArea = struct {
+    comptime {
+        @compileError("Shouldn't be necessary");
+    }
+};
+
 const testing = std.testing;
 
 fn expectEql(key: anytype, hash: u64, other_key: @TypeOf(key)) !void {
@@ -1191,7 +1209,7 @@ test Rendering {
         .color_format = true,
         .color_layout = true,
         .color_op = true,
-        .color_clear_value = true,
+        .color_clear_value = false,
         .color_resolve_view = true,
         .color_resolve_layout = true,
         .color_resolve_mode = true,
@@ -1199,7 +1217,7 @@ test Rendering {
         .depth_format = true,
         .depth_layout = true,
         .depth_op = true,
-        .depth_clear_value = true,
+        .depth_clear_value = false,
         .depth_resolve_view = true,
         .depth_resolve_layout = true,
         .depth_resolve_mode = true,
@@ -1207,21 +1225,21 @@ test Rendering {
         .stencil_format = true,
         .stencil_layout = true,
         .stencil_op = true,
-        .stencil_clear_value = true,
+        .stencil_clear_value = false,
         .stencil_resolve_view = true,
         .stencil_resolve_layout = true,
         .stencil_resolve_mode = true,
-        .render_area = true,
+        .render_area = false,
         .layers = true,
         .view_mask = true,
         .context = true,
     });
-    if (@as(U, @bitCast(R.mask)) != ~@as(U, 0))
-        @compileError("Bad dyn.Rendering layout");
     // TODO
-    //inline for (@typeInfo(R).Struct.fields) |field|
-    //    if (field.type == None)
+    //inline for (@typeInfo(R).Struct.fields) |field| {
+    //    const has = @field(R.mask, field.name);
+    //    if ((field.type == None and has) or (field.type != None and !has))
     //        @compileError("Bad dyn.Rendering layout");
+    //}
 
     // TODO: Consider disallowing this case.
     const X = Rendering(.{});
