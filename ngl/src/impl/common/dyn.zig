@@ -234,17 +234,17 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .depth_layout => if (has) DsLayout(.depth) else None,
                 .depth_op => if (has) DsOp(.depth) else None,
                 .depth_clear_value => if (has) DsClearValue(.depth) else None,
-                .depth_resolve_view => if (has) None else None,
-                .depth_resolve_layout => if (has) None else None,
-                .depth_resolve_mode => if (has) None else None,
+                .depth_resolve_view => if (has) DsResolveView(.depth) else None,
+                .depth_resolve_layout => if (has) DsResolveLayout(.depth) else None,
+                .depth_resolve_mode => if (has) DsResolveMode(.depth) else None,
                 .stencil_view => if (has) DsView(.stencil) else None,
                 .stencil_format => if (has) DsFormat(.stencil) else None,
                 .stencil_layout => if (has) DsLayout(.stencil) else None,
                 .stencil_op => if (has) DsOp(.stencil) else None,
                 .stencil_clear_value => if (has) DsClearValue(.stencil) else None,
-                .stencil_resolve_view => if (has) None else None,
-                .stencil_resolve_layout => if (has) None else None,
-                .stencil_resolve_mode => if (has) None else None,
+                .stencil_resolve_view => if (has) DsResolveView(.stencil) else None,
+                .stencil_resolve_layout => if (has) DsResolveLayout(.stencil) else None,
+                .stencil_resolve_mode => if (has) DsResolveMode(.stencil) else None,
                 .render_area => if (has) RenderArea else None,
                 .layers => if (has) None else None,
                 .view_mask => if (has) None else None,
@@ -892,6 +892,60 @@ fn DsClearValue(comptime _: enum { depth, stencil }) type {
     comptime {
         @compileError("Shouldn't be necessary");
     }
+}
+
+fn DsResolveView(comptime aspect: enum { depth, stencil }) type {
+    return struct {
+        view: Impl.ImageView = .{ .val = 0 },
+
+        pub const hash = getDefaultHashFn(@This());
+        pub const eql = getDefaultEqlFn(@This());
+
+        pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+            if (@field(rendering, @tagName(aspect))) |x|
+                if (x.resolve) |y| {
+                    self.view = y.view.impl;
+                    return;
+                };
+            self.view = .{ .val = 0 };
+        }
+    };
+}
+
+fn DsResolveLayout(comptime aspect: enum { depth, stencil }) type {
+    return struct {
+        layout: ngl.Image.Layout = .unknown,
+
+        pub const hash = getDefaultHashFn(@This());
+        pub const eql = getDefaultEqlFn(@This());
+
+        pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+            if (@field(rendering, @tagName(aspect))) |x|
+                if (x.resolve) |y| {
+                    self.layout = y.layout;
+                    return;
+                };
+            self.layout = .unknown;
+        }
+    };
+}
+
+fn DsResolveMode(comptime aspect: enum { depth, stencil }) type {
+    return struct {
+        resolve_mode: Cmd.ResolveMode = .sample_zero,
+
+        pub const hash = getDefaultHashFn(@This());
+        pub const eql = getDefaultEqlFn(@This());
+
+        pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+            if (@field(rendering, @tagName(aspect))) |x|
+                if (x.resolve) |y| {
+                    self.resolve_mode = y.mode;
+                    return;
+                };
+            self.resolve_mode = .sample_zero;
+        }
+    };
 }
 
 const RenderArea = struct {
@@ -1614,5 +1668,61 @@ test Rendering {
     try testing.expect(r2.depth_op.eql(r1.depth_op));
     r1.stencil_op.set(rend);
     h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+
+    r2.depth_resolve_view.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.depth_resolve_view.set(rend);
+    try expectNotEql(r1, h1, r2);
+    try testing.expect(r2.stencil_resolve_view.eql(r1.stencil_resolve_view));
+    r1.depth_resolve_view.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+
+    r2.stencil_resolve_view.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.stencil_resolve_view.set(rend);
+    try expectNotEql(r1, h1, r2);
+    try testing.expect(r2.depth_resolve_view.eql(r1.depth_resolve_view));
+    r1.stencil_resolve_view.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+
+    r2.depth_resolve_layout.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.depth_resolve_layout.set(rend);
+    try expectNotEql(r1, h1, r2);
+    try testing.expect(r2.stencil_resolve_layout.eql(r1.stencil_resolve_layout));
+    r1.depth_resolve_layout.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+
+    r2.stencil_resolve_layout.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.stencil_resolve_layout.set(rend);
+    try expectNotEql(r1, h1, r2);
+    try testing.expect(r2.depth_resolve_layout.eql(r1.depth_resolve_layout));
+    r1.stencil_resolve_layout.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+
+    r2.depth_resolve_mode.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.depth_resolve_mode.set(rend);
+    try expectEql(r1, h1, r2);
+    r2.depth_resolve_mode.resolve_mode = .min;
+    try expectNotEql(r1, h1, r2);
+    try testing.expect(r2.stencil_resolve_mode.eql(r1.stencil_resolve_mode));
+    r2.depth_resolve_mode = .{};
+    try expectEql(r1, h1, r2);
+
+    r2.stencil_resolve_mode.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.stencil_resolve_mode.set(rend);
+    try expectEql(r1, h1, r2);
+    r2.stencil_resolve_mode.resolve_mode = .min;
+    try expectNotEql(r1, h1, r2);
+    try testing.expect(r2.depth_resolve_mode.eql(r1.depth_resolve_mode));
+    r2.stencil_resolve_mode = .{};
     try expectEql(r1, h1, r2);
 }
