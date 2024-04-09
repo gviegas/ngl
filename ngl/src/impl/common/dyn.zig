@@ -219,7 +219,6 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
     const getType = struct {
         fn getType(comptime ident: anytype) type {
             const has = @field(rendering_mask, @tagName(ident));
-            // TODO
             return switch (ident) {
                 .color_view => if (has) ColorView else None,
                 .color_format => if (has) ColorFormat else None,
@@ -246,9 +245,9 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .stencil_resolve_layout => if (has) DsResolveLayout(.stencil) else None,
                 .stencil_resolve_mode => if (has) DsResolveMode(.stencil) else None,
                 .render_area => if (has) RenderArea else None,
-                .layers => if (has) None else None,
-                .view_mask => if (has) None else None,
-                .context => if (has) None else None,
+                .layers => if (has) Layers else None,
+                .view_mask => if (has) ViewMask else None,
+                .context => if (has) Context else None,
                 else => unreachable,
             };
         }
@@ -954,6 +953,39 @@ const RenderArea = struct {
     }
 };
 
+const Layers = struct {
+    layers: u32 = 0,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+        self.layers = rendering.layers;
+    }
+};
+
+const ViewMask = struct {
+    view_mask: u32 = 0,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+        self.view_mask = rendering.view_mask;
+    }
+};
+
+const Context = struct {
+    context: Cmd.Rendering.Context = .none,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+        self.context = rendering.context;
+    }
+};
+
 const testing = std.testing;
 
 fn expectEql(key: anytype, hash: u64, other_key: @TypeOf(key)) !void {
@@ -1389,12 +1421,11 @@ test Rendering {
         .view_mask = true,
         .context = true,
     });
-    // TODO
-    //inline for (@typeInfo(R).Struct.fields) |field| {
-    //    const has = @field(R.mask, field.name);
-    //    if ((field.type == None and has) or (field.type != None and !has))
-    //        @compileError("Bad dyn.Rendering layout");
-    //}
+    inline for (@typeInfo(R).Struct.fields) |field| {
+        const has = @field(R.mask, field.name);
+        if ((field.type == None and has) or (field.type != None and !has))
+            @compileError("Bad dyn.Rendering layout");
+    }
 
     // TODO: Consider disallowing this case.
     const X = Rendering(.{});
@@ -1724,5 +1755,58 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.depth_resolve_mode.eql(r1.depth_resolve_mode));
     r2.stencil_resolve_mode = .{};
+    try expectEql(r1, h1, r2);
+
+    r2.layers.set(rend_empty);
+    try expectNotEql(r1, h1, r2);
+    r2.layers.set(rend);
+    try expectNotEql(r1, h1, r2);
+    r1.layers.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+    r1.layers.set(.{
+        .colors = &.{},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = 1, .height = 1 },
+        .layers = 2,
+    });
+    h1 = ctx.hash(r1);
+    try expectNotEql(r1, h1, r2);
+    r2.layers.layers = 2;
+    try expectEql(r1, h1, r2);
+
+    r2.view_mask.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.view_mask.set(rend);
+    try expectEql(r1, h1, r2);
+    r1.view_mask.set(.{
+        .colors = &.{},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = 1, .height = 1 },
+        .layers = 0,
+        .view_mask = 0x1,
+    });
+    h1 = ctx.hash(r1);
+    try expectNotEql(r1, h1, r2);
+    r2.view_mask.view_mask = 0x1;
+    try expectEql(r1, h1, r2);
+
+    r2.context.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.context.set(rend);
+    try expectEql(r1, h1, r2);
+    r1.context.set(.{
+        .colors = &.{},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = 1, .height = 1 },
+        .layers = 1,
+        .context = .suspending,
+    });
+    h1 = ctx.hash(r1);
+    try expectNotEql(r1, h1, r2);
+    r2.context.context = .suspending;
     try expectEql(r1, h1, r2);
 }
