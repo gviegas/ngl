@@ -134,10 +134,8 @@ pub const Shader = packed union {
         }
     };
 
-    // TODO
     pub inline fn compat(device: *Device) bool {
-        _ = device;
-        return true;
+        return !device.hasShaderObject();
     }
 
     pub inline fn cast(impl: Impl.Shader) Shader {

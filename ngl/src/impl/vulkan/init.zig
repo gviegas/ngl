@@ -1510,6 +1510,21 @@ pub const Device = struct {
         allocator.destroy(dev);
     }
 
+    pub fn isFullyDynamic(self: Device) bool {
+        return self.hasShaderObject();
+    }
+
+    // TODO: Extension.
+    pub fn hasShaderObject(self: Device) bool {
+        _ = self;
+        return false;
+    }
+
+    // TODO: Extension.
+    pub fn hasDynamicRendering(self: Device) bool {
+        return self.version >= c.VK_API_VERSION_1_3;
+    }
+
     // Wrappers --------------------------------------------
 
     pub inline fn vkDestroyDevice(
