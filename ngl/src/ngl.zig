@@ -86,40 +86,40 @@ pub fn Flags(comptime E: type) type {
     } });
 }
 
-pub inline fn noFlagsSet(flags: anytype) bool {
+pub fn noFlagsSet(flags: anytype) bool {
     const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
     return @as(U, @bitCast(flags)) == 0;
 }
 
-pub inline fn allFlagsSet(flags: anytype) bool {
+pub fn allFlagsSet(flags: anytype) bool {
     const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
     return @as(U, @bitCast(flags)) == ~@as(U, 0);
 }
 
-pub inline fn eqlFlags(flags: anytype, other: anytype) bool {
+pub fn eqlFlags(flags: anytype, other: anytype) bool {
     const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
     return @as(U, @bitCast(flags)) == @as(U, @bitCast(other));
 }
 
-pub inline fn andFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
+pub fn andFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
     const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
     const masked = @as(U, @bitCast(flags)) & @as(U, @bitCast(mask));
     return @bitCast(masked);
 }
 
-pub inline fn orFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
+pub fn orFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
     const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
     const masked = @as(U, @bitCast(flags)) | @as(U, @bitCast(mask));
     return @bitCast(masked);
 }
 
-pub inline fn xorFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
+pub fn xorFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
     const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
     const masked = @as(U, @bitCast(flags)) ^ @as(U, @bitCast(mask));
     return @bitCast(masked);
 }
 
-pub inline fn notFlags(flags: anytype) @TypeOf(flags) {
+pub fn notFlags(flags: anytype) @TypeOf(flags) {
     const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
     return @bitCast(~@as(U, @bitCast(flags)));
 }

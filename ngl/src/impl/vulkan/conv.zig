@@ -11,7 +11,7 @@ pub const null_handle = switch (@typeInfo(@TypeOf(c.VK_NULL_HANDLE))) {
 };
 
 /// Returns either a valid non-dispatchable handle or `null`.
-pub inline fn ndhOrNull(handle: anytype) switch (@typeInfo(@TypeOf(null_handle))) {
+pub fn ndhOrNull(handle: anytype) switch (@typeInfo(@TypeOf(null_handle))) {
     .Null => @TypeOf(handle),
     .ComptimeInt => ?@TypeOf(handle),
     else => @compileError("Should never happen"),

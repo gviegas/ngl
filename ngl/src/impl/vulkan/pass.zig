@@ -15,7 +15,7 @@ const Device = @import("init.zig").Device;
 pub const RenderPass = packed struct {
     handle: c.VkRenderPass,
 
-    pub inline fn cast(impl: Impl.RenderPass) RenderPass {
+    pub fn cast(impl: Impl.RenderPass) RenderPass {
         return @bitCast(impl.val);
     }
 
@@ -249,7 +249,7 @@ pub const RenderPass = packed struct {
 pub const FrameBuffer = packed struct {
     handle: c.VkFramebuffer,
 
-    pub inline fn cast(impl: Impl.FrameBuffer) FrameBuffer {
+    pub fn cast(impl: Impl.FrameBuffer) FrameBuffer {
         return @bitCast(impl.val);
     }
 

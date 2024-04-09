@@ -20,7 +20,7 @@ const Fence = @import("sync.zig").Fence;
 pub const Surface = packed struct {
     handle: c.VkSurfaceKHR,
 
-    pub inline fn cast(impl: Impl.Surface) Surface {
+    pub fn cast(impl: Impl.Surface) Surface {
         return @bitCast(impl.val);
     }
 
@@ -244,7 +244,7 @@ pub const Surface = packed struct {
 pub const SwapChain = packed struct {
     handle: c.VkSwapchainKHR,
 
-    pub inline fn cast(impl: Impl.SwapChain) SwapChain {
+    pub fn cast(impl: Impl.SwapChain) SwapChain {
         return @bitCast(impl.val);
     }
 

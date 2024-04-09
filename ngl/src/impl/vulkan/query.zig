@@ -30,7 +30,7 @@ pub fn getQueryLayout(
 pub const QueryPool = packed struct {
     handle: c.VkQueryPool,
 
-    pub inline fn cast(impl: Impl.QueryPool) QueryPool {
+    pub fn cast(impl: Impl.QueryPool) QueryPool {
         return @bitCast(impl.val);
     }
 

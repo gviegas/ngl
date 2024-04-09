@@ -24,7 +24,7 @@ const QueryPool = @import("query.zig").QueryPool;
 pub const CommandPool = packed struct {
     handle: c.VkCommandPool,
 
-    pub inline fn cast(impl: Impl.CommandPool) CommandPool {
+    pub fn cast(impl: Impl.CommandPool) CommandPool {
         return @bitCast(impl.val);
     }
 
@@ -131,7 +131,7 @@ pub const CommandPool = packed struct {
 pub const CommandBuffer = packed struct {
     handle: c.VkCommandBuffer,
 
-    pub inline fn cast(impl: Impl.CommandBuffer) CommandBuffer {
+    pub fn cast(impl: Impl.CommandBuffer) CommandBuffer {
         return @bitCast(impl.val);
     }
 

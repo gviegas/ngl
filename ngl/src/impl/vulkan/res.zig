@@ -88,7 +88,7 @@ pub fn getFormatFeatures(
 pub const Buffer = packed struct {
     handle: c.VkBuffer,
 
-    pub inline fn cast(impl: Impl.Buffer) Buffer {
+    pub fn cast(impl: Impl.Buffer) Buffer {
         return @bitCast(impl.val);
     }
 
@@ -154,7 +154,7 @@ pub const Buffer = packed struct {
 pub const BufferView = packed struct {
     handle: c.VkBufferView,
 
-    pub inline fn cast(impl: Impl.BufferView) BufferView {
+    pub fn cast(impl: Impl.BufferView) BufferView {
         return @bitCast(impl.val);
     }
 
@@ -191,7 +191,7 @@ pub const BufferView = packed struct {
 pub const Image = packed struct {
     handle: c.VkImage,
 
-    pub inline fn cast(impl: Impl.Image) Image {
+    pub fn cast(impl: Impl.Image) Image {
         return @bitCast(impl.val);
     }
 
@@ -342,7 +342,7 @@ pub const Image = packed struct {
 pub const ImageView = packed struct {
     handle: c.VkImageView,
 
-    pub inline fn cast(impl: Impl.ImageView) ImageView {
+    pub fn cast(impl: Impl.ImageView) ImageView {
         return @bitCast(impl.val);
     }
 
@@ -404,7 +404,7 @@ pub const ImageView = packed struct {
 pub const Sampler = packed struct {
     handle: c.VkSampler,
 
-    pub inline fn cast(impl: Impl.Sampler) Sampler {
+    pub fn cast(impl: Impl.Sampler) Sampler {
         return @bitCast(impl.val);
     }
 

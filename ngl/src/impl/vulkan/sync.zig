@@ -12,7 +12,7 @@ const Device = @import("init.zig").Device;
 pub const Fence = packed struct {
     handle: c.VkFence,
 
-    pub inline fn cast(impl: Impl.Fence) Fence {
+    pub fn cast(impl: Impl.Fence) Fence {
         return @bitCast(impl.val);
     }
 
@@ -98,7 +98,7 @@ pub const Fence = packed struct {
 pub const Semaphore = packed struct {
     handle: c.VkSemaphore,
 
-    pub inline fn cast(impl: Impl.Semaphore) Semaphore {
+    pub fn cast(impl: Impl.Semaphore) Semaphore {
         return @bitCast(impl.val);
     }
 

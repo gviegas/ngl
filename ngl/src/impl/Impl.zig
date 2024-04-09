@@ -15,7 +15,7 @@ fn Type(comptime T: type) type {
     return struct {
         val: u64,
 
-        pub inline fn ptr(self: @This(), comptime Pointee: type) *Pointee {
+        pub fn ptr(self: @This(), comptime Pointee: type) *Pointee {
             const p: *anyopaque = @ptrFromInt(self.val);
             return @ptrCast(@alignCast(p));
         }
@@ -1148,13 +1148,13 @@ pub const DriverApi = enum {
 
 /// It's only valid to call this after `init()` succeeds.
 /// `deinit()` invalidates the `Impl`. Don't store it.
-pub inline fn get() *Self {
+pub fn get() *Self {
     std.debug.assert(impl != null);
     return &impl.?;
 }
 
 /// Same restrictions as `get`.
-pub inline fn getDriverApi() DriverApi {
+pub fn getDriverApi() DriverApi {
     std.debug.assert(dapi != null);
     return dapi.?;
 }

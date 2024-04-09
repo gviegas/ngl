@@ -19,7 +19,7 @@ pub const Pipeline = struct {
 
     const max_stage = 2;
 
-    pub inline fn cast(impl: Impl.Pipeline) *Pipeline {
+    pub fn cast(impl: Impl.Pipeline) *Pipeline {
         return impl.ptr(Pipeline);
     }
 
@@ -703,7 +703,7 @@ pub const Pipeline = struct {
 pub const PipelineCache = packed struct {
     handle: c.VkPipelineCache,
 
-    pub inline fn cast(impl: Impl.PipelineCache) PipelineCache {
+    pub fn cast(impl: Impl.PipelineCache) PipelineCache {
         return @bitCast(impl.val);
     }
 

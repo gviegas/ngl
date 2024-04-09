@@ -17,7 +17,7 @@ const Sampler = @import("res.zig").Sampler;
 pub const DescriptorSetLayout = packed struct {
     handle: c.VkDescriptorSetLayout,
 
-    pub inline fn cast(impl: Impl.DescriptorSetLayout) DescriptorSetLayout {
+    pub fn cast(impl: Impl.DescriptorSetLayout) DescriptorSetLayout {
         return @bitCast(impl.val);
     }
 
@@ -89,7 +89,7 @@ pub const DescriptorSetLayout = packed struct {
 pub const PipelineLayout = packed struct {
     handle: c.VkPipelineLayout,
 
-    pub inline fn cast(impl: Impl.PipelineLayout) PipelineLayout {
+    pub fn cast(impl: Impl.PipelineLayout) PipelineLayout {
         return @bitCast(impl.val);
     }
 
@@ -150,7 +150,7 @@ pub const PipelineLayout = packed struct {
 pub const DescriptorPool = packed struct {
     handle: c.VkDescriptorPool,
 
-    pub inline fn cast(impl: Impl.DescriptorPool) DescriptorPool {
+    pub fn cast(impl: Impl.DescriptorPool) DescriptorPool {
         return @bitCast(impl.val);
     }
 
@@ -243,7 +243,7 @@ pub const DescriptorPool = packed struct {
 pub const DescriptorSet = packed struct {
     handle: c.VkDescriptorSet,
 
-    pub inline fn cast(impl: Impl.DescriptorSet) DescriptorSet {
+    pub fn cast(impl: Impl.DescriptorSet) DescriptorSet {
         return @bitCast(impl.val);
     }
 

@@ -24,7 +24,7 @@ var getInstanceProcAddr: c.PFN_vkGetInstanceProcAddr = null;
 
 // v1.0.
 var createInstance: c.PFN_vkCreateInstance = null;
-inline fn vkCreateInstance(
+fn vkCreateInstance(
     create_info: *const c.VkInstanceCreateInfo,
     vk_allocator: ?*const c.VkAllocationCallbacks,
     instance: *c.VkInstance,
@@ -34,7 +34,7 @@ inline fn vkCreateInstance(
 
 // v1.0.
 var enumerateInstanceLayerProperties: c.PFN_vkEnumerateInstanceLayerProperties = null;
-inline fn vkEnumerateInstanceLayerProperties(
+fn vkEnumerateInstanceLayerProperties(
     property_count: *u32,
     properties: ?[*]c.VkLayerProperties,
 ) c.VkResult {
@@ -43,7 +43,7 @@ inline fn vkEnumerateInstanceLayerProperties(
 
 // v1.0.
 var enumerateInstanceExtensionProperties: c.PFN_vkEnumerateInstanceExtensionProperties = null;
-inline fn vkEnumerateInstanceExtensionProperties(
+fn vkEnumerateInstanceExtensionProperties(
     layer_name: ?[*:0]const u8,
     property_count: *u32,
     properties: ?[*]c.VkExtensionProperties,
@@ -54,7 +54,7 @@ inline fn vkEnumerateInstanceExtensionProperties(
 // v1.1.
 var enumerateInstanceVersion: c.PFN_vkEnumerateInstanceVersion = null;
 /// This wrapper can be called regardless of API version.
-inline fn vkEnumerateInstanceVersion(version: *u32) c.VkResult {
+fn vkEnumerateInstanceVersion(version: *u32) c.VkResult {
     if (enumerateInstanceVersion) |fp| return fp(version);
     version.* = c.VK_API_VERSION_1_0;
     return c.VK_SUCCESS;
@@ -560,7 +560,7 @@ pub const Instance = struct {
         void,
 
     /// Only valid after global `init` succeeds.
-    pub inline fn get() *Instance {
+    pub fn get() *Instance {
         return &global_instance.?;
     }
 
@@ -719,14 +719,11 @@ pub const Instance = struct {
 
     // Wrappers --------------------------------------------
 
-    inline fn vkDestroyInstance(
-        self: *Instance,
-        vk_allocator: ?*const c.VkAllocationCallbacks,
-    ) void {
+    fn vkDestroyInstance(self: *Instance, vk_allocator: ?*const c.VkAllocationCallbacks) void {
         self.destroyInstance.?(self.handle, vk_allocator);
     }
 
-    pub inline fn vkEnumeratePhysicalDevices(
+    pub fn vkEnumeratePhysicalDevices(
         self: *Instance,
         device_count: *u32,
         devices: ?[*]c.VkPhysicalDevice,
@@ -734,7 +731,7 @@ pub const Instance = struct {
         return self.enumeratePhysicalDevices.?(self.handle, device_count, devices);
     }
 
-    pub inline fn vkGetPhysicalDeviceProperties(
+    pub fn vkGetPhysicalDeviceProperties(
         self: *Instance,
         device: c.VkPhysicalDevice,
         properties: *c.VkPhysicalDeviceProperties,
@@ -742,7 +739,7 @@ pub const Instance = struct {
         self.getPhysicalDeviceProperties.?(device, properties);
     }
 
-    pub inline fn vkGetPhysicalDeviceQueueFamilyProperties(
+    pub fn vkGetPhysicalDeviceQueueFamilyProperties(
         self: *Instance,
         device: c.VkPhysicalDevice,
         property_count: *u32,
@@ -751,7 +748,7 @@ pub const Instance = struct {
         self.getPhysicalDeviceQueueFamilyProperties.?(device, property_count, properties);
     }
 
-    pub inline fn vkGetPhysicalDeviceMemoryProperties(
+    pub fn vkGetPhysicalDeviceMemoryProperties(
         self: *Instance,
         device: c.VkPhysicalDevice,
         properties: *c.VkPhysicalDeviceMemoryProperties,
@@ -759,7 +756,7 @@ pub const Instance = struct {
         self.getPhysicalDeviceMemoryProperties.?(device, properties);
     }
 
-    pub inline fn vkGetPhysicalDeviceFormatProperties(
+    pub fn vkGetPhysicalDeviceFormatProperties(
         self: *Instance,
         device: c.VkPhysicalDevice,
         format: c.VkFormat,
@@ -768,7 +765,7 @@ pub const Instance = struct {
         self.getPhysicalDeviceFormatProperties.?(device, format, properties);
     }
 
-    pub inline fn vkGetPhysicalDeviceImageFormatProperties(
+    pub fn vkGetPhysicalDeviceImageFormatProperties(
         self: *Instance,
         device: c.VkPhysicalDevice,
         format: c.VkFormat,
@@ -789,7 +786,7 @@ pub const Instance = struct {
         );
     }
 
-    pub inline fn vkGetPhysicalDeviceFeatures(
+    pub fn vkGetPhysicalDeviceFeatures(
         self: *Instance,
         device: c.VkPhysicalDevice,
         features: *c.VkPhysicalDeviceFeatures,
@@ -797,7 +794,7 @@ pub const Instance = struct {
         self.getPhysicalDeviceFeatures.?(device, features);
     }
 
-    pub inline fn vkCreateDevice(
+    pub fn vkCreateDevice(
         self: *Instance,
         physical_device: c.VkPhysicalDevice,
         create_info: *const c.VkDeviceCreateInfo,
@@ -807,7 +804,7 @@ pub const Instance = struct {
         return self.createDevice.?(physical_device, create_info, vk_allocator, device);
     }
 
-    pub inline fn vkEnumerateDeviceExtensionProperties(
+    pub fn vkEnumerateDeviceExtensionProperties(
         self: *Instance,
         device: c.VkPhysicalDevice,
         layer_name: ?[*]const u8,
@@ -822,7 +819,7 @@ pub const Instance = struct {
         );
     }
 
-    pub inline fn vkGetPhysicalDeviceProperties2(
+    pub fn vkGetPhysicalDeviceProperties2(
         self: *Instance,
         device: c.VkPhysicalDevice,
         properties: *c.VkPhysicalDeviceProperties2,
@@ -830,7 +827,7 @@ pub const Instance = struct {
         self.getPhysicalDeviceProperties2.?(device, properties);
     }
 
-    pub inline fn vkGetPhysicalDeviceFeatures2(
+    pub fn vkGetPhysicalDeviceFeatures2(
         self: *Instance,
         device: c.VkPhysicalDevice,
         features: *c.VkPhysicalDeviceFeatures2,
@@ -838,7 +835,7 @@ pub const Instance = struct {
         self.getPhysicalDeviceFeatures2.?(device, features);
     }
 
-    pub inline fn vkDestroySurfaceKHR(
+    pub fn vkDestroySurfaceKHR(
         self: *Instance,
         surface: c.VkSurfaceKHR,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -846,7 +843,7 @@ pub const Instance = struct {
         self.destroySurface.?(self.handle, surface, vk_allocator);
     }
 
-    pub inline fn vkGetPhysicalDeviceSurfaceSupportKHR(
+    pub fn vkGetPhysicalDeviceSurfaceSupportKHR(
         self: *Instance,
         device: c.VkPhysicalDevice,
         queue_family: u32,
@@ -856,7 +853,7 @@ pub const Instance = struct {
         return self.getPhysicalDeviceSurfaceSupport.?(device, queue_family, surface, supported);
     }
 
-    pub inline fn vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+    pub fn vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
         self: *Instance,
         device: c.VkPhysicalDevice,
         surface: c.VkSurfaceKHR,
@@ -865,7 +862,7 @@ pub const Instance = struct {
         return self.getPhysicalDeviceSurfaceCapabilities.?(device, surface, capabilities);
     }
 
-    pub inline fn vkGetPhysicalDeviceSurfaceFormatsKHR(
+    pub fn vkGetPhysicalDeviceSurfaceFormatsKHR(
         self: *Instance,
         device: c.VkPhysicalDevice,
         surface: c.VkSurfaceKHR,
@@ -875,7 +872,7 @@ pub const Instance = struct {
         return self.getPhysicalDeviceSurfaceFormats.?(device, surface, format_count, formats);
     }
 
-    pub inline fn vkGetPhysicalDeviceSurfacePresentModesKHR(
+    pub fn vkGetPhysicalDeviceSurfacePresentModesKHR(
         self: *Instance,
         device: c.VkPhysicalDevice,
         surface: c.VkSurfaceKHR,
@@ -890,7 +887,7 @@ pub const Instance = struct {
         );
     }
 
-    pub inline fn vkCreateAndroidSurfaceKHR(
+    pub fn vkCreateAndroidSurfaceKHR(
         self: *Instance,
         create_info: *const c.VkAndroidSurfaceCreateInfoKHR,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -899,7 +896,7 @@ pub const Instance = struct {
         return self.createAndroidSurface.?(self.handle, create_info, vk_allocator, surface);
     }
 
-    pub inline fn vkCreateWaylandSurfaceKHR(
+    pub fn vkCreateWaylandSurfaceKHR(
         self: *Instance,
         create_info: *const c.VkWaylandSurfaceCreateInfoKHR,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -908,7 +905,7 @@ pub const Instance = struct {
         return self.createWaylandSurface.?(self.handle, create_info, vk_allocator, surface);
     }
 
-    pub inline fn vkCreateWin32SurfaceKHR(
+    pub fn vkCreateWin32SurfaceKHR(
         self: *Instance,
         create_info: *const c.VkWin32SurfaceCreateInfoKHR,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -917,7 +914,7 @@ pub const Instance = struct {
         return self.createWin32Surface.?(self.handle, create_info, vk_allocator, surface);
     }
 
-    pub inline fn vkCreateXcbSurfaceKHR(
+    pub fn vkCreateXcbSurfaceKHR(
         self: *Instance,
         create_info: *const c.VkXcbSurfaceCreateInfoKHR,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -1052,7 +1049,7 @@ fn getGpus(_: *anyopaque, allocator: std.mem.Allocator) Error![]ngl.Gpu {
 pub const Gpu = packed struct {
     handle: c.VkPhysicalDevice,
 
-    pub inline fn cast(impl: Impl.Gpu) Gpu {
+    pub fn cast(impl: Impl.Gpu) Gpu {
         return @bitCast(impl.val);
     }
 };
@@ -1527,18 +1524,15 @@ pub const Device = struct {
 
     // Wrappers --------------------------------------------
 
-    pub inline fn vkDestroyDevice(
-        self: *Device,
-        vk_allocator: ?*const c.VkAllocationCallbacks,
-    ) void {
+    pub fn vkDestroyDevice(self: *Device, vk_allocator: ?*const c.VkAllocationCallbacks) void {
         self.destroyDevice.?(self.handle, vk_allocator);
     }
 
-    pub inline fn vkDeviceWaitIdle(self: *Device) c.VkResult {
+    pub fn vkDeviceWaitIdle(self: *Device) c.VkResult {
         return self.deviceWaitIdle.?(self.handle);
     }
 
-    pub inline fn vkGetDeviceQueue(
+    pub fn vkGetDeviceQueue(
         self: *Device,
         queue_family: u32,
         queue_index: u32,
@@ -1547,7 +1541,7 @@ pub const Device = struct {
         self.getDeviceQueue.?(self.handle, queue_family, queue_index, queue);
     }
 
-    pub inline fn vkQueueSubmit(
+    pub fn vkQueueSubmit(
         self: *Device,
         queue: c.VkQueue,
         submit_count: u32,
@@ -1557,11 +1551,11 @@ pub const Device = struct {
         return self.queueSubmit.?(queue, submit_count, submits, fence);
     }
 
-    pub inline fn vkQueueWaitIdle(self: *Device, queue: c.VkQueue) c.VkResult {
+    pub fn vkQueueWaitIdle(self: *Device, queue: c.VkQueue) c.VkResult {
         return self.queueWaitIdle.?(queue);
     }
 
-    pub inline fn vkAllocateMemory(
+    pub fn vkAllocateMemory(
         self: *Device,
         allocate_info: *const c.VkMemoryAllocateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -1570,7 +1564,7 @@ pub const Device = struct {
         return self.allocateMemory.?(self.handle, allocate_info, vk_allocator, memory);
     }
 
-    pub inline fn vkFreeMemory(
+    pub fn vkFreeMemory(
         self: *Device,
         memory: c.VkDeviceMemory,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -1578,7 +1572,7 @@ pub const Device = struct {
         self.freeMemory.?(self.handle, memory, vk_allocator);
     }
 
-    pub inline fn vkMapMemory(
+    pub fn vkMapMemory(
         self: *Device,
         memory: c.VkDeviceMemory,
         offset: c.VkDeviceSize,
@@ -1589,11 +1583,11 @@ pub const Device = struct {
         return self.mapMemory.?(self.handle, memory, offset, size, flags, data);
     }
 
-    pub inline fn vkUnmapMemory(self: *Device, memory: c.VkDeviceMemory) void {
+    pub fn vkUnmapMemory(self: *Device, memory: c.VkDeviceMemory) void {
         return self.unmapMemory.?(self.handle, memory);
     }
 
-    pub inline fn vkFlushMappedMemoryRanges(
+    pub fn vkFlushMappedMemoryRanges(
         self: *Device,
         memory_range_count: u32,
         memory_ranges: [*]const c.VkMappedMemoryRange,
@@ -1601,7 +1595,7 @@ pub const Device = struct {
         return self.flushMappedMemoryRanges.?(self.handle, memory_range_count, memory_ranges);
     }
 
-    pub inline fn vkInvalidateMappedMemoryRanges(
+    pub fn vkInvalidateMappedMemoryRanges(
         self: *Device,
         memory_range_count: u32,
         memory_ranges: [*]const c.VkMappedMemoryRange,
@@ -1609,7 +1603,7 @@ pub const Device = struct {
         return self.invalidateMappedMemoryRanges.?(self.handle, memory_range_count, memory_ranges);
     }
 
-    pub inline fn vkCreateCommandPool(
+    pub fn vkCreateCommandPool(
         self: *Device,
         create_info: *const c.VkCommandPoolCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -1618,7 +1612,7 @@ pub const Device = struct {
         return self.createCommandPool.?(self.handle, create_info, vk_allocator, command_pool);
     }
 
-    pub inline fn vkDestroyCommandPool(
+    pub fn vkDestroyCommandPool(
         self: *Device,
         command_pool: c.VkCommandPool,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -1626,7 +1620,7 @@ pub const Device = struct {
         return self.destroyCommandPool.?(self.handle, command_pool, vk_allocator);
     }
 
-    pub inline fn vkResetCommandPool(
+    pub fn vkResetCommandPool(
         self: *Device,
         command_pool: c.VkCommandPool,
         flags: c.VkCommandPoolResetFlags,
@@ -1634,7 +1628,7 @@ pub const Device = struct {
         return self.resetCommandPool.?(self.handle, command_pool, flags);
     }
 
-    pub inline fn vkAllocateCommandBuffers(
+    pub fn vkAllocateCommandBuffers(
         self: *Device,
         allocate_info: *const c.VkCommandBufferAllocateInfo,
         command_buffers: [*]c.VkCommandBuffer,
@@ -1642,7 +1636,7 @@ pub const Device = struct {
         return self.allocateCommandBuffers.?(self.handle, allocate_info, command_buffers);
     }
 
-    pub inline fn vkFreeCommandBuffers(
+    pub fn vkFreeCommandBuffers(
         self: *Device,
         command_pool: c.VkCommandPool,
         command_buffer_count: u32,
@@ -1651,7 +1645,7 @@ pub const Device = struct {
         self.freeCommandBuffers.?(self.handle, command_pool, command_buffer_count, command_buffers);
     }
 
-    pub inline fn vkBeginCommandBuffer(
+    pub fn vkBeginCommandBuffer(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         begin_info: *const c.VkCommandBufferBeginInfo,
@@ -1659,11 +1653,11 @@ pub const Device = struct {
         return self.beginCommandBuffer.?(command_buffer, begin_info);
     }
 
-    pub inline fn vkEndCommandBuffer(self: *Device, command_buffer: c.VkCommandBuffer) c.VkResult {
+    pub fn vkEndCommandBuffer(self: *Device, command_buffer: c.VkCommandBuffer) c.VkResult {
         return self.endCommandBuffer.?(command_buffer);
     }
 
-    pub inline fn vkCmdBindPipeline(
+    pub fn vkCmdBindPipeline(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         pipeline_bind_point: c.VkPipelineBindPoint,
@@ -1672,7 +1666,7 @@ pub const Device = struct {
         self.cmdBindPipeline.?(command_buffer, pipeline_bind_point, pipeline);
     }
 
-    pub inline fn vkCmdBindDescriptorSets(
+    pub fn vkCmdBindDescriptorSets(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         pipeline_bind_point: c.VkPipelineBindPoint,
@@ -1695,7 +1689,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkCmdPushConstants(
+    pub fn vkCmdPushConstants(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         pipeline_layout: c.VkPipelineLayout,
@@ -1707,7 +1701,7 @@ pub const Device = struct {
         self.cmdPushConstants.?(command_buffer, pipeline_layout, stage_flags, offset, size, values);
     }
 
-    pub inline fn vkCmdBindIndexBuffer(
+    pub fn vkCmdBindIndexBuffer(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         buffer: c.VkBuffer,
@@ -1717,7 +1711,7 @@ pub const Device = struct {
         self.cmdBindIndexBuffer.?(command_buffer, buffer, offset, index_type);
     }
 
-    pub inline fn vkCmdBindVertexBuffers(
+    pub fn vkCmdBindVertexBuffers(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         first_binding: u32,
@@ -1728,7 +1722,7 @@ pub const Device = struct {
         self.cmdBindVertexBuffers.?(command_buffer, first_binding, binding_count, buffers, offsets);
     }
 
-    pub inline fn vkCmdSetViewport(
+    pub fn vkCmdSetViewport(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         first_viewport: u32,
@@ -1738,7 +1732,7 @@ pub const Device = struct {
         self.cmdSetViewport.?(command_buffer, first_viewport, viewport_count, viewports);
     }
 
-    pub inline fn vkCmdSetScissor(
+    pub fn vkCmdSetScissor(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         first_scissor: u32,
@@ -1748,7 +1742,7 @@ pub const Device = struct {
         self.cmdSetScissor.?(command_buffer, first_scissor, scissor_count, scissors);
     }
 
-    pub inline fn vkCmdSetDepthBias(
+    pub fn vkCmdSetDepthBias(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         constant_factor: f32,
@@ -1758,7 +1752,7 @@ pub const Device = struct {
         self.cmdSetDepthBias.?(command_buffer, constant_factor, clamp, slope_factor);
     }
 
-    pub inline fn vkCmdSetStencilCompareMask(
+    pub fn vkCmdSetStencilCompareMask(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         face_mask: c.VkStencilFaceFlags,
@@ -1767,7 +1761,7 @@ pub const Device = struct {
         self.cmdSetStencilCompareMask.?(command_buffer, face_mask, compare_mask);
     }
 
-    pub inline fn vkCmdSetStencilWriteMask(
+    pub fn vkCmdSetStencilWriteMask(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         face_mask: c.VkStencilFaceFlags,
@@ -1776,7 +1770,7 @@ pub const Device = struct {
         self.cmdSetStencilWriteMask.?(command_buffer, face_mask, write_mask);
     }
 
-    pub inline fn vkCmdSetStencilReference(
+    pub fn vkCmdSetStencilReference(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         face_mask: c.VkStencilFaceFlags,
@@ -1785,7 +1779,7 @@ pub const Device = struct {
         self.cmdSetStencilReference.?(command_buffer, face_mask, reference);
     }
 
-    pub inline fn vkCmdSetBlendConstants(
+    pub fn vkCmdSetBlendConstants(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         constants: [*]const f32,
@@ -1793,7 +1787,7 @@ pub const Device = struct {
         self.cmdSetBlendConstants.?(command_buffer, constants);
     }
 
-    pub inline fn vkCmdBeginRenderPass(
+    pub fn vkCmdBeginRenderPass(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         render_pass_begin: *const c.VkRenderPassBeginInfo,
@@ -1802,7 +1796,7 @@ pub const Device = struct {
         self.cmdBeginRenderPass.?(command_buffer, render_pass_begin, contents);
     }
 
-    pub inline fn vkCmdNextSubpass(
+    pub fn vkCmdNextSubpass(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         contents: c.VkSubpassContents,
@@ -1810,11 +1804,11 @@ pub const Device = struct {
         self.cmdNextSubpass.?(command_buffer, contents);
     }
 
-    pub inline fn vkCmdEndRenderPass(self: *Device, command_buffer: c.VkCommandBuffer) void {
+    pub fn vkCmdEndRenderPass(self: *Device, command_buffer: c.VkCommandBuffer) void {
         self.cmdEndRenderPass.?(command_buffer);
     }
 
-    pub inline fn vkCmdDraw(
+    pub fn vkCmdDraw(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         vertex_count: u32,
@@ -1825,7 +1819,7 @@ pub const Device = struct {
         self.cmdDraw.?(command_buffer, vertex_count, instance_count, first_vertex, first_instance);
     }
 
-    pub inline fn vkCmdDrawIndexed(
+    pub fn vkCmdDrawIndexed(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         index_count: u32,
@@ -1844,7 +1838,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkCmdDrawIndirect(
+    pub fn vkCmdDrawIndirect(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         buffer: c.VkBuffer,
@@ -1855,7 +1849,7 @@ pub const Device = struct {
         self.cmdDrawIndirect.?(command_buffer, buffer, offset, draw_count, stride);
     }
 
-    pub inline fn vkCmdDrawIndexedIndirect(
+    pub fn vkCmdDrawIndexedIndirect(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         buffer: c.VkBuffer,
@@ -1866,7 +1860,7 @@ pub const Device = struct {
         self.cmdDrawIndexedIndirect.?(command_buffer, buffer, offset, draw_count, stride);
     }
 
-    pub inline fn vkCmdDispatch(
+    pub fn vkCmdDispatch(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         group_count_x: u32,
@@ -1876,7 +1870,7 @@ pub const Device = struct {
         self.cmdDispatch.?(command_buffer, group_count_x, group_count_y, group_count_z);
     }
 
-    pub inline fn vkCmdDispatchIndirect(
+    pub fn vkCmdDispatchIndirect(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         buffer: c.VkBuffer,
@@ -1885,7 +1879,7 @@ pub const Device = struct {
         self.cmdDispatchIndirect.?(command_buffer, buffer, offset);
     }
 
-    pub inline fn vkCmdFillBuffer(
+    pub fn vkCmdFillBuffer(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         buffer: c.VkBuffer,
@@ -1896,7 +1890,7 @@ pub const Device = struct {
         self.cmdFillBuffer.?(command_buffer, buffer, offset, size, value);
     }
 
-    pub inline fn vkCmdCopyBuffer(
+    pub fn vkCmdCopyBuffer(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         source_buffer: c.VkBuffer,
@@ -1907,7 +1901,7 @@ pub const Device = struct {
         self.cmdCopyBuffer.?(command_buffer, source_buffer, dest_buffer, region_count, regions);
     }
 
-    pub inline fn vkCmdCopyImage(
+    pub fn vkCmdCopyImage(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         source_image: c.VkImage,
@@ -1928,7 +1922,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkCmdCopyBufferToImage(
+    pub fn vkCmdCopyBufferToImage(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         source_buffer: c.VkBuffer,
@@ -1947,7 +1941,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkCmdCopyImageToBuffer(
+    pub fn vkCmdCopyImageToBuffer(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         source_image: c.VkImage,
@@ -1966,7 +1960,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkCmdResetQueryPool(
+    pub fn vkCmdResetQueryPool(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         query_pool: c.VkQueryPool,
@@ -1976,7 +1970,7 @@ pub const Device = struct {
         self.cmdResetQueryPool.?(command_buffer, query_pool, first_query, query_count);
     }
 
-    pub inline fn vkCmdBeginQuery(
+    pub fn vkCmdBeginQuery(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         query_pool: c.VkQueryPool,
@@ -1986,7 +1980,7 @@ pub const Device = struct {
         self.cmdBeginQuery.?(command_buffer, query_pool, query, flags);
     }
 
-    pub inline fn vkCmdEndQuery(
+    pub fn vkCmdEndQuery(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         query_pool: c.VkQueryPool,
@@ -1995,7 +1989,7 @@ pub const Device = struct {
         self.cmdEndQuery.?(command_buffer, query_pool, query);
     }
 
-    pub inline fn vkCmdWriteTimestamp(
+    pub fn vkCmdWriteTimestamp(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         pipeline_stage: c.VkPipelineStageFlagBits,
@@ -2005,7 +1999,7 @@ pub const Device = struct {
         self.cmdWriteTimestamp.?(command_buffer, pipeline_stage, query_pool, query);
     }
 
-    pub inline fn vkCmdCopyQueryPoolResults(
+    pub fn vkCmdCopyQueryPoolResults(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         query_pool: c.VkQueryPool,
@@ -2028,7 +2022,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkCmdPipelineBarrier(
+    pub fn vkCmdPipelineBarrier(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         source_stage_mask: c.VkPipelineStageFlags,
@@ -2055,7 +2049,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkCmdExecuteCommands(
+    pub fn vkCmdExecuteCommands(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         secondary_command_buffer_count: u32,
@@ -2068,7 +2062,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkCreateFence(
+    pub fn vkCreateFence(
         self: *Device,
         create_info: *const c.VkFenceCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2077,7 +2071,7 @@ pub const Device = struct {
         return self.createFence.?(self.handle, create_info, vk_allocator, fence);
     }
 
-    pub inline fn vkDestroyFence(
+    pub fn vkDestroyFence(
         self: *Device,
         fence: c.VkFence,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2085,11 +2079,11 @@ pub const Device = struct {
         self.destroyFence.?(self.handle, fence, vk_allocator);
     }
 
-    pub inline fn vkGetFenceStatus(self: *Device, fence: c.VkFence) c.VkResult {
+    pub fn vkGetFenceStatus(self: *Device, fence: c.VkFence) c.VkResult {
         return self.getFenceStatus.?(self.handle, fence);
     }
 
-    pub inline fn vkResetFences(
+    pub fn vkResetFences(
         self: *Device,
         fence_count: u32,
         fences: [*]const c.VkFence,
@@ -2097,7 +2091,7 @@ pub const Device = struct {
         return self.resetFences.?(self.handle, fence_count, fences);
     }
 
-    pub inline fn vkWaitForFences(
+    pub fn vkWaitForFences(
         self: *Device,
         fence_count: u32,
         fences: [*]const c.VkFence,
@@ -2107,7 +2101,7 @@ pub const Device = struct {
         return self.waitForFences.?(self.handle, fence_count, fences, wait_all, timeout);
     }
 
-    pub inline fn vkCreateSemaphore(
+    pub fn vkCreateSemaphore(
         self: *Device,
         create_info: *const c.VkSemaphoreCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2116,7 +2110,7 @@ pub const Device = struct {
         return self.createSemaphore.?(self.handle, create_info, vk_allocator, semaphore);
     }
 
-    pub inline fn vkDestroySemaphore(
+    pub fn vkDestroySemaphore(
         self: *Device,
         semaphore: c.VkSemaphore,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2124,7 +2118,7 @@ pub const Device = struct {
         self.destroySemaphore.?(self.handle, semaphore, vk_allocator);
     }
 
-    pub inline fn vkCreateBuffer(
+    pub fn vkCreateBuffer(
         self: *Device,
         create_info: *const c.VkBufferCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2133,7 +2127,7 @@ pub const Device = struct {
         return self.createBuffer.?(self.handle, create_info, vk_allocator, buffer);
     }
 
-    pub inline fn vkDestroyBuffer(
+    pub fn vkDestroyBuffer(
         self: *Device,
         buffer: c.VkBuffer,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2141,7 +2135,7 @@ pub const Device = struct {
         self.destroyBuffer.?(self.handle, buffer, vk_allocator);
     }
 
-    pub inline fn vkGetBufferMemoryRequirements(
+    pub fn vkGetBufferMemoryRequirements(
         self: *Device,
         buffer: c.VkBuffer,
         memory_requirements: *c.VkMemoryRequirements,
@@ -2149,7 +2143,7 @@ pub const Device = struct {
         self.getBufferMemoryRequirements.?(self.handle, buffer, memory_requirements);
     }
 
-    pub inline fn vkBindBufferMemory(
+    pub fn vkBindBufferMemory(
         self: *Device,
         buffer: c.VkBuffer,
         memory: c.VkDeviceMemory,
@@ -2158,7 +2152,7 @@ pub const Device = struct {
         return self.bindBufferMemory.?(self.handle, buffer, memory, memory_offset);
     }
 
-    pub inline fn vkCreateBufferView(
+    pub fn vkCreateBufferView(
         self: *Device,
         create_info: *const c.VkBufferViewCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2167,7 +2161,7 @@ pub const Device = struct {
         return self.createBufferView.?(self.handle, create_info, vk_allocator, buffer_view);
     }
 
-    pub inline fn vkDestroyBufferView(
+    pub fn vkDestroyBufferView(
         self: *Device,
         buffer_view: c.VkBufferView,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2175,7 +2169,7 @@ pub const Device = struct {
         self.destroyBufferView.?(self.handle, buffer_view, vk_allocator);
     }
 
-    pub inline fn vkCreateImage(
+    pub fn vkCreateImage(
         self: *Device,
         create_info: *const c.VkImageCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2184,7 +2178,7 @@ pub const Device = struct {
         return self.createImage.?(self.handle, create_info, vk_allocator, image);
     }
 
-    pub inline fn vkDestroyImage(
+    pub fn vkDestroyImage(
         self: *Device,
         image: c.VkImage,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2192,7 +2186,7 @@ pub const Device = struct {
         self.destroyImage.?(self.handle, image, vk_allocator);
     }
 
-    pub inline fn vkGetImageSubresourceLayout(
+    pub fn vkGetImageSubresourceLayout(
         self: *Device,
         image: c.VkImage,
         subresource: *const c.VkImageSubresource,
@@ -2201,7 +2195,7 @@ pub const Device = struct {
         self.getImageSubresourceLayout.?(self.handle, image, subresource, layout);
     }
 
-    pub inline fn vkGetImageMemoryRequirements(
+    pub fn vkGetImageMemoryRequirements(
         self: *Device,
         image: c.VkImage,
         memory_requirements: *c.VkMemoryRequirements,
@@ -2209,7 +2203,7 @@ pub const Device = struct {
         self.getImageMemoryRequirements.?(self.handle, image, memory_requirements);
     }
 
-    pub inline fn vkBindImageMemory(
+    pub fn vkBindImageMemory(
         self: *Device,
         image: c.VkImage,
         memory: c.VkDeviceMemory,
@@ -2218,7 +2212,7 @@ pub const Device = struct {
         return self.bindImageMemory.?(self.handle, image, memory, memory_offset);
     }
 
-    pub inline fn vkCreateImageView(
+    pub fn vkCreateImageView(
         self: *Device,
         create_info: *const c.VkImageViewCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2227,7 +2221,7 @@ pub const Device = struct {
         return self.createImageView.?(self.handle, create_info, vk_allocator, image_view);
     }
 
-    pub inline fn vkDestroyImageView(
+    pub fn vkDestroyImageView(
         self: *Device,
         image_view: c.VkImageView,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2235,7 +2229,7 @@ pub const Device = struct {
         self.destroyImageView.?(self.handle, image_view, vk_allocator);
     }
 
-    pub inline fn vkCreateSampler(
+    pub fn vkCreateSampler(
         self: *Device,
         create_info: *const c.VkSamplerCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2244,7 +2238,7 @@ pub const Device = struct {
         return self.createSampler.?(self.handle, create_info, vk_allocator, sampler);
     }
 
-    pub inline fn vkDestroySampler(
+    pub fn vkDestroySampler(
         self: *Device,
         sampler: c.VkSampler,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2252,7 +2246,7 @@ pub const Device = struct {
         self.destroySampler.?(self.handle, sampler, vk_allocator);
     }
 
-    pub inline fn vkCreateRenderPass(
+    pub fn vkCreateRenderPass(
         self: *Device,
         create_info: *const c.VkRenderPassCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2261,7 +2255,7 @@ pub const Device = struct {
         return self.createRenderPass.?(self.handle, create_info, vk_allocator, render_pass);
     }
 
-    pub inline fn vkDestroyRenderPass(
+    pub fn vkDestroyRenderPass(
         self: *Device,
         render_pass: c.VkRenderPass,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2269,7 +2263,7 @@ pub const Device = struct {
         self.destroyRenderPass.?(self.handle, render_pass, vk_allocator);
     }
 
-    pub inline fn vkGetRenderAreaGranularity(
+    pub fn vkGetRenderAreaGranularity(
         self: *Device,
         render_pass: c.VkRenderPass,
         granularity: *c.VkExtent2D,
@@ -2277,7 +2271,7 @@ pub const Device = struct {
         self.getRenderAreaGranularity.?(self.handle, render_pass, granularity);
     }
 
-    pub inline fn vkCreateFramebuffer(
+    pub fn vkCreateFramebuffer(
         self: *Device,
         create_info: *const c.VkFramebufferCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2286,7 +2280,7 @@ pub const Device = struct {
         return self.createFramebuffer.?(self.handle, create_info, vk_allocator, framebuffer);
     }
 
-    pub inline fn vkDestroyFramebuffer(
+    pub fn vkDestroyFramebuffer(
         self: *Device,
         framebuffer: c.VkFramebuffer,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2294,7 +2288,7 @@ pub const Device = struct {
         self.destroyFramebuffer.?(self.handle, framebuffer, vk_allocator);
     }
 
-    pub inline fn vkCreateDescriptorSetLayout(
+    pub fn vkCreateDescriptorSetLayout(
         self: *Device,
         create_info: *const c.VkDescriptorSetLayoutCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2308,7 +2302,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkDestroyDescriptorSetLayout(
+    pub fn vkDestroyDescriptorSetLayout(
         self: *Device,
         descriptor_set_layout: c.VkDescriptorSetLayout,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2316,7 +2310,7 @@ pub const Device = struct {
         self.destroyDescriptorSetLayout.?(self.handle, descriptor_set_layout, vk_allocator);
     }
 
-    pub inline fn vkCreatePipelineLayout(
+    pub fn vkCreatePipelineLayout(
         self: *Device,
         create_info: *const c.VkPipelineLayoutCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2325,7 +2319,7 @@ pub const Device = struct {
         return self.createPipelineLayout.?(self.handle, create_info, vk_allocator, pipeline_layout);
     }
 
-    pub inline fn vkDestroyPipelineLayout(
+    pub fn vkDestroyPipelineLayout(
         self: *Device,
         pipeline_layout: c.VkPipelineLayout,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2333,7 +2327,7 @@ pub const Device = struct {
         self.destroyPipelineLayout.?(self.handle, pipeline_layout, vk_allocator);
     }
 
-    pub inline fn vkCreateDescriptorPool(
+    pub fn vkCreateDescriptorPool(
         self: *Device,
         create_info: *const c.VkDescriptorPoolCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2342,7 +2336,7 @@ pub const Device = struct {
         return self.createDescriptorPool.?(self.handle, create_info, vk_allocator, descriptor_pool);
     }
 
-    pub inline fn vkDestroyDescriptorPool(
+    pub fn vkDestroyDescriptorPool(
         self: *Device,
         descriptor_pool: c.VkDescriptorPool,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2350,7 +2344,7 @@ pub const Device = struct {
         self.destroyDescriptorPool.?(self.handle, descriptor_pool, vk_allocator);
     }
 
-    pub inline fn vkResetDescriptorPool(
+    pub fn vkResetDescriptorPool(
         self: *Device,
         descriptor_pool: c.VkDescriptorPool,
         flags: c.VkDescriptorPoolResetFlags,
@@ -2358,7 +2352,7 @@ pub const Device = struct {
         return self.resetDescriptorPool.?(self.handle, descriptor_pool, flags);
     }
 
-    pub inline fn vkAllocateDescriptorSets(
+    pub fn vkAllocateDescriptorSets(
         self: *Device,
         allocate_info: *const c.VkDescriptorSetAllocateInfo,
         descriptor_sets: [*]c.VkDescriptorSet,
@@ -2366,7 +2360,7 @@ pub const Device = struct {
         return self.allocateDescriptorSets.?(self.handle, allocate_info, descriptor_sets);
     }
 
-    pub inline fn vkUpdateDescriptorSets(
+    pub fn vkUpdateDescriptorSets(
         self: *Device,
         descriptor_write_count: u32,
         descriptor_writes: ?[*]const c.VkWriteDescriptorSet,
@@ -2382,7 +2376,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkCreateGraphicsPipelines(
+    pub fn vkCreateGraphicsPipelines(
         self: *Device,
         pipeline_cache: c.VkPipelineCache,
         create_info_count: u32,
@@ -2400,7 +2394,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkCreateComputePipelines(
+    pub fn vkCreateComputePipelines(
         self: *Device,
         pipeline_cache: c.VkPipelineCache,
         create_info_count: u32,
@@ -2418,7 +2412,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkDestroyPipeline(
+    pub fn vkDestroyPipeline(
         self: *Device,
         pipeline: c.VkPipeline,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2426,7 +2420,7 @@ pub const Device = struct {
         self.destroyPipeline.?(self.handle, pipeline, vk_allocator);
     }
 
-    pub inline fn vkCreatePipelineCache(
+    pub fn vkCreatePipelineCache(
         self: *Device,
         create_info: *const c.VkPipelineCacheCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2435,7 +2429,7 @@ pub const Device = struct {
         return self.createPipelineCache.?(self.handle, create_info, vk_allocator, pipeline_cache);
     }
 
-    pub inline fn vkDestroyPipelineCache(
+    pub fn vkDestroyPipelineCache(
         self: *Device,
         pipeline_cache: c.VkPipelineCache,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2443,7 +2437,7 @@ pub const Device = struct {
         self.destroyPipelineCache.?(self.handle, pipeline_cache, vk_allocator);
     }
 
-    pub inline fn vkCreateShaderModule(
+    pub fn vkCreateShaderModule(
         self: *Device,
         create_info: *const c.VkShaderModuleCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2452,7 +2446,7 @@ pub const Device = struct {
         return self.createShaderModule.?(self.handle, create_info, vk_allocator, shader_module);
     }
 
-    pub inline fn vkDestroyShaderModule(
+    pub fn vkDestroyShaderModule(
         self: *Device,
         shader_module: c.VkShaderModule,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2460,7 +2454,7 @@ pub const Device = struct {
         self.destroyShaderModule.?(self.handle, shader_module, vk_allocator);
     }
 
-    pub inline fn vkCreateQueryPool(
+    pub fn vkCreateQueryPool(
         self: *Device,
         create_info: *const c.VkQueryPoolCreateInfo,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2469,7 +2463,7 @@ pub const Device = struct {
         return self.createQueryPool.?(self.handle, create_info, vk_allocator, query_pool);
     }
 
-    pub inline fn vkDestroyQueryPool(
+    pub fn vkDestroyQueryPool(
         self: *Device,
         query_pool: c.VkQueryPool,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2477,7 +2471,7 @@ pub const Device = struct {
         self.destroyQueryPool.?(self.handle, query_pool, vk_allocator);
     }
 
-    pub inline fn vkCmdBeginRendering(
+    pub fn vkCmdBeginRendering(
         self: *Device,
         command_buffer: c.VkCommandBuffer,
         rendering_info: *const c.VkRenderingInfo,
@@ -2485,11 +2479,11 @@ pub const Device = struct {
         self.cmdBeginRendering.?(command_buffer, rendering_info);
     }
 
-    pub inline fn vkCmdEndRendering(self: *Device, command_buffer: c.VkCommandBuffer) void {
+    pub fn vkCmdEndRendering(self: *Device, command_buffer: c.VkCommandBuffer) void {
         self.cmdEndRendering.?(command_buffer);
     }
 
-    pub inline fn vkQueuePresentKHR(
+    pub fn vkQueuePresentKHR(
         self: *Device,
         queue: c.VkQueue,
         present_info: *const c.VkPresentInfoKHR,
@@ -2497,7 +2491,7 @@ pub const Device = struct {
         return self.queuePresent.?(queue, present_info);
     }
 
-    pub inline fn vkCreateSwapchainKHR(
+    pub fn vkCreateSwapchainKHR(
         self: *Device,
         create_info: *const c.VkSwapchainCreateInfoKHR,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2506,7 +2500,7 @@ pub const Device = struct {
         return self.createSwapchain.?(self.handle, create_info, vk_allocator, swapchain);
     }
 
-    pub inline fn vkGetSwapchainImagesKHR(
+    pub fn vkGetSwapchainImagesKHR(
         self: *Device,
         swapchain: c.VkSwapchainKHR,
         image_count: *u32,
@@ -2515,7 +2509,7 @@ pub const Device = struct {
         return self.getSwapchainImages.?(self.handle, swapchain, image_count, images);
     }
 
-    pub inline fn vkAcquireNextImageKHR(
+    pub fn vkAcquireNextImageKHR(
         self: *Device,
         swapchain: c.VkSwapchainKHR,
         timeout: u64,
@@ -2533,7 +2527,7 @@ pub const Device = struct {
         );
     }
 
-    pub inline fn vkDestroySwapchainKHR(
+    pub fn vkDestroySwapchainKHR(
         self: *Device,
         swapchain: c.VkSwapchainKHR,
         vk_allocator: ?*const c.VkAllocationCallbacks,
@@ -2547,7 +2541,7 @@ pub const Queue = struct {
     family: u32,
     index: u32,
 
-    pub inline fn cast(impl: Impl.Queue) *Queue {
+    pub fn cast(impl: Impl.Queue) *Queue {
         return impl.ptr(Queue);
     }
 
@@ -2724,7 +2718,7 @@ pub const Queue = struct {
 pub const Memory = packed struct {
     handle: c.VkDeviceMemory,
 
-    pub inline fn cast(impl: Impl.Memory) Memory {
+    pub fn cast(impl: Impl.Memory) Memory {
         return @bitCast(impl.val);
     }
 
