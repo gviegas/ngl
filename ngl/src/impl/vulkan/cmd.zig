@@ -934,11 +934,18 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         rendering: ngl.Cmd.Rendering,
     ) void {
-        _ = allocator;
-        _ = device;
-        _ = command_buffer;
-        _ = rendering;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn != null and cmd_buf.dyn.?.rendering != null) {
+            cmd_buf.dyn.?.rendering.?.set(rendering);
+            // TODO: Actually begin the render pass (note that we'll
+            // likely have to defer this because the sample count
+            // isn't known).
+        } else {
+            _ = allocator;
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn endRendering(
@@ -946,9 +953,14 @@ pub const CommandBuffer = struct {
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn != null and cmd_buf.dyn.?.rendering != null)
+            cmd_buf.dyn.?.rendering.?.clear(null)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn draw(
@@ -1864,6 +1876,14 @@ test CommandBuffer {
     else
         d.rendering != null);
 
+    try CommandBuffer.begin(
+        undefined,
+        testing.allocator,
+        dev,
+        cmd_buf,
+        .{ .one_time_submit = true, .inheritance = null },
+    );
+
     var shds = [2]ngl.Shader{ .{ .impl = .{ .val = 1 } }, .{ .impl = .{ .val = 2 } } };
     const prev_shds = d.state.shaders;
     CommandBuffer.setShaders(
@@ -1981,4 +2001,34 @@ test CommandBuffer {
         &.{ .all, .{ .mask = .{ .r = true } } },
     );
     try testing.expect(!prev_col_write.eql(d.state.color_write));
+
+    const rend = if (d.rendering != null) &d.rendering.? else return;
+
+    // NOTE: This assumes that the calls below won't actually
+    // begin/end the render pass.
+    // TODO: Update this as needed.
+    var view = ngl.ImageView{
+        .impl = .{ .val = 1 },
+        .format = .rgba8_unorm,
+    };
+
+    const prev_rend = rend.*;
+    CommandBuffer.beginRendering(undefined, testing.allocator, dev, cmd_buf, .{
+        .colors = &.{.{
+            .view = &view,
+            .layout = .color_attachment_optimal,
+            .load_op = .clear,
+            .store_op = .store,
+            .clear_value = .{ .color_f32 = .{ 1, 1, 1, 1 } },
+            .resolve = null,
+        }},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = 1, .height = 1 },
+        .layers = 1,
+    });
+    try testing.expect(!(@TypeOf(prev_rend).HashCtx{}).eql(prev_rend, rend.*));
+
+    CommandBuffer.endRendering(undefined, dev, cmd_buf);
+    try testing.expect((@TypeOf(prev_rend).HashCtx{}).eql(prev_rend, rend.*));
 }
