@@ -200,7 +200,13 @@ pub const CommandPool = struct {
 
         dev.vkDestroyCommandPool(cmd_pool.handle, null);
         for (cmd_pool.allocs.items) |ptr| {
-            if (need_dyn) allocator.destroy(ptr.dyn.?);
+            if (need_dyn) {
+                // BUG: This assumes that the same allocator is
+                // used by both `CommandPool` and `CommandBuffer`
+                // (need to enforce this in the client API).
+                ptr.dyn.?.clear(allocator);
+                allocator.destroy(ptr.dyn.?);
+            }
             allocator.destroy(ptr);
         }
         cmd_pool.allocs.deinit(allocator);
