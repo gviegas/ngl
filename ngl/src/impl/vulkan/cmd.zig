@@ -296,12 +296,15 @@ pub const CommandBuffer = struct {
         types: []const ngl.Shader.Type,
         shaders: []const ?*ngl.Shader,
     ) void {
-        _ = allocator;
-        _ = device;
-        _ = command_buffer;
-        _ = types;
-        _ = shaders;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.shaders.set(types, shaders)
+        else {
+            _ = allocator;
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setDescriptors(
@@ -376,12 +379,16 @@ pub const CommandBuffer = struct {
         bindings: []const ngl.Cmd.VertexInputBinding,
         attributes: []const ngl.Cmd.VertexInputAttribute,
     ) void {
-        _ = allocator;
-        _ = device;
-        _ = command_buffer;
-        _ = bindings;
-        _ = attributes;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d| {
+            // TODO: Defer error to `end`.
+            d.state.vertex_input.set(allocator, bindings, attributes) catch
+                @panic("dyn.State.vertex_input.set failed");
+        } else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setPrimitiveTopology(
@@ -390,10 +397,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         topology: ngl.Cmd.PrimitiveTopology,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = topology;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.primitive_topology.set(topology)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setIndexBuffer(
@@ -541,10 +552,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         enable: bool,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = enable;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.rasterization_enable.set(enable)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setPolygonMode(
@@ -553,10 +568,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         polygon_mode: ngl.Cmd.PolygonMode,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = polygon_mode;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.polygon_mode.set(polygon_mode)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setCullMode(
@@ -565,10 +584,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         cull_mode: ngl.Cmd.CullMode,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = cull_mode;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.cull_mode.set(cull_mode)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setFrontFace(
@@ -577,10 +600,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         front_face: ngl.Cmd.FrontFace,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = front_face;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.front_face.set(front_face)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setSampleCount(
@@ -589,10 +616,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         sample_count: ngl.SampleCount,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = sample_count;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.sample_count.set(sample_count)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setSampleMask(
@@ -601,10 +632,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         sample_mask: u64,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = sample_mask;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.sample_mask.set(sample_mask)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setDepthBiasEnable(
@@ -613,10 +648,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         enable: bool,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = enable;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.depth_bias_enable.set(enable)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setDepthBias(
@@ -636,10 +675,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         enable: bool,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = enable;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.depth_test_enable.set(enable)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setDepthCompareOp(
@@ -648,10 +691,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         compare_op: ngl.CompareOp,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = compare_op;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.depth_compare_op.set(compare_op)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setDepthWriteEnable(
@@ -660,10 +707,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         enable: bool,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = enable;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.depth_write_enable.set(enable)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setStencilTestEnable(
@@ -672,10 +723,14 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         enable: bool,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = enable;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.stencil_test_enable.set(enable)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setStencilOp(
@@ -688,14 +743,14 @@ pub const CommandBuffer = struct {
         depth_fail_op: ngl.Cmd.StencilOp,
         compare_op: ngl.CompareOp,
     ) void {
-        _ = device;
-        _ = command_buffer;
-        _ = stencil_face;
-        _ = fail_op;
-        _ = pass_op;
-        _ = depth_fail_op;
-        _ = compare_op;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.stencil_op.set(stencil_face, fail_op, pass_op, depth_fail_op, compare_op)
+        else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setStencilReadMask(
@@ -748,12 +803,15 @@ pub const CommandBuffer = struct {
         first_attachment: ngl.Cmd.ColorAttachmentIndex,
         enable: []const bool,
     ) void {
-        _ = allocator;
-        _ = device;
-        _ = command_buffer;
-        _ = first_attachment;
-        _ = enable;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.color_blend_enable.set(first_attachment, enable)
+        else {
+            _ = allocator;
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setColorBlend(
@@ -764,12 +822,15 @@ pub const CommandBuffer = struct {
         first_attachment: ngl.Cmd.ColorAttachmentIndex,
         blend: []const ngl.Cmd.Blend,
     ) void {
-        _ = allocator;
-        _ = device;
-        _ = command_buffer;
-        _ = first_attachment;
-        _ = blend;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.color_blend.set(first_attachment, blend)
+        else {
+            _ = allocator;
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setColorWrite(
@@ -780,12 +841,15 @@ pub const CommandBuffer = struct {
         first_attachment: ngl.Cmd.ColorAttachmentIndex,
         write_masks: []const ngl.Cmd.ColorMask,
     ) void {
-        _ = allocator;
-        _ = device;
-        _ = command_buffer;
-        _ = first_attachment;
-        _ = write_masks;
-        @panic("Not yet implemented");
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d|
+            d.state.color_write.set(first_attachment, write_masks)
+        else {
+            _ = allocator;
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setBlendConstants(
@@ -1759,4 +1823,162 @@ test CommandPool {
 
     try CommandPool.reset(undefined, dev, cmd_pool, .keep);
     try CommandPool.reset(undefined, dev, cmd_pool, .release);
+}
+
+test CommandBuffer {
+    const ctx = context();
+    const dev = ctx.device.impl;
+    const queue = &ctx.device.queues[
+        ctx.device.findQueue(
+            .{ .graphics = true, .compute = true },
+            null,
+        ) orelse return error.SkipZigTest
+    ];
+
+    const cmd_pool = try CommandPool.init(undefined, testing.allocator, dev, .{ .queue = queue });
+    defer CommandPool.deinit(undefined, testing.allocator, dev, cmd_pool);
+
+    const cmd_buf = blk: {
+        var dest = [1]ngl.CommandBuffer{.{ .impl = .{ .val = 0 } }};
+        try CommandPool.alloc(
+            undefined,
+            testing.allocator,
+            dev,
+            cmd_pool,
+            .{ .level = .primary, .count = 1 },
+            &dest,
+        );
+        break :blk dest[0].impl;
+    };
+
+    if (Device.cast(dev).isFullyDynamic()) {
+        try testing.expect(CommandBuffer.cast(cmd_buf).dyn == null);
+        // Nothing else to test here; rely on the generic tests
+        // for correctness.
+        return error.SkipZigTest;
+    }
+    const d = CommandBuffer.cast(cmd_buf).dyn.?;
+
+    try testing.expect(if (Device.cast(dev).hasDynamicRendering())
+        d.rendering == null
+    else
+        d.rendering != null);
+
+    var shds = [2]ngl.Shader{ .{ .impl = .{ .val = 1 } }, .{ .impl = .{ .val = 2 } } };
+    const prev_shds = d.state.shaders;
+    CommandBuffer.setShaders(
+        undefined,
+        testing.allocator,
+        dev,
+        cmd_buf,
+        &.{ .vertex, .fragment },
+        &.{ &shds[0], &shds[1] },
+    );
+    try testing.expect(!prev_shds.eql(d.state.shaders));
+
+    // Won't leak.
+    const prev_vert_in = @TypeOf(d.state.vertex_input){
+        .bindings = try d.state.vertex_input.bindings.clone(testing.allocator),
+        .attributes = try d.state.vertex_input.attributes.clone(testing.allocator),
+    };
+    CommandBuffer.setVertexInput(
+        undefined,
+        testing.allocator,
+        dev,
+        cmd_buf,
+        &.{
+            .{ .binding = 0, .stride = 16, .step_rate = .vertex },
+            .{ .binding = 1, .stride = 4, .step_rate = .{ .instance = 1 } },
+        },
+        &.{
+            .{ .location = 0, .binding = 0, .format = .rgba32_sfloat, .offset = 0 },
+            .{ .location = 1, .binding = 1, .format = .r32_uint, .offset = 0 },
+        },
+    );
+    try testing.expect(!prev_vert_in.eql(d.state.vertex_input));
+
+    const prev_prim_top = d.state.primitive_topology;
+    CommandBuffer.setPrimitiveTopology(undefined, dev, cmd_buf, .line_list);
+    try testing.expect(!prev_prim_top.eql(d.state.primitive_topology));
+
+    const prev_raster_enable = d.state.rasterization_enable;
+    CommandBuffer.setRasterizationEnable(undefined, dev, cmd_buf, false);
+    try testing.expect(!prev_raster_enable.eql(d.state.rasterization_enable));
+
+    const prev_poly_mode = d.state.polygon_mode;
+    CommandBuffer.setPolygonMode(undefined, dev, cmd_buf, .line);
+    try testing.expect(!prev_poly_mode.eql(d.state.polygon_mode));
+
+    const prev_cull_mode = d.state.cull_mode;
+    CommandBuffer.setCullMode(undefined, dev, cmd_buf, .front);
+    try testing.expect(!prev_cull_mode.eql(d.state.cull_mode));
+
+    const prev_front_face = d.state.front_face;
+    CommandBuffer.setFrontFace(undefined, dev, cmd_buf, .counter_clockwise);
+    try testing.expect(!prev_front_face.eql(d.state.front_face));
+
+    const prev_spl_cnt = d.state.sample_count;
+    CommandBuffer.setSampleCount(undefined, dev, cmd_buf, .@"4");
+    try testing.expect(!prev_spl_cnt.eql(d.state.sample_count));
+
+    const prev_spl_mask = d.state.sample_mask;
+    CommandBuffer.setSampleMask(undefined, dev, cmd_buf, 0xf);
+    try testing.expect(!prev_spl_mask.eql(d.state.sample_mask));
+
+    const prev_dep_bias_enable = d.state.depth_bias_enable;
+    CommandBuffer.setDepthBiasEnable(undefined, dev, cmd_buf, true);
+    try testing.expect(!prev_dep_bias_enable.eql(d.state.depth_bias_enable));
+
+    const prev_dep_test_enable = d.state.depth_test_enable;
+    CommandBuffer.setDepthTestEnable(undefined, dev, cmd_buf, true);
+    try testing.expect(!prev_dep_test_enable.eql(d.state.depth_test_enable));
+
+    const prev_dep_cmp_op = d.state.depth_compare_op;
+    CommandBuffer.setDepthCompareOp(undefined, dev, cmd_buf, .equal);
+    try testing.expect(!prev_dep_cmp_op.eql(d.state.depth_compare_op));
+
+    const prev_dep_write_enable = d.state.depth_write_enable;
+    CommandBuffer.setDepthWriteEnable(undefined, dev, cmd_buf, true);
+    try testing.expect(!prev_dep_write_enable.eql(d.state.depth_write_enable));
+
+    const prev_sten_test_enable = d.state.stencil_test_enable;
+    CommandBuffer.setStencilTestEnable(undefined, dev, cmd_buf, true);
+    try testing.expect(!prev_sten_test_enable.eql(d.state.stencil_test_enable));
+
+    const prev_sten_op = d.state.stencil_op;
+    CommandBuffer.setStencilOp(undefined, dev, cmd_buf, .back, .keep, .zero, .replace, .less);
+    try testing.expect(!prev_sten_op.eql(d.state.stencil_op));
+
+    const prev_col_blend_enable = d.state.color_blend_enable;
+    CommandBuffer.setColorBlendEnable(
+        undefined,
+        testing.allocator,
+        dev,
+        cmd_buf,
+        0,
+        &.{ false, true },
+    );
+    try testing.expect(!prev_col_blend_enable.eql(d.state.color_blend_enable));
+
+    const prev_col_blend = d.state.color_blend;
+    CommandBuffer.setColorBlend(undefined, testing.allocator, dev, cmd_buf, 1, &.{.{
+        .color_source_factor = .dest_color,
+        .color_dest_factor = .zero,
+        .color_op = .add,
+        .alpha_source_factor = .source_alpha,
+        .alpha_dest_factor = .one_minus_source_alpha,
+        .alpha_op = .add,
+    }});
+    try testing.expect(!prev_col_blend.eql(d.state.color_blend));
+
+    const prev_col_write = d.state.color_write;
+    CommandBuffer.setColorWrite(
+        undefined,
+        testing.allocator,
+        dev,
+        cmd_buf,
+        0,
+        &.{ .all, .{ .mask = .{ .r = true } } },
+    );
+    try testing.expect(!prev_col_write.eql(d.state.color_write));
 }
