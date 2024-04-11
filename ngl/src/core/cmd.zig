@@ -886,7 +886,6 @@ pub const CommandBuffer = struct {
             },
             layers: u32,
             view_mask: u32 = 0,
-            context: Context = .none,
 
             pub const Attachment = struct {
                 view: *ImageView,
@@ -899,12 +898,6 @@ pub const CommandBuffer = struct {
                     layout: Image.Layout,
                     mode: ResolveMode,
                 },
-            };
-
-            pub const Context = enum {
-                none,
-                suspending,
-                resuming,
             };
         };
 

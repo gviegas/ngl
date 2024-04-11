@@ -247,7 +247,6 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .render_area => if (has) RenderArea else None,
                 .layers => if (has) Layers else None,
                 .view_mask => if (has) ViewMask else None,
-                .context => if (has) Context else None,
                 else => unreachable,
             };
         }
@@ -281,7 +280,6 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
         render_area: getType(.render_area),
         layers: getType(.layers),
         view_mask: getType(.view_mask),
-        context: getType(.context),
 
         pub const mask = rendering_mask;
 
@@ -326,8 +324,6 @@ pub const RenderingMask = packed struct {
     layers: bool = false,
     // `Cmd.Rendering.view_mask`.
     view_mask: bool = false,
-    // `Cmd.Rendering.context`.
-    context: bool = false,
 };
 
 fn getDefaultHashFn(comptime InnerK: type) (fn (InnerK, hasher: anytype) void) {
@@ -975,17 +971,6 @@ const ViewMask = struct {
     }
 };
 
-const Context = struct {
-    context: Cmd.Rendering.Context = .none,
-
-    pub const hash = getDefaultHashFn(@This());
-    pub const eql = getDefaultEqlFn(@This());
-
-    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
-        self.context = rendering.context;
-    }
-};
-
 const testing = std.testing;
 
 fn expectEql(key: anytype, hash: u64, other_key: @TypeOf(key)) !void {
@@ -1419,7 +1404,6 @@ test Rendering {
         .render_area = false,
         .layers = true,
         .view_mask = true,
-        .context = true,
     });
     inline for (@typeInfo(R).Struct.fields) |field| {
         const has = @field(R.mask, field.name);
@@ -1791,22 +1775,5 @@ test Rendering {
     h1 = ctx.hash(r1);
     try expectNotEql(r1, h1, r2);
     r2.view_mask.view_mask = 0x1;
-    try expectEql(r1, h1, r2);
-
-    r2.context.set(rend_empty);
-    try expectEql(r1, h1, r2);
-    r2.context.set(rend);
-    try expectEql(r1, h1, r2);
-    r1.context.set(.{
-        .colors = &.{},
-        .depth = null,
-        .stencil = null,
-        .render_area = .{ .width = 1, .height = 1 },
-        .layers = 1,
-        .context = .suspending,
-    });
-    h1 = ctx.hash(r1);
-    try expectNotEql(r1, h1, r2);
-    r2.context.context = .suspending;
     try expectEql(r1, h1, r2);
 }
