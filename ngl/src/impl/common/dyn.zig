@@ -394,11 +394,11 @@ fn Shaders(comptime kind: enum {
                     .primitive => switch (@"type") {
                         .vertex => self.shader.vertex = if (shader) |x| x.impl else dfl,
                         .fragment => self.shader.fragment = if (shader) |x| x.impl else dfl,
-                        else => unreachable,
+                        else => {},
                     },
                     .compute => switch (@"type") {
                         .compute => self.shader.compute = if (shader) |x| x.impl else dfl,
-                        else => unreachable,
+                        else => {},
                     },
                 }
             }
