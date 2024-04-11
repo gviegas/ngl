@@ -287,6 +287,14 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
 
         pub const init = getInitFn(@This());
         pub const clear = getClearFn(@This());
+
+        /// Every field must have a `set` method that takes a
+        /// `Cmd.Rendering` as parameter and returns nothing.
+        pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+            inline for (@typeInfo(@This()).Struct.fields) |field|
+                if (field.type != None)
+                    @field(self, field.name).set(rendering);
+        }
     };
 }
 
@@ -1775,5 +1783,18 @@ test Rendering {
     h1 = ctx.hash(r1);
     try expectNotEql(r1, h1, r2);
     r2.view_mask.view_mask = 0x1;
+    try expectEql(r1, h1, r2);
+
+    r1.clear(null);
+    try expectEql(r0, h0, r1);
+    r1.set(rend);
+    try expectNotEql(r0, h0, r1);
+    h1 = ctx.hash(r1);
+    r2.clear(null);
+    inline for (@typeInfo(R).Struct.fields) |field| {
+        if (field.type == None) continue;
+        @field(r2, field.name).set(rend);
+        try testing.expect(@field(r2, field.name).eql(@field(r1, field.name)));
+    }
     try expectEql(r1, h1, r2);
 }
