@@ -6,6 +6,7 @@ const c = @import("c");
 const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
+const dyn = @import("../common/dyn.zig");
 const conv = @import("conv.zig");
 const null_handle = conv.null_handle;
 const check = conv.check;
@@ -21,16 +22,18 @@ const Pipeline = @import("state.zig").Pipeline;
 const getQueryLayout = @import("query.zig").getQueryLayout;
 const QueryPool = @import("query.zig").QueryPool;
 
-pub const CommandPool = packed struct {
+pub const CommandPool = struct {
     handle: c.VkCommandPool,
+    allocs: std.ArrayListUnmanaged(*CommandBuffer),
+    unused: std.bit_set.DynamicBitSetUnmanaged,
 
-    pub fn cast(impl: Impl.CommandPool) CommandPool {
-        return @bitCast(impl.val);
+    pub fn cast(impl: Impl.CommandPool) *CommandPool {
+        return impl.ptr(CommandPool);
     }
 
     pub fn init(
         _: *anyopaque,
-        _: std.mem.Allocator,
+        allocator: std.mem.Allocator,
         device: Impl.Device,
         desc: ngl.CommandPool.Desc,
     ) Error!Impl.CommandPool {
@@ -42,7 +45,13 @@ pub const CommandPool = packed struct {
             .queueFamilyIndex = Queue.cast(desc.queue.impl).family,
         }, null, &cmd_pool));
 
-        return .{ .val = @bitCast(CommandPool{ .handle = cmd_pool }) };
+        const ptr = try allocator.create(CommandPool);
+        ptr.* = .{
+            .handle = cmd_pool,
+            .allocs = .{},
+            .unused = .{},
+        };
+        return .{ .val = @intFromPtr(ptr) };
     }
 
     pub fn alloc(
@@ -55,11 +64,11 @@ pub const CommandPool = packed struct {
     ) Error!void {
         const dev = Device.cast(device);
         const cmd_pool = cast(command_pool);
+        const need_dyn = !dev.isFullyDynamic();
 
         const handles = try allocator.alloc(c.VkCommandBuffer, desc.count);
         defer allocator.free(handles);
-
-        const alloc_info = c.VkCommandBufferAllocateInfo{
+        try check(dev.vkAllocateCommandBuffers(&.{
             .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             .pNext = null,
             .commandPool = cmd_pool.handle,
@@ -68,28 +77,71 @@ pub const CommandPool = packed struct {
                 .secondary => c.VK_COMMAND_BUFFER_LEVEL_SECONDARY,
             },
             .commandBufferCount = desc.count,
-        };
-
-        try check(dev.vkAllocateCommandBuffers(&alloc_info, handles.ptr));
+        }, handles.ptr));
         errdefer dev.vkFreeCommandBuffers(cmd_pool.handle, desc.count, handles.ptr);
 
-        for (command_buffers, handles) |*cmd_buf, handle|
-            cmd_buf.impl = .{ .val = @bitCast(CommandBuffer{ .handle = handle }) };
+        const prev_n = cmd_pool.allocs.items.len;
+        const unused_n = cmd_pool.unused.count();
+        errdefer {
+            cmd_pool.allocs.resize(allocator, prev_n) catch unreachable;
+            cmd_pool.unused.resize(allocator, prev_n, false) catch unreachable;
+        }
+        if (unused_n < desc.count) {
+            const needed_n = prev_n + desc.count - unused_n;
+            try cmd_pool.allocs.resize(allocator, needed_n);
+            try cmd_pool.unused.resize(allocator, needed_n, true);
+            for (prev_n..needed_n) |i| {
+                errdefer for (prev_n..i) |j| {
+                    if (need_dyn) allocator.destroy(cmd_pool.allocs.items[j].dyn.?);
+                    allocator.destroy(cmd_pool.allocs.items[j]);
+                };
+                cmd_pool.allocs.items[i] = try allocator.create(CommandBuffer);
+                cmd_pool.allocs.items[i].* = .{
+                    .handle = null_handle,
+                    .dyn = blk: {
+                        if (!need_dyn) break :blk null;
+                        const dyn_ptr = allocator.create(Dynamic) catch |err| {
+                            allocator.destroy(cmd_pool.allocs.items[i]);
+                            return err;
+                        };
+                        dyn_ptr.* = Dynamic.init(dev.*);
+                        break :blk dyn_ptr;
+                    },
+                };
+            }
+        }
+
+        for (command_buffers, handles) |*cmd_buf, handle| {
+            const idx = cmd_pool.unused.findFirstSet().?;
+            cmd_pool.unused.unset(idx);
+            const ptr = cmd_pool.allocs.items[idx];
+            ptr.handle = handle;
+            if (need_dyn) ptr.dyn.?.clear(null);
+            cmd_buf.impl = .{ .val = @intFromPtr(ptr) };
+        }
     }
 
+    // TODO: Tie allocator w/ `release` mode.
     pub fn reset(
         _: *anyopaque,
         device: Impl.Device,
         command_pool: Impl.CommandPool,
         mode: ngl.CommandPool.ResetMode,
     ) Error!void {
-        try check(Device.cast(device).vkResetCommandPool(
-            cast(command_pool).handle,
-            switch (mode) {
-                .keep => 0,
-                .release => c.VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT,
-            },
-        ));
+        const dev = Device.cast(device);
+        const cmd_pool = cast(command_pool);
+        const need_dyn = !dev.isFullyDynamic();
+
+        try check(dev.vkResetCommandPool(cmd_pool.handle, switch (mode) {
+            .keep => 0,
+            .release => c.VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT,
+        }));
+
+        if (!need_dyn) return;
+
+        var iter = cmd_pool.unused.iterator(.{ .kind = .unset });
+        while (iter.next()) |idx|
+            cmd_pool.allocs.items[idx].dyn.?.clear(null);
     }
 
     pub fn free(
@@ -102,37 +154,67 @@ pub const CommandPool = packed struct {
         const dev = Device.cast(device);
         const cmd_pool = cast(command_pool);
         // Should be safe to assume this.
-        const n: u32 = @intCast(command_buffers.len);
+        var n: u32 = @intCast(command_buffers.len);
 
-        const handles = allocator.alloc(c.VkCommandBuffer, n) catch {
+        if (allocator.alloc(c.VkCommandBuffer, n)) |handles| {
+            for (handles, command_buffers) |*handle, cmd_buf| {
+                handle.* = CommandBuffer.cast(cmd_buf.impl).handle;
+                CommandBuffer.cast(cmd_buf.impl).handle = null_handle;
+            }
+            dev.vkFreeCommandBuffers(cmd_pool.handle, n, handles.ptr);
+            allocator.free(handles);
+        } else |_| {
             for (command_buffers) |cmd_buf| {
                 const handle = [1]c.VkCommandBuffer{CommandBuffer.cast(cmd_buf.impl).handle};
                 dev.vkFreeCommandBuffers(cmd_pool.handle, 1, &handle);
+                CommandBuffer.cast(cmd_buf.impl).handle = null_handle;
             }
-            return;
-        };
-        defer allocator.free(handles);
+        }
 
-        for (handles, command_buffers) |*handle, cmd_buf|
-            handle.* = CommandBuffer.cast(cmd_buf.impl).handle;
-        dev.vkFreeCommandBuffers(cmd_pool.handle, n, handles.ptr);
+        // `CommandBuffer` could store an index into `CommandPool`'s
+        // data instead. This may be worth doing if allocating many
+        // command buffers per command pool turns out to be common.
+        // Should also move the whole data to the command pool in
+        // this case.
+        for (cmd_pool.allocs.items, 0..) |ptr, i| {
+            if (cmd_pool.unused.isSet(i)) continue;
+            if (ptr.handle == null_handle) {
+                cmd_pool.unused.set(i);
+                n -= 1;
+                if (n == 0)
+                    break;
+            }
+        }
+        std.debug.assert(n == 0);
     }
 
     pub fn deinit(
         _: *anyopaque,
-        _: std.mem.Allocator,
+        allocator: std.mem.Allocator,
         device: Impl.Device,
         command_pool: Impl.CommandPool,
     ) void {
-        Device.cast(device).vkDestroyCommandPool(cast(command_pool).handle, null);
+        const dev = Device.cast(device);
+        const cmd_pool = cast(command_pool);
+        const need_dyn = !dev.isFullyDynamic();
+
+        dev.vkDestroyCommandPool(cmd_pool.handle, null);
+        for (cmd_pool.allocs.items) |ptr| {
+            if (need_dyn) allocator.destroy(ptr.dyn.?);
+            allocator.destroy(ptr);
+        }
+        cmd_pool.allocs.deinit(allocator);
+        cmd_pool.unused.deinit(allocator);
+        allocator.destroy(cmd_pool);
     }
 };
 
-pub const CommandBuffer = packed struct {
+pub const CommandBuffer = struct {
     handle: c.VkCommandBuffer,
+    dyn: ?*Dynamic,
 
-    pub fn cast(impl: Impl.CommandBuffer) CommandBuffer {
-        return @bitCast(impl.val);
+    pub fn cast(impl: Impl.CommandBuffer) *CommandBuffer {
+        return impl.ptr(CommandBuffer);
     }
 
     pub fn begin(
@@ -200,7 +282,6 @@ pub const CommandBuffer = packed struct {
         );
     }
 
-    // TODO
     pub fn setShaders(
         _: *anyopaque,
         allocator: std.mem.Allocator,
@@ -776,7 +857,6 @@ pub const CommandBuffer = packed struct {
         Device.cast(device).vkCmdEndRenderPass(cast(command_buffer).handle);
     }
 
-    // TODO
     pub fn beginRendering(
         _: *anyopaque,
         allocator: std.mem.Allocator,
@@ -791,7 +871,6 @@ pub const CommandBuffer = packed struct {
         @panic("Not yet implemented");
     }
 
-    // TODO
     pub fn endRendering(
         _: *anyopaque,
         device: Impl.Device,
@@ -1445,7 +1524,7 @@ pub const CommandBuffer = packed struct {
                         // TODO
                         _ = d;
                     }
-                    // TODO: Call `vkCmdPipelineBarrier2`
+                    // TODO: Call `vkCmdPipelineBarrier2`.
                     // Maybe try to fill more `VkDependencyInfo`s.
                     mem_i += mem_max;
                     buf_i += buf_max;
@@ -1504,3 +1583,174 @@ pub const CommandBuffer = packed struct {
         try check(Device.cast(device).vkEndCommandBuffer(cast(command_buffer).handle));
     }
 };
+
+pub const Dynamic = struct {
+    state: dyn.State(dyn.StateMask(.primitive){
+        .shaders = true,
+        .vertex_input = true,
+        .primitive_topology = true,
+        .rasterization_enable = true,
+        .polygon_mode = true,
+        .cull_mode = true,
+        .front_face = true,
+        .sample_count = true,
+        .sample_mask = true,
+        .depth_bias_enable = true,
+        .depth_test_enable = true,
+        .depth_compare_op = true,
+        .depth_write_enable = true,
+        .stencil_test_enable = true,
+        .stencil_op = true,
+        .color_blend_enable = true,
+        .color_blend = true,
+        .color_write = true,
+    }),
+    rendering: ?dyn.Rendering(.{
+        .color_format = true,
+        .color_layout = true,
+        .color_op = true,
+        .color_resolve_layout = true,
+        .color_resolve_mode = true,
+        .depth_format = true,
+        .depth_layout = true,
+        .depth_op = true,
+        .depth_resolve_layout = true,
+        .depth_resolve_mode = true,
+        .stencil_format = true,
+        .stencil_layout = true,
+        .stencil_op = true,
+        .stencil_resolve_layout = true,
+        .stencil_resolve_mode = true,
+        .view_mask = true,
+    }),
+
+    fn init(device: Device) @This() {
+        var self: @This() = undefined;
+        self.state = @TypeOf(self.state).init();
+        self.rendering = if (!device.hasDynamicRendering())
+            @TypeOf(self.rendering.?).init()
+        else
+            null;
+        return self;
+    }
+
+    fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
+        self.state.clear(allocator);
+        if (self.rendering) |*x| x.clear(allocator);
+    }
+};
+
+const testing = std.testing;
+const context = @import("../../test/test.zig").context;
+
+test CommandPool {
+    const ctx = context();
+    const dev = ctx.device.impl;
+    const queue = &ctx.device.queues[0];
+
+    const cmd_pool = try CommandPool.init(undefined, testing.allocator, dev, .{ .queue = queue });
+    defer CommandPool.deinit(undefined, testing.allocator, dev, cmd_pool);
+
+    var cmd_bufs = [_]ngl.CommandBuffer{.{ .impl = .{ .val = 0 } }} ** 5;
+
+    try CommandPool.alloc(
+        undefined,
+        testing.allocator,
+        dev,
+        cmd_pool,
+        .{ .level = .primary, .count = 1 },
+        cmd_bufs[0..1],
+    );
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 1);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 0);
+
+    CommandPool.free(undefined, testing.allocator, dev, cmd_pool, &.{&cmd_bufs[0]});
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 1);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 1);
+
+    try CommandPool.alloc(
+        undefined,
+        testing.allocator,
+        dev,
+        cmd_pool,
+        .{ .level = .primary, .count = 2 },
+        cmd_bufs[0..2],
+    );
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 2);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 0);
+
+    CommandPool.free(undefined, testing.allocator, dev, cmd_pool, &.{&cmd_bufs[0]});
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 2);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 1);
+
+    try CommandPool.reset(undefined, dev, cmd_pool, .release);
+
+    try CommandPool.alloc(
+        undefined,
+        testing.allocator,
+        dev,
+        cmd_pool,
+        .{ .level = .primary, .count = 1 },
+        cmd_bufs[0..1],
+    );
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 2);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 0);
+
+    try CommandPool.alloc(
+        undefined,
+        testing.allocator,
+        dev,
+        cmd_pool,
+        .{ .level = .primary, .count = 3 },
+        cmd_bufs[2..5],
+    );
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 5);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 0);
+
+    for (&cmd_bufs, 0..) |*x, i| {
+        CommandPool.free(undefined, testing.allocator, dev, cmd_pool, &.{x});
+        try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == cmd_bufs.len);
+        try testing.expect(CommandPool.cast(cmd_pool).unused.count() == i + 1);
+    }
+
+    try CommandPool.alloc(
+        undefined,
+        testing.allocator,
+        dev,
+        cmd_pool,
+        .{ .level = .primary, .count = 4 },
+        cmd_bufs[1..],
+    );
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 5);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 1);
+
+    CommandPool.free(undefined, testing.allocator, dev, cmd_pool, &.{ &cmd_bufs[1], &cmd_bufs[3] });
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 5);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 3);
+
+    try CommandPool.reset(undefined, dev, cmd_pool, .release);
+
+    CommandPool.free(undefined, testing.allocator, dev, cmd_pool, &.{ &cmd_bufs[4], &cmd_bufs[2] });
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 5);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 5);
+
+    try CommandPool.alloc(
+        undefined,
+        testing.allocator,
+        dev,
+        cmd_pool,
+        .{ .level = .primary, .count = 5 },
+        &cmd_bufs,
+    );
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 5);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 0);
+
+    outer: for (cmd_bufs) |x| {
+        for (CommandPool.cast(cmd_pool).allocs.items) |y|
+            if (CommandBuffer.cast(x.impl) == y) continue :outer;
+        try testing.expect(false);
+    }
+
+    try CommandPool.reset(undefined, dev, cmd_pool, .keep);
+    try CommandPool.reset(undefined, dev, cmd_pool, .release);
+}
