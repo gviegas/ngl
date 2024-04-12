@@ -1351,6 +1351,7 @@ pub const SampleCount = enum {
 
 pub const Image = struct {
     impl: Impl.Image,
+    type: Type,
 
     pub const Type = enum {
         @"1d",
@@ -1445,7 +1446,10 @@ pub const Image = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
-        return .{ .impl = try Impl.get().initImage(allocator, device.impl, desc) };
+        return .{
+            .impl = try Impl.get().initImage(allocator, device.impl, desc),
+            .type = desc.type,
+        };
     }
 
     /// It'll return `Error.NotSupported` to indicate that creating

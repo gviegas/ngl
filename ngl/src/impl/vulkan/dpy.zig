@@ -303,7 +303,10 @@ pub const SwapChain = packed struct {
 
         const s = try allocator.alloc(ngl.Image, img_n);
         for (s, imgs) |*image, handle|
-            image.* = .{ .impl = .{ .val = @bitCast(Image{ .handle = handle }) } };
+            image.* = .{
+                .impl = .{ .val = @bitCast(Image{ .handle = handle }) },
+                .type = .@"2d",
+            };
         return s;
     }
 
