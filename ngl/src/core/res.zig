@@ -1352,6 +1352,7 @@ pub const SampleCount = enum {
 pub const Image = struct {
     impl: Impl.Image,
     type: Type,
+    samples: SampleCount,
 
     pub const Type = enum {
         @"1d",
@@ -1449,6 +1450,7 @@ pub const Image = struct {
         return .{
             .impl = try Impl.get().initImage(allocator, device.impl, desc),
             .type = desc.type,
+            .samples = desc.samples,
         };
     }
 

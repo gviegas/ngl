@@ -306,6 +306,7 @@ pub const SwapChain = packed struct {
             image.* = .{
                 .impl = .{ .val = @bitCast(Image{ .handle = handle }) },
                 .type = .@"2d",
+                .samples = .@"1",
             };
         return s;
     }
