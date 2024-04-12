@@ -4,25 +4,6 @@ const ngl = @import("../../ngl.zig");
 const Cmd = ngl.Cmd;
 const Impl = @import("../Impl.zig");
 
-/// Every field of `K` must have `hash` (update) and `eql` methods.
-fn HashContext(comptime K: type) type {
-    return struct {
-        pub fn hash(_: @This(), key: K) u64 {
-            var hasher = std.hash.Wyhash.init(0);
-            inline for (@typeInfo(K).Struct.fields) |field|
-                @field(key, field.name).hash(&hasher);
-            return hasher.final();
-        }
-
-        pub fn eql(_: @This(), key: K, other: K) bool {
-            inline for (@typeInfo(K).Struct.fields) |field|
-                if (!@field(key, field.name).eql(@field(other, field.name)))
-                    return false;
-            return true;
-        }
-    };
-}
-
 /// Every field of `K` must support default initialization.
 fn getInitFn(comptime K: type) (fn () K) {
     return struct {
@@ -48,6 +29,35 @@ fn getClearFn(comptime K: type) (fn (*K, ?std.mem.Allocator) void) {
             }
         }
     }.clear;
+}
+
+/// Every field of `K` must have a `hash` (update) method.
+fn getHashFn(comptime K: type) (fn (K, hasher: anytype) void) {
+    return struct {
+        fn hash(self: K, hasher: anytype) void {
+            inline for (@typeInfo(K).Struct.fields) |field|
+                @field(self, field.name).hash(hasher);
+        }
+    }.hash;
+}
+
+/// Every field of `K` must have `hash` (update) and `eql` methods.
+fn HashContext(comptime K: type) type {
+    return struct {
+        pub fn hash(_: @This(), key: K) u64 {
+            var hasher = std.hash.Wyhash.init(0);
+            inline for (@typeInfo(K).Struct.fields) |field|
+                @field(key, field.name).hash(&hasher);
+            return hasher.final();
+        }
+
+        pub fn eql(_: @This(), key: K, other: K) bool {
+            inline for (@typeInfo(K).Struct.fields) |field|
+                if (!@field(key, field.name).eql(@field(other, field.name)))
+                    return false;
+            return true;
+        }
+    };
 }
 
 pub fn State(comptime state_mask: anytype) type {
@@ -123,10 +133,11 @@ pub fn State(comptime state_mask: anytype) type {
 
         pub const mask = state_mask;
 
-        pub const HashCtx = HashContext(@This());
-
         pub const init = getInitFn(@This());
         pub const clear = getClearFn(@This());
+        pub const hash = getHashFn(@This());
+
+        pub const HashCtx = HashContext(@This());
     };
 }
 
@@ -283,10 +294,9 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
 
         pub const mask = rendering_mask;
 
-        pub const HashCtx = HashContext(@This());
-
         pub const init = getInitFn(@This());
         pub const clear = getClearFn(@This());
+        pub const hash = getHashFn(@This());
 
         /// Every field must have a `set` method that takes a
         /// `Cmd.Rendering` as parameter and returns nothing.
@@ -295,6 +305,8 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 if (field.type != None)
                     @field(self, field.name).set(rendering);
         }
+
+        pub const HashCtx = HashContext(@This());
     };
 }
 
@@ -1379,6 +1391,12 @@ test State {
     s1.color_write.set(0, &.{.all});
     h1 = ctx.hash(s1);
     try expectEql(s1, h1, s2);
+
+    try testing.expect(blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        s1.hash(&hasher);
+        break :blk hasher.final();
+    } == h1);
 }
 
 test Rendering {
@@ -1797,4 +1815,10 @@ test Rendering {
         try testing.expect(@field(r2, field.name).eql(@field(r1, field.name)));
     }
     try expectEql(r1, h1, r2);
+
+    try testing.expect(blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        r1.hash(&hasher);
+        break :blk hasher.final();
+    } == h1);
 }
