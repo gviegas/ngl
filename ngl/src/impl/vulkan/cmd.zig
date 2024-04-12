@@ -938,9 +938,7 @@ pub const CommandBuffer = struct {
 
         if (cmd_buf.dyn != null and cmd_buf.dyn.?.rendering != null) {
             cmd_buf.dyn.?.rendering.?.set(rendering);
-            // TODO: Actually begin the render pass (note that we'll
-            // likely have to defer this because the sample count
-            // isn't known).
+            // TODO
         } else {
             _ = allocator;
             _ = device;
@@ -955,9 +953,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn != null and cmd_buf.dyn.?.rendering != null)
-            cmd_buf.dyn.?.rendering.?.clear(null)
-        else {
+        if (cmd_buf.dyn != null and cmd_buf.dyn.?.rendering != null) {
+            cmd_buf.dyn.?.rendering.?.clear(null);
+            // TODO
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -1696,16 +1695,19 @@ pub const Dynamic = struct {
     }),
     rendering: ?dyn.Rendering(.{
         .color_format = true,
+        .color_samples = true,
         .color_layout = true,
         .color_op = true,
         .color_resolve_layout = true,
         .color_resolve_mode = true,
         .depth_format = true,
+        .depth_samples = true,
         .depth_layout = true,
         .depth_op = true,
         .depth_resolve_layout = true,
         .depth_resolve_mode = true,
         .stencil_format = true,
+        .stencil_samples = true,
         .stencil_layout = true,
         .stencil_op = true,
         .stencil_resolve_layout = true,
