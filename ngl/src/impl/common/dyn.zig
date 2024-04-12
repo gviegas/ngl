@@ -242,6 +242,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .color_resolve_mode => if (has) ColorResolveMode else None,
                 .depth_view => if (has) DsView(.depth) else None,
                 .depth_format => if (has) DsFormat(.depth) else None,
+                .depth_samples => if (has) DsSamples(.depth) else None,
                 .depth_layout => if (has) DsLayout(.depth) else None,
                 .depth_op => if (has) DsOp(.depth) else None,
                 .depth_clear_value => if (has) DsClearValue(.depth) else None,
@@ -250,6 +251,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .depth_resolve_mode => if (has) DsResolveMode(.depth) else None,
                 .stencil_view => if (has) DsView(.stencil) else None,
                 .stencil_format => if (has) DsFormat(.stencil) else None,
+                .stencil_samples => if (has) DsSamples(.stencil) else None,
                 .stencil_layout => if (has) DsLayout(.stencil) else None,
                 .stencil_op => if (has) DsOp(.stencil) else None,
                 .stencil_clear_value => if (has) DsClearValue(.stencil) else None,
@@ -276,6 +278,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
         color_resolve_mode: getType(.color_resolve_mode),
         depth_view: getType(.depth_view),
         depth_format: getType(.depth_format),
+        depth_samples: getType(.depth_samples),
         depth_layout: getType(.depth_layout),
         depth_op: getType(.depth_op),
         depth_clear_value: getType(.depth_clear_value),
@@ -284,6 +287,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
         depth_resolve_mode: getType(.depth_resolve_mode),
         stencil_view: getType(.stencil_view),
         stencil_format: getType(.stencil_format),
+        stencil_samples: getType(.stencil_samples),
         stencil_layout: getType(.stencil_layout),
         stencil_op: getType(.stencil_op),
         stencil_clear_value: getType(.stencil_clear_value),
@@ -326,6 +330,7 @@ pub const RenderingMask = packed struct {
     // `Cmd.Rendering.depth`.
     depth_view: bool = false,
     depth_format: bool = false,
+    depth_samples: bool = false,
     depth_layout: bool = false,
     depth_op: bool = false,
     depth_clear_value: bool = false,
@@ -335,6 +340,7 @@ pub const RenderingMask = packed struct {
     // `Cmd.Rendering.stencil`.
     stencil_view: bool = false,
     stencil_format: bool = false,
+    stencil_samples: bool = false,
     stencil_layout: bool = false,
     stencil_op: bool = false,
     stencil_clear_value: bool = false,
@@ -887,6 +893,20 @@ fn DsFormat(comptime aspect: enum { depth, stencil }) type {
     };
 }
 
+fn DsSamples(comptime aspect: enum { depth, stencil }) type {
+    return struct {
+        sample_count: ngl.SampleCount = .@"1",
+
+        pub const hash = getDefaultHashFn(@This());
+        pub const eql = getDefaultEqlFn(@This());
+
+        pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+            self.sample_count =
+                if (@field(rendering, @tagName(aspect))) |x| x.view.samples else .@"1";
+        }
+    };
+}
+
 fn DsLayout(comptime aspect: enum { depth, stencil }) type {
     return struct {
         layout: ngl.Image.Layout = .unknown,
@@ -1431,6 +1451,7 @@ test Rendering {
         .color_resolve_mode = true,
         .depth_view = true,
         .depth_format = true,
+        .depth_samples = true,
         .depth_layout = true,
         .depth_op = true,
         .depth_clear_value = false,
@@ -1439,6 +1460,7 @@ test Rendering {
         .depth_resolve_mode = true,
         .stencil_view = true,
         .stencil_format = true,
+        .stencil_samples = true,
         .stencil_layout = true,
         .stencil_op = true,
         .stencil_clear_value = false,
@@ -1702,6 +1724,24 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.depth_format.eql(r1.depth_format));
     r1.stencil_format.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+
+    r2.depth_samples.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.depth_samples.set(rend);
+    try expectNotEql(r1, h1, r2);
+    try testing.expect(r2.stencil_samples.eql(r1.stencil_samples));
+    r1.depth_samples.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+
+    r2.stencil_samples.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.stencil_samples.set(rend);
+    try expectNotEql(r1, h1, r2);
+    try testing.expect(r2.depth_samples.eql(r1.depth_samples));
+    r1.stencil_samples.set(rend);
     h1 = ctx.hash(r1);
     try expectEql(r1, h1, r2);
 
