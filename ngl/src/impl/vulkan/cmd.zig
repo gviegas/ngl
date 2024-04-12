@@ -2017,6 +2017,7 @@ test CommandBuffer {
     var view = ngl.ImageView{
         .impl = .{ .val = 1 },
         .format = .rgba8_unorm,
+        .samples = .@"1",
     };
 
     const prev_rend = rend.*;

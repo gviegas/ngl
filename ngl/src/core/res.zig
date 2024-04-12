@@ -1494,7 +1494,9 @@ pub const Image = struct {
 
 pub const ImageView = struct {
     impl: Impl.ImageView,
-    format: Format, // TODO: `dyn.Rendering` needs this.
+    // TODO: `dyn.Rendering` needs these.
+    format: Format,
+    samples: SampleCount,
 
     pub const Type = enum {
         @"1d",
@@ -1521,6 +1523,7 @@ pub const ImageView = struct {
         return .{
             .impl = try Impl.get().initImageView(allocator, device.impl, desc),
             .format = desc.format,
+            .samples = desc.image.samples,
         };
     }
 

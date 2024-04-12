@@ -1459,13 +1459,13 @@ test Rendering {
     try expectEql(r1, h1, r2);
 
     var views = [_]ngl.ImageView{
-        .{ .impl = .{ .val = 1 }, .format = .rgba8_unorm },
-        .{ .impl = .{ .val = 2 }, .format = .rgba8_unorm },
-        .{ .impl = .{ .val = 3 }, .format = .rgba16_sfloat },
-        .{ .impl = .{ .val = 4 }, .format = .rgba16_sfloat },
-        .{ .impl = .{ .val = 5 }, .format = .a2bgr10_unorm },
-        .{ .impl = .{ .val = 6 }, .format = .d32_sfloat_s8_uint },
-        .{ .impl = .{ .val = 7 }, .format = .d32_sfloat_s8_uint },
+        .{ .impl = .{ .val = 1 }, .format = .rgba8_unorm, .samples = .@"4" },
+        .{ .impl = .{ .val = 2 }, .format = .rgba8_unorm, .samples = .@"1" },
+        .{ .impl = .{ .val = 3 }, .format = .rgba16_sfloat, .samples = .@"4" },
+        .{ .impl = .{ .val = 4 }, .format = .rgba16_sfloat, .samples = .@"1" },
+        .{ .impl = .{ .val = 5 }, .format = .a2bgr10_unorm, .samples = .@"4" },
+        .{ .impl = .{ .val = 6 }, .format = .d32_sfloat_s8_uint, .samples = .@"4" },
+        .{ .impl = .{ .val = 7 }, .format = .d32_sfloat_s8_uint, .samples = .@"1" },
     };
     const rend_empty = Cmd.Rendering{
         .colors = &.{},
