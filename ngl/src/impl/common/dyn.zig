@@ -233,6 +233,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
             return switch (ident) {
                 .color_view => if (has) ColorView else None,
                 .color_format => if (has) ColorFormat else None,
+                .color_samples => if (has) ColorSamples else None,
                 .color_layout => if (has) ColorLayout else None,
                 .color_op => if (has) ColorOp else None,
                 .color_clear_value => if (has) ColorClearValue else None,
@@ -266,6 +267,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
     return struct {
         color_view: getType(.color_view),
         color_format: getType(.color_format),
+        color_samples: getType(.color_samples),
         color_layout: getType(.color_layout),
         color_op: getType(.color_op),
         color_clear_value: getType(.color_clear_value),
@@ -314,6 +316,7 @@ pub const RenderingMask = packed struct {
     // `Cmd.Rendering.colors`.
     color_view: bool = false,
     color_format: bool = false,
+    color_samples: bool = false,
     color_layout: bool = false,
     color_op: bool = false,
     color_clear_value: bool = false,
@@ -761,6 +764,20 @@ const ColorFormat = struct {
         for (self.formats[0..rendering.colors.len], rendering.colors) |*format, attach|
             format.* = attach.view.format;
         @memset(self.formats[rendering.colors.len..], .unknown);
+    }
+};
+
+const ColorSamples = struct {
+    sample_counts: [max_color_attachment]ngl.SampleCount =
+        [_]ngl.SampleCount{.@"1"} ** max_color_attachment,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+        for (self.sample_counts[0..rendering.colors.len], rendering.colors) |*count, attach|
+            count.* = attach.view.samples;
+        @memset(self.sample_counts[rendering.colors.len..], .@"1");
     }
 };
 
@@ -1405,6 +1422,7 @@ test Rendering {
     const R = Rendering(.{
         .color_view = true,
         .color_format = true,
+        .color_samples = true,
         .color_layout = true,
         .color_op = true,
         .color_clear_value = false,
@@ -1566,6 +1584,18 @@ test Rendering {
     for (r2.color_format.formats[0..rend.colors.len], rend.colors) |*format, attach|
         format.* = attach.view.format;
     try expectEql(r1, h1, r2);
+
+    r2.color_samples.set(rend_empty);
+    try expectEql(r1, h1, r2);
+    r2.color_samples.set(rend);
+    try expectNotEql(r1, h1, r2);
+    r1.color_samples.set(rend);
+    h1 = ctx.hash(r1);
+    try expectEql(r1, h1, r2);
+    for (r1.color_samples.sample_counts[0..rend.colors.len], rend.colors) |count, attach|
+        try testing.expect(count == attach.view.samples);
+    for (r1.color_samples.sample_counts[rend.colors.len..]) |count|
+        try testing.expect(count == .@"1");
 
     r2.color_layout.set(rend_empty);
     try expectEql(r1, h1, r2);
