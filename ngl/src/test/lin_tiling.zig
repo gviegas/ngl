@@ -143,7 +143,6 @@ test "linear tiling" {
         .source_layout = .transfer_source_optimal,
         .dest = &opt_img,
         .dest_layout = .transfer_dest_optimal,
-        .type = .@"2d",
         .regions = &.{.{
             .source_aspect = .color,
             .source_level = 0,
@@ -239,7 +238,6 @@ test "linear tiling" {
         .source_layout = .transfer_source_optimal,
         .dest = &lin_img,
         .dest_layout = .transfer_dest_optimal,
-        .type = .@"2d",
         .regions = &.{.{
             .source_aspect = .color,
             .source_level = 0,

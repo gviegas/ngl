@@ -318,7 +318,6 @@ test "submission of multiple command buffers" {
                     .buffer = &buf,
                     .image = &image,
                     .image_layout = .transfer_dest_optimal,
-                    .image_type = .@"2d",
                     .regions = &.{.{
                         .buffer_offset = 0,
                         .buffer_row_length = width,
@@ -410,7 +409,6 @@ test "submission of multiple command buffers" {
                     .buffer = &buf,
                     .image = &image,
                     .image_layout = .transfer_source_optimal,
-                    .image_type = .@"2d",
                     .regions = &.{.{
                         .buffer_offset = 0,
                         .buffer_row_length = width,

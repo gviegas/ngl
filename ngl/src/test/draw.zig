@@ -471,7 +471,6 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         .buffer = &stg_buf,
         .image = &image,
         .image_layout = .transfer_source_optimal,
-        .image_type = .@"2d",
         .regions = &.{.{
             .buffer_offset = 0,
             .buffer_row_length = w,

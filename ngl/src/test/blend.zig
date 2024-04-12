@@ -472,7 +472,6 @@ const T = struct {
             .buffer = &self.stg_buf,
             .image = &self.col_img,
             .image_layout = .transfer_source_optimal,
-            .image_type = .@"2d",
             .regions = &.{.{
                 .buffer_offset = 0,
                 .buffer_row_length = width,

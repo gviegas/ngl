@@ -451,7 +451,6 @@ test "stencil test" {
             .buffer = &stg_buf,
             .image = &col_img,
             .image_layout = .transfer_source_optimal,
-            .image_type = .@"2d",
             .regions = &.{.{
                 .buffer_offset = 0,
                 .buffer_row_length = w,
@@ -470,7 +469,6 @@ test "stencil test" {
             .buffer = &stg_buf,
             .image = &ds_img,
             .image_layout = .transfer_source_optimal,
-            .image_type = .@"2d",
             .regions = &.{.{
                 .buffer_offset = copy_sten_off,
                 .buffer_row_length = w,

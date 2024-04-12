@@ -375,7 +375,6 @@ test "executeCommands command (dispatching)" {
         .buffer = &t.stg_buf,
         .image = &image,
         .image_layout = .transfer_source_optimal,
-        .image_type = .@"2d",
         .regions = &.{.{
             .buffer_offset = 0,
             .buffer_row_length = @TypeOf(t).width,
@@ -820,7 +819,6 @@ test "executeCommands command (drawing)" {
         .buffer = &t.stg_buf,
         .image = &image,
         .image_layout = .transfer_source_optimal,
-        .image_type = .@"2d",
         .regions = &.{.{
             .buffer_offset = 0,
             .buffer_row_length = @TypeOf(t).width,

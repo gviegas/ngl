@@ -1155,7 +1155,6 @@ pub const CommandBuffer = struct {
             source_layout: Image.Layout,
             dest: *Image,
             dest_layout: Image.Layout,
-            type: Image.Type,
             regions: []const Region,
 
             pub const Region = struct {
@@ -1195,7 +1194,6 @@ pub const CommandBuffer = struct {
             buffer: *Buffer,
             image: *Image,
             image_layout: Image.Layout,
-            image_type: Image.Type,
             regions: []const Region,
 
             pub const Region = struct {

@@ -625,7 +625,6 @@ test "subpass input" {
         .buffer = &stg_buf,
         .image = &col_img,
         .image_layout = .transfer_source_optimal,
-        .image_type = .@"2d",
         .regions = &.{.{
             .buffer_offset = 0,
             .buffer_row_length = w,

@@ -1199,7 +1199,6 @@ const StagingBuffer = struct {
             .buffer = &self.buffer,
             .image = &texture.image,
             .image_layout = .transfer_dest_optimal,
-            .image_type = .@"2d",
             .regions = blk: {
                 var regs: [materials.len]ngl.Cmd.BufferImageCopy.Region = undefined;
                 for (&regs, 0..) |*reg, i|

@@ -147,7 +147,6 @@ test "copy between resources" {
         .buffer = &bufs[0],
         .image = &images[0],
         .image_layout = .transfer_dest_optimal,
-        .image_type = .@"2d",
         .regions = &.{
             .{
                 .buffer_offset = size / 2,
@@ -225,7 +224,6 @@ test "copy between resources" {
         .source_layout = .transfer_source_optimal,
         .dest = &images[1],
         .dest_layout = .transfer_dest_optimal,
-        .type = .@"2d",
         .regions = &.{
             .{
                 .source_aspect = .color,
@@ -303,7 +301,6 @@ test "copy between resources" {
             .buffer = &bufs[1],
             .image = &images[1],
             .image_layout = .transfer_source_optimal,
-            .image_type = .@"2d",
             .regions = &.{.{
                 .buffer_offset = 0,
                 .buffer_row_length = w,
@@ -322,7 +319,6 @@ test "copy between resources" {
             .buffer = &bufs[2],
             .image = &images[1],
             .image_layout = .transfer_source_optimal,
-            .image_type = .@"2d",
             .regions = &.{.{
                 .buffer_offset = 0,
                 .buffer_row_length = w,

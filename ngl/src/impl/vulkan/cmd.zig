@@ -1172,7 +1172,8 @@ pub const CommandBuffer = struct {
 
             // TODO: Check that the compiler is generating a
             // separate path for 3D images.
-            const is_3d = x.type == .@"3d";
+            const source_3d = x.source.type == .@"3d";
+            const dest_3d = x.dest.type == .@"3d";
 
             var i: usize = 0;
             while (i < n) : (i += max) {
@@ -1182,29 +1183,35 @@ pub const CommandBuffer = struct {
                         .srcSubresource = .{
                             .aspectMask = conv.toVkImageAspect(r.source_aspect),
                             .mipLevel = r.source_level,
-                            .baseArrayLayer = if (is_3d) 0 else r.source_z_or_layer,
-                            .layerCount = if (is_3d) 1 else r.depth_or_layers,
+                            .baseArrayLayer = if (source_3d) 0 else r.source_z_or_layer,
+                            .layerCount = if (source_3d) 1 else r.depth_or_layers,
                         },
                         .srcOffset = .{
                             .x = @min(r.source_x, std.math.maxInt(i32)),
                             .y = @min(r.source_y, std.math.maxInt(i32)),
-                            .z = if (is_3d) @min(r.source_z_or_layer, std.math.maxInt(i32)) else 0,
+                            .z = if (source_3d)
+                                @min(r.source_z_or_layer, std.math.maxInt(i32))
+                            else
+                                0,
                         },
                         .dstSubresource = .{
                             .aspectMask = conv.toVkImageAspect(r.dest_aspect),
                             .mipLevel = r.dest_level,
-                            .baseArrayLayer = if (is_3d) 0 else r.dest_z_or_layer,
-                            .layerCount = if (is_3d) 1 else r.depth_or_layers,
+                            .baseArrayLayer = if (dest_3d) 0 else r.dest_z_or_layer,
+                            .layerCount = if (dest_3d) 1 else r.depth_or_layers,
                         },
                         .dstOffset = .{
                             .x = @min(r.dest_x, std.math.maxInt(i32)),
                             .y = @min(r.dest_y, std.math.maxInt(i32)),
-                            .z = if (is_3d) @min(r.dest_z_or_layer, std.math.maxInt(i32)) else 0,
+                            .z = if (dest_3d)
+                                @min(r.dest_z_or_layer, std.math.maxInt(i32))
+                            else
+                                0,
                         },
                         .extent = .{
                             .width = r.width,
                             .height = r.height,
-                            .depth = if (is_3d) r.depth_or_layers else 1,
+                            .depth = if (source_3d or dest_3d) r.depth_or_layers else 1,
                         },
                     };
                 }
@@ -1253,7 +1260,7 @@ pub const CommandBuffer = struct {
 
             // TODO: Check that the compiler is generating a
             // separate path for 3D images.
-            const is_3d = x.image_type == .@"3d";
+            const is_3d = x.image.type == .@"3d";
 
             var i: usize = 0;
             while (i < n) : (i += max) {

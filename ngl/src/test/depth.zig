@@ -450,7 +450,6 @@ test "depth-only rendering" {
         .buffer = &stg_buf,
         .image = &image,
         .image_layout = .transfer_source_optimal,
-        .image_type = .@"2d",
         .regions = &.{.{
             .buffer_offset = 0,
             .buffer_row_length = w,

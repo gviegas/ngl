@@ -478,7 +478,6 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         .buffer = &stg_buf,
         .image = &color_img,
         .image_layout = .transfer_source_optimal,
-        .image_type = .@"2d",
         .regions = &.{.{
             .buffer_offset = 0,
             .buffer_row_length = width,

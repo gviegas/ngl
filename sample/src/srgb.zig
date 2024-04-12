@@ -111,7 +111,6 @@ fn do() !void {
         .buffer = &stg_buf.buffer,
         .image = &tex.image,
         .image_layout = .transfer_dest_optimal,
-        .image_type = .@"2d",
         .regions = &.{.{
             .buffer_offset = tex_copy_off,
             .buffer_row_length = img_data.width,

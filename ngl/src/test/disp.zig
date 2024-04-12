@@ -187,7 +187,6 @@ test "dispatch command" {
         .buffer = &buf,
         .image = &image,
         .image_layout = .general,
-        .image_type = .@"2d",
         .regions = &.{.{
             .buffer_offset = 0,
             .buffer_row_length = w,

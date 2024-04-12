@@ -188,7 +188,6 @@ fn do() !void {
         .buffer = &d.upload.buffer,
         .image = &d.texture.image,
         .image_layout = .transfer_dest_optimal,
-        .image_type = .@"2d",
         .regions = &.{.{
             .buffer_offset = pixel_cpy_off,
             .buffer_row_length = 1,

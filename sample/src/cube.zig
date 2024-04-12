@@ -187,7 +187,6 @@ fn do() !void {
         .buffer = &stg_buf.buffer,
         .image = &cube_map.image,
         .image_layout = .transfer_dest_optimal,
-        .image_type = .@"2d",
         .regions = &.{.{
             .buffer_offset = 0,
             .buffer_row_length = extent,
