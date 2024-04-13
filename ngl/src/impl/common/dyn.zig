@@ -53,6 +53,26 @@ fn getHashFn(comptime K: type) (fn (K, hasher: anytype) void) {
     }.hash;
 }
 
+/// The generated function will constrain the comparison to
+/// the fields in `mask`, which must be a subset of `K.mask`.
+fn getEqlSubsetFn(comptime K: type) (fn (K, comptime mask: @TypeOf(K.mask), K) bool) {
+    return struct {
+        fn eqlSubset(self: K, comptime mask: @TypeOf(K.mask), other: K) bool {
+            comptime {
+                const U = @typeInfo(@TypeOf(mask)).Struct.backing_integer.?;
+                const m: U = @bitCast(K.mask);
+                const n: U = @bitCast(mask);
+                if (m & n != n) @compileError("Not a subset");
+            }
+            inline for (@typeInfo(K).Struct.fields) |field|
+                if (@field(mask, field.name))
+                    if (!@field(self, field.name).eql(@field(other, field.name)))
+                        return false;
+            return true;
+        }
+    }.eqlSubset;
+}
+
 /// The generated function will constrain the hash update to
 /// the fields in `mask`, which must be a subset of `K.mask`.
 fn getHashSubsetFn(comptime K: type) (fn (
@@ -64,8 +84,8 @@ fn getHashSubsetFn(comptime K: type) (fn (
         fn hashSubset(self: K, comptime mask: @TypeOf(K.mask), hasher: anytype) void {
             comptime {
                 const U = @typeInfo(@TypeOf(mask)).Struct.backing_integer.?;
-                const m = @as(U, @bitCast(K.mask));
-                const n = @as(U, @bitCast(mask));
+                const m: U = @bitCast(K.mask);
+                const n: U = @bitCast(mask);
                 if (m & n != n) @compileError("Not a subset");
             }
             inline for (@typeInfo(K).Struct.fields) |field|
@@ -152,6 +172,7 @@ pub fn State(comptime state_mask: anytype) type {
         pub const clear = getClearFn(@This());
         pub const eql = getEqlFn(@This());
         pub const hash = getHashFn(@This());
+        pub const eqlSubset = getEqlSubsetFn(@This());
         pub const hashSubset = getHashSubsetFn(@This());
     };
 }
@@ -319,6 +340,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
         pub const clear = getClearFn(@This());
         pub const eql = getEqlFn(@This());
         pub const hash = getHashFn(@This());
+        pub const eqlSubset = getEqlSubsetFn(@This());
         pub const hashSubset = getHashSubsetFn(@This());
 
         /// Every field must have a `set` method that takes a
@@ -1449,24 +1471,40 @@ test State {
     h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
-    try testing.expect(blk: {
-        var hasher = std.hash.Wyhash.init(0);
-        s1.hash(&hasher);
-        break :blk hasher.final();
-    } == h1);
-
     comptime var m = P.mask;
     m.color_blend = false;
+    s2.color_blend.set(1, &.{.{
+        .color_source_factor = .source_color,
+        .color_dest_factor = .dest_color,
+        .color_op = .min,
+        .alpha_source_factor = .source_alpha,
+        .alpha_dest_factor = .zero,
+        .alpha_op = .max,
+    }});
+    try expectNotEql(s1, h1, s2);
+    try testing.expect(s1.eqlSubset(m, s2));
+    try testing.expect(s2.eqlSubset(m, s1));
     try testing.expect(blk: {
         var hasher = std.hash.Wyhash.init(0);
         s1.hashSubset(m, &hasher);
         break :blk hasher.final();
     } != h1);
+    try testing.expect(blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        s1.hashSubset(m, &hasher);
+        break :blk hasher.final();
+    } == blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        s2.hashSubset(m, &hasher);
+        break :blk hasher.final();
+    });
     if (false) {
         m.viewports = true;
         // error: Not a subset
     }
     m.color_blend = true;
+    try testing.expect(!s1.eqlSubset(m, s2));
+    try testing.expect(!s2.eqlSubset(m, s1));
     try testing.expect(blk: {
         var hasher = std.hash.Wyhash.init(0);
         s1.hashSubset(m, &hasher);
@@ -1910,6 +1948,35 @@ test Rendering {
     r2.view_mask.view_mask = 0x1;
     try expectEql(r1, h1, r2);
 
+    comptime var m = R.mask;
+    m.color_view = false;
+    r2.color_view.set(rend);
+    try expectNotEql(r1, h1, r2);
+    try testing.expect(r1.eqlSubset(m, r2));
+    try testing.expect(r2.eqlSubset(m, r1));
+    try testing.expect(blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        r1.hashSubset(m, &hasher);
+        break :blk hasher.final();
+    } != h1);
+    try testing.expect(blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        r1.hashSubset(m, &hasher);
+        break :blk hasher.final();
+    } == blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        r2.hashSubset(m, &hasher);
+        break :blk hasher.final();
+    });
+    m.color_view = true;
+    try testing.expect(!r1.eqlSubset(m, r2));
+    try testing.expect(!r2.eqlSubset(m, r1));
+    try testing.expect(blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        r1.hashSubset(m, &hasher);
+        break :blk hasher.final();
+    } == h1);
+
     r1.clear(null);
     try expectEql(r0, h0, r1);
     r1.set(rend);
@@ -1922,24 +1989,4 @@ test Rendering {
         try testing.expect(@field(r2, field.name).eql(@field(r1, field.name)));
     }
     try expectEql(r1, h1, r2);
-
-    try testing.expect(blk: {
-        var hasher = std.hash.Wyhash.init(0);
-        r1.hash(&hasher);
-        break :blk hasher.final();
-    } == h1);
-
-    comptime var m = R.mask;
-    m.color_view = false;
-    try testing.expect(blk: {
-        var hasher = std.hash.Wyhash.init(0);
-        r1.hashSubset(m, &hasher);
-        break :blk hasher.final();
-    } != h1);
-    m.color_view = true;
-    try testing.expect(blk: {
-        var hasher = std.hash.Wyhash.init(0);
-        r1.hashSubset(m, &hasher);
-        break :blk hasher.final();
-    } == h1);
 }
