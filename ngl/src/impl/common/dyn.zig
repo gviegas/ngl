@@ -31,6 +31,18 @@ fn getClearFn(comptime K: type) (fn (*K, ?std.mem.Allocator) void) {
     }.clear;
 }
 
+/// Every field of `K` must have an `eql` method.
+fn getEqlFn(comptime K: type) (fn (K, K) bool) {
+    return struct {
+        fn eql(self: K, other: K) bool {
+            inline for (@typeInfo(K).Struct.fields) |field|
+                if (!@field(self, field.name).eql(@field(other, field.name)))
+                    return false;
+            return true;
+        }
+    }.eql;
+}
+
 /// Every field of `K` must have a `hash` (update) method.
 fn getHashFn(comptime K: type) (fn (K, hasher: anytype) void) {
     return struct {
@@ -61,25 +73,6 @@ fn getHashSubsetFn(comptime K: type) (fn (
                     @field(self, field.name).hash(hasher);
         }
     }.hashSubset;
-}
-
-/// Every field of `K` must have `hash` (update) and `eql` methods.
-fn HashContext(comptime K: type) type {
-    return struct {
-        pub fn hash(_: @This(), key: K) u64 {
-            var hasher = std.hash.Wyhash.init(0);
-            inline for (@typeInfo(K).Struct.fields) |field|
-                @field(key, field.name).hash(&hasher);
-            return hasher.final();
-        }
-
-        pub fn eql(_: @This(), key: K, other: K) bool {
-            inline for (@typeInfo(K).Struct.fields) |field|
-                if (!@field(key, field.name).eql(@field(other, field.name)))
-                    return false;
-            return true;
-        }
-    };
 }
 
 pub fn State(comptime state_mask: anytype) type {
@@ -157,10 +150,9 @@ pub fn State(comptime state_mask: anytype) type {
 
         pub const init = getInitFn(@This());
         pub const clear = getClearFn(@This());
+        pub const eql = getEqlFn(@This());
         pub const hash = getHashFn(@This());
         pub const hashSubset = getHashSubsetFn(@This());
-
-        pub const HashCtx = HashContext(@This());
     };
 }
 
@@ -325,6 +317,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
 
         pub const init = getInitFn(@This());
         pub const clear = getClearFn(@This());
+        pub const eql = getEqlFn(@This());
         pub const hash = getHashFn(@This());
         pub const hashSubset = getHashSubsetFn(@This());
 
@@ -335,8 +328,6 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 if (field.type != None)
                     @field(self, field.name).set(rendering);
         }
-
-        pub const HashCtx = HashContext(@This());
     };
 }
 
@@ -1054,21 +1045,29 @@ const ViewMask = struct {
 
 const testing = std.testing;
 
+fn hashT(value: anytype) u64 {
+    switch (@TypeOf(@TypeOf(value).mask)) {
+        StateMask(.primitive), StateMask(.compute), RenderingMask => {},
+        else => unreachable,
+    }
+    var hasher = std.hash.Wyhash.init(0);
+    value.hash(&hasher);
+    return hasher.final();
+}
+
 fn expectEql(key: anytype, hash: u64, other_key: @TypeOf(key)) !void {
-    const ctx = @TypeOf(key).HashCtx{};
-    const other_hash = ctx.hash(other_key);
+    const other_hash = hashT(other_key);
     try testing.expect(hash == other_hash and hash != 0);
-    try testing.expect(ctx.eql(key, other_key));
-    try testing.expect(ctx.eql(other_key, key));
+    try testing.expect(key.eql(other_key));
+    try testing.expect(other_key.eql(key));
 }
 
 fn expectNotEql(key: anytype, hash: u64, other_key: @TypeOf(key)) !void {
-    const ctx = @TypeOf(key).HashCtx{};
-    const other_hash = ctx.hash(other_key);
+    const other_hash = hashT(other_key);
     try testing.expect(hash != 0 and other_hash != 0);
     if (hash == other_hash) std.log.warn("{s}: Hash value clash", .{@src().file});
-    try testing.expect(!ctx.eql(key, other_key));
-    try testing.expect(!ctx.eql(other_key, key));
+    try testing.expect(!key.eql(other_key));
+    try testing.expect(!other_key.eql(key));
 }
 
 test State {
@@ -1118,10 +1117,9 @@ test State {
         @compileError("Bad dyn.State layout");
 
     inline for (.{ P, C, X }) |T| {
-        const ctx = T.HashCtx{};
         const a = T.init();
         const b = T.init();
-        try expectEql(a, ctx.hash(a), b);
+        try expectEql(a, hashT(a), b);
     }
 
     var shaders: [3]ngl.Shader = .{
@@ -1142,10 +1140,9 @@ test State {
             },
         },
     ) |T, params| {
-        const ctx = T.HashCtx{};
         var a = T.init();
         var b = T.init();
-        var hb = ctx.hash(b);
+        var hb = hashT(b);
 
         a.shaders.set(params[0], params[1]);
         try expectNotEql(b, hb, a);
@@ -1157,7 +1154,7 @@ test State {
             a.shaders.set(&.{t}, &.{s});
             try expectNotEql(b, hb, a);
             b.shaders.set(&.{t}, &.{s});
-            hb = ctx.hash(b);
+            hb = hashT(b);
         }
         try expectEql(b, hb, a);
 
@@ -1173,9 +1170,8 @@ test State {
         try expectEql(b, hb, a);
     }
 
-    const ctx = P.HashCtx{};
     const s0 = P.init();
-    const h0 = ctx.hash(s0);
+    const h0 = hashT(s0);
     var s1 = P.init();
     defer s1.clear(testing.allocator);
     var h1: u64 = undefined;
@@ -1192,7 +1188,7 @@ test State {
         .format = .rgb32_sfloat,
         .offset = 0,
     }});
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s0, h0, s1);
 
     try s2.vertex_input.set(testing.allocator, s1.vertex_input.bindings.items, &.{});
@@ -1210,14 +1206,14 @@ test State {
     try expectNotEql(s0, h0, s2);
     try expectNotEql(s1, h1, s2);
     s1.primitive_topology.set(.line_list);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     s2.vertex_input.bindings.items[0].binding -%= 1;
     try expectNotEql(s1, h1, s2);
     s2.primitive_topology.set(.line_list);
     try expectEql(s1, h1, s2);
 
     s1.vertex_input.clear(testing.allocator);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s2.vertex_input.clear(testing.allocator);
     try expectEql(s1, h1, s2);
@@ -1225,74 +1221,74 @@ test State {
     s2.rasterization_enable.set(false);
     try expectNotEql(s1, h1, s2);
     s1.rasterization_enable.set(false);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.polygon_mode.set(.line);
     try expectNotEql(s1, h1, s2);
     s1.polygon_mode.set(.line);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.cull_mode.set(.front);
     try expectNotEql(s1, h1, s2);
     s1.cull_mode.set(.front);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.front_face.set(.counter_clockwise);
     try expectNotEql(s1, h1, s2);
     s1.front_face.set(.counter_clockwise);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.sample_count.set(.@"4");
     try expectNotEql(s1, h1, s2);
     s1.sample_count.set(.@"4");
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.sample_mask.set(0b1111);
     try expectNotEql(s1, h1, s2);
     s1.sample_mask.set(0xf);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.depth_bias_enable.set(true);
     try expectNotEql(s1, h1, s2);
     s1.depth_bias_enable.set(true);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.depth_bias.set(0.01, 2, 0);
     try expectNotEql(s1, h1, s2); // Clash.
     s1.depth_bias.value = 0.01;
     s1.depth_bias.slope = 2;
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.depth_test_enable.set(true);
     try expectNotEql(s1, h1, s2);
     s1.depth_test_enable.set(true);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.depth_compare_op.set(.less_equal);
     try expectNotEql(s1, h1, s2);
     s1.depth_compare_op.set(.less_equal);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.depth_write_enable.set(true);
     try expectNotEql(s1, h1, s2);
     s1.depth_write_enable.set(true);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.stencil_test_enable.set(true);
     try expectNotEql(s1, h1, s2);
     s1.stencil_test_enable.set(true);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.stencil_op.set(.front, .zero, .replace, .invert, .equal);
@@ -1300,31 +1296,31 @@ test State {
     s1.stencil_op.set(.front, .zero, .invert, .replace, .equal);
     try expectNotEql(s1, h1, s2);
     s1.stencil_op.set(.front, .zero, .replace, .invert, .equal);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
     s2.stencil_op.set(.back, .keep, .increment_wrap, .keep, .greater);
     try expectNotEql(s1, h1, s2);
     s1.stencil_op.set(.back, .keep, .increment_wrap, .keep, .greater);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
     s2.stencil_op.set(.front_and_back, .decrement_clamp, .increment_clamp, .zero, .greater);
     try expectNotEql(s1, h1, s2);
     s1.stencil_op.set(.front, .decrement_clamp, .increment_clamp, .zero, .greater);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s1.stencil_op.set(.back, .decrement_clamp, .increment_clamp, .zero, .greater);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.stencil_read_mask.set(.back, 0x80);
     try expectNotEql(s1, h1, s2);
     s1.stencil_read_mask.set(.front, 0x80);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s2.stencil_read_mask.set(.front, 0x80);
     try expectNotEql(s1, h1, s2);
     s1.stencil_read_mask.set(.back, 0x80);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
     s2.stencil_read_mask.set(.front_and_back, 0x80);
     try expectEql(s1, h1, s2);
@@ -1338,15 +1334,15 @@ test State {
     s2.stencil_write_mask.set(.front, 0x7f);
     try expectNotEql(s1, h1, s2);
     s1.stencil_write_mask.set(.front, 0x7f);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
     s1.stencil_write_mask.set(.back, 0x7f);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s2.stencil_write_mask.set(.back, 0x7f);
     try expectEql(s1, h1, s2);
     s1.stencil_write_mask.set(.front_and_back, 0xfe);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s2.stencil_write_mask.set(.front_and_back, 0xfe);
     try expectEql(s1, h1, s2);
@@ -1360,10 +1356,10 @@ test State {
     s2.color_blend_enable.set(1, &.{false});
     try expectEql(s1, h1, s2);
     s1.color_blend_enable.set(2, &.{true});
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s1.color_blend_enable.set(1, &.{true});
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s2.color_blend_enable.set(1, &.{ true, true });
     try expectEql(s1, h1, s2);
@@ -1387,7 +1383,7 @@ test State {
         .alpha_dest_factor = .zero,
         .alpha_op = .max,
     }});
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s1.color_blend.set(1, &[_]Cmd.Blend{.{
         .color_source_factor = .source_color,
@@ -1397,7 +1393,7 @@ test State {
         .alpha_dest_factor = .zero,
         .alpha_op = .max,
     }} ** 3);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s2.color_blend.set(1, &.{.{
         .color_source_factor = .source_color,
@@ -1409,7 +1405,7 @@ test State {
     }});
     try expectNotEql(s1, h1, s2);
     s1.color_blend.set(3, &.{.{}});
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
     s1.color_blend.set(2, &.{.{
         .color_source_factor = .source_color,
@@ -1419,12 +1415,12 @@ test State {
         .alpha_dest_factor = .zero,
         .alpha_op = .max,
     }});
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s2.color_blend = .{};
     try expectNotEql(s1, h1, s2);
     s1.color_blend.set(0, &[_]Cmd.Blend{.{}} ** max_color_attachment);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.color_write.set(0, &.{});
@@ -1434,23 +1430,23 @@ test State {
     s2.color_write.set(1, &.{.all});
     try expectEql(s1, h1, s2);
     s1.color_write.set(0, &.{.all});
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
     s1.color_write.set(1, &.{ .all, .{ .mask = .{ .r = true, .g = true, .b = true, .a = true } } });
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
     s1.color_write.set(2, &.{.all});
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
     s2.color_write.set(2, &.{.{ .mask = .{ .r = true } }});
     try expectNotEql(s1, h1, s2);
     s2.color_write.set(1, &[_]Cmd.ColorMask{.{ .mask = .{} }} ** (max_color_attachment - 1));
     try expectNotEql(s1, h1, s2);
     s1.color_write.set(0, &[_]Cmd.ColorMask{.{ .mask = .{} }} ** max_color_attachment);
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s1.color_write.set(0, &.{.all});
-    h1 = ctx.hash(s1);
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     try testing.expect(blk: {
@@ -1524,9 +1520,8 @@ test Rendering {
     if (@as(U, @bitCast(X.mask)) != @as(U, 0) or @sizeOf(X) != 0)
         @compileError("Bad dyn.Rendering layout");
 
-    const ctx = R.HashCtx{};
     const r0 = R.init();
-    const h0 = ctx.hash(r0);
+    const h0 = hashT(r0);
     var r1 = R.init();
     var h1: u64 = undefined;
     var r2 = R.init();
@@ -1537,7 +1532,7 @@ test Rendering {
     r2.clear(testing.allocator);
     try expectEql(r0, h0, r1);
     try expectEql(r0, h0, r2);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     var views = [_]ngl.ImageView{
@@ -1624,10 +1619,10 @@ test Rendering {
     r2.color_view.set(rend);
     try expectNotEql(r1, h1, r2);
     r1.color_view.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
     r1.color_view = .{};
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectNotEql(r1, h1, r2);
     r2.color_view.set(rend_empty);
     try expectEql(r1, h1, r2);
@@ -1641,7 +1636,7 @@ test Rendering {
     r2.color_format.set(rend);
     try expectNotEql(r1, h1, r2);
     r1.color_format.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
     r2.color_format = .{};
     try expectNotEql(r1, h1, r2);
@@ -1654,7 +1649,7 @@ test Rendering {
     r2.color_samples.set(rend);
     try expectNotEql(r1, h1, r2);
     r1.color_samples.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
     for (r1.color_samples.sample_counts[0..rend.colors.len], rend.colors) |count, attach|
         try testing.expect(count == attach.view.samples);
@@ -1667,10 +1662,10 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     for (r1.color_layout.layouts[0..rend.colors.len], rend.colors) |*layout, attach|
         layout.* = attach.layout;
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
     r1.color_layout.set(rend_empty);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectNotEql(r1, h1, r2);
     r2.color_layout = .{};
     try expectEql(r1, h1, r2);
@@ -1683,12 +1678,12 @@ test Rendering {
         r1.color_op.load[i] = rend.colors[i].load_op;
         r1.color_op.store[i] = rend.colors[i].store_op;
     }
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
     @memset(&r2.color_op.store, .dont_care);
     try expectNotEql(r1, h1, r2);
     r1.color_op = .{};
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectNotEql(r1, h1, r2);
     @memset(&r2.color_op.load, .dont_care);
     try expectEql(r1, h1, r2);
@@ -1698,10 +1693,10 @@ test Rendering {
     r2.color_resolve_view.set(rend);
     try expectNotEql(r1, h1, r2);
     r1.color_resolve_view.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
     r1.color_resolve_view = .{};
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectNotEql(r1, h1, r2);
     r2.color_resolve_view.set(rend_empty);
     try expectEql(r1, h1, r2);
@@ -1716,10 +1711,10 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     for (r1.color_resolve_layout.layouts[0..rend.colors.len], rend.colors) |*layout, attach|
         layout.* = if (attach.resolve) |x| x.layout else .unknown;
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
     r1.color_resolve_layout.set(rend_empty);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectNotEql(r1, h1, r2);
     r2.color_resolve_layout = .{};
     try expectEql(r1, h1, r2);
@@ -1739,7 +1734,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.stencil_view.eql(r1.stencil_view));
     r1.depth_view.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.stencil_view.set(rend_empty);
@@ -1748,7 +1743,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.depth_view.eql(r1.depth_view));
     r1.stencil_view.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.depth_format.set(rend_empty);
@@ -1757,7 +1752,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.stencil_format.eql(r1.stencil_format));
     r1.depth_format.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.stencil_format.set(rend_empty);
@@ -1766,7 +1761,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.depth_format.eql(r1.depth_format));
     r1.stencil_format.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.depth_samples.set(rend_empty);
@@ -1775,7 +1770,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.stencil_samples.eql(r1.stencil_samples));
     r1.depth_samples.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.stencil_samples.set(rend_empty);
@@ -1784,7 +1779,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.depth_samples.eql(r1.depth_samples));
     r1.stencil_samples.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.depth_layout.set(rend_empty);
@@ -1793,7 +1788,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.stencil_layout.eql(r1.stencil_layout));
     r1.depth_layout.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.stencil_layout.set(rend_empty);
@@ -1802,7 +1797,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.depth_layout.eql(r1.depth_layout));
     r1.stencil_layout.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.depth_op.set(rend_empty);
@@ -1811,7 +1806,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.stencil_op.eql(r1.stencil_op));
     r1.depth_op.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.stencil_op.set(rend_empty);
@@ -1820,7 +1815,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.depth_op.eql(r1.depth_op));
     r1.stencil_op.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.depth_resolve_view.set(rend_empty);
@@ -1829,7 +1824,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.stencil_resolve_view.eql(r1.stencil_resolve_view));
     r1.depth_resolve_view.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.stencil_resolve_view.set(rend_empty);
@@ -1838,7 +1833,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.depth_resolve_view.eql(r1.depth_resolve_view));
     r1.stencil_resolve_view.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.depth_resolve_layout.set(rend_empty);
@@ -1847,7 +1842,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.stencil_resolve_layout.eql(r1.stencil_resolve_layout));
     r1.depth_resolve_layout.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.stencil_resolve_layout.set(rend_empty);
@@ -1856,7 +1851,7 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.depth_resolve_layout.eql(r1.depth_resolve_layout));
     r1.stencil_resolve_layout.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
 
     r2.depth_resolve_mode.set(rend_empty);
@@ -1884,7 +1879,7 @@ test Rendering {
     r2.layers.set(rend);
     try expectNotEql(r1, h1, r2);
     r1.layers.set(rend);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectEql(r1, h1, r2);
     r1.layers.set(.{
         .colors = &.{},
@@ -1893,7 +1888,7 @@ test Rendering {
         .render_area = .{ .width = 1, .height = 1 },
         .layers = 2,
     });
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectNotEql(r1, h1, r2);
     r2.layers.layers = 2;
     try expectEql(r1, h1, r2);
@@ -1910,7 +1905,7 @@ test Rendering {
         .layers = 0,
         .view_mask = 0x1,
     });
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     try expectNotEql(r1, h1, r2);
     r2.view_mask.view_mask = 0x1;
     try expectEql(r1, h1, r2);
@@ -1919,7 +1914,7 @@ test Rendering {
     try expectEql(r0, h0, r1);
     r1.set(rend);
     try expectNotEql(r0, h0, r1);
-    h1 = ctx.hash(r1);
+    h1 = hashT(r1);
     r2.clear(null);
     inline for (@typeInfo(R).Struct.fields) |field| {
         if (field.type == None) continue;

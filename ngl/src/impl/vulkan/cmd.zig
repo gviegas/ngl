@@ -2037,8 +2037,8 @@ test CommandBuffer {
         .render_area = .{ .width = 1, .height = 1 },
         .layers = 1,
     });
-    try testing.expect(!(@TypeOf(prev_rend).HashCtx{}).eql(prev_rend, rend.*));
+    try testing.expect(!prev_rend.eql(rend.*));
 
     CommandBuffer.endRendering(undefined, dev, cmd_buf);
-    try testing.expect((@TypeOf(prev_rend).HashCtx{}).eql(prev_rend, rend.*));
+    try testing.expect(prev_rend.eql(rend.*));
 }
