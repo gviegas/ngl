@@ -41,6 +41,28 @@ fn getHashFn(comptime K: type) (fn (K, hasher: anytype) void) {
     }.hash;
 }
 
+/// The generated function will constrain the hash update to
+/// the fields in `mask`, which must be a subset of `K.mask`.
+fn getHashSubsetFn(comptime K: type) (fn (
+    K,
+    comptime mask: @TypeOf(K.mask),
+    hasher: anytype,
+) void) {
+    return struct {
+        fn hashSubset(self: K, comptime mask: @TypeOf(K.mask), hasher: anytype) void {
+            comptime {
+                const U = @typeInfo(@TypeOf(mask)).Struct.backing_integer.?;
+                const m = @as(U, @bitCast(K.mask));
+                const n = @as(U, @bitCast(mask));
+                if (m & n != n) @compileError("Not a subset");
+            }
+            inline for (@typeInfo(K).Struct.fields) |field|
+                if (@field(mask, field.name))
+                    @field(self, field.name).hash(hasher);
+        }
+    }.hashSubset;
+}
+
 /// Every field of `K` must have `hash` (update) and `eql` methods.
 fn HashContext(comptime K: type) type {
     return struct {
@@ -136,6 +158,7 @@ pub fn State(comptime state_mask: anytype) type {
         pub const init = getInitFn(@This());
         pub const clear = getClearFn(@This());
         pub const hash = getHashFn(@This());
+        pub const hashSubset = getHashSubsetFn(@This());
 
         pub const HashCtx = HashContext(@This());
     };
@@ -303,6 +326,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
         pub const init = getInitFn(@This());
         pub const clear = getClearFn(@This());
         pub const hash = getHashFn(@This());
+        pub const hashSubset = getHashSubsetFn(@This());
 
         /// Every field must have a `set` method that takes a
         /// `Cmd.Rendering` as parameter and returns nothing.
@@ -1434,6 +1458,24 @@ test State {
         s1.hash(&hasher);
         break :blk hasher.final();
     } == h1);
+
+    comptime var m = P.mask;
+    m.color_blend = false;
+    try testing.expect(blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        s1.hashSubset(m, &hasher);
+        break :blk hasher.final();
+    } != h1);
+    if (false) {
+        m.viewports = true;
+        // error: Not a subset
+    }
+    m.color_blend = true;
+    try testing.expect(blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        s1.hashSubset(m, &hasher);
+        break :blk hasher.final();
+    } == h1);
 }
 
 test Rendering {
@@ -1889,6 +1931,20 @@ test Rendering {
     try testing.expect(blk: {
         var hasher = std.hash.Wyhash.init(0);
         r1.hash(&hasher);
+        break :blk hasher.final();
+    } == h1);
+
+    comptime var m = R.mask;
+    m.color_view = false;
+    try testing.expect(blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        r1.hashSubset(m, &hasher);
+        break :blk hasher.final();
+    } != h1);
+    m.color_view = true;
+    try testing.expect(blk: {
+        var hasher = std.hash.Wyhash.init(0);
+        r1.hashSubset(m, &hasher);
         break :blk hasher.final();
     } == h1);
 }
