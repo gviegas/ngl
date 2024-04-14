@@ -1697,25 +1697,35 @@ pub const Dynamic = struct {
         .color_write = true,
     };
 
+    // Note that this is the union of render pass and
+    // frame buffer requirements.
     const rendering_mask = dyn.RenderingMask{
+        .color_view = true,
         .color_format = true,
         .color_samples = true,
         .color_layout = true,
         .color_op = true,
+        .color_resolve_view = true,
         .color_resolve_layout = true,
         .color_resolve_mode = true,
+        .depth_view = true,
         .depth_format = true,
         .depth_samples = true,
         .depth_layout = true,
         .depth_op = true,
+        .depth_resolve_view = true,
         .depth_resolve_layout = true,
         .depth_resolve_mode = true,
+        .stencil_view = true,
         .stencil_format = true,
         .stencil_samples = true,
         .stencil_layout = true,
         .stencil_op = true,
+        .stencil_resolve_view = true,
         .stencil_resolve_layout = true,
         .stencil_resolve_mode = true,
+        .render_area_size = true,
+        .layers = true,
         .view_mask = true,
     };
 
@@ -2215,11 +2225,16 @@ test Cache {
         if (!@field(Dynamic.rendering_mask, field.name)) continue;
 
         @field(r, field.name).set(rend);
-        try testing.expect(!cache.rendering.contains(r.*));
+
         if (@field(Cache.State.rendering_subset_mask, field.name))
             try testing.expect(!cache.state.contains(d))
         else
             try testing.expect(cache.state.contains(d));
+
+        if (@field(Cache.Rendering.subset_mask, field.name))
+            try testing.expect(!cache.rendering.contains(r.*))
+        else
+            try testing.expect(cache.rendering.contains(r.*));
 
         d.clear(null);
         try testing.expect(cache.state.contains(d));
