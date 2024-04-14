@@ -1779,14 +1779,36 @@ pub const Cache = struct {
         const Key = dyn.Rendering(Dynamic.rendering_mask);
         const Value = ValueWithStamp(c.VkRenderPass);
 
+        const subset_mask = dyn.RenderingMask{
+            .color_format = true,
+            .color_samples = true,
+            .color_layout = true,
+            .color_op = true,
+            .color_resolve_layout = true,
+            .color_resolve_mode = true,
+            .depth_format = true,
+            .depth_samples = true,
+            .depth_layout = true,
+            .depth_op = true,
+            .depth_resolve_layout = true,
+            .depth_resolve_mode = true,
+            .stencil_format = true,
+            .stencil_samples = true,
+            .stencil_layout = true,
+            .stencil_op = true,
+            .stencil_resolve_layout = true,
+            .stencil_resolve_mode = true,
+            .view_mask = true,
+        };
+
         pub fn hash(_: @This(), r: Key) u64 {
             var hasher = std.hash.Wyhash.init(0);
-            r.hash(&hasher);
+            r.hashSubset(subset_mask, &hasher);
             return hasher.final();
         }
 
         pub fn eql(_: @This(), r: Key, s: Key) bool {
-            return r.eql(s);
+            return r.eqlSubset(subset_mask, s);
         }
     };
 
