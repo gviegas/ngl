@@ -711,7 +711,7 @@ const StencilReference = struct {
     }
 };
 
-const max_color_attachment = 1 + @as(comptime_int, ~@as(Cmd.ColorAttachmentIndex, 0));
+const max_color_attachment = Cmd.max_color_attachment;
 
 comptime {
     if (max_color_attachment > 16)

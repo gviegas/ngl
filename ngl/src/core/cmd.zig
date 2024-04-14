@@ -638,8 +638,9 @@ pub const CommandBuffer = struct {
             );
         }
 
-        // TODO: Upper-bound in `Feature.core`.
+        // TODO: Enforce upper-bound in `Feature.core`.
         pub const ColorAttachmentIndex = u3;
+        pub const max_color_attachment = 1 + @as(comptime_int, ~@as(ColorAttachmentIndex, 0));
 
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
