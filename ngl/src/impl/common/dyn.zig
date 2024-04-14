@@ -294,7 +294,8 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
                 .stencil_resolve_view => if (has) DsResolveView(.stencil) else None,
                 .stencil_resolve_layout => if (has) DsResolveLayout(.stencil) else None,
                 .stencil_resolve_mode => if (has) DsResolveMode(.stencil) else None,
-                .render_area => if (has) RenderArea else None,
+                .render_area_offset => if (has) RenderAreaOffset else None,
+                .render_area_size => if (has) RenderAreaSize else None,
                 .layers => if (has) Layers else None,
                 .view_mask => if (has) ViewMask else None,
                 else => unreachable,
@@ -330,7 +331,8 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
         stencil_resolve_view: getType(.stencil_resolve_view),
         stencil_resolve_layout: getType(.stencil_resolve_layout),
         stencil_resolve_mode: getType(.stencil_resolve_mode),
-        render_area: getType(.render_area),
+        render_area_offset: getType(.render_area_offset),
+        render_area_size: getType(.render_area_size),
         layers: getType(.layers),
         view_mask: getType(.view_mask),
 
@@ -385,7 +387,8 @@ pub const RenderingMask = packed struct {
     stencil_resolve_layout: bool = false,
     stencil_resolve_mode: bool = false,
     // `Cmd.Rendering.render_area`.
-    render_area: bool = false,
+    render_area_offset: bool = false,
+    render_area_size: bool = false,
     // `Cmd.Rendering.layers`.
     layers: bool = false,
     // `Cmd.Rendering.view_mask`.
@@ -1037,9 +1040,22 @@ fn DsResolveMode(comptime aspect: enum { depth, stencil }) type {
     };
 }
 
-const RenderArea = struct {
+const RenderAreaOffset = struct {
     comptime {
         @compileError("Shouldn't be necessary");
+    }
+};
+
+const RenderAreaSize = struct {
+    width: u32 = 0,
+    height: u32 = 0,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
+        self.width = rendering.render_area.width;
+        self.height = rendering.render_area.height;
     }
 };
 
@@ -1543,7 +1559,8 @@ test Rendering {
         .stencil_resolve_view = true,
         .stencil_resolve_layout = true,
         .stencil_resolve_mode = true,
-        .render_area = false,
+        .render_area_offset = false,
+        .render_area_size = true,
         .layers = true,
         .view_mask = true,
     });
@@ -1586,7 +1603,7 @@ test Rendering {
         .colors = &.{},
         .depth = null,
         .stencil = null,
-        .render_area = .{ .width = 480, .height = 270 },
+        .render_area = .{ .width = 512, .height = 512 },
         .layers = 1,
     };
     const rend = Cmd.Rendering{
@@ -1910,6 +1927,14 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     try testing.expect(r2.depth_resolve_mode.eql(r1.depth_resolve_mode));
     r2.stencil_resolve_mode = .{};
+    try expectEql(r1, h1, r2);
+
+    r2.render_area_size.set(rend_empty);
+    try expectNotEql(r1, h1, r2);
+    r1.render_area_size.set(rend);
+    h1 = hashT(r1);
+    try expectNotEql(r1, h1, r2);
+    r2.render_area_size.set(rend);
     try expectEql(r1, h1, r2);
 
     r2.layers.set(rend_empty);
