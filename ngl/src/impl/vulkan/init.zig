@@ -11,6 +11,7 @@ const Impl = @import("../Impl.zig");
 const conv = @import("conv.zig");
 const null_handle = conv.null_handle;
 const check = conv.check;
+const Cache = @import("cmd.zig").Cache;
 const CommandBuffer = @import("cmd.zig").CommandBuffer;
 const Fence = @import("sync.zig").Fence;
 const Semaphore = @import("sync.zig").Semaphore;
@@ -1060,6 +1061,7 @@ pub const Device = struct {
     queues: [ngl.Queue.max]Queue,
     queue_n: u8,
     timestamp_period: f32,
+    cache: Cache,
 
     gpu: Gpu, // TODO: See if this can be removed.
 
@@ -1279,6 +1281,7 @@ pub const Device = struct {
             .queues = undefined,
             .queue_n = 0,
             .timestamp_period = tms_period,
+            .cache = .{},
 
             .gpu = Gpu.cast(gpu.impl),
 
