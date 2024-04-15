@@ -6,6 +6,8 @@ const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const dyn = @import("../common/dyn.zig");
+const conv = @import("conv.zig");
+const null_handle = conv.null_handle;
 const Device = @import("init.zig").Device;
 const Dynamic = @import("cmd.zig").Dynamic;
 
@@ -51,9 +53,11 @@ const State = struct {
         }
     };
 
-    fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+    fn deinit(self: *@This(), allocator: std.mem.Allocator, device: *Device) void {
+        var iter = self.hash_map.valueIterator();
+        while (iter.next()) |val|
+            device.vkDestroyPipeline(val[0], null);
         self.hash_map.deinit(allocator);
-        // TODO: Destroy handles.
     }
 };
 
@@ -98,9 +102,11 @@ const Rendering = struct {
         }
     };
 
-    fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
+    fn deinit(self: *@This(), allocator: std.mem.Allocator, device: *Device) void {
+        var iter = self.hash_map.valueIterator();
+        while (iter.next()) |val|
+            device.vkDestroyRenderPass(val[0], null);
         self.hash_map.deinit(allocator);
-        // TODO: Destroy handles.
     }
 };
 
@@ -138,9 +144,9 @@ pub fn getRenderPass(
     return Error.Other;
 }
 
-pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
-    self.state.deinit(allocator);
-    self.rendering.deinit(allocator);
+pub fn deinit(self: *@This(), allocator: std.mem.Allocator, device: *Device) void {
+    self.state.deinit(allocator, device);
+    self.rendering.deinit(allocator, device);
 }
 
 const testing = std.testing;
@@ -148,17 +154,17 @@ const context = @import("../../test/test.zig").context;
 
 test "Cache" {
     var cache = @This(){};
-    defer cache.deinit(testing.allocator);
+    defer cache.deinit(testing.allocator, Device.cast(context().device.impl));
 
     var d = Dynamic.init(Device.cast(context().device.impl).*);
     defer d.clear(testing.allocator);
 
-    try cache.state.hash_map.put(testing.allocator, d, .{ null, 1 });
+    try cache.state.hash_map.put(testing.allocator, d, .{ null_handle, 1 });
     try testing.expect(cache.state.hash_map.contains(d));
 
     const r = &(d.rendering orelse return);
 
-    try cache.rendering.hash_map.put(testing.allocator, r.*, .{ null, 2 });
+    try cache.rendering.hash_map.put(testing.allocator, r.*, .{ null_handle, 2 });
     try testing.expect(cache.rendering.hash_map.contains(r.*));
 
     // Make sure `Cmd.Rendering` has no default values
