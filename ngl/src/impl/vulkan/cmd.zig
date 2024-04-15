@@ -1676,7 +1676,7 @@ pub const Dynamic = struct {
     state: dyn.State(state_mask),
     rendering: ?dyn.Rendering(rendering_mask),
 
-    const state_mask = dyn.StateMask(.primitive){
+    pub const state_mask = dyn.StateMask(.primitive){
         .shaders = true,
         .vertex_input = true,
         .primitive_topology = true,
@@ -1699,7 +1699,7 @@ pub const Dynamic = struct {
 
     // Note that this is the union of render pass and
     // frame buffer requirements.
-    const rendering_mask = dyn.RenderingMask{
+    pub const rendering_mask = dyn.RenderingMask{
         .color_view = true,
         .color_format = true,
         .color_samples = true,
@@ -1729,7 +1729,7 @@ pub const Dynamic = struct {
         .view_mask = true,
     };
 
-    fn init(device: Device) @This() {
+    pub fn init(device: Device) @This() {
         var self: @This() = undefined;
         self.state = @TypeOf(self.state).init();
         self.rendering = if (!device.hasDynamicRendering())
@@ -1739,92 +1739,9 @@ pub const Dynamic = struct {
         return self;
     }
 
-    fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
+    pub fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
         self.state.clear(allocator);
         if (self.rendering) |*x| x.clear(allocator);
-    }
-};
-
-pub const Cache = struct {
-    // TODO: Will need locking.
-    state: std.HashMapUnmanaged(State.Key, State.Value, State, 80) = .{},
-    rendering: std.HashMapUnmanaged(Rendering.Key, Rendering.Value, Rendering, 80) = .{},
-
-    fn ValueWithStamp(comptime T: type) type {
-        return struct { T, u64 };
-    }
-
-    const State = struct {
-        const Key = Dynamic;
-        const Value = ValueWithStamp(c.VkPipeline);
-
-        // It suffices that the pipeline be compatible with
-        // the render pass.
-        // TODO: Try to refine this.
-        const rendering_subset_mask = dyn.RenderingMask{
-            .color_format = true,
-            .color_samples = true,
-            .depth_format = true,
-            .depth_samples = true,
-            .stencil_format = true,
-            .stencil_samples = true,
-            .view_mask = true,
-        };
-
-        pub fn hash(_: @This(), d: Key) u64 {
-            var hasher = std.hash.Wyhash.init(0);
-            d.state.hash(&hasher);
-            if (d.rendering) |x| x.hashSubset(rendering_subset_mask, &hasher);
-            return hasher.final();
-        }
-
-        pub fn eql(_: @This(), d: Key, e: Key) bool {
-            if (!d.state.eql(e.state)) return false;
-            if (d.rendering) |x| return x.eqlSubset(rendering_subset_mask, e.rendering.?);
-            return true;
-        }
-    };
-
-    const Rendering = struct {
-        const Key = dyn.Rendering(Dynamic.rendering_mask);
-        const Value = ValueWithStamp(c.VkRenderPass);
-
-        const subset_mask = dyn.RenderingMask{
-            .color_format = true,
-            .color_samples = true,
-            .color_layout = true,
-            .color_op = true,
-            .color_resolve_layout = true,
-            .color_resolve_mode = true,
-            .depth_format = true,
-            .depth_samples = true,
-            .depth_layout = true,
-            .depth_op = true,
-            .depth_resolve_layout = true,
-            .depth_resolve_mode = true,
-            .stencil_format = true,
-            .stencil_samples = true,
-            .stencil_layout = true,
-            .stencil_op = true,
-            .stencil_resolve_layout = true,
-            .stencil_resolve_mode = true,
-            .view_mask = true,
-        };
-
-        pub fn hash(_: @This(), r: Key) u64 {
-            var hasher = std.hash.Wyhash.init(0);
-            r.hashSubset(subset_mask, &hasher);
-            return hasher.final();
-        }
-
-        pub fn eql(_: @This(), r: Key, s: Key) bool {
-            return r.eqlSubset(subset_mask, s);
-        }
-    };
-
-    pub fn deinit(self: *@This(), allocator: std.mem.Allocator) void {
-        self.state.deinit(allocator);
-        self.rendering.deinit(allocator);
     }
 };
 
@@ -2138,106 +2055,4 @@ test CommandBuffer {
 
     CommandBuffer.endRendering(undefined, dev, cmd_buf);
     try testing.expect(prev_rend.eql(rend.*));
-}
-
-test Cache {
-    var cache = Cache{};
-    defer cache.deinit(testing.allocator);
-
-    var d = Dynamic.init(Device.cast(context().device.impl).*);
-    defer d.clear(testing.allocator);
-
-    try cache.state.put(testing.allocator, d, .{ null, 1 });
-    try testing.expect(cache.state.contains(d));
-
-    const r = &(d.rendering orelse return);
-
-    try cache.rendering.put(testing.allocator, r.*, .{ null, 2 });
-    try testing.expect(cache.rendering.contains(r.*));
-
-    // Make sure `Cmd.Rendering` has no default values
-    // on fields we need to check.
-    var views = [_]ngl.ImageView{
-        .{
-            .impl = .{ .val = 0xbaba },
-            .format = .rgba8_unorm,
-            .samples = .@"4",
-        },
-        .{
-            .impl = .{ .val = 0xbee },
-            .format = .rgba8_unorm,
-            .samples = .@"1",
-        },
-        .{
-            .impl = .{ .val = 0xb00 },
-            .format = .d24_unorm_s8_uint,
-            .samples = .@"4",
-        },
-        .{
-            .impl = .{ .val = 0xdeedee },
-            .format = .d24_unorm_s8_uint,
-            .samples = .@"1",
-        },
-    };
-    const rend = ngl.Cmd.Rendering{
-        .colors = &.{.{
-            .view = &views[0],
-            .layout = .color_attachment_optimal,
-            .load_op = .load,
-            .store_op = .store,
-            .clear_value = null,
-            .resolve = .{
-                .view = &views[1],
-                .layout = .color_attachment_optimal,
-                .mode = .min,
-            },
-        }},
-        .depth = .{
-            .view = &views[2],
-            .layout = .depth_stencil_attachment_optimal,
-            .load_op = .clear,
-            .store_op = .store,
-            .clear_value = .{ .depth_stencil = .{ 0, undefined } },
-            .resolve = .{
-                .view = &views[3],
-                .layout = .depth_stencil_attachment_optimal,
-                .mode = .min,
-            },
-        },
-        .stencil = .{
-            .view = &views[2],
-            .layout = .depth_stencil_attachment_optimal,
-            .load_op = .clear,
-            .store_op = .dont_care,
-            .clear_value = .{ .depth_stencil = .{ undefined, 0x80 } },
-            .resolve = .{
-                .view = &views[3],
-                .layout = .depth_stencil_attachment_optimal,
-                .mode = .min,
-            },
-        },
-        .render_area = .{ .width = 1, .height = 1 },
-        .layers = 0,
-        .view_mask = 0x1,
-    };
-
-    inline for (@typeInfo(@TypeOf(Dynamic.rendering_mask)).Struct.fields) |field| {
-        if (!@field(Dynamic.rendering_mask, field.name)) continue;
-
-        @field(r, field.name).set(rend);
-
-        if (@field(Cache.State.rendering_subset_mask, field.name))
-            try testing.expect(!cache.state.contains(d))
-        else
-            try testing.expect(cache.state.contains(d));
-
-        if (@field(Cache.Rendering.subset_mask, field.name))
-            try testing.expect(!cache.rendering.contains(r.*))
-        else
-            try testing.expect(cache.rendering.contains(r.*));
-
-        d.clear(null);
-        try testing.expect(cache.state.contains(d));
-        try testing.expect(cache.rendering.contains(r.*));
-    }
 }
