@@ -1062,6 +1062,7 @@ pub const Device = struct {
     queue_n: u8,
     timestamp_period: f32,
     cache: Cache,
+    gpa: std.mem.Allocator,
 
     gpu: Gpu, // TODO: See if this can be removed.
 
@@ -1282,6 +1283,7 @@ pub const Device = struct {
             .queue_n = 0,
             .timestamp_period = tms_period,
             .cache = .{},
+            .gpa = allocator,
 
             .gpu = Gpu.cast(gpu.impl),
 
@@ -1502,12 +1504,12 @@ pub const Device = struct {
         try check(cast(device).vkDeviceWaitIdle());
     }
 
-    fn deinit(_: *anyopaque, allocator: std.mem.Allocator, device: Impl.Device) void {
+    fn deinit(_: *anyopaque, _: std.mem.Allocator, device: Impl.Device) void {
         const dev = cast(device);
         // NOTE: This assumes that all device-level objects
         // have been destroyed.
         dev.vkDestroyDevice(null);
-        allocator.destroy(dev);
+        dev.gpa.destroy(dev);
     }
 
     pub fn isFullyDynamic(self: Device) bool {
