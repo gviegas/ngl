@@ -17,6 +17,13 @@ pub const Shader = packed union {
 
     const Compat = struct {
         module: c.VkShaderModule,
+        name: union(enum) {
+            array: switch (@sizeOf(usize)) {
+                8 => [22:0]u8,
+                else => [10:0]u8,
+            },
+            slice: [:0]const u8,
+        },
         // TODO: Currently, the only use of `set_layouts` and
         // `push_constants` is in `pipeline_layout`'s creation.
         set_layouts: []const c.VkDescriptorSetLayout,
@@ -40,22 +47,43 @@ pub const Shader = packed union {
                 // `deinit` is aware of this.
                 self.* = .{
                     .module = null_handle,
+                    .name = .{ .array = undefined },
                     .set_layouts = &.{},
                     .push_constants = &.{},
                     .pipeline_layout = null_handle,
                     .specialization = null,
                 };
 
-                check(device.vkCreateShaderModule(&.{
-                    .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-                    .pNext = null,
-                    .flags = 0,
-                    .codeSize = desc.code.len,
-                    .pCode = @ptrCast(desc.code.ptr),
-                }, null, &self.module)) catch |err| {
-                    self.deinit(allocator, device);
-                    shader.* = err;
-                    continue;
+                self.module = blk: {
+                    var mod: c.VkShaderModule = undefined;
+                    check(device.vkCreateShaderModule(&.{
+                        .sType = c.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                        .pNext = null,
+                        .flags = 0,
+                        .codeSize = desc.code.len,
+                        .pCode = @ptrCast(desc.code.ptr),
+                    }, null, &mod)) catch |err| {
+                        self.deinit(allocator, device);
+                        shader.* = err;
+                        continue;
+                    };
+                    break :blk mod;
+                };
+
+                self.name = blk: {
+                    if (desc.name.len <= self.name.array.len) {
+                        var name: @TypeOf(self.name.array) = undefined;
+                        @memcpy(name[0..desc.name.len], desc.name);
+                        @memset(name[desc.name.len..], 0);
+                        break :blk .{ .array = name };
+                    }
+                    const name = allocator.allocSentinel(u8, desc.name.len, 0) catch |err| {
+                        self.deinit(allocator, device);
+                        shader.* = err;
+                        continue;
+                    };
+                    @memcpy(name, desc.name);
+                    break :blk .{ .slice = name };
                 };
 
                 self.set_layouts = blk: {
@@ -154,6 +182,10 @@ pub const Shader = packed union {
 
         fn deinit(self: *Compat, allocator: std.mem.Allocator, device: *Device) void {
             device.vkDestroyShaderModule(self.module, null);
+            switch (self.name) {
+                .array => {},
+                .slice => |s| allocator.free(s),
+            }
             if (self.set_layouts.len > 0) allocator.free(self.set_layouts);
             if (self.push_constants.len > 0) allocator.free(self.push_constants);
             device.vkDestroyPipelineLayout(self.pipeline_layout, null);
