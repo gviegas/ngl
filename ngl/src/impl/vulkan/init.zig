@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-pub const log = std.log.scoped(.@"ngl/impl/vulkan");
+pub const log = std.log.scoped(.@"ngl|vulkan");
 
 const c = @import("c");
 
