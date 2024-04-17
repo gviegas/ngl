@@ -17,8 +17,13 @@ pub const Shader = packed union {
 
     const Compat = struct {
         module: c.VkShaderModule,
+        // TODO: Currently, the only use of `set_layouts` and
+        // `push_constants` is in `pipeline_layout`'s creation.
         set_layouts: []const c.VkDescriptorSetLayout,
         push_constants: []const c.VkPushConstantRange,
+        // TODO: Consider caching this, or change the API so
+        // it's passed in the description.
+        pipeline_layout: c.VkPipelineLayout,
         specialization: ?c.VkSpecializationInfo,
 
         fn init(
@@ -37,6 +42,7 @@ pub const Shader = packed union {
                     .module = null_handle,
                     .set_layouts = &.{},
                     .push_constants = &.{},
+                    .pipeline_layout = null_handle,
                     .specialization = null,
                 };
 
@@ -83,6 +89,30 @@ pub const Shader = packed union {
                     break :blk push_consts;
                 };
 
+                self.pipeline_layout = blk: {
+                    var pl_layt: c.VkPipelineLayout = undefined;
+                    check(device.vkCreatePipelineLayout(&.{
+                        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                        .pNext = null,
+                        .flags = 0,
+                        .setLayoutCount = @intCast(self.set_layouts.len),
+                        .pSetLayouts = if (self.set_layouts.len > 0)
+                            self.set_layouts.ptr
+                        else
+                            null,
+                        .pushConstantRangeCount = @intCast(self.push_constants.len),
+                        .pPushConstantRanges = if (self.push_constants.len > 0)
+                            self.push_constants.ptr
+                        else
+                            null,
+                    }, null, &pl_layt)) catch |err| {
+                        self.deinit(allocator, device);
+                        shader.* = err;
+                        continue;
+                    };
+                    break :blk pl_layt;
+                };
+
                 self.specialization = blk: {
                     const spec = &(desc.specialization orelse break :blk null);
                     const const_n = spec.constants.len;
@@ -126,6 +156,7 @@ pub const Shader = packed union {
             device.vkDestroyShaderModule(self.module, null);
             if (self.set_layouts.len > 0) allocator.free(self.set_layouts);
             if (self.push_constants.len > 0) allocator.free(self.push_constants);
+            device.vkDestroyPipelineLayout(self.pipeline_layout, null);
             if (self.specialization) |x| {
                 allocator.free(x.pMapEntries[0..x.mapEntryCount]);
                 allocator.free(@as([*]const u8, @ptrCast(x.pData))[0..x.dataSize]);
