@@ -1,5 +1,7 @@
 const std = @import("std");
 
+pub const log = std.log.scoped(.@"ngl|common");
+
 const ngl = @import("../../ngl.zig");
 const Cmd = ngl.Cmd;
 const Impl = @import("../Impl.zig");
@@ -1103,7 +1105,7 @@ fn expectEql(key: anytype, hash: u64, other_key: @TypeOf(key)) !void {
 fn expectNotEql(key: anytype, hash: u64, other_key: @TypeOf(key)) !void {
     const other_hash = hashT(other_key);
     try testing.expect(hash != 0 and other_hash != 0);
-    if (hash == other_hash) std.log.warn("{s}: Hash value clash", .{@src().file});
+    if (hash == other_hash) log.warn("Hash value clash", .{});
     try testing.expect(!key.eql(other_key));
     try testing.expect(!other_key.eql(key));
 }
