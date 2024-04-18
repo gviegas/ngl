@@ -719,6 +719,13 @@ pub fn toVkCullModeFlags(cull_mode: ngl.Cmd.CullMode) c.VkCullModeFlags {
     };
 }
 
+pub fn toVkFrontFace(front_face: ngl.Cmd.FrontFace) c.VkFrontFace {
+    return switch (front_face) {
+        .clockwise => c.VK_FRONT_FACE_CLOCKWISE,
+        .counter_clockwise => c.VK_FRONT_FACE_COUNTER_CLOCKWISE,
+    };
+}
+
 pub fn toVkStencilOp(stencil_op: ngl.DepthStencil.StencilOp) c.VkStencilOp {
     return switch (stencil_op) {
         .keep => c.VK_STENCIL_OP_KEEP,
