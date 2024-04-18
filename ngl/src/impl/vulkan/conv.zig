@@ -703,7 +703,7 @@ pub fn toVkPrimitiveTopology(topology: ngl.Cmd.PrimitiveTopology) c.VkPrimitiveT
     };
 }
 
-pub fn toVkPolygonMode(polygon_mode: ngl.Rasterization.PolygonMode) c.VkPolygonMode {
+pub fn toVkPolygonMode(polygon_mode: ngl.Cmd.PolygonMode) c.VkPolygonMode {
     return switch (polygon_mode) {
         .fill => c.VK_POLYGON_MODE_FILL,
         .line => c.VK_POLYGON_MODE_LINE,
@@ -711,7 +711,7 @@ pub fn toVkPolygonMode(polygon_mode: ngl.Rasterization.PolygonMode) c.VkPolygonM
 }
 
 /// Always used as flags type.
-pub fn toVkCullModeFlags(cull_mode: ngl.Rasterization.CullMode) c.VkCullModeFlags {
+pub fn toVkCullModeFlags(cull_mode: ngl.Cmd.CullMode) c.VkCullModeFlags {
     return switch (cull_mode) {
         .none => c.VK_CULL_MODE_NONE,
         .front => c.VK_CULL_MODE_FRONT_BIT,

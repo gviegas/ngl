@@ -115,16 +115,8 @@ pub const Rasterization = struct {
     /// `Feature.core.rasterization.alpha_to_one`.
     alpha_to_one: bool = false,
 
-    pub const PolygonMode = enum {
-        fill,
-        line,
-    };
-
-    pub const CullMode = enum {
-        none,
-        front,
-        back,
-    };
+    pub const PolygonMode = Cmd.PolygonMode;
+    pub const CullMode = Cmd.CullMode;
 };
 
 pub const DepthStencil = struct {
