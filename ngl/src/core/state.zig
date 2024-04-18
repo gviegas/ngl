@@ -7,6 +7,7 @@ const SampleCount = ngl.SampleCount;
 const CompareOp = ngl.CompareOp;
 const RenderPass = ngl.RenderPass;
 const PipelineLayout = ngl.PipelineLayout;
+const Cmd = ngl.Cmd;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
@@ -96,29 +97,9 @@ pub const Primitive = struct {
     topology: Topology,
     restart: bool = false,
 
-    pub const Binding = struct {
-        binding: u32,
-        stride: u32,
-        step_rate: union(enum) {
-            vertex,
-            instance: u1, // This must be `1` currently
-        },
-    };
-
-    pub const Attribute = struct {
-        location: u32,
-        binding: u32,
-        format: Format,
-        offset: u32,
-    };
-
-    pub const Topology = enum {
-        point_list,
-        line_list,
-        line_strip,
-        triangle_list,
-        triangle_strip,
-    };
+    pub const Binding = Cmd.VertexInputBinding;
+    pub const Attribute = Cmd.VertexInputAttribute;
+    pub const Topology = Cmd.PrimitiveTopology;
 };
 
 pub const Rasterization = struct {
