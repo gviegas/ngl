@@ -132,16 +132,7 @@ pub const DepthStencil = struct {
         compare: CompareOp,
     };
 
-    pub const StencilOp = enum {
-        keep,
-        zero,
-        replace,
-        increment_clamp,
-        decrement_clamp,
-        invert,
-        increment_wrap,
-        decrement_wrap,
-    };
+    pub const StencilOp = Cmd.StencilOp;
 };
 
 pub const ColorBlend = struct {

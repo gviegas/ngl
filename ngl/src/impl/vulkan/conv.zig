@@ -726,7 +726,7 @@ pub fn toVkFrontFace(front_face: ngl.Cmd.FrontFace) c.VkFrontFace {
     };
 }
 
-pub fn toVkStencilOp(stencil_op: ngl.DepthStencil.StencilOp) c.VkStencilOp {
+pub fn toVkStencilOp(stencil_op: ngl.Cmd.StencilOp) c.VkStencilOp {
     return switch (stencil_op) {
         .keep => c.VK_STENCIL_OP_KEEP,
         .zero => c.VK_STENCIL_OP_ZERO,
