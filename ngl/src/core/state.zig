@@ -154,40 +154,9 @@ pub const ColorBlend = struct {
         },
     };
 
-    pub const BlendEquation = struct {
-        color_source_factor: BlendFactor,
-        color_dest_factor: BlendFactor,
-        color_op: BlendOp,
-        alpha_source_factor: BlendFactor,
-        alpha_dest_factor: BlendFactor,
-        alpha_op: BlendOp,
-    };
-
-    pub const BlendFactor = enum {
-        zero,
-        one,
-        source_color,
-        one_minus_source_color,
-        dest_color,
-        one_minus_dest_color,
-        source_alpha,
-        one_minus_source_alpha,
-        dest_alpha,
-        one_minus_dest_alpha,
-        constant_color,
-        one_minus_constant_color,
-        constant_alpha,
-        one_minus_constant_alpha,
-        source_alpha_saturate,
-    };
-
-    pub const BlendOp = enum {
-        add,
-        subtract,
-        reverse_subtract,
-        min,
-        max,
-    };
+    pub const BlendEquation = Cmd.Blend;
+    pub const BlendFactor = Cmd.BlendFactor;
+    pub const BlendOp = Cmd.BlendOp;
 };
 
 pub const GraphicsState = struct {

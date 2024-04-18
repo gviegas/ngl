@@ -739,7 +739,7 @@ pub fn toVkStencilOp(stencil_op: ngl.Cmd.StencilOp) c.VkStencilOp {
     };
 }
 
-pub fn toVkBlendFactor(blend_factor: ngl.ColorBlend.BlendFactor) c.VkBlendFactor {
+pub fn toVkBlendFactor(blend_factor: ngl.Cmd.BlendFactor) c.VkBlendFactor {
     return switch (blend_factor) {
         .zero => c.VK_BLEND_FACTOR_ZERO,
         .one => c.VK_BLEND_FACTOR_ONE,
@@ -759,7 +759,7 @@ pub fn toVkBlendFactor(blend_factor: ngl.ColorBlend.BlendFactor) c.VkBlendFactor
     };
 }
 
-pub fn toVkBlendOp(blend_op: ngl.ColorBlend.BlendOp) c.VkBlendOp {
+pub fn toVkBlendOp(blend_op: ngl.Cmd.BlendOp) c.VkBlendOp {
     return switch (blend_op) {
         .add => c.VK_BLEND_OP_ADD,
         .subtract => c.VK_BLEND_OP_SUBTRACT,
