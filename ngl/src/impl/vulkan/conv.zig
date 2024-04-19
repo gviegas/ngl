@@ -769,6 +769,23 @@ pub fn toVkBlendOp(blend_op: ngl.Cmd.BlendOp) c.VkBlendOp {
     };
 }
 
+pub fn toVkColorComponentFlags(color_mask: ngl.Cmd.ColorMask) c.VkColorComponentFlags {
+    return switch (color_mask) {
+        .all => c.VK_COLOR_COMPONENT_R_BIT |
+            c.VK_COLOR_COMPONENT_G_BIT |
+            c.VK_COLOR_COMPONENT_B_BIT |
+            c.VK_COLOR_COMPONENT_A_BIT,
+        .mask => |mask| blk: {
+            var flags: c.VkColorComponentFlags = 0;
+            if (mask.r) flags |= c.VK_COLOR_COMPONENT_R_BIT;
+            if (mask.g) flags |= c.VK_COLOR_COMPONENT_G_BIT;
+            if (mask.b) flags |= c.VK_COLOR_COMPONENT_B_BIT;
+            if (mask.a) flags |= c.VK_COLOR_COMPONENT_A_BIT;
+            break :blk flags;
+        },
+    };
+}
+
 pub fn toVkIndexType(index_type: ngl.Cmd.IndexType) c.VkIndexType {
     return switch (index_type) {
         .u16 => c.VK_INDEX_TYPE_UINT16,
