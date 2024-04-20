@@ -118,6 +118,7 @@ pub const Shader = packed union {
                 };
 
                 self.pipeline_layout = blk: {
+                    if (desc.type == .fragment) break :blk null_handle;
                     var pl_layt: c.VkPipelineLayout = undefined;
                     check(device.vkCreatePipelineLayout(&.{
                         .sType = c.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
