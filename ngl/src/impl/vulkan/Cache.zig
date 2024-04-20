@@ -142,10 +142,10 @@ pub fn getRenderPass(
 
     if (self.rendering.hash_map.get(key)) |val| return val[0];
 
-    // TODO
-    _ = allocator;
-    _ = device;
-    return Error.Other;
+    const rp = try createRenderPass(allocator, device, key);
+    errdefer device.vkDestroyRenderPass(rp, null);
+    try self.rendering.hash_map.putNoClobber(allocator, key, .{ rp, 1 });
+    return rp;
 }
 
 pub fn createPrimitivePipeline(
@@ -679,6 +679,116 @@ test "Cache" {
         try testing.expect(cache.state.hash_map.contains(d));
         try testing.expect(cache.rendering.hash_map.contains(r.*));
     }
+}
+
+test getRenderPass {
+    const dev = Device.cast(context().device.impl);
+
+    var cache = @This(){};
+    defer cache.deinit(testing.allocator, dev);
+
+    var d = Dynamic.init(dev.*);
+    defer d.clear(testing.allocator);
+    const key = &(d.rendering orelse return);
+
+    key.set(.{
+        .colors = &.{},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = 1184, .height = 666 },
+        .layers = 1,
+    });
+    const rp = try cache.getRenderPass(testing.allocator, dev, key.*);
+    try testing.expect(cache.rendering.hash_map.count() == 1);
+    try testing.expect(cache.rendering.hash_map.get(key.*).?[0] == rp);
+
+    const rp2 = try cache.getRenderPass(testing.allocator, dev, key.*);
+    try testing.expect(cache.rendering.hash_map.count() == 1);
+    try testing.expect(rp2 == rp);
+
+    if (Rendering.subset_mask.render_area_size) unreachable;
+    key.set(.{
+        .colors = &.{},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = 1024, .height = 1024 },
+        .layers = 1,
+    });
+    const rp3 = try cache.getRenderPass(testing.allocator, dev, key.*);
+    try testing.expect(cache.rendering.hash_map.count() == 1);
+    try testing.expect(rp3 == rp);
+
+    var view = ngl.ImageView{
+        .impl = .{ .val = 1 },
+        .format = .rgba8_unorm,
+        .samples = .@"1",
+    };
+    key.set(.{
+        .colors = &.{.{
+            .view = &view,
+            .layout = .color_attachment_optimal,
+            .load_op = .dont_care,
+            .store_op = .store,
+            .clear_value = null,
+            .resolve = null,
+        }},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = 1184, .height = 666 },
+        .layers = 1,
+    });
+    const rp4 = try cache.getRenderPass(testing.allocator, dev, key.*);
+    try testing.expect(cache.rendering.hash_map.count() == 2);
+    // Note that non-dispatchable handles may compare equal.
+    if (rp4 == rp) log.warn("Identical handles for different render passes", .{});
+
+    if (Rendering.subset_mask.color_view) unreachable;
+    var view2 = ngl.ImageView{
+        .impl = .{ .val = view.impl.val + 1 },
+        .format = view.format,
+        .samples = view.samples,
+    };
+    key.set(.{
+        .colors = &.{.{
+            .view = &view2,
+            .layout = .color_attachment_optimal,
+            .load_op = .dont_care,
+            .store_op = .store,
+            .clear_value = null,
+            .resolve = null,
+        }},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = 1184, .height = 666 },
+        .layers = 1,
+    });
+    const rp5 = try cache.getRenderPass(testing.allocator, dev, key.*);
+    try testing.expect(cache.rendering.hash_map.count() == 2);
+    try testing.expect(rp5 == rp4);
+
+    var view3 = ngl.ImageView{
+        .impl = .{ .val = view.impl.val },
+        .format = .a2bgr10_unorm,
+        .samples = view.samples,
+    };
+    if (view3.format == view.format) unreachable;
+    key.set(.{
+        .colors = &.{.{
+            .view = &view3,
+            .layout = .color_attachment_optimal,
+            .load_op = .dont_care,
+            .store_op = .store,
+            .clear_value = null,
+            .resolve = null,
+        }},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = 1184, .height = 666 },
+        .layers = 1,
+    });
+    const rp6 = try cache.getRenderPass(testing.allocator, dev, key.*);
+    try testing.expect(cache.rendering.hash_map.count() == 3);
+    if (rp6 == rp4) log.warn("Identical handles for different render passes", .{});
 }
 
 fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCreateInfo) !void {
