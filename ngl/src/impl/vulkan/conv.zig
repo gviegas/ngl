@@ -682,6 +682,7 @@ pub fn toVkShaderStage(shader_stage: ngl.ShaderStage) c.VkShaderStageFlagBits {
     };
 }
 
+// TODO: `ngl.Shader.Type.Flags` instead.
 pub fn toVkShaderStageFlags(shader_stage_flags: ngl.ShaderStage.Flags) c.VkShaderStageFlags {
     var flags: c.VkShaderStageFlags = 0;
     if (shader_stage_flags.vertex)
@@ -691,6 +692,16 @@ pub fn toVkShaderStageFlags(shader_stage_flags: ngl.ShaderStage.Flags) c.VkShade
     if (shader_stage_flags.compute)
         flags |= c.VK_SHADER_STAGE_COMPUTE_BIT;
     return flags;
+}
+
+pub fn toVkVertexInputRate(step_rate: anytype) c.VkVertexInputRate {
+    return switch (step_rate) {
+        .vertex => c.VK_VERTEX_INPUT_RATE_VERTEX,
+        .instance => |x| blk: {
+            if (@TypeOf(x) != u1) @compileError("Update me");
+            break :blk c.VK_VERTEX_INPUT_RATE_INSTANCE;
+        },
+    };
 }
 
 pub fn toVkPrimitiveTopology(topology: ngl.Cmd.PrimitiveTopology) c.VkPrimitiveTopology {
