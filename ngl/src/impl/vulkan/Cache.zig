@@ -13,6 +13,7 @@ const check = conv.check;
 const log = @import("init.zig").log;
 const Device = @import("init.zig").Device;
 const Dynamic = @import("cmd.zig").Dynamic;
+const Shader = @import("shd.zig").Shader;
 
 state: State = .{},
 rendering: Rendering = .{},
@@ -145,6 +146,276 @@ pub fn getRenderPass(
     _ = allocator;
     _ = device;
     return Error.Other;
+}
+
+pub fn createPrimitivePipeline(
+    allocator: std.mem.Allocator,
+    device: *Device,
+    key: State.Key,
+    render_pass: c.VkRenderPass,
+) Error!c.VkPipeline {
+    const state = &key.state;
+
+    var layout: c.VkPipelineLayout = undefined;
+    var stages_array: [2]c.VkPipelineShaderStageCreateInfo = undefined;
+    const stages = blk: {
+        const vert = Shader.cast(state.shaders.shader.vertex).compat;
+        layout = vert.pipeline_layout;
+        stages_array[0] = .{
+            .sType = c.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .stage = c.VK_SHADER_STAGE_VERTEX_BIT,
+            .module = vert.module,
+            .pName = switch (vert.name) {
+                .array => |*x| x.ptr,
+                .slice => |*x| x.ptr,
+            },
+            .pSpecializationInfo = if (vert.specialization) |*x| x else null,
+        };
+        const frag = if (state.shaders.shader.fragment.val != 0)
+            Shader.cast(state.shaders.shader.fragment).compat
+        else
+            break :blk stages_array[0..1];
+        stages_array[1] = .{
+            .sType = c.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .stage = c.VK_SHADER_STAGE_FRAGMENT_BIT,
+            .module = frag.module,
+            .pName = switch (frag.name) {
+                .array => |*x| x.ptr,
+                .slice => |*x| x.ptr,
+            },
+            .pSpecializationInfo = if (frag.specialization) |*x| x else null,
+        };
+        break :blk stages_array[0..2];
+    };
+
+    var input_binds: []c.VkVertexInputBindingDescription = &.{};
+    var input_attrs: []c.VkVertexInputAttributeDescription = &.{};
+    const input_bind_n = state.vertex_input.bindings.items.len;
+    const input_attr_n = state.vertex_input.attributes.items.len;
+    if (input_bind_n > 0 and input_attr_n > 0) {
+        input_binds = try allocator.alloc(@TypeOf(input_binds[0]), input_bind_n);
+        errdefer allocator.free(input_binds);
+        input_attrs = try allocator.alloc(@TypeOf(input_attrs[0]), input_attr_n);
+        errdefer allocator.free(input_attrs);
+        for (state.vertex_input.bindings.items, input_binds) |bind, *desc|
+            desc.* = .{
+                .binding = bind.binding,
+                .stride = bind.stride,
+                .inputRate = conv.toVkVertexInputRate(bind.step_rate),
+            };
+        for (state.vertex_input.attributes.items, input_attrs) |attr, *desc|
+            desc.* = .{
+                .location = attr.location,
+                .binding = attr.binding,
+                .format = try conv.toVkFormat(attr.format),
+                .offset = attr.offset,
+            };
+    }
+    defer {
+        if (input_bind_n > 0) allocator.free(input_binds);
+        if (input_attr_n > 0) allocator.free(input_attrs);
+    }
+    const vert_input = c.VkPipelineVertexInputStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .vertexBindingDescriptionCount = @intCast(input_bind_n),
+        .pVertexBindingDescriptions = if (input_bind_n > 0) input_binds.ptr else null,
+        .vertexAttributeDescriptionCount = @intCast(input_attr_n),
+        .pVertexAttributeDescriptions = if (input_attr_n > 0) input_attrs.ptr else null,
+    };
+
+    const ia = c.VkPipelineInputAssemblyStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .topology = conv.toVkPrimitiveTopology(state.primitive_topology.topology),
+        // TODO: Add a command for this.
+        .primitiveRestartEnable = c.VK_FALSE,
+    };
+
+    // BUG: Need dynamic state for viewport/scissor rect count.
+    const vport = c.VkPipelineViewportStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        .flags = 0,
+        .viewportCount = 1,
+        .pViewports = null,
+        .scissorCount = 1,
+        .pScissors = null,
+    };
+
+    const raster = c.VkPipelineRasterizationStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        // TODO: Add a command for this.
+        .depthClampEnable = c.VK_FALSE,
+        .rasterizerDiscardEnable = if (state.rasterization_enable.enable) c.VK_FALSE else c.VK_TRUE,
+        .polygonMode = conv.toVkPolygonMode(state.polygon_mode.polygon_mode),
+        .cullMode = conv.toVkCullModeFlags(state.cull_mode.cull_mode),
+        .frontFace = conv.toVkFrontFace(state.front_face.front_face),
+        .depthBiasEnable = if (state.depth_bias_enable.enable) c.VK_TRUE else c.VK_FALSE,
+        .depthBiasConstantFactor = 0,
+        .depthBiasClamp = 0,
+        .depthBiasSlopeFactor = 0,
+        .lineWidth = 1,
+    };
+
+    if (@TypeOf(state.sample_mask.sample_mask) != u64) unreachable;
+    const spl_mask = [2]c.VkSampleMask{
+        @truncate(state.sample_mask.sample_mask),
+        @truncate(state.sample_mask.sample_mask >> 32),
+    };
+    const ms = c.VkPipelineMultisampleStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .rasterizationSamples = conv.toVkSampleCount(state.sample_count.sample_count),
+        .sampleShadingEnable = c.VK_FALSE,
+        .minSampleShading = 0,
+        .pSampleMask = &spl_mask,
+        .alphaToCoverageEnable = c.VK_FALSE,
+        // TODO: Add a command for this.
+        .alphaToOneEnable = c.VK_FALSE,
+    };
+
+    const toVkStencilOpState = struct {
+        fn do(from: @TypeOf(state.stencil_op).Op) c.VkStencilOpState {
+            return .{
+                .failOp = conv.toVkStencilOp(from.fail_op),
+                .passOp = conv.toVkStencilOp(from.pass_op),
+                .depthFailOp = conv.toVkStencilOp(from.depth_fail_op),
+                .compareOp = conv.toVkCompareOp(from.compare_op),
+                .compareMask = 0,
+                .writeMask = 0,
+                .reference = 0,
+            };
+        }
+    }.do;
+    const ds = c.VkPipelineDepthStencilStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .depthTestEnable = if (state.depth_test_enable.enable) c.VK_TRUE else c.VK_FALSE,
+        .depthWriteEnable = if (state.depth_write_enable.enable) c.VK_TRUE else c.VK_FALSE,
+        .depthCompareOp = if (state.depth_test_enable.enable)
+            conv.toVkCompareOp(state.depth_compare_op.compare_op)
+        else
+            c.VK_COMPARE_OP_NEVER,
+        .depthBoundsTestEnable = c.VK_FALSE,
+        .stencilTestEnable = if (state.stencil_test_enable.enable) c.VK_TRUE else c.VK_FALSE,
+        .front = toVkStencilOpState(if (state.stencil_test_enable.enable)
+            state.stencil_op.front
+        else
+            .{}),
+        .back = toVkStencilOpState(if (state.stencil_test_enable.enable)
+            state.stencil_op.back
+        else
+            .{}),
+        .minDepthBounds = 0,
+        .maxDepthBounds = 0,
+    };
+
+    const rendering = key.rendering.?;
+
+    const col_n = blk: {
+        var n: u32 = 0;
+        for (rendering.color_view.views) |view| {
+            if (view.val == 0) break;
+            n += 1;
+        }
+        break :blk n;
+    };
+
+    var attachs: [ngl.Cmd.max_color_attachment]c.VkPipelineColorBlendAttachmentState = undefined;
+    for (
+        attachs[0..col_n],
+        state.color_blend_enable.enable[0..col_n],
+        state.color_blend.blend[0..col_n],
+        state.color_write.write_masks[0..col_n],
+    ) |*attach, enable, blend, write_mask|
+        attach.* = if (enable) .{
+            .blendEnable = c.VK_TRUE,
+            .srcColorBlendFactor = conv.toVkBlendFactor(blend.color_source_factor),
+            .dstColorBlendFactor = conv.toVkBlendFactor(blend.color_dest_factor),
+            .colorBlendOp = conv.toVkBlendOp(blend.color_op),
+            .srcAlphaBlendFactor = conv.toVkBlendFactor(blend.alpha_source_factor),
+            .dstAlphaBlendFactor = conv.toVkBlendFactor(blend.alpha_dest_factor),
+            .alphaBlendOp = conv.toVkBlendOp(blend.alpha_op),
+            .colorWriteMask = conv.toVkColorComponentFlags(write_mask),
+        } else .{
+            .blendEnable = c.VK_FALSE,
+            .srcColorBlendFactor = c.VK_BLEND_FACTOR_ONE,
+            .dstColorBlendFactor = c.VK_BLEND_FACTOR_ZERO,
+            .colorBlendOp = c.VK_BLEND_OP_ADD,
+            .srcAlphaBlendFactor = c.VK_BLEND_FACTOR_ONE,
+            .dstAlphaBlendFactor = c.VK_BLEND_FACTOR_ZERO,
+            .alphaBlendOp = c.VK_BLEND_OP_ADD,
+            .colorWriteMask = conv.toVkColorComponentFlags(write_mask),
+        };
+    const col_blend = c.VkPipelineColorBlendStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .logicOpEnable = c.VK_FALSE,
+        .logicOp = c.VK_LOGIC_OP_NO_OP,
+        .attachmentCount = col_n,
+        .pAttachments = if (col_n > 0) &attachs else null,
+        .blendConstants = .{ 0, 0, 0, 0 },
+    };
+
+    const dyn_states = [_]c.VkDynamicState{
+        c.VK_DYNAMIC_STATE_VIEWPORT,
+        c.VK_DYNAMIC_STATE_SCISSOR,
+        //c.VK_DYNAMIC_STATE_LINE_WIDTH, // Not exposed.
+        c.VK_DYNAMIC_STATE_DEPTH_BIAS,
+        c.VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+        //c.VK_DYNAMIC_STATE_DEPTH_BOUNDS, // Not exposed.
+        c.VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
+        c.VK_DYNAMIC_STATE_STENCIL_WRITE_MASK,
+        c.VK_DYNAMIC_STATE_STENCIL_REFERENCE,
+    };
+    const dynamic = c.VkPipelineDynamicStateCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .dynamicStateCount = dyn_states.len,
+        .pDynamicStates = &dyn_states,
+    };
+
+    const create_info = [1]c.VkGraphicsPipelineCreateInfo{.{
+        .sType = c.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .stageCount = @intCast(stages.len),
+        .pStages = stages.ptr,
+        .pVertexInputState = &vert_input,
+        .pInputAssemblyState = &ia,
+        .pTessellationState = null,
+        .pViewportState = &vport,
+        .pRasterizationState = &raster,
+        .pMultisampleState = &ms,
+        .pDepthStencilState = &ds,
+        .pColorBlendState = &col_blend,
+        .pDynamicState = &dynamic,
+        .layout = layout,
+        .renderPass = render_pass,
+        .subpass = 0,
+        .basePipelineHandle = null_handle,
+        .basePipelineIndex = -1,
+    }};
+
+    if (builtin.is_test)
+        validatePrimitivePipeline(key, create_info[0]) catch return Error.Other;
+
+    // TODO: Use `VkPipelineCache`.
+    var pl: [1]c.VkPipeline = undefined;
+    try check(device.vkCreateGraphicsPipelines(null_handle, 1, &create_info, null, &pl));
+    return pl[0];
 }
 
 pub fn createRenderPass(
@@ -408,6 +679,381 @@ test "Cache" {
         try testing.expect(cache.state.hash_map.contains(d));
         try testing.expect(cache.rendering.hash_map.contains(r.*));
     }
+}
+
+fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCreateInfo) !void {
+    if (!builtin.is_test) @compileError("For testing only");
+
+    const state = &key.state;
+
+    const stages = create_info.pStages orelse return error.NullPtr;
+    const stage_n = create_info.stageCount;
+    try testing.expect(stage_n > 0 and stage_n < 3);
+
+    const vert_shd = Shader.cast(state.shaders.shader.vertex).compat;
+    try testing.expect(vert_shd.module == stages[0].module);
+    try testing.expectEqual(switch (vert_shd.name) {
+        .array => |*x| x.ptr,
+        .slice => |*x| x.ptr,
+    }, stages[0].pName);
+    try testing.expectEqual(
+        if (vert_shd.specialization) |*x| x else null,
+        stages[0].pSpecializationInfo,
+    );
+
+    if (state.shaders.shader.fragment.val != 0) {
+        try testing.expect(stage_n == 2);
+        const frag_shd = Shader.cast(state.shaders.shader.fragment).compat;
+        try testing.expect(frag_shd.module == stages[1].module);
+        try testing.expectEqual(switch (frag_shd.name) {
+            .array => |*x| x.ptr,
+            .slice => |*x| x.ptr,
+        }, stages[1].pName);
+        try testing.expectEqual(
+            if (frag_shd.specialization) |*x| x else null,
+            stages[1].pSpecializationInfo,
+        );
+        // The following two checks are required
+        // for pipeline layout compatibility.
+        try testing.expectEqualDeep(vert_shd.set_layouts, frag_shd.set_layouts);
+        try testing.expectEqualDeep(vert_shd.push_constants, frag_shd.push_constants);
+    } else try testing.expect(stage_n == 1);
+
+    const vert_input = create_info.pVertexInputState orelse return error.NullPtr;
+    try testing.expect(
+        state.vertex_input.bindings.items.len == vert_input.*.vertexBindingDescriptionCount,
+    );
+    try testing.expect(
+        state.vertex_input.attributes.items.len == vert_input.*.vertexAttributeDescriptionCount,
+    );
+    for (
+        state.vertex_input.bindings.items,
+        vert_input.*.pVertexBindingDescriptions,
+    ) |bind, desc| {
+        try testing.expect(bind.binding == desc.binding);
+        try testing.expect(bind.stride == desc.stride);
+        try testing.expect(conv.toVkVertexInputRate(bind.step_rate) == desc.inputRate);
+    }
+    for (
+        state.vertex_input.attributes.items,
+        vert_input.*.pVertexAttributeDescriptions,
+    ) |attr, desc| {
+        try testing.expect(attr.location == desc.location);
+        try testing.expect(attr.binding == desc.binding);
+        try testing.expect((try conv.toVkFormat(attr.format)) == desc.format);
+        try testing.expect(attr.offset == desc.offset);
+    }
+
+    const ia = create_info.pInputAssemblyState orelse return error.NullPtr;
+    try testing.expect(
+        conv.toVkPrimitiveTopology(state.primitive_topology.topology) == ia.*.topology,
+    );
+
+    if (create_info.pTessellationState != null) return error.NonnullPtr;
+
+    const vport = create_info.pViewportState orelse return error.NullPtr;
+    // TODO: Test counts when dynamic state for them is added.
+    try testing.expect(vport.*.pViewports == null);
+    try testing.expect(vport.*.pScissors == null);
+
+    const raster = create_info.pRasterizationState orelse return error.NullPtr;
+    const raster_enable = raster.*.rasterizerDiscardEnable == c.VK_FALSE;
+    const dep_bias_enable = raster.*.depthBiasEnable == c.VK_TRUE;
+    try testing.expect(state.rasterization_enable.enable == raster_enable);
+    try testing.expect(
+        conv.toVkPolygonMode(state.polygon_mode.polygon_mode) == raster.*.polygonMode,
+    );
+    try testing.expect(conv.toVkCullModeFlags(state.cull_mode.cull_mode) == raster.*.cullMode);
+    try testing.expect(conv.toVkFrontFace(state.front_face.front_face) == raster.*.frontFace);
+    try testing.expect(state.depth_bias_enable.enable == dep_bias_enable);
+    try testing.expect(raster.*.lineWidth == 1);
+
+    const ms = create_info.pMultisampleState orelse return error.NullPtr;
+    try testing.expect(
+        conv.toVkSampleCount(state.sample_count.sample_count) == ms.*.rasterizationSamples,
+    );
+    try testing.expect(ms.*.sampleShadingEnable == c.VK_FALSE);
+    if (@TypeOf(state.sample_mask.sample_mask) != u64) unreachable;
+    try testing.expect(
+        @as(c.VkSampleMask, @truncate(state.sample_mask.sample_mask)) == ms.*.pSampleMask[0],
+    );
+    try testing.expect(
+        @as(c.VkSampleMask, @truncate(state.sample_mask.sample_mask >> 32)) == ms.*.pSampleMask[1],
+    );
+    try testing.expect(ms.*.alphaToCoverageEnable == c.VK_FALSE);
+    // TODO: Test alpha to one when dynamic state for it is added.
+
+    const ds = create_info.pDepthStencilState orelse return error.NullPtr;
+    const dep_test_enable = ds.*.depthTestEnable == c.VK_TRUE;
+    const dep_write_enable = ds.*.depthWriteEnable == c.VK_TRUE;
+    const sten_test_enable = ds.*.stencilTestEnable == c.VK_TRUE;
+    try testing.expect(state.depth_test_enable.enable == dep_test_enable);
+    try testing.expect(state.depth_write_enable.enable == dep_write_enable);
+    if (dep_test_enable)
+        try testing.expect(
+            conv.toVkCompareOp(state.depth_compare_op.compare_op) == ds.*.depthCompareOp,
+        );
+    try testing.expect(ds.*.depthBoundsTestEnable == c.VK_FALSE);
+    try testing.expect(state.stencil_test_enable.enable == sten_test_enable);
+    if (sten_test_enable)
+        inline for (
+            .{ &state.stencil_op.front, &state.stencil_op.back },
+            .{ &ds.*.front, &ds.*.back },
+        ) |s, t| {
+            try testing.expect(conv.toVkStencilOp(s.fail_op) == t.failOp);
+            try testing.expect(conv.toVkStencilOp(s.pass_op) == t.passOp);
+            try testing.expect(conv.toVkStencilOp(s.depth_fail_op) == t.depthFailOp);
+            try testing.expect(conv.toVkCompareOp(s.compare_op) == t.compareOp);
+        };
+
+    const rendering = &key.rendering.?;
+
+    const col_n = blk: {
+        var col_n: u32 = ngl.Cmd.max_color_attachment;
+        while (col_n != 0 and rendering.color_view.views[col_n - 1].val == 0) : (col_n -= 1) {}
+        break :blk col_n;
+    };
+
+    const col_blend = create_info.pColorBlendState orelse return error.NullPtr;
+    try testing.expect(col_blend.*.logicOpEnable == c.VK_FALSE);
+    try testing.expect(col_blend.*.attachmentCount == col_n);
+    for (
+        state.color_blend_enable.enable[0..col_n],
+        state.color_blend.blend[0..col_n],
+        state.color_write.write_masks[0..col_n],
+        col_blend.*.pAttachments[0..col_n],
+    ) |enable, blend, write_mask, attach| {
+        const blend_enable = attach.blendEnable == c.VK_TRUE;
+        try testing.expect(enable == blend_enable);
+        try testing.expect(
+            conv.toVkBlendFactor(blend.color_source_factor) == attach.srcColorBlendFactor,
+        );
+        try testing.expect(
+            conv.toVkBlendFactor(blend.color_dest_factor) == attach.dstColorBlendFactor,
+        );
+        try testing.expect(conv.toVkBlendOp(blend.color_op) == attach.colorBlendOp);
+        try testing.expect(
+            conv.toVkBlendFactor(blend.alpha_source_factor) == attach.srcAlphaBlendFactor,
+        );
+        try testing.expect(
+            conv.toVkBlendFactor(blend.alpha_dest_factor) == attach.dstAlphaBlendFactor,
+        );
+        try testing.expect(conv.toVkBlendOp(blend.alpha_op) == attach.alphaBlendOp);
+        try testing.expect(conv.toVkColorComponentFlags(write_mask) == attach.colorWriteMask);
+    }
+
+    const dynamic = create_info.pDynamicState orelse return error.NullPtr;
+    const dyn_state_n = 7;
+    const dyn_state_min = 0;
+    const dyn_state_max = 8;
+    try testing.expect(dyn_state_n == dynamic.*.dynamicStateCount);
+    for (dynamic.*.pDynamicStates[0..dyn_state_n]) |x| {
+        try testing.expect(x >= dyn_state_min and x <= dyn_state_max);
+        try testing.expect(std.mem.count(
+            c.VkDynamicState,
+            dynamic.*.pDynamicStates[0..dyn_state_n],
+            &.{x},
+        ) == 1);
+    }
+
+    try testing.expect(create_info.layout == vert_shd.pipeline_layout);
+    try testing.expect(create_info.renderPass != null_handle);
+    try testing.expect(create_info.subpass == 0);
+    try testing.expect(create_info.basePipelineHandle == null_handle);
+    try testing.expect(create_info.basePipelineIndex == -1);
+}
+
+test createPrimitivePipeline {
+    const dev = Device.cast(context().device.impl);
+
+    var key = Dynamic.init(dev.*);
+    defer key.clear(testing.allocator);
+
+    var set_layt = try ngl.DescriptorSetLayout.init(testing.allocator, &context().device, .{
+        .bindings = &.{.{
+            .binding = 0,
+            .type = .combined_image_sampler,
+            .count = 1,
+            .stage_mask = .{ .fragment = true },
+            .immutable_samplers = null,
+        }},
+    });
+    defer set_layt.deinit(testing.allocator, &context().device);
+    const push_const = [1]ngl.PushConstantRange{.{
+        .offset = 0,
+        .size = 64,
+        .stage_mask = .{ .vertex = true },
+    }};
+    const shaders = try ngl.Shader.init(testing.allocator, &context().device, &.{
+        .{
+            .type = .vertex,
+            .next = .{ .fragment = true },
+            .code = &vert_spv,
+            .name = "main",
+            .set_layouts = &.{&set_layt},
+            .push_constants = &push_const,
+            .specialization = null,
+            .link = true,
+        },
+        .{
+            .type = .fragment,
+            .next = .{},
+            .code = &frag_spv,
+            .name = "main",
+            .set_layouts = &.{&set_layt},
+            .push_constants = &push_const,
+            .specialization = null,
+            .link = true,
+        },
+    });
+    defer testing.allocator.free(shaders);
+    var vert_shd = if (shaders[0]) |x| x else |err| return err;
+    defer vert_shd.deinit(testing.allocator, &context().device);
+    var frag_shd = if (shaders[1]) |x| x else |err| return err;
+    defer frag_shd.deinit(testing.allocator, &context().device);
+    key.state.shaders.set(&.{ .vertex, .fragment }, &.{ &vert_shd, &frag_shd });
+
+    try key.state.vertex_input.set(
+        testing.allocator,
+        &.{.{
+            .binding = 0,
+            .stride = 20,
+            .step_rate = .vertex,
+        }},
+        &.{
+            .{
+                .location = 0,
+                .binding = 0,
+                .format = .rgb32_sfloat,
+                .offset = 0,
+            },
+            .{
+                .location = 1,
+                .binding = 0,
+                .format = .rg32_sfloat,
+                .offset = 12,
+            },
+        },
+    );
+    key.state.primitive_topology.set(.triangle_strip);
+
+    key.state.rasterization_enable.set(true); // This is the default.
+    key.state.polygon_mode.set(.line);
+    key.state.cull_mode.set(.front);
+    key.state.front_face.set(.counter_clockwise);
+    key.state.sample_count.set(.@"4");
+    key.state.sample_mask.set(0x600000005); // The 2nd word is ignored.
+
+    key.state.depth_test_enable.set(true);
+    key.state.depth_compare_op.set(.less_equal);
+    key.state.depth_write_enable.set(true);
+    key.state.stencil_test_enable.set(true);
+    key.state.stencil_op.set(.front, .replace, .invert, .decrement_wrap, .greater);
+    key.state.stencil_op.set(.back, .invert, .increment_clamp, .replace, .equal);
+
+    key.state.color_blend_enable.set(0, &.{ true, true });
+    key.state.color_blend.set(0, &.{
+        .{
+            .color_source_factor = .dest_color,
+            .color_dest_factor = .dest_alpha,
+            .color_op = .max,
+            .alpha_source_factor = .source_alpha,
+            .alpha_dest_factor = .source_color,
+            .alpha_op = .reverse_subtract,
+        },
+        .{
+            .color_source_factor = .source_alpha,
+            .color_dest_factor = .constant_alpha,
+            .color_op = .subtract,
+            .alpha_source_factor = .dest_color,
+            .alpha_dest_factor = .constant_color,
+            .alpha_op = .min,
+        },
+    });
+    key.state.color_write.set(0, &.{ .all, .{ .mask = .{ .r = true } } });
+
+    // It relies on `key.rendering` to infer the number
+    // of color attachments used; just the blend-related
+    // state set above is not sufficient.
+    // Note that the view's `impl.val` must not be zero.
+    var col_views = [_]ngl.ImageView{
+        .{
+            .impl = .{ .val = 1 },
+            .format = .rgba16_sfloat,
+            .samples = .@"4",
+        },
+        .{
+            .impl = .{ .val = 2 },
+            .format = .rgba16_sfloat,
+            .samples = .@"1",
+        },
+        .{
+            .impl = .{ .val = 3 },
+            .format = .rgba8_unorm,
+            .samples = .@"4",
+        },
+    };
+    var ds_view = ngl.ImageView{
+        .impl = .{ .val = 4 },
+        .format = for ([_]ngl.Format{
+            .d16_unorm_s8_uint,
+            .d24_unorm_s8_uint,
+            .d32_sfloat_s8_uint,
+        }) |comb| {
+            if (comb.getFeatures(&context().device).optimal_tiling.depth_stencil_attachment)
+                break comb;
+        } else unreachable,
+        .samples = .@"4",
+    };
+    key.rendering.?.set(.{
+        .colors = &.{
+            .{
+                .view = &col_views[0],
+                .layout = .color_attachment_optimal,
+                .load_op = .load,
+                .store_op = .dont_care,
+                .clear_value = null,
+                .resolve = .{
+                    .view = &col_views[1],
+                    .layout = .color_attachment_optimal,
+                    .mode = .average,
+                },
+            },
+            .{
+                .view = &col_views[2],
+                .layout = .color_attachment_optimal,
+                .load_op = .clear,
+                .store_op = .store,
+                .clear_value = .{ .color_f32 = .{ 0, 0, 0, 1 } },
+                .resolve = null,
+            },
+        },
+        .depth = .{
+            .view = &ds_view,
+            .layout = .depth_stencil_attachment_optimal,
+            .load_op = .load,
+            .store_op = .store,
+            .clear_value = null,
+            .resolve = null,
+        },
+        .stencil = .{
+            .view = &ds_view,
+            .layout = .depth_stencil_attachment_optimal,
+            .load_op = .load,
+            .store_op = .store,
+            .clear_value = null,
+            .resolve = null,
+        },
+        .render_area = .{ .width = 1920, .height = 1080 },
+        .layers = 1,
+    });
+    const rp = try createRenderPass(testing.allocator, dev, key.rendering.?);
+    defer dev.vkDestroyRenderPass(rp, null);
+
+    const pl = try createPrimitivePipeline(testing.allocator, dev, key, rp);
+    defer dev.vkDestroyPipeline(pl, null);
+
+    try testing.expect(pl != null_handle);
 }
 
 fn validateRenderPass(key: Rendering.Key, create_info: c.VkRenderPassCreateInfo) !void {
@@ -745,3 +1391,121 @@ test createRenderPass {
     const ms_col_ds = try createRenderPass(testing.allocator, dev, key.rendering.?);
     dev.vkDestroyRenderPass(ms_col_ds, null);
 }
+
+// #version 460 core
+//
+// layout(push_constant) uniform PushConst { mat4 m; } push_const;
+// layout(location = 0) in vec3 position;
+// layout(location = 1) in vec2 uv;
+// layout(location = 0) out vec2 out_uv;
+//
+// void main() {
+//     gl_Position = push_const.m * vec4(position, 1.0);
+//     out_uv = uv;
+// }
+const vert_spv align(4) = [984]u8{
+    0x3,  0x2, 0x23, 0x7, 0x0,  0x0,  0x1,  0x0,  0xb,  0x0,  0x8,  0x0,  0x29, 0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x11, 0x0,  0x2,  0x0,  0x1,  0x0,  0x0,  0x0,  0xb,  0x0,  0x6,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x47, 0x4c, 0x53, 0x4c, 0x2e, 0x73, 0x74, 0x64, 0x2e, 0x34, 0x35, 0x30,
+    0x0,  0x0, 0x0,  0x0, 0xe,  0x0,  0x3,  0x0,  0x0,  0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0xf,  0x0, 0x9,  0x0, 0x0,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x6d, 0x61, 0x69, 0x6e,
+    0x0,  0x0, 0x0,  0x0, 0xd,  0x0,  0x0,  0x0,  0x19, 0x0,  0x0,  0x0,  0x25, 0x0,  0x0,  0x0,
+    0x27, 0x0, 0x0,  0x0, 0x48, 0x0,  0x5,  0x0,  0xb,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0xb,  0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x48, 0x0,  0x5,  0x0,  0xb,  0x0,  0x0,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0xb,  0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,  0x48, 0x0,  0x5,  0x0,
+    0xb,  0x0, 0x0,  0x0, 0x2,  0x0,  0x0,  0x0,  0xb,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,
+    0x48, 0x0, 0x5,  0x0, 0xb,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,  0xb,  0x0,  0x0,  0x0,
+    0x4,  0x0, 0x0,  0x0, 0x47, 0x0,  0x3,  0x0,  0xb,  0x0,  0x0,  0x0,  0x2,  0x0,  0x0,  0x0,
+    0x48, 0x0, 0x4,  0x0, 0x11, 0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x5,  0x0,  0x0,  0x0,
+    0x48, 0x0, 0x5,  0x0, 0x11, 0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x23, 0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x48, 0x0,  0x5,  0x0,  0x11, 0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x7,  0x0, 0x0,  0x0, 0x10, 0x0,  0x0,  0x0,  0x47, 0x0,  0x3,  0x0,  0x11, 0x0,  0x0,  0x0,
+    0x2,  0x0, 0x0,  0x0, 0x47, 0x0,  0x4,  0x0,  0x19, 0x0,  0x0,  0x0,  0x1e, 0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x47, 0x0,  0x4,  0x0,  0x25, 0x0,  0x0,  0x0,  0x1e, 0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x47, 0x0,  0x4,  0x0,  0x27, 0x0,  0x0,  0x0,  0x1e, 0x0,  0x0,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x13, 0x0,  0x2,  0x0,  0x2,  0x0,  0x0,  0x0,  0x21, 0x0,  0x3,  0x0,
+    0x3,  0x0, 0x0,  0x0, 0x2,  0x0,  0x0,  0x0,  0x16, 0x0,  0x3,  0x0,  0x6,  0x0,  0x0,  0x0,
+    0x20, 0x0, 0x0,  0x0, 0x17, 0x0,  0x4,  0x0,  0x7,  0x0,  0x0,  0x0,  0x6,  0x0,  0x0,  0x0,
+    0x4,  0x0, 0x0,  0x0, 0x15, 0x0,  0x4,  0x0,  0x8,  0x0,  0x0,  0x0,  0x20, 0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x2b, 0x0,  0x4,  0x0,  0x8,  0x0,  0x0,  0x0,  0x9,  0x0,  0x0,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x1c, 0x0,  0x4,  0x0,  0xa,  0x0,  0x0,  0x0,  0x6,  0x0,  0x0,  0x0,
+    0x9,  0x0, 0x0,  0x0, 0x1e, 0x0,  0x6,  0x0,  0xb,  0x0,  0x0,  0x0,  0x7,  0x0,  0x0,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0xa,  0x0,  0x0,  0x0,  0xa,  0x0,  0x0,  0x0,  0x20, 0x0,  0x4,  0x0,
+    0xc,  0x0, 0x0,  0x0, 0x3,  0x0,  0x0,  0x0,  0xb,  0x0,  0x0,  0x0,  0x3b, 0x0,  0x4,  0x0,
+    0xc,  0x0, 0x0,  0x0, 0xd,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,  0x15, 0x0,  0x4,  0x0,
+    0xe,  0x0, 0x0,  0x0, 0x20, 0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,  0x2b, 0x0,  0x4,  0x0,
+    0xe,  0x0, 0x0,  0x0, 0xf,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x18, 0x0,  0x4,  0x0,
+    0x10, 0x0, 0x0,  0x0, 0x7,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x1e, 0x0,  0x3,  0x0,
+    0x11, 0x0, 0x0,  0x0, 0x10, 0x0,  0x0,  0x0,  0x20, 0x0,  0x4,  0x0,  0x12, 0x0,  0x0,  0x0,
+    0x9,  0x0, 0x0,  0x0, 0x11, 0x0,  0x0,  0x0,  0x3b, 0x0,  0x4,  0x0,  0x12, 0x0,  0x0,  0x0,
+    0x13, 0x0, 0x0,  0x0, 0x9,  0x0,  0x0,  0x0,  0x20, 0x0,  0x4,  0x0,  0x14, 0x0,  0x0,  0x0,
+    0x9,  0x0, 0x0,  0x0, 0x10, 0x0,  0x0,  0x0,  0x17, 0x0,  0x4,  0x0,  0x17, 0x0,  0x0,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x3,  0x0,  0x0,  0x0,  0x20, 0x0,  0x4,  0x0,  0x18, 0x0,  0x0,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x17, 0x0,  0x0,  0x0,  0x3b, 0x0,  0x4,  0x0,  0x18, 0x0,  0x0,  0x0,
+    0x19, 0x0, 0x0,  0x0, 0x1,  0x0,  0x0,  0x0,  0x2b, 0x0,  0x4,  0x0,  0x6,  0x0,  0x0,  0x0,
+    0x1b, 0x0, 0x0,  0x0, 0x0,  0x0,  0x80, 0x3f, 0x20, 0x0,  0x4,  0x0,  0x21, 0x0,  0x0,  0x0,
+    0x3,  0x0, 0x0,  0x0, 0x7,  0x0,  0x0,  0x0,  0x17, 0x0,  0x4,  0x0,  0x23, 0x0,  0x0,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x2,  0x0,  0x0,  0x0,  0x20, 0x0,  0x4,  0x0,  0x24, 0x0,  0x0,  0x0,
+    0x3,  0x0, 0x0,  0x0, 0x23, 0x0,  0x0,  0x0,  0x3b, 0x0,  0x4,  0x0,  0x24, 0x0,  0x0,  0x0,
+    0x25, 0x0, 0x0,  0x0, 0x3,  0x0,  0x0,  0x0,  0x20, 0x0,  0x4,  0x0,  0x26, 0x0,  0x0,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x23, 0x0,  0x0,  0x0,  0x3b, 0x0,  0x4,  0x0,  0x26, 0x0,  0x0,  0x0,
+    0x27, 0x0, 0x0,  0x0, 0x1,  0x0,  0x0,  0x0,  0x36, 0x0,  0x5,  0x0,  0x2,  0x0,  0x0,  0x0,
+    0x4,  0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,  0xf8, 0x0,  0x2,  0x0,
+    0x5,  0x0, 0x0,  0x0, 0x41, 0x0,  0x5,  0x0,  0x14, 0x0,  0x0,  0x0,  0x15, 0x0,  0x0,  0x0,
+    0x13, 0x0, 0x0,  0x0, 0xf,  0x0,  0x0,  0x0,  0x3d, 0x0,  0x4,  0x0,  0x10, 0x0,  0x0,  0x0,
+    0x16, 0x0, 0x0,  0x0, 0x15, 0x0,  0x0,  0x0,  0x3d, 0x0,  0x4,  0x0,  0x17, 0x0,  0x0,  0x0,
+    0x1a, 0x0, 0x0,  0x0, 0x19, 0x0,  0x0,  0x0,  0x51, 0x0,  0x5,  0x0,  0x6,  0x0,  0x0,  0x0,
+    0x1c, 0x0, 0x0,  0x0, 0x1a, 0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x51, 0x0,  0x5,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x1d, 0x0,  0x0,  0x0,  0x1a, 0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0x51, 0x0, 0x5,  0x0, 0x6,  0x0,  0x0,  0x0,  0x1e, 0x0,  0x0,  0x0,  0x1a, 0x0,  0x0,  0x0,
+    0x2,  0x0, 0x0,  0x0, 0x50, 0x0,  0x7,  0x0,  0x7,  0x0,  0x0,  0x0,  0x1f, 0x0,  0x0,  0x0,
+    0x1c, 0x0, 0x0,  0x0, 0x1d, 0x0,  0x0,  0x0,  0x1e, 0x0,  0x0,  0x0,  0x1b, 0x0,  0x0,  0x0,
+    0x91, 0x0, 0x5,  0x0, 0x7,  0x0,  0x0,  0x0,  0x20, 0x0,  0x0,  0x0,  0x16, 0x0,  0x0,  0x0,
+    0x1f, 0x0, 0x0,  0x0, 0x41, 0x0,  0x5,  0x0,  0x21, 0x0,  0x0,  0x0,  0x22, 0x0,  0x0,  0x0,
+    0xd,  0x0, 0x0,  0x0, 0xf,  0x0,  0x0,  0x0,  0x3e, 0x0,  0x3,  0x0,  0x22, 0x0,  0x0,  0x0,
+    0x20, 0x0, 0x0,  0x0, 0x3d, 0x0,  0x4,  0x0,  0x23, 0x0,  0x0,  0x0,  0x28, 0x0,  0x0,  0x0,
+    0x27, 0x0, 0x0,  0x0, 0x3e, 0x0,  0x3,  0x0,  0x25, 0x0,  0x0,  0x0,  0x28, 0x0,  0x0,  0x0,
+    0xfd, 0x0, 0x1,  0x0, 0x38, 0x0,  0x1,  0x0,
+};
+
+// #version 460 core
+//
+// layout(set = 0, binding = 0) uniform sampler2D ts;
+// layout(location = 0) in vec2 uv;
+// layout(location = 0) out vec4 color_0;
+//
+// void main() {
+//     color_0 = texture(ts, uv);
+// }
+const frag_spv align(4) = [476]u8{
+    0x3,  0x2, 0x23, 0x7, 0x0,  0x0,  0x1,  0x0,  0xb,  0x0,  0x8,  0x0,  0x14, 0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x11, 0x0,  0x2,  0x0,  0x1,  0x0,  0x0,  0x0,  0xb,  0x0,  0x6,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0x47, 0x4c, 0x53, 0x4c, 0x2e, 0x73, 0x74, 0x64, 0x2e, 0x34, 0x35, 0x30,
+    0x0,  0x0, 0x0,  0x0, 0xe,  0x0,  0x3,  0x0,  0x0,  0x0,  0x0,  0x0,  0x1,  0x0,  0x0,  0x0,
+    0xf,  0x0, 0x7,  0x0, 0x4,  0x0,  0x0,  0x0,  0x4,  0x0,  0x0,  0x0,  0x6d, 0x61, 0x69, 0x6e,
+    0x0,  0x0, 0x0,  0x0, 0x9,  0x0,  0x0,  0x0,  0x11, 0x0,  0x0,  0x0,  0x10, 0x0,  0x3,  0x0,
+    0x4,  0x0, 0x0,  0x0, 0x7,  0x0,  0x0,  0x0,  0x47, 0x0,  0x4,  0x0,  0x9,  0x0,  0x0,  0x0,
+    0x1e, 0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x47, 0x0,  0x4,  0x0,  0xd,  0x0,  0x0,  0x0,
+    0x22, 0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x47, 0x0,  0x4,  0x0,  0xd,  0x0,  0x0,  0x0,
+    0x21, 0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x47, 0x0,  0x4,  0x0,  0x11, 0x0,  0x0,  0x0,
+    0x1e, 0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x13, 0x0,  0x2,  0x0,  0x2,  0x0,  0x0,  0x0,
+    0x21, 0x0, 0x3,  0x0, 0x3,  0x0,  0x0,  0x0,  0x2,  0x0,  0x0,  0x0,  0x16, 0x0,  0x3,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x20, 0x0,  0x0,  0x0,  0x17, 0x0,  0x4,  0x0,  0x7,  0x0,  0x0,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x4,  0x0,  0x0,  0x0,  0x20, 0x0,  0x4,  0x0,  0x8,  0x0,  0x0,  0x0,
+    0x3,  0x0, 0x0,  0x0, 0x7,  0x0,  0x0,  0x0,  0x3b, 0x0,  0x4,  0x0,  0x8,  0x0,  0x0,  0x0,
+    0x9,  0x0, 0x0,  0x0, 0x3,  0x0,  0x0,  0x0,  0x19, 0x0,  0x9,  0x0,  0xa,  0x0,  0x0,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x1,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0x1,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x0,  0x1b, 0x0,  0x3,  0x0,
+    0xb,  0x0, 0x0,  0x0, 0xa,  0x0,  0x0,  0x0,  0x20, 0x0,  0x4,  0x0,  0xc,  0x0,  0x0,  0x0,
+    0x0,  0x0, 0x0,  0x0, 0xb,  0x0,  0x0,  0x0,  0x3b, 0x0,  0x4,  0x0,  0xc,  0x0,  0x0,  0x0,
+    0xd,  0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x17, 0x0,  0x4,  0x0,  0xf,  0x0,  0x0,  0x0,
+    0x6,  0x0, 0x0,  0x0, 0x2,  0x0,  0x0,  0x0,  0x20, 0x0,  0x4,  0x0,  0x10, 0x0,  0x0,  0x0,
+    0x1,  0x0, 0x0,  0x0, 0xf,  0x0,  0x0,  0x0,  0x3b, 0x0,  0x4,  0x0,  0x10, 0x0,  0x0,  0x0,
+    0x11, 0x0, 0x0,  0x0, 0x1,  0x0,  0x0,  0x0,  0x36, 0x0,  0x5,  0x0,  0x2,  0x0,  0x0,  0x0,
+    0x4,  0x0, 0x0,  0x0, 0x0,  0x0,  0x0,  0x0,  0x3,  0x0,  0x0,  0x0,  0xf8, 0x0,  0x2,  0x0,
+    0x5,  0x0, 0x0,  0x0, 0x3d, 0x0,  0x4,  0x0,  0xb,  0x0,  0x0,  0x0,  0xe,  0x0,  0x0,  0x0,
+    0xd,  0x0, 0x0,  0x0, 0x3d, 0x0,  0x4,  0x0,  0xf,  0x0,  0x0,  0x0,  0x12, 0x0,  0x0,  0x0,
+    0x11, 0x0, 0x0,  0x0, 0x57, 0x0,  0x5,  0x0,  0x7,  0x0,  0x0,  0x0,  0x13, 0x0,  0x0,  0x0,
+    0xe,  0x0, 0x0,  0x0, 0x12, 0x0,  0x0,  0x0,  0x3e, 0x0,  0x3,  0x0,  0x9,  0x0,  0x0,  0x0,
+    0x13, 0x0, 0x0,  0x0, 0xfd, 0x0,  0x1,  0x0,  0x38, 0x0,  0x1,  0x0,
+};
