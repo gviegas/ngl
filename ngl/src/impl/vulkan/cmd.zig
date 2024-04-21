@@ -104,7 +104,7 @@ pub const CommandPool = struct {
                             allocator.destroy(cmd_pool.allocs.items[i]);
                             return err;
                         };
-                        dyn_ptr.* = Dynamic.init(dev.*);
+                        dyn_ptr.* = Dynamic.init();
                         break :blk dyn_ptr;
                     },
                 };
@@ -934,14 +934,15 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         rendering: ngl.Cmd.Rendering,
     ) void {
+        const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn != null and cmd_buf.dyn.?.rendering != null) {
-            cmd_buf.dyn.?.rendering.?.set(rendering);
+        if (cmd_buf.dyn) |d| {
+            d.rendering.set(rendering);
             // TODO
+            if (!dev.hasDynamicRendering()) {} else {}
         } else {
             _ = allocator;
-            _ = device;
             @panic("Not yet implemented");
         }
     }
@@ -951,15 +952,14 @@ pub const CommandBuffer = struct {
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
     ) void {
+        const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn != null and cmd_buf.dyn.?.rendering != null) {
-            cmd_buf.dyn.?.rendering.?.clear(null);
+        if (cmd_buf.dyn) |d| {
+            d.rendering.clear(null);
             // TODO
-        } else {
-            _ = device;
-            @panic("Not yet implemented");
-        }
+            if (!dev.hasDynamicRendering()) {} else {}
+        } else @panic("Not yet implemented");
     }
 
     pub fn draw(
@@ -1674,7 +1674,7 @@ pub const CommandBuffer = struct {
 
 pub const Dynamic = struct {
     state: dyn.State(state_mask),
-    rendering: ?dyn.Rendering(rendering_mask),
+    rendering: dyn.Rendering(rendering_mask),
 
     pub const state_mask = dyn.StateMask(.primitive){
         .shaders = true,
@@ -1729,19 +1729,16 @@ pub const Dynamic = struct {
         .view_mask = true,
     };
 
-    pub fn init(device: Device) @This() {
+    pub fn init() @This() {
         var self: @This() = undefined;
         self.state = @TypeOf(self.state).init();
-        self.rendering = if (!device.hasDynamicRendering())
-            @TypeOf(self.rendering.?).init()
-        else
-            null;
+        self.rendering = @TypeOf(self.rendering).init();
         return self;
     }
 
     pub fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
         self.state.clear(allocator);
-        if (self.rendering) |*x| x.clear(allocator);
+        self.rendering.clear(allocator);
     }
 };
 
@@ -1894,11 +1891,6 @@ test CommandBuffer {
     }
     const d = CommandBuffer.cast(cmd_buf).dyn.?;
 
-    try testing.expect(if (Device.cast(dev).hasDynamicRendering())
-        d.rendering == null
-    else
-        d.rendering != null);
-
     try CommandBuffer.begin(
         undefined,
         testing.allocator,
@@ -2025,8 +2017,6 @@ test CommandBuffer {
     );
     try testing.expect(!prev_col_write.eql(d.state.color_write));
 
-    const rend = if (d.rendering != null) &d.rendering.? else return;
-
     // NOTE: This assumes that the calls below won't actually
     // begin/end the render pass.
     // TODO: Update this as needed.
@@ -2036,7 +2026,7 @@ test CommandBuffer {
         .samples = .@"1",
     };
 
-    const prev_rend = rend.*;
+    const prev_rend = d.rendering;
     CommandBuffer.beginRendering(undefined, testing.allocator, dev, cmd_buf, .{
         .colors = &.{.{
             .view = &view,
@@ -2051,8 +2041,8 @@ test CommandBuffer {
         .render_area = .{ .width = 1, .height = 1 },
         .layers = 1,
     });
-    try testing.expect(!prev_rend.eql(rend.*));
+    try testing.expect(!prev_rend.eql(d.rendering));
 
     CommandBuffer.endRendering(undefined, dev, cmd_buf);
-    try testing.expect(prev_rend.eql(rend.*));
+    try testing.expect(prev_rend.eql(d.rendering));
 }

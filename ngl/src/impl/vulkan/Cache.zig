@@ -30,7 +30,9 @@ const State = struct {
     const Value = ValueWithStamp(c.VkPipeline);
 
     // It suffices that the pipeline be compatible with
-    // the render pass.
+    // the render pass instance.
+    // Note that this is required even when using
+    // dynamic rendering.
     // TODO: Try to refine this.
     const rendering_subset_mask = dyn.RenderingMask{
         .color_format = true,
@@ -46,14 +48,13 @@ const State = struct {
         pub fn hash(_: @This(), d: Key) u64 {
             var hasher = std.hash.Wyhash.init(0);
             d.state.hash(&hasher);
-            if (d.rendering) |x| x.hashSubset(rendering_subset_mask, &hasher);
+            d.rendering.hashSubset(rendering_subset_mask, &hasher);
             return hasher.final();
         }
 
         pub fn eql(_: @This(), d: Key, e: Key) bool {
-            if (!d.state.eql(e.state)) return false;
-            if (d.rendering) |x| return x.eqlSubset(rendering_subset_mask, e.rendering.?);
-            return true;
+            return d.state.eql(e.state) and
+                d.rendering.eqlSubset(rendering_subset_mask, e.rendering);
         }
     };
 
@@ -320,7 +321,7 @@ pub fn createPrimitivePipeline(
         .maxDepthBounds = 0,
     };
 
-    const rendering = key.rendering.?;
+    const rendering = &key.rendering;
 
     const col_n = blk: {
         var n: u32 = 0;
@@ -583,16 +584,14 @@ test "Cache" {
     var cache = @This(){};
     defer cache.deinit(testing.allocator, Device.cast(context().device.impl));
 
-    var d = Dynamic.init(Device.cast(context().device.impl).*);
+    var d = Dynamic.init();
     defer d.clear(testing.allocator);
 
     try cache.state.hash_map.put(testing.allocator, d, .{ null_handle, 1 });
     try testing.expect(cache.state.hash_map.contains(d));
 
-    const r = &(d.rendering orelse return);
-
-    try cache.rendering.hash_map.put(testing.allocator, r.*, .{ null_handle, 2 });
-    try testing.expect(cache.rendering.hash_map.contains(r.*));
+    try cache.rendering.hash_map.put(testing.allocator, d.rendering, .{ null_handle, 2 });
+    try testing.expect(cache.rendering.hash_map.contains(d.rendering));
 
     // Make sure `Cmd.Rendering` has no default values
     // on fields we need to check.
@@ -663,7 +662,7 @@ test "Cache" {
     inline for (@typeInfo(@TypeOf(Dynamic.rendering_mask)).Struct.fields) |field| {
         if (!@field(Dynamic.rendering_mask, field.name)) continue;
 
-        @field(r, field.name).set(rend);
+        @field(d.rendering, field.name).set(rend);
 
         if (@field(State.rendering_subset_mask, field.name))
             try testing.expect(!cache.state.hash_map.contains(d))
@@ -671,13 +670,13 @@ test "Cache" {
             try testing.expect(cache.state.hash_map.contains(d));
 
         if (@field(Rendering.subset_mask, field.name))
-            try testing.expect(!cache.rendering.hash_map.contains(r.*))
+            try testing.expect(!cache.rendering.hash_map.contains(d.rendering))
         else
-            try testing.expect(cache.rendering.hash_map.contains(r.*));
+            try testing.expect(cache.rendering.hash_map.contains(d.rendering));
 
         d.clear(null);
         try testing.expect(cache.state.hash_map.contains(d));
-        try testing.expect(cache.rendering.hash_map.contains(r.*));
+        try testing.expect(cache.rendering.hash_map.contains(d.rendering));
     }
 }
 
@@ -687,9 +686,9 @@ test getRenderPass {
     var cache = @This(){};
     defer cache.deinit(testing.allocator, dev);
 
-    var d = Dynamic.init(dev.*);
+    var d = Dynamic.init();
     defer d.clear(testing.allocator);
-    const key = &(d.rendering orelse return);
+    const key = &d.rendering;
 
     key.set(.{
         .colors = &.{},
@@ -916,7 +915,7 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
             try testing.expect(conv.toVkCompareOp(s.compare_op) == t.compareOp);
         };
 
-    const rendering = &key.rendering.?;
+    const rendering = &key.rendering;
 
     const col_n = blk: {
         var col_n: u32 = ngl.Cmd.max_color_attachment;
@@ -976,7 +975,7 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
 test createPrimitivePipeline {
     const dev = Device.cast(context().device.impl);
 
-    var key = Dynamic.init(dev.*);
+    var key = Dynamic.init();
     defer key.clear(testing.allocator);
 
     var set_layt = try ngl.DescriptorSetLayout.init(testing.allocator, &context().device, .{
@@ -1115,7 +1114,7 @@ test createPrimitivePipeline {
         } else unreachable,
         .samples = .@"4",
     };
-    key.rendering.?.set(.{
+    key.rendering.set(.{
         .colors = &.{
             .{
                 .view = &col_views[0],
@@ -1157,7 +1156,7 @@ test createPrimitivePipeline {
         .render_area = .{ .width = 1920, .height = 1080 },
         .layers = 1,
     });
-    const rp = try createRenderPass(testing.allocator, dev, key.rendering.?);
+    const rp = try createRenderPass(testing.allocator, dev, key.rendering);
     defer dev.vkDestroyRenderPass(rp, null);
 
     const pl = try createPrimitivePipeline(testing.allocator, dev, key, rp);
@@ -1236,9 +1235,9 @@ fn validateRenderPass(key: Rendering.Key, create_info: c.VkRenderPassCreateInfo)
 test createRenderPass {
     const dev = Device.cast(context().device.impl);
 
-    var key = Dynamic.init(dev.*);
+    var key = Dynamic.init().rendering;
 
-    const no_attach = try createRenderPass(testing.allocator, dev, key.rendering.?);
+    const no_attach = try createRenderPass(testing.allocator, dev, key);
     dev.vkDestroyRenderPass(no_attach, null);
 
     var dep_view = ngl.ImageView{
@@ -1246,7 +1245,7 @@ test createRenderPass {
         .format = .d16_unorm,
         .samples = .@"1",
     };
-    key.rendering.?.set(.{
+    key.set(.{
         .colors = &.{},
         .depth = .{
             .view = &dep_view,
@@ -1260,7 +1259,7 @@ test createRenderPass {
         .render_area = .{ .width = 1024, .height = 1024 },
         .layers = 1,
     });
-    const dep_only = try createRenderPass(testing.allocator, dev, key.rendering.?);
+    const dep_only = try createRenderPass(testing.allocator, dev, key);
     dev.vkDestroyRenderPass(dep_only, null);
 
     const s8_feat = ngl.Format.s8_uint.getFeatures(&context().device);
@@ -1270,7 +1269,7 @@ test createRenderPass {
             .format = .s8_uint,
             .samples = .@"1",
         };
-        key.rendering.?.set(.{
+        key.set(.{
             .colors = &.{},
             .depth = null,
             .stencil = .{
@@ -1284,7 +1283,7 @@ test createRenderPass {
             .render_area = .{ .width = 240, .height = 135 },
             .layers = 1,
         });
-        const sten_only = try createRenderPass(testing.allocator, dev, key.rendering.?);
+        const sten_only = try createRenderPass(testing.allocator, dev, key);
         dev.vkDestroyRenderPass(sten_only, null);
     } else log.warn("Skipping createRenderPass's stencil-only test", .{});
 
@@ -1293,7 +1292,7 @@ test createRenderPass {
         .format = dep_view.format,
         .samples = .@"4",
     };
-    key.rendering.?.set(.{
+    key.set(.{
         .colors = &.{},
         .depth = .{
             .view = &ms_dep_view,
@@ -1312,7 +1311,7 @@ test createRenderPass {
         .layers = 1,
     });
     // TODO: Implement this.
-    const ms_dep_only = createRenderPass(testing.allocator, dev, key.rendering.?);
+    const ms_dep_only = createRenderPass(testing.allocator, dev, key);
     try testing.expect(ms_dep_only == Error.NotSupported);
 
     var col_views = [3]ngl.ImageView{
@@ -1347,14 +1346,14 @@ test createRenderPass {
                 .clear_value = .{ .color_f32 = .{ 1, 1, 1, 1 } },
                 .resolve = null,
             };
-        key.rendering.?.set(.{
+        key.set(.{
             .colors = attachs[0..views.len],
             .depth = null,
             .stencil = null,
             .render_area = .{ .width = 800, .height = 450 },
             .layers = 1,
         });
-        const col_only = try createRenderPass(testing.allocator, dev, key.rendering.?);
+        const col_only = try createRenderPass(testing.allocator, dev, key);
         dev.vkDestroyRenderPass(col_only, null);
     }
 
@@ -1421,14 +1420,14 @@ test createRenderPass {
                     .mode = .average,
                 } else null,
             };
-        key.rendering.?.set(.{
+        key.set(.{
             .colors = attachs[0..views.len],
             .depth = null,
             .stencil = null,
             .render_area = .{ .width = 1024, .height = 576 },
             .layers = 1,
         });
-        const ms_col_only = try createRenderPass(testing.allocator, dev, key.rendering.?);
+        const ms_col_only = try createRenderPass(testing.allocator, dev, key);
         dev.vkDestroyRenderPass(ms_col_only, null);
     }
 
@@ -1444,7 +1443,7 @@ test createRenderPass {
         } else unreachable,
         .samples = .@"4",
     };
-    key.rendering.?.set(.{
+    key.set(.{
         .colors = &.{
             .{
                 .view = &ms_col_views[0],
@@ -1498,7 +1497,7 @@ test createRenderPass {
         .render_area = .{ .width = 1920, .height = 1080 },
         .layers = 1,
     });
-    const ms_col_ds = try createRenderPass(testing.allocator, dev, key.rendering.?);
+    const ms_col_ds = try createRenderPass(testing.allocator, dev, key);
     dev.vkDestroyRenderPass(ms_col_ds, null);
 }
 
