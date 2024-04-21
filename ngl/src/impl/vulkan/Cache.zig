@@ -155,6 +155,8 @@ pub fn createPrimitivePipeline(
     key: State.Key,
     render_pass: c.VkRenderPass,
 ) Error!c.VkPipeline {
+    if (!builtin.is_test and device.isFullyDynamic()) unreachable;
+
     const state = &key.state;
 
     var layout: c.VkPipelineLayout = undefined;
@@ -388,9 +390,37 @@ pub fn createPrimitivePipeline(
         .pDynamicStates = &dyn_states,
     };
 
+    const has_dynamic_rendering = device.hasDynamicRendering();
+    var rend: c.VkPipelineRenderingCreateInfo = undefined;
+    var col_fmts: [ngl.Cmd.max_color_attachment]c.VkFormat = undefined;
+    if (has_dynamic_rendering) {
+        for (rendering.color_format.formats[0..col_n], col_fmts[0..col_n]) |from, *to|
+            to.* = try conv.toVkFormat(from);
+        const dep_fmt = if (rendering.depth_format.format == .unknown)
+            @as(c.VkFormat, c.VK_FORMAT_UNDEFINED)
+        else
+            try conv.toVkFormat(rendering.depth_format.format);
+        const sten_fmt = blk: {
+            if (rendering.stencil_format.format == .unknown)
+                break :blk @as(c.VkFormat, c.VK_FORMAT_UNDEFINED);
+            if (rendering.stencil_format.format == rendering.depth_format.format)
+                break :blk dep_fmt;
+            break :blk try conv.toVkFormat(rendering.stencil_format.format);
+        };
+        rend = .{
+            .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+            .pNext = null,
+            .viewMask = rendering.view_mask.view_mask,
+            .colorAttachmentCount = col_n,
+            .pColorAttachmentFormats = if (col_n > 0) &col_fmts else null,
+            .depthAttachmentFormat = dep_fmt,
+            .stencilAttachmentFormat = sten_fmt,
+        };
+    }
+
     const create_info = [1]c.VkGraphicsPipelineCreateInfo{.{
         .sType = c.VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext = null,
+        .pNext = if (has_dynamic_rendering) &rend else null,
         .flags = 0,
         .stageCount = @intCast(stages.len),
         .pStages = stages.ptr,
@@ -424,6 +454,8 @@ pub fn createRenderPass(
     device: *Device,
     key: Rendering.Key,
 ) Error!c.VkRenderPass {
+    if (!builtin.is_test and device.hasDynamicRendering()) unreachable;
+
     const max_attach = ngl.Cmd.max_color_attachment * 2 + 2;
     var attachs = [_]c.VkAttachmentDescription{undefined} ** max_attach;
     var refs = [_]c.VkAttachmentReference{undefined} ** max_attach;
@@ -849,7 +881,7 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
     ) |attr, desc| {
         try testing.expect(attr.location == desc.location);
         try testing.expect(attr.binding == desc.binding);
-        try testing.expect((try conv.toVkFormat(attr.format)) == desc.format);
+        try testing.expect(try conv.toVkFormat(attr.format) == desc.format);
         try testing.expect(attr.offset == desc.offset);
     }
 
@@ -965,8 +997,43 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
         ) == 1);
     }
 
+    if (Device.cast(context().device.impl).hasDynamicRendering()) {
+        var next: ?*const c.VkBaseInStructure = @ptrCast(@alignCast(create_info.pNext));
+        while (next) |x| {
+            if (x.sType != c.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO) {
+                next = x.pNext;
+                continue;
+            }
+            const rend: *const c.VkPipelineRenderingCreateInfo = @ptrCast(x);
+            try testing.expect(rendering.view_mask.view_mask == rend.viewMask);
+            try testing.expect(col_n == rend.colorAttachmentCount);
+            for (0..rend.colorAttachmentCount) |i|
+                try testing.expect(
+                    try conv.toVkFormat(rendering.color_format.formats[i]) ==
+                        rend.pColorAttachmentFormats[i],
+                );
+            try testing.expect(
+                try conv.toVkFormat(rendering.depth_format.format) ==
+                    rend.depthAttachmentFormat,
+            );
+            try testing.expect(
+                try conv.toVkFormat(rendering.stencil_format.format) ==
+                    rend.stencilAttachmentFormat,
+            );
+            break;
+        } else return error.BadNextChain;
+        try testing.expect(create_info.renderPass == null_handle);
+    } else {
+        var next: ?*const c.VkBaseInStructure = @ptrCast(@alignCast(create_info.pNext));
+        while (next) |x| {
+            if (x.sType == c.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO)
+                return error.BadNextChain;
+            next = x.pNext;
+        }
+        try testing.expect(create_info.renderPass != null_handle);
+    }
+
     try testing.expect(create_info.layout == vert_shd.pipeline_layout);
-    try testing.expect(create_info.renderPass != null_handle);
     try testing.expect(create_info.subpass == 0);
     try testing.expect(create_info.basePipelineHandle == null_handle);
     try testing.expect(create_info.basePipelineIndex == -1);
@@ -1156,7 +1223,10 @@ test createPrimitivePipeline {
         .render_area = .{ .width = 1920, .height = 1080 },
         .layers = 1,
     });
-    const rp = try createRenderPass(testing.allocator, dev, key.rendering);
+    const rp = if (!dev.hasDynamicRendering())
+        try createRenderPass(testing.allocator, dev, key.rendering)
+    else
+        null_handle;
     defer dev.vkDestroyRenderPass(rp, null);
 
     const pl = try createPrimitivePipeline(testing.allocator, dev, key, rp);
