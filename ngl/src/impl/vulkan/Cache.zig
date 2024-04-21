@@ -126,10 +126,18 @@ pub fn getPrimitivePipeline(
 
     if (self.state.hash_map.get(key)) |val| return val[0];
 
-    // TODO
-    _ = allocator;
-    _ = device;
-    return Error.Other;
+    const pl = try createPrimitivePipeline(
+        allocator,
+        device,
+        key,
+        if (!device.hasDynamicRendering())
+            try self.getRenderPass(allocator, device, key.rendering)
+        else
+            null_handle,
+    );
+    errdefer device.vkDestroyPipeline(pl, null);
+    try self.state.hash_map.putNoClobber(allocator, key, .{ pl, 1 });
+    return pl;
 }
 
 pub fn getRenderPass(
@@ -712,6 +720,236 @@ test "Cache" {
     }
 }
 
+test getPrimitivePipeline {
+    const dev = Device.cast(context().device.impl);
+
+    var cache = @This(){};
+    defer cache.deinit(testing.allocator, dev);
+
+    var key = Dynamic.init();
+    defer key.clear(testing.allocator);
+
+    var set_layt = try ngl.DescriptorSetLayout.init(testing.allocator, &context().device, .{
+        .bindings = &.{.{
+            .binding = 0,
+            .type = .combined_image_sampler,
+            .count = 1,
+            .stage_mask = .{ .fragment = true },
+            .immutable_samplers = null,
+        }},
+    });
+    defer set_layt.deinit(testing.allocator, &context().device);
+    const push_consts = [1]ngl.PushConstantRange{.{
+        .offset = 0,
+        .size = 64,
+        .stage_mask = .{ .vertex = true },
+    }};
+    const shaders = try ngl.Shader.init(testing.allocator, &context().device, &.{
+        .{
+            .type = .vertex,
+            .next = .{ .fragment = true },
+            .code = &vert_spv,
+            .name = "main",
+            .set_layouts = &.{&set_layt},
+            .push_constants = &push_consts,
+            .specialization = null,
+            .link = true,
+        },
+        .{
+            .type = .fragment,
+            .next = .{},
+            .code = &frag_spv,
+            .name = "main",
+            .set_layouts = &.{&set_layt},
+            .push_constants = &push_consts,
+            .specialization = null,
+            .link = true,
+        },
+    });
+    defer testing.allocator.free(shaders);
+    defer for (shaders) |*shd|
+        if (shd.*) |*x|
+            x.deinit(testing.allocator, &context().device)
+        else |_| {};
+    var vert_shd = if (shaders[0]) |vs| vs else |err| return err;
+    var frag_shd = if (shaders[1]) |fs| fs else |err| return err;
+    key.state.shaders.set(&.{ .vertex, .fragment }, &.{ &vert_shd, &frag_shd });
+
+    try key.state.vertex_input.set(
+        testing.allocator,
+        &.{.{
+            .binding = 0,
+            .stride = 20,
+            .step_rate = .vertex,
+        }},
+        &.{
+            .{
+                .location = 0,
+                .binding = 0,
+                .format = .rgb32_sfloat,
+                .offset = 0,
+            },
+            .{
+                .location = 1,
+                .binding = 0,
+                .format = .rg32_sfloat,
+                .offset = 0,
+            },
+        },
+    );
+    key.state.primitive_topology.set(.triangle_strip);
+
+    key.state.rasterization_enable.set(true);
+    key.state.polygon_mode.set(.fill);
+    key.state.cull_mode.set(.none);
+    key.state.front_face.set(.clockwise);
+    key.state.sample_count.set(.@"1");
+    key.state.sample_mask.set(0x1);
+
+    key.state.depth_bias_enable.set(false);
+    key.state.depth_test_enable.set(true);
+    key.state.depth_compare_op.set(.less_equal);
+    key.state.depth_write_enable.set(true);
+    key.state.stencil_test_enable.set(false);
+
+    key.state.color_blend_enable.set(0, &.{false});
+    key.state.color_write.set(0, &.{.all});
+
+    var view = ngl.ImageView{
+        .impl = .{ .val = 1 },
+        .format = .rgba8_unorm,
+        .samples = .@"1",
+    };
+    var view2 = ngl.ImageView{
+        .impl = .{ .val = 2 },
+        .format = .d16_unorm,
+        .samples = .@"1",
+    };
+    var col_attach = [1]ngl.Cmd.Rendering.Attachment{.{
+        .view = &view,
+        .layout = .color_attachment_optimal,
+        .load_op = .clear,
+        .store_op = .store,
+        .clear_value = .{ .color_f32 = .{ 0, 0, 0, 1 } },
+        .resolve = null,
+    }};
+    const dep_attach = ngl.Cmd.Rendering.Attachment{
+        .view = &view2,
+        .layout = .depth_stencil_attachment_optimal,
+        .load_op = .clear,
+        .store_op = .dont_care,
+        .clear_value = .{ .depth_stencil = .{ 1, undefined } },
+        .resolve = null,
+    };
+    var rend = ngl.Cmd.Rendering{
+        .colors = &col_attach,
+        .depth = dep_attach,
+        .stencil = null,
+        .render_area = .{ .width = 1600, .height = 900 },
+        .layers = 1,
+    };
+    key.rendering.set(rend);
+
+    const pl = try cache.getPrimitivePipeline(testing.allocator, dev, key);
+    try testing.expect(cache.state.hash_map.count() == 1);
+    try testing.expect(cache.state.hash_map.get(key).?[0] == pl);
+    try testing.expect(cache.rendering.hash_map.count() == 1);
+
+    if (!key.state.depth_test_enable.enable) unreachable;
+    key.state.depth_test_enable.set(false);
+    const pl2 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
+    try testing.expect(cache.state.hash_map.count() == 2);
+    try testing.expect(cache.rendering.hash_map.count() == 1);
+    if (pl2 == pl) log.warn("Identical handles for different pipelines", .{});
+
+    if (key.state.depth_test_enable.enable) unreachable;
+    key.state.depth_test_enable.set(true);
+    const pl3 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
+    try testing.expect(cache.state.hash_map.count() == 2);
+    try testing.expect(cache.rendering.hash_map.count() == 1);
+    try testing.expect(pl3 == pl);
+
+    rend.render_area.width /= 2;
+    rend.render_area.height /= 2;
+    key.rendering.set(rend);
+    const pl4 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
+    try testing.expect(cache.state.hash_map.count() == 2);
+    try testing.expect(cache.rendering.hash_map.count() == 1);
+    try testing.expect(pl4 == pl);
+
+    var view3 = ngl.ImageView{
+        .impl = view.impl,
+        .format = .rgba16_sfloat,
+        .samples = view.samples,
+    };
+    if (view3.format == view.format) unreachable;
+    col_attach[0].view = &view3;
+    key.rendering.set(rend);
+    const pl5 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
+    try testing.expect(cache.state.hash_map.count() == 3);
+    try testing.expect(cache.rendering.hash_map.count() == 2);
+    if (pl5 == pl4) log.warn("Identical handles for different pipelines", .{});
+
+    var view4 = ngl.ImageView{
+        .impl = .{ .val = view2.impl.val + 1 },
+        .format = view2.format,
+        .samples = view2.samples,
+    };
+    rend.depth.?.view = &view4;
+    const pl6 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
+    try testing.expect(cache.state.hash_map.count() == 3);
+    try testing.expect(cache.rendering.hash_map.count() == 2);
+    try testing.expect(pl6 == pl5);
+
+    if (key.state.sample_count.sample_count != .@"1" or
+        view.samples != .@"1" or
+        view2.samples != .@"1")
+    {
+        unreachable;
+    }
+    var view5 = ngl.ImageView{
+        .impl = view.impl,
+        .format = view.format,
+        .samples = .@"4",
+    };
+    var view6 = ngl.ImageView{
+        .impl = view2.impl,
+        .format = view2.format,
+        .samples = .@"4",
+    };
+    col_attach[0].view = &view5;
+    rend.depth.?.view = &view6;
+    key.state.sample_count.set(.@"4");
+    key.rendering.set(rend);
+    const pl7 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
+    try testing.expect(cache.state.hash_map.count() == 4);
+    try testing.expect(cache.rendering.hash_map.count() == 3);
+    if (pl7 == pl) log.warn("Identical handles for different pipelines", .{});
+
+    key.state.sample_mask.set(~key.state.sample_mask.sample_mask);
+    const pl8 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
+    try testing.expect(cache.state.hash_map.count() == 5);
+    try testing.expect(cache.rendering.hash_map.count() == 3);
+    if (pl8 == pl7) log.warn("Identical handles for different pipelines", .{});
+
+    rend.depth = null;
+    key.rendering.set(rend);
+    const pl9 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
+    try testing.expect(cache.state.hash_map.count() == 6);
+    try testing.expect(cache.rendering.hash_map.count() == 4);
+    if (pl9 == pl8) log.warn("Identical handles for different pipelines", .{});
+
+    col_attach[0].view = &view;
+    rend.depth = dep_attach;
+    key.state.sample_count.set(view.samples);
+    key.state.sample_mask.set(~key.state.sample_mask.sample_mask);
+    key.rendering.set(rend);
+    const pl10 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
+    try testing.expect(cache.state.hash_map.count() == 6);
+    try testing.expect(cache.rendering.hash_map.count() == 4);
+    try testing.expect(pl10 == pl);
+}
+
 test getRenderPass {
     const dev = Device.cast(context().device.impl);
 
@@ -770,7 +1008,6 @@ test getRenderPass {
     });
     const rp4 = try cache.getRenderPass(testing.allocator, dev, key.*);
     try testing.expect(cache.rendering.hash_map.count() == 2);
-    // Note that non-dispatchable handles may compare equal.
     if (rp4 == rp) log.warn("Identical handles for different render passes", .{});
 
     if (Rendering.subset_mask.color_view) unreachable;
