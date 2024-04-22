@@ -14,6 +14,7 @@ const log = @import("init.zig").log;
 const Device = @import("init.zig").Device;
 const Dynamic = @import("cmd.zig").Dynamic;
 const Shader = @import("shd.zig").Shader;
+const ImageView = @import("res.zig").ImageView;
 
 state: State = .{},
 rendering: Rendering = .{},
@@ -113,6 +114,22 @@ const Rendering = struct {
             device.vkDestroyRenderPass(val[0], null);
         self.hash_map.deinit(allocator);
     }
+};
+
+// We won't cache this for the time being.
+const Fbo = struct {
+    const Key = dyn.Rendering(Dynamic.rendering_mask);
+
+    const subset_mask = dyn.RenderingMask{
+        .color_view = true,
+        .color_resolve_view = true,
+        .depth_view = true,
+        .depth_resolve_view = true,
+        .stencil_view = true,
+        .stencil_resolve_view = true,
+        .render_area_size = true,
+        .layers = true,
+    };
 };
 
 pub fn getPrimitivePipeline(
@@ -499,7 +516,6 @@ pub fn createRenderPass(
             .attachment = attach_i,
             .layout = layt,
         };
-
         attach_i += 1;
 
         if (key.color_resolve_layout.layouts[i] == .unknown) {
@@ -519,7 +535,6 @@ pub fn createRenderPass(
             .attachment = attach_i,
             .layout = rv_layt,
         };
-
         attach_i += 1;
     } else ngl.Cmd.max_color_attachment;
 
@@ -557,7 +572,6 @@ pub fn createRenderPass(
             .attachment = attach_i,
             .layout = layt,
         };
-
         attach_i += 1;
 
         if (ds.rv_layout != .unknown) {
@@ -570,7 +584,6 @@ pub fn createRenderPass(
                 .attachment = attach_i,
                 .layout = rv_layt,
             };
-
             attach_i += 1;
         }
     }
@@ -586,7 +599,7 @@ pub fn createRenderPass(
         .pNext = null,
         .flags = 0,
         .attachmentCount = attach_i,
-        .pAttachments = if (attach_i > 0) &attachs[0] else null,
+        .pAttachments = if (attach_i > 0) &attachs else null,
         .subpassCount = 1,
         .pSubpasses = &.{
             .flags = 0,
@@ -594,7 +607,7 @@ pub fn createRenderPass(
             .inputAttachmentCount = 0,
             .pInputAttachments = null,
             .colorAttachmentCount = @intCast(col_n),
-            .pColorAttachments = if (col_n != 0) &refs[0] else null,
+            .pColorAttachments = if (col_n != 0) &refs else null,
             .pResolveAttachments = if (col_n != 0) &refs[col_rv_off] else null,
             .pDepthStencilAttachment = if (ds.format != .unknown) &refs[ds_off] else null,
             .preserveAttachmentCount = 0,
@@ -610,6 +623,88 @@ pub fn createRenderPass(
     var rp: c.VkRenderPass = undefined;
     try check(device.vkCreateRenderPass(&create_info, null, &rp));
     return rp;
+}
+
+pub fn createFramebuffer(
+    _: std.mem.Allocator,
+    device: *Device,
+    key: Fbo.Key,
+    render_pass: c.VkRenderPass,
+) Error!c.VkFramebuffer {
+    if (!builtin.is_test and device.hasDynamicRendering()) unreachable;
+
+    const max_attach = ngl.Cmd.max_color_attachment * 2 + 2;
+    var attachs = [_]c.VkImageView{undefined} ** max_attach;
+
+    var attach_i: u32 = 0;
+
+    for (0..ngl.Cmd.max_color_attachment) |i| {
+        if (key.color_format.formats[i] == .unknown)
+            break;
+
+        attachs[attach_i] = ImageView.cast(key.color_view.views[i]).handle;
+        attach_i += 1;
+
+        if (key.color_resolve_layout.layouts[i] != .unknown) {
+            attachs[attach_i] = ImageView.cast(key.color_resolve_view.views[i]).handle;
+            attach_i += 1;
+        }
+    }
+
+    const ds: struct {
+        view: c.VkImageView,
+        rv_view: c.VkImageView,
+    } = if (key.depth_format.format != .unknown) .{
+        .view = ImageView.cast(key.depth_view.view).handle,
+        .rv_view = if (key.depth_resolve_layout.layout != .unknown)
+            ImageView.cast(key.depth_resolve_view.view).handle
+        else
+            null_handle,
+    } else if (key.stencil_format.format != .unknown) .{
+        .view = ImageView.cast(key.stencil_view.view).handle,
+        .rv_view = if (key.stencil_resolve_layout.layout != .unknown)
+            ImageView.cast(key.stencil_resolve_view.view).handle
+        else
+            null_handle,
+    } else .{
+        .view = null_handle,
+        .rv_view = null_handle,
+    };
+
+    if (ds.view != null_handle) {
+        attachs[attach_i] = ds.view;
+        attach_i += 1;
+
+        if (ds.rv_view != null_handle) {
+            attachs[attach_i] = ds.rv_view;
+            attach_i += 1;
+        }
+    }
+
+    // TODO: Implement support for this in `createRenderPass`.
+    if (ds.rv_view != null_handle) {
+        log.warn("Depth/stencil resolve not yet implemented", .{});
+        return Error.NotSupported;
+    }
+
+    const create_info = c.VkFramebufferCreateInfo{
+        .sType = c.VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+        .pNext = null,
+        .flags = 0,
+        .renderPass = render_pass,
+        .attachmentCount = attach_i,
+        .pAttachments = if (attach_i > 0) &attachs else null,
+        .width = key.render_area_size.width,
+        .height = key.render_area_size.height,
+        .layers = key.layers.layers,
+    };
+
+    if (builtin.is_test)
+        validateFramebuffer(key, create_info) catch return Error.Other;
+
+    var fb: c.VkFramebuffer = undefined;
+    try check(device.vkCreateFramebuffer(&create_info, null, &fb));
+    return fb;
 }
 
 pub fn deinit(self: *@This(), allocator: std.mem.Allocator, device: *Device) void {
@@ -1516,7 +1611,7 @@ fn validateRenderPass(key: Rendering.Key, create_info: c.VkRenderPassCreateInfo)
     const attach_n = col_n + col_rv_n + ds_n + ds_rv_n;
     try testing.expect(attach_n == create_info.attachmentCount);
 
-    // Code that create render passes and frame buffers
+    // Code that create render passes and framebuffers
     // must put the attachments in the same order:
     //
     // * 1st color
@@ -1815,6 +1910,289 @@ test createRenderPass {
     });
     const ms_col_ds = try createRenderPass(testing.allocator, dev, key);
     dev.vkDestroyRenderPass(ms_col_ds, null);
+}
+
+fn validateFramebuffer(key: Fbo.Key, create_info: c.VkFramebufferCreateInfo) !void {
+    if (!builtin.is_test) @compileError("For testing only");
+
+    try testing.expect(create_info.renderPass != null_handle);
+
+    const col_n = blk: {
+        var n: u32 = 0;
+        while (key.color_format.formats[n] != .unknown) : (n += 1) {}
+        break :blk n;
+    };
+    const col_rv_n = blk: {
+        var n: u32 = 0;
+        for (0..col_n) |i| {
+            if (key.color_resolve_layout.layouts[i] != .unknown)
+                n += 1;
+        }
+        break :blk n;
+    };
+    const ds_n: u32 = blk: {
+        const has_dep = key.depth_format.format != .unknown;
+        const has_sten = key.stencil_format.format != .unknown;
+        break :blk if (has_dep or has_sten) 1 else 0;
+    };
+    const ds_rv_n: u32 = 0; // TODO
+
+    const attach_n = col_n + col_rv_n + ds_n + ds_rv_n;
+    try testing.expect(attach_n == create_info.attachmentCount);
+
+    if (ds_rv_n != 0) {
+        unreachable; // TODO
+    } else if (ds_n != 0) {
+        const ds = create_info.pAttachments[attach_n - 1];
+        try testing.expect(
+            ds == ImageView.cast(if (key.depth_format.format != .unknown)
+                key.depth_view.view
+            else
+                key.stencil_view.view).handle,
+        );
+    }
+
+    var attach_i: u32 = 0;
+    for (0..col_n) |i| {
+        const col = create_info.pAttachments[attach_i];
+        try testing.expect(col == ImageView.cast(key.color_view.views[i]).handle);
+        attach_i += 1;
+        if (key.color_resolve_layout.layouts[i] != .unknown) {
+            const rv = create_info.pAttachments[attach_i];
+            try testing.expect(rv == ImageView.cast(key.color_resolve_view.views[i]).handle);
+            attach_i += 1;
+        }
+    }
+
+    try testing.expect(create_info.width == key.render_area_size.width);
+    try testing.expect(create_info.height == key.render_area_size.height);
+    try testing.expect(create_info.layers == key.layers.layers);
+}
+
+test createFramebuffer {
+    const ndev = &context().device;
+    const dev = Device.cast(ndev.impl);
+
+    var key = Dynamic.init().rendering;
+
+    key.set(.{
+        .colors = &.{},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = 240, .height = 135 },
+        .layers = 1,
+    });
+    const no_attach_rp = try createRenderPass(testing.allocator, dev, key);
+    defer dev.vkDestroyRenderPass(no_attach_rp, null);
+    const no_attach = try createFramebuffer(testing.allocator, dev, key, no_attach_rp);
+    dev.vkDestroyFramebuffer(no_attach, null);
+
+    const width = 800;
+    const height = 450;
+
+    const col_spls = [3]ngl.SampleCount{ .@"1", .@"4", .@"4" };
+    var col_imgs: [col_spls.len]ngl.Image = undefined;
+    var col_mems: [col_spls.len]ngl.Memory = undefined;
+    var col_views: [col_spls.len]ngl.ImageView = undefined;
+    for (col_spls, &col_imgs, &col_mems, &col_views, 0..) |spls, *col_img, *col_mem, *col_view, i| {
+        errdefer for (0..i) |j| {
+            col_views[j].deinit(testing.allocator, ndev);
+            col_imgs[j].deinit(testing.allocator, ndev);
+            ndev.free(testing.allocator, &col_mems[j]);
+        };
+        col_img.* = try ngl.Image.init(testing.allocator, ndev, .{
+            .type = .@"2d",
+            .format = .rgba8_unorm,
+            .width = width,
+            .height = height,
+            .depth_or_layers = 1,
+            .levels = 1,
+            .samples = spls,
+            .tiling = .optimal,
+            .usage = .{ .color_attachment = true },
+            .misc = .{},
+            .initial_layout = .unknown,
+        });
+        errdefer col_img.deinit(testing.allocator, ndev);
+        const col_reqs = col_img.getMemoryRequirements(ndev);
+        col_mem.* = try ndev.alloc(testing.allocator, .{
+            .size = col_reqs.size,
+            .type_index = col_reqs.findType(ndev.*, .{ .device_local = true }, null).?,
+        });
+        errdefer ndev.free(testing.allocator, col_mem);
+        try col_img.bind(ndev, col_mem, 0);
+        col_view.* = try ngl.ImageView.init(testing.allocator, ndev, .{
+            .image = col_img,
+            .type = .@"2d",
+            .format = .rgba8_unorm,
+            .range = .{
+                .aspect_mask = .{ .color = true },
+                .base_level = 0,
+                .levels = 1,
+                .base_layer = 0,
+                .layers = 1,
+            },
+        });
+    }
+    defer for (0..col_spls.len) |i| {
+        col_views[i].deinit(testing.allocator, ndev);
+        col_imgs[i].deinit(testing.allocator, ndev);
+        ndev.free(testing.allocator, &col_mems[i]);
+    };
+
+    key.set(.{
+        .colors = &.{.{
+            .view = &col_views[0],
+            .layout = .general,
+            .load_op = .dont_care,
+            .store_op = .dont_care,
+            .clear_value = null,
+            .resolve = null,
+        }},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = width, .height = height },
+        .layers = 1,
+    });
+    const col_only_rp = try createRenderPass(testing.allocator, dev, key);
+    defer dev.vkDestroyRenderPass(col_only_rp, null);
+    const col_only = try createFramebuffer(testing.allocator, dev, key, col_only_rp);
+    dev.vkDestroyFramebuffer(col_only, null);
+
+    const dep_spls = [2]ngl.SampleCount{ .@"1", .@"4" };
+    var dep_imgs: [dep_spls.len]ngl.Image = undefined;
+    var dep_mems: [dep_spls.len]ngl.Memory = undefined;
+    var dep_views: [dep_spls.len]ngl.ImageView = undefined;
+    for (dep_spls, &dep_imgs, &dep_mems, &dep_views, 0..) |spls, *dep_img, *dep_mem, *dep_view, i| {
+        errdefer for (0..i) |j| {
+            dep_views[j].deinit(testing.allocator, ndev);
+            dep_imgs[j].deinit(testing.allocator, ndev);
+            ndev.free(testing.allocator, &dep_mems[j]);
+        };
+        dep_img.* = try ngl.Image.init(testing.allocator, ndev, .{
+            .type = .@"2d",
+            .format = .d16_unorm,
+            .width = width,
+            .height = height,
+            .depth_or_layers = 1,
+            .levels = 1,
+            .samples = spls,
+            .tiling = .optimal,
+            .usage = .{ .depth_stencil_attachment = true },
+            .misc = .{},
+            .initial_layout = .unknown,
+        });
+        errdefer dep_img.deinit(testing.allocator, ndev);
+        const dep_reqs = dep_img.getMemoryRequirements(ndev);
+        dep_mem.* = try ndev.alloc(testing.allocator, .{
+            .size = dep_reqs.size,
+            .type_index = dep_reqs.findType(ndev.*, .{ .device_local = true }, null).?,
+        });
+        errdefer ndev.free(testing.allocator, dep_mem);
+        try dep_img.bind(ndev, dep_mem, 0);
+        dep_view.* = try ngl.ImageView.init(testing.allocator, ndev, .{
+            .image = dep_img,
+            .type = .@"2d",
+            .format = .d16_unorm,
+            .range = .{
+                .aspect_mask = .{ .depth = true },
+                .base_level = 0,
+                .levels = 1,
+                .base_layer = 0,
+                .layers = 1,
+            },
+        });
+    }
+    defer for (0..dep_spls.len) |i| {
+        dep_views[i].deinit(testing.allocator, ndev);
+        dep_imgs[i].deinit(testing.allocator, ndev);
+        ndev.free(testing.allocator, &dep_mems[i]);
+    };
+
+    key.set(.{
+        .colors = &.{},
+        .depth = .{
+            .view = &dep_views[0],
+            .layout = .general,
+            .load_op = .dont_care,
+            .store_op = .dont_care,
+            .clear_value = null,
+            .resolve = null,
+        },
+        .stencil = null,
+        .render_area = .{ .width = width, .height = height },
+        .layers = 1,
+    });
+    const dep_only_rp = try createRenderPass(testing.allocator, dev, key);
+    defer dev.vkDestroyRenderPass(dep_only_rp, null);
+    const dep_only = try createFramebuffer(testing.allocator, dev, key, dep_only_rp);
+    dev.vkDestroyFramebuffer(dep_only, null);
+
+    key.set(.{
+        .colors = &.{.{
+            .view = &col_views[0],
+            .layout = .general,
+            .load_op = .load,
+            .store_op = .store,
+            .clear_value = null,
+            .resolve = null,
+        }},
+        .depth = .{
+            .view = &dep_views[0],
+            .layout = .general,
+            .load_op = .clear,
+            .store_op = .dont_care,
+            .clear_value = .{ .depth_stencil = .{ 1, undefined } },
+            .resolve = null,
+        },
+        .stencil = null,
+        .render_area = .{ .width = width, .height = height },
+        .layers = 1,
+    });
+    const col_dep_rp = try createRenderPass(testing.allocator, dev, key);
+    defer dev.vkDestroyRenderPass(col_dep_rp, null);
+    const col_dep = try createFramebuffer(testing.allocator, dev, key, col_dep_rp);
+    dev.vkDestroyFramebuffer(col_dep, null);
+
+    key.set(.{
+        .colors = &.{
+            .{
+                .view = &col_views[2],
+                .layout = .color_attachment_optimal,
+                .load_op = .clear,
+                .store_op = .store,
+                .clear_value = .{ .color_f32 = .{ 1, 1, 1, 1 } },
+                .resolve = null,
+            },
+            .{
+                .view = &col_views[1],
+                .layout = .general,
+                .load_op = .load,
+                .store_op = .dont_care,
+                .clear_value = null,
+                .resolve = .{
+                    .view = &col_views[0],
+                    .layout = .color_attachment_optimal,
+                    .mode = .average,
+                },
+            },
+        },
+        .depth = .{
+            .view = &dep_views[1],
+            .layout = .depth_stencil_attachment_optimal,
+            .load_op = .clear,
+            .store_op = .dont_care,
+            .clear_value = .{ .depth_stencil = .{ 0, undefined } },
+            .resolve = null,
+        },
+        .stencil = null,
+        .render_area = .{ .width = width, .height = height },
+        .layers = 1,
+    });
+    const ms_rp = try createRenderPass(testing.allocator, dev, key);
+    defer dev.vkDestroyRenderPass(ms_rp, null);
+    const ms = try createFramebuffer(testing.allocator, dev, key, ms_rp);
+    dev.vkDestroyFramebuffer(ms, null);
 }
 
 // #version 460 core
