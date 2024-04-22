@@ -397,9 +397,9 @@ const ShadowMap = struct {
                 .format = fmt,
                 .range = .{
                     .aspect_mask = .{ .color = true },
-                    .base_level = 0,
+                    .level = 0,
                     .levels = 1,
-                    .base_layer = @intCast(i),
+                    .layer = @intCast(i),
                     .layers = 1,
                 },
             }) catch |err| {
@@ -506,9 +506,9 @@ const ShadowDepth = struct {
             .format = fmt,
             .range = .{
                 .aspect_mask = .{ .depth = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         });
@@ -594,9 +594,9 @@ const ColorAttachment = struct {
             .format = fmt,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         });
@@ -696,9 +696,9 @@ const DepthAttachment = struct {
             .format = fmt,
             .range = .{
                 .aspect_mask = .{ .depth = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         });
@@ -1419,9 +1419,9 @@ const Smoothing = struct {
                 .image = &shadow_map.image,
                 .range = .{
                     .aspect_mask = .{ .color = true },
-                    .base_level = 0,
+                    .level = 0,
                     .levels = 1,
-                    .base_layer = 1,
+                    .layer = 1,
                     .layers = 1,
                 },
             }},
@@ -1445,9 +1445,9 @@ const Smoothing = struct {
                     .image = &shadow_map.image,
                     .range = .{
                         .aspect_mask = .{ .color = true },
-                        .base_level = 0,
+                        .level = 0,
                         .levels = 1,
-                        .base_layer = 0,
+                        .layer = 0,
                         .layers = 1,
                     },
                 },
@@ -1462,9 +1462,9 @@ const Smoothing = struct {
                     .image = &shadow_map.image,
                     .range = .{
                         .aspect_mask = .{ .color = true },
-                        .base_level = 0,
+                        .level = 0,
                         .levels = 1,
-                        .base_layer = 1,
+                        .layer = 1,
                         .layers = 1,
                     },
                 },
@@ -1490,9 +1490,9 @@ const Smoothing = struct {
                 .image = &shadow_map.image,
                 .range = .{
                     .aspect_mask = .{ .color = true },
-                    .base_level = 0,
+                    .level = 0,
                     .levels = 1,
-                    .base_layer = 0,
+                    .layer = 0,
                     .layers = 1,
                 },
             }},

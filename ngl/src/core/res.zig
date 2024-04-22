@@ -1427,10 +1427,10 @@ pub const Image = struct {
 
     pub const Range = struct {
         aspect_mask: Aspect.Flags,
-        base_level: u32,
-        levels: ?u32,
-        base_layer: u32,
-        layers: ?u32,
+        level: u32,
+        levels: u32,
+        layer: u32,
+        layers: u32,
     };
 
     pub const DataLayout = struct {

@@ -173,10 +173,10 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         .format = .rgba8_unorm,
         .range = .{
             .aspect_mask = .{ .color = true },
-            .base_level = 0,
-            .levels = null,
-            .base_layer = 0,
-            .layers = null,
+            .level = 0,
+            .levels = 1,
+            .layer = 0,
+            .layers = 1,
         },
     });
     defer color_view.deinit(gpa, dev);

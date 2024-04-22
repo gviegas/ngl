@@ -56,9 +56,9 @@ test "dispatch command" {
         .format = .rgba8_unorm,
         .range = .{
             .aspect_mask = .{ .color = true },
-            .base_level = 0,
+            .level = 0,
             .levels = 1,
-            .base_layer = 0,
+            .layer = 0,
             .layers = 1,
         },
     });
@@ -159,9 +159,9 @@ test "dispatch command" {
             .image = &image,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         }},

@@ -90,9 +90,9 @@ test "depth-only rendering" {
         .format = .d16_unorm,
         .range = .{
             .aspect_mask = .{ .depth = true },
-            .base_level = 0,
+            .level = 0,
             .levels = 1,
-            .base_layer = 0,
+            .layer = 0,
             .layers = 1,
         },
     });

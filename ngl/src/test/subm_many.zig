@@ -50,9 +50,9 @@ test "submission of multiple command buffers" {
         .format = .r8_unorm,
         .range = .{
             .aspect_mask = .{ .color = true },
-            .base_level = 0,
+            .level = 0,
             .levels = 1,
-            .base_layer = 0,
+            .layer = 0,
             .layers = 1,
         },
     });
@@ -306,9 +306,9 @@ test "submission of multiple command buffers" {
                         .image = &image,
                         .range = .{
                             .aspect_mask = .{ .color = true },
-                            .base_level = 0,
+                            .level = 0,
                             .levels = 1,
-                            .base_layer = 0,
+                            .layer = 0,
                             .layers = 1,
                         },
                     }},
@@ -347,9 +347,9 @@ test "submission of multiple command buffers" {
                         .image = &image,
                         .range = .{
                             .aspect_mask = .{ .color = true },
-                            .base_level = 0,
+                            .level = 0,
                             .levels = 1,
-                            .base_layer = 0,
+                            .layer = 0,
                             .layers = 1,
                         },
                     }},
@@ -397,9 +397,9 @@ test "submission of multiple command buffers" {
                         .image = &image,
                         .range = .{
                             .aspect_mask = .{ .color = true },
-                            .base_level = 0,
+                            .level = 0,
                             .levels = 1,
-                            .base_layer = 0,
+                            .layer = 0,
                             .layers = 1,
                         },
                     }},

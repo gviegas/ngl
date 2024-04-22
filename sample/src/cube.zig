@@ -175,9 +175,9 @@ fn do() !void {
             .image = &cube_map.image,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 6,
             },
         }},
@@ -213,9 +213,9 @@ fn do() !void {
             .image = &cube_map.image,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 6,
             },
         }},
@@ -428,9 +428,9 @@ const CubeMap = struct {
             .format = format,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 6,
             },
         });
@@ -759,9 +759,9 @@ const ColorAttachment = struct {
             .format = fmt,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         });
@@ -860,9 +860,9 @@ const DepthAttachment = struct {
             .format = fmt,
             .range = .{
                 .aspect_mask = .{ .depth = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         });

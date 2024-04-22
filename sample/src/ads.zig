@@ -176,9 +176,9 @@ fn do() !void {
             .image = &d.texture.image,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         }},
@@ -214,9 +214,9 @@ fn do() !void {
             .image = &d.texture.image,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         }},
@@ -428,9 +428,9 @@ const Data = struct {
                 .format = .d16_unorm,
                 .range = .{
                     .aspect_mask = .{ .depth = true },
-                    .base_level = 0,
+                    .level = 0,
                     .levels = 1,
-                    .base_layer = 0,
+                    .layer = 0,
                     .layers = 1,
                 },
             }) catch |err| {
@@ -489,9 +489,9 @@ const Data = struct {
                 .format = .rgba8_unorm,
                 .range = .{
                     .aspect_mask = .{ .color = true },
-                    .base_level = 0,
+                    .level = 0,
                     .levels = 1,
-                    .base_layer = 0,
+                    .layer = 0,
                     .layers = 1,
                 },
             });

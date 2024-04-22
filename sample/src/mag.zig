@@ -90,9 +90,9 @@ fn do() !void {
             .image = &tex.image,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         }},
@@ -129,9 +129,9 @@ fn do() !void {
                 .image = &tex.image,
                 .range = .{
                     .aspect_mask = .{ .color = true },
-                    .base_level = 0,
+                    .level = 0,
                     .levels = 1,
-                    .base_layer = 0,
+                    .layer = 0,
                     .layers = 1,
                 },
             },
@@ -146,9 +146,9 @@ fn do() !void {
                 .image = &alpha.image,
                 .range = .{
                     .aspect_mask = .{ .color = true },
-                    .base_level = 0,
+                    .level = 0,
                     .levels = 1,
-                    .base_layer = 0,
+                    .layer = 0,
                     .layers = 1,
                 },
             },
@@ -170,9 +170,9 @@ fn do() !void {
             .image = &alpha.image,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         }},
@@ -482,9 +482,9 @@ const Texture = struct {
             .format = format,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         });
@@ -569,9 +569,9 @@ const AlphaMap = struct {
             .format = format,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         });

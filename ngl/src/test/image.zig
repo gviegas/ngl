@@ -281,9 +281,9 @@ test "ImageView.init/deinit" {
         .format = .rgba8_unorm,
         .range = .{
             .aspect_mask = .{ .color = true },
-            .base_level = 0,
+            .level = 0,
             .levels = 1,
-            .base_layer = 0,
+            .layer = 0,
             .layers = 1,
         },
     });
@@ -296,10 +296,10 @@ test "ImageView.init/deinit" {
         .format = .rgba8_unorm,
         .range = .{
             .aspect_mask = .{ .color = true },
-            .base_level = 0,
-            .levels = null,
-            .base_layer = 0,
-            .layers = null,
+            .level = 0,
+            .levels = 1,
+            .layer = 0,
+            .layers = 1,
         },
     });
     defer rt_view_2.deinit(gpa, dev);
@@ -341,10 +341,10 @@ test "ImageView.init/deinit" {
         .format = .rgba8_unorm,
         .range = .{
             .aspect_mask = .{ .color = true },
-            .base_level = 0,
+            .level = 0,
             .levels = 1,
-            .base_layer = 2,
-            .layers = null,
+            .layer = 2,
+            .layers = 4,
         },
     });
     defer spld_view_2d_array.deinit(gpa, dev);
@@ -355,9 +355,9 @@ test "ImageView.init/deinit" {
         .format = .rgba8_unorm,
         .range = .{
             .aspect_mask = .{ .color = true },
-            .base_level = 0,
+            .level = 0,
             .levels = 1,
-            .base_layer = 0,
+            .layer = 0,
             .layers = 6,
         },
     });

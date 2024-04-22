@@ -1529,10 +1529,10 @@ pub const CommandBuffer = struct {
                             .image = Image.cast(d.image.impl).handle,
                             .subresourceRange = .{
                                 .aspectMask = conv.toVkImageAspectFlags(d.range.aspect_mask),
-                                .baseMipLevel = d.range.base_level,
-                                .levelCount = d.range.levels orelse c.VK_REMAINING_MIP_LEVELS,
-                                .baseArrayLayer = d.range.base_layer,
-                                .layerCount = d.range.layers orelse c.VK_REMAINING_ARRAY_LAYERS,
+                                .baseMipLevel = d.range.level,
+                                .levelCount = d.range.levels,
+                                .baseArrayLayer = d.range.layer,
+                                .layerCount = d.range.layers,
                             },
                         }},
                     );

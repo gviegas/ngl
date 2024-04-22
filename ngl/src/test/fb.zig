@@ -175,9 +175,9 @@ test "FrameBuffer.init/deinit" {
         .format = .rgba8_unorm,
         .range = .{
             .aspect_mask = .{ .color = true },
-            .base_level = 0,
+            .level = 0,
             .levels = 1,
-            .base_layer = 0,
+            .layer = 0,
             .layers = 1,
         },
     });
@@ -188,9 +188,9 @@ test "FrameBuffer.init/deinit" {
         .format = .rgba8_unorm,
         .range = .{
             .aspect_mask = .{ .color = true },
-            .base_level = 0,
+            .level = 0,
             .levels = 1,
-            .base_layer = 1,
+            .layer = 1,
             .layers = 1,
         },
     });
@@ -230,9 +230,9 @@ test "FrameBuffer.init/deinit" {
         .format = .d16_unorm,
         .range = .{
             .aspect_mask = .{ .depth = true },
-            .base_level = 0,
+            .level = 0,
             .levels = 1,
-            .base_layer = 0,
+            .layer = 0,
             .layers = 1,
         },
     });

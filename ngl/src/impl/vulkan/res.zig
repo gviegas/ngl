@@ -370,10 +370,10 @@ pub const ImageView = packed struct {
         };
         const range: c.VkImageSubresourceRange = .{
             .aspectMask = conv.toVkImageAspectFlags(desc.range.aspect_mask),
-            .baseMipLevel = desc.range.base_level,
-            .levelCount = desc.range.levels orelse c.VK_REMAINING_MIP_LEVELS,
-            .baseArrayLayer = desc.range.base_layer,
-            .layerCount = desc.range.layers orelse c.VK_REMAINING_ARRAY_LAYERS,
+            .baseMipLevel = desc.range.level,
+            .levelCount = desc.range.levels,
+            .baseArrayLayer = desc.range.layer,
+            .layerCount = desc.range.layers,
         };
 
         var img_view: c.VkImageView = undefined;

@@ -69,9 +69,9 @@ test "stencil test" {
         .format = .r16_uint,
         .range = .{
             .aspect_mask = .{ .color = true },
-            .base_level = 0,
+            .level = 0,
             .levels = 1,
-            .base_layer = 0,
+            .layer = 0,
             .layers = 1,
         },
     });
@@ -119,9 +119,9 @@ test "stencil test" {
         .format = ds_fmt,
         .range = .{
             .aspect_mask = .{ .depth = true, .stencil = true },
-            .base_level = 0,
+            .level = 0,
             .levels = 1,
-            .base_layer = 0,
+            .layer = 0,
             .layers = 1,
         },
     });

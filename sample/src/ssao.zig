@@ -558,9 +558,9 @@ const NormalMap = struct {
             .format = format,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         });
@@ -659,9 +659,9 @@ const DepthMap = struct {
             .format = fmt,
             .range = .{
                 .aspect_mask = .{ .depth = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         });
@@ -754,9 +754,9 @@ const ColorMap = struct {
             .format = fmt,
             .range = .{
                 .aspect_mask = .{ .color = true },
-                .base_level = 0,
+                .level = 0,
                 .levels = 1,
-                .base_layer = 0,
+                .layer = 0,
                 .layers = 1,
             },
         });
