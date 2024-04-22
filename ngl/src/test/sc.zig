@@ -6,7 +6,7 @@ const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 const platform = @import("test.zig").platform;
 
-test "SwapChain.init/deinit" {
+test "Swapchain.init/deinit" {
     const ctx = context();
     const plat = try platform();
 
@@ -26,7 +26,7 @@ test "SwapChain.init/deinit" {
     defer gpa.free(fmts);
     // TODO: Need to fix this somehow.
     if (fmts.len == 0) {
-        std.log.warn("No exposed format for SwapChain creation!", .{});
+        std.log.warn("No exposed format for Swapchain creation!", .{});
         return error.SkipZigTest;
     }
 
@@ -36,7 +36,7 @@ test "SwapChain.init/deinit" {
             break @field(ngl.Surface.CompositeAlpha, f.name);
     } else unreachable;
 
-    var sc = try ngl.SwapChain.init(gpa, &ctx.device, .{
+    var sc = try ngl.Swapchain.init(gpa, &ctx.device, .{
         .surface = &plat.surface,
         .min_count = capab.min_count,
         .format = fmts[0].format,
@@ -49,7 +49,7 @@ test "SwapChain.init/deinit" {
         .composite_alpha = comp_alpha,
         .present_mode = .fifo,
         .clipped = true,
-        .old_swap_chain = null,
+        .old_swapchain = null,
     });
     errdefer sc.deinit(gpa, &ctx.device);
 
@@ -79,7 +79,7 @@ test "SwapChain.init/deinit" {
         try testing.expect(idx < imgs.len);
     }
 
-    var sc_2 = try ngl.SwapChain.init(gpa, &ctx.device, .{
+    var sc_2 = try ngl.Swapchain.init(gpa, &ctx.device, .{
         .surface = &plat.surface,
         .min_count = capab.min_count + @intFromBool(capab.min_count < capab.max_count),
         .format = fmts[fmts.len - 1].format,
@@ -99,7 +99,7 @@ test "SwapChain.init/deinit" {
         else
             .fifo,
         .clipped = false,
-        .old_swap_chain = &sc,
+        .old_swapchain = &sc,
     });
     defer sc_2.deinit(gpa, &ctx.device);
 

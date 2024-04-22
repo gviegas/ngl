@@ -209,7 +209,7 @@ test "Queue.present" {
 
     const timeout = std.time.ns_per_ms * 3;
 
-    // TODO: Create the swap chain with more images than the minimum
+    // TODO: Create the swapchain with more images than the minimum
     // so we can test multiple presents in one call.
 
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[plat.queue_index] });
@@ -226,7 +226,7 @@ test "Queue.present" {
     defer plat.unlock();
 
     for (0..plat.images.len) |i| {
-        const next = try plat.swap_chain.nextImage(dev, timeout, null, &fences[i]);
+        const next = try plat.swapchain.nextImage(dev, timeout, null, &fences[i]);
 
         var cmd = try cmd_bufs[i].begin(gpa, dev, .{
             .one_time_submit = true,
@@ -266,7 +266,7 @@ test "Queue.present" {
             gpa,
             dev,
             &.{&semas[i]},
-            &.{.{ .swap_chain = &plat.swap_chain, .image_index = next }},
+            &.{.{ .swapchain = &plat.swapchain, .image_index = next }},
         );
     }
 }

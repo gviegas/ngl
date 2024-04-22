@@ -14,7 +14,7 @@ pub const Platform = struct {
     },
     surface: ngl.Surface,
     format: ngl.Surface.Format,
-    swap_chain: ngl.SwapChain,
+    swapchain: ngl.Swapchain,
     images: []ngl.Image,
     image_views: []ngl.ImageView,
     queue_index: ngl.Queue.Index,
@@ -66,7 +66,7 @@ pub const Platform = struct {
         } else unreachable;
         const capab = try sf.getCapabilities(ctx.gpu, .fifo);
 
-        var sc = try ngl.SwapChain.init(allocator, &ctx.device, .{
+        var sc = try ngl.Swapchain.init(allocator, &ctx.device, .{
             .surface = &sf,
             .min_count = capab.min_count,
             .format = fmts[fmt_i].format,
@@ -84,7 +84,7 @@ pub const Platform = struct {
             } else unreachable,
             .present_mode = .fifo,
             .clipped = true,
-            .old_swap_chain = null,
+            .old_swapchain = null,
         });
         errdefer sc.deinit(allocator, &ctx.device);
 
@@ -122,7 +122,7 @@ pub const Platform = struct {
             .impl = impl,
             .surface = sf,
             .format = fmts[fmt_i],
-            .swap_chain = sc,
+            .swapchain = sc,
             .images = imgs,
             .image_views = views,
             .queue_index = queue_i,
@@ -146,7 +146,7 @@ pub const Platform = struct {
         for (self.image_views) |*view| view.deinit(allocator, &ctx.device);
         allocator.free(self.image_views);
         allocator.free(self.images);
-        self.swap_chain.deinit(allocator, &ctx.device);
+        self.swapchain.deinit(allocator, &ctx.device);
         self.surface.deinit(allocator);
         self.impl.deinit();
         self.* = undefined;

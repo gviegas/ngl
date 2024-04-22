@@ -6,7 +6,7 @@ const CommandBuffer = ngl.CommandBuffer;
 const Stage = ngl.Stage;
 const Fence = ngl.Fence;
 const Semaphore = ngl.Semaphore;
-const SwapChain = ngl.SwapChain;
+const Swapchain = ngl.Swapchain;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
@@ -209,8 +209,8 @@ pub const Queue = struct {
     };
 
     pub const Present = struct {
-        swap_chain: *SwapChain,
-        image_index: SwapChain.Index,
+        swapchain: *Swapchain,
+        image_index: Swapchain.Index,
     };
 
     const Self = @This();
@@ -236,7 +236,7 @@ pub const Queue = struct {
 
     /// `Feature.presentation`.
     /// One must ensure that the queue is compatible with the surface
-    /// of every swap chain in `presents`.
+    /// of every swapchain in `presents`.
     pub fn present(
         self: *Self,
         allocator: std.mem.Allocator,
@@ -497,7 +497,7 @@ pub const Feature = union(enum) {
         },
     },
 
-    /// Can create swap chains.
+    /// Can create swapchains.
     presentation,
 
     pub const Set = @Type(.{ .Struct = .{

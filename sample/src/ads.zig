@@ -284,7 +284,7 @@ fn do() !void {
         // since presentation is not waited for.
         const semas = .{ &d.submit.semaphores[frame * 2], &d.submit.semaphores[frame * 2 + 1] };
 
-        const next = try plat.swap_chain.nextImage(dev, std.time.ns_per_s, semas[0], null);
+        const next = try plat.swapchain.nextImage(dev, std.time.ns_per_s, semas[0], null);
 
         try d.submit.pools[frame].reset(dev, .keep);
         cmd = try d.submit.buffers[frame].begin(gpa, dev, .{
@@ -373,7 +373,7 @@ fn do() !void {
         } else semas[1];
 
         try dev.queues[d.present.queue_index].present(gpa, dev, &.{pres_sema}, &.{.{
-            .swap_chain = &plat.swap_chain,
+            .swapchain = &plat.swapchain,
             .image_index = next,
         }});
 
@@ -727,15 +727,15 @@ const Data = struct {
         fn init(
             self: *@This(),
             device: *ngl.Device,
-            swap_chain_format: ngl.Format,
-            swap_chain_views: []ngl.ImageView,
+            swapchain_format: ngl.Format,
+            swapchain_views: []ngl.ImageView,
             depth_format: ngl.Format,
             depth_view: *ngl.ImageView,
         ) ngl.Error!void {
             self.render_pass = try ngl.RenderPass.init(gpa, device, .{
                 .attachments = &.{
                     .{
-                        .format = swap_chain_format,
+                        .format = swapchain_format,
                         .samples = .@"1",
                         .load_op = .clear,
                         .store_op = .store,
@@ -806,8 +806,8 @@ const Data = struct {
                 },
             });
             errdefer self.render_pass.deinit(gpa, device);
-            self.frame_buffers = try gpa.alloc(ngl.FrameBuffer, swap_chain_views.len);
-            for (self.frame_buffers, swap_chain_views, 0..) |*fb, *sc_view, i|
+            self.frame_buffers = try gpa.alloc(ngl.FrameBuffer, swapchain_views.len);
+            for (self.frame_buffers, swapchain_views, 0..) |*fb, *sc_view, i|
                 fb.* = ngl.FrameBuffer.init(gpa, device, .{
                     .render_pass = &self.render_pass,
                     .attachments = &.{ sc_view, depth_view },
@@ -1028,8 +1028,8 @@ const Data = struct {
     fn init(
         device: *ngl.Device,
         present_queue_index: ngl.Queue.Index,
-        swap_chain_format: ngl.Format,
-        swap_chain_views: []ngl.ImageView,
+        swapchain_format: ngl.Format,
+        swapchain_views: []ngl.ImageView,
     ) ngl.Error!@This() {
         const present_queue = &device.queues[present_queue_index];
         const submit_queue_index = if (present_queue.capabilities.graphics)
@@ -1053,8 +1053,8 @@ const Data = struct {
         errdefer self.descriptor.deinit(device);
         try self.pass.init(
             device,
-            swap_chain_format,
-            swap_chain_views,
+            swapchain_format,
+            swapchain_views,
             .d16_unorm,
             &self.depth.view,
         );

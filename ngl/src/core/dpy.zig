@@ -169,8 +169,8 @@ pub const Surface = struct {
     }
 };
 
-pub const SwapChain = struct {
-    impl: Impl.SwapChain,
+pub const Swapchain = struct {
+    impl: Impl.Swapchain,
 
     // TODO: Should use a smaller integer for this type
     // (need to update `Surface.Capabilities`)
@@ -189,7 +189,7 @@ pub const SwapChain = struct {
         composite_alpha: Surface.CompositeAlpha,
         present_mode: Surface.PresentMode,
         clipped: bool,
-        old_swap_chain: ?*SwapChain,
+        old_swapchain: ?*Swapchain,
     };
 
     const Self = @This();
@@ -197,15 +197,15 @@ pub const SwapChain = struct {
     /// It's only valid to call this function if the device was created
     /// with `Device.Desc.feature_set.presentation` set to `true`.
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
-        return .{ .impl = try Impl.get().initSwapChain(allocator, device.impl, desc) };
+        return .{ .impl = try Impl.get().initSwapchain(allocator, device.impl, desc) };
     }
 
     /// Caller is responsible for freeing the returned slice.
-    /// The images are owned by the swap chain and will be implicitly
+    /// The images are owned by the swapchain and will be implicitly
     /// freed when `self.deinit` is called. Calling `Image.deinit` on
     /// these images is not allowed.
     pub fn getImages(self: *Self, allocator: std.mem.Allocator, device: *Device) Error![]Image {
-        return Impl.get().getSwapChainImages(allocator, device.impl, self.impl);
+        return Impl.get().getSwapchainImages(allocator, device.impl, self.impl);
     }
 
     /// `semaphore` and `fence` must not both be `null`.
@@ -216,7 +216,7 @@ pub const SwapChain = struct {
         semaphore: ?*Semaphore,
         fence: ?*Fence,
     ) Error!Index {
-        return Impl.get().nextSwapChainImage(
+        return Impl.get().nextSwapchainImage(
             device.impl,
             self.impl,
             timeout,
@@ -226,7 +226,7 @@ pub const SwapChain = struct {
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
-        Impl.get().deinitSwapChain(allocator, device.impl, self.impl);
+        Impl.get().deinitSwapchain(allocator, device.impl, self.impl);
         self.* = undefined;
     }
 };

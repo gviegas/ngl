@@ -48,7 +48,7 @@ pub const Pipeline = Type(ngl.Pipeline);
 pub const PipelineCache = Type(ngl.PipelineCache);
 pub const QueryPool = Type(ngl.QueryPool);
 pub const Surface = Type(ngl.Surface);
-pub const SwapChain = Type(ngl.SwapChain);
+pub const Swapchain = Type(ngl.Swapchain);
 
 pub const VTable = struct {
     deinit: *const fn (ctx: *anyopaque, allocator: std.mem.Allocator) void,
@@ -1102,36 +1102,36 @@ pub const VTable = struct {
         surface: Surface,
     ) void,
 
-    // SwapChain -------------------------------------------
+    // Swapchain -------------------------------------------
 
-    initSwapChain: *const fn (
+    initSwapchain: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        desc: ngl.SwapChain.Desc,
-    ) Error!SwapChain,
+        desc: ngl.Swapchain.Desc,
+    ) Error!Swapchain,
 
-    getSwapChainImages: *const fn (
+    getSwapchainImages: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        swap_chain: SwapChain,
+        swapchain: Swapchain,
     ) Error![]ngl.Image,
 
-    nextSwapChainImage: *const fn (
+    nextSwapchainImage: *const fn (
         ctx: *anyopaque,
         device: Device,
-        swap_chain: SwapChain,
+        swapchain: Swapchain,
         timeout: u64,
         semaphore: ?Semaphore,
         fence: ?Fence,
-    ) Error!ngl.SwapChain.Index,
+    ) Error!ngl.Swapchain.Index,
 
-    deinitSwapChain: *const fn (
+    deinitSwapchain: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
-        swap_chain: SwapChain,
+        swapchain: Swapchain,
     ) void,
 };
 
@@ -2567,40 +2567,40 @@ pub fn deinitSurface(self: *Self, allocator: std.mem.Allocator, surface: Surface
     self.vtable.deinitSurface(self.ptr, allocator, surface);
 }
 
-pub fn initSwapChain(
+pub fn initSwapchain(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    desc: ngl.SwapChain.Desc,
-) Error!SwapChain {
-    return self.vtable.initSwapChain(self.ptr, allocator, device, desc);
+    desc: ngl.Swapchain.Desc,
+) Error!Swapchain {
+    return self.vtable.initSwapchain(self.ptr, allocator, device, desc);
 }
 
-pub fn getSwapChainImages(
+pub fn getSwapchainImages(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    swap_chain: SwapChain,
+    swapchain: Swapchain,
 ) Error![]ngl.Image {
-    return self.vtable.getSwapChainImages(self.ptr, allocator, device, swap_chain);
+    return self.vtable.getSwapchainImages(self.ptr, allocator, device, swapchain);
 }
 
-pub fn nextSwapChainImage(
+pub fn nextSwapchainImage(
     self: *Self,
     device: Device,
-    swap_chain: SwapChain,
+    swapchain: Swapchain,
     timeout: u64,
     semaphore: ?Semaphore,
     fence: ?Fence,
-) Error!ngl.SwapChain.Index {
-    return self.vtable.nextSwapChainImage(self.ptr, device, swap_chain, timeout, semaphore, fence);
+) Error!ngl.Swapchain.Index {
+    return self.vtable.nextSwapchainImage(self.ptr, device, swapchain, timeout, semaphore, fence);
 }
 
-pub fn deinitSwapChain(
+pub fn deinitSwapchain(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
-    swap_chain: SwapChain,
+    swapchain: Swapchain,
 ) void {
-    self.vtable.deinitSwapChain(self.ptr, allocator, device, swap_chain);
+    self.vtable.deinitSwapchain(self.ptr, allocator, device, swapchain);
 }

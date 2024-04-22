@@ -278,7 +278,7 @@ fn do() !void {
 
         try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{fence});
 
-        const next = try plat.swap_chain.nextImage(dev, std.time.ns_per_s, semas[0], null);
+        const next = try plat.swapchain.nextImage(dev, std.time.ns_per_s, semas[0], null);
 
         try cmd_pool.reset(dev, .keep);
         cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
@@ -312,7 +312,7 @@ fn do() !void {
         } else @panic("TODO");
 
         try pres_queue.present(gpa, dev, &.{pres_sema}, &.{.{
-            .swap_chain = &plat.swap_chain,
+            .swapchain = &plat.swapchain,
             .image_index = next,
         }});
 
@@ -1806,7 +1806,7 @@ const Shading = struct {
         cmd: *ngl.Cmd,
         frame: usize,
         descriptor: *Descriptor,
-        next: ngl.SwapChain.Index,
+        next: ngl.Swapchain.Index,
         vertex_buffer: *Buffer(.device),
         index_buffer: *Buffer(.device),
     ) void {

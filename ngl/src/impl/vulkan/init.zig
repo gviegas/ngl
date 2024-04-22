@@ -15,7 +15,7 @@ const Cache = @import("Cache.zig");
 const CommandBuffer = @import("cmd.zig").CommandBuffer;
 const Fence = @import("sync.zig").Fence;
 const Semaphore = @import("sync.zig").Semaphore;
-const SwapChain = @import("dpy.zig").SwapChain;
+const Swapchain = @import("dpy.zig").Swapchain;
 
 var libvulkan: ?*anyopaque = null;
 var getInstanceProcAddr: c.PFN_vkGetInstanceProcAddr = null;
@@ -2699,7 +2699,7 @@ pub const Queue = struct {
             allocator.free(inds);
         };
         for (scs, inds, presents) |*sc, *idx, pres| {
-            sc.* = SwapChain.cast(pres.swap_chain.impl).handle;
+            sc.* = Swapchain.cast(pres.swapchain.impl).handle;
             idx.* = pres.image_index;
         }
 
@@ -3195,8 +3195,8 @@ const vtable = Impl.VTable{
     .getSurfaceCapabilities = @import("dpy.zig").Surface.getCapabilities,
     .deinitSurface = @import("dpy.zig").Surface.deinit,
 
-    .initSwapChain = @import("dpy.zig").SwapChain.init,
-    .getSwapChainImages = @import("dpy.zig").SwapChain.getImages,
-    .nextSwapChainImage = @import("dpy.zig").SwapChain.nextImage,
-    .deinitSwapChain = @import("dpy.zig").SwapChain.deinit,
+    .initSwapchain = @import("dpy.zig").Swapchain.init,
+    .getSwapchainImages = @import("dpy.zig").Swapchain.getImages,
+    .nextSwapchainImage = @import("dpy.zig").Swapchain.nextImage,
+    .deinitSwapchain = @import("dpy.zig").Swapchain.deinit,
 };

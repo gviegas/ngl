@@ -241,10 +241,10 @@ pub const Surface = packed struct {
     }
 };
 
-pub const SwapChain = packed struct {
+pub const Swapchain = packed struct {
     handle: c.VkSwapchainKHR,
 
-    pub fn cast(impl: Impl.SwapChain) SwapChain {
+    pub fn cast(impl: Impl.Swapchain) Swapchain {
         return @bitCast(impl.val);
     }
 
@@ -252,8 +252,8 @@ pub const SwapChain = packed struct {
         _: *anyopaque,
         _: std.mem.Allocator,
         device: Impl.Device,
-        desc: ngl.SwapChain.Desc,
-    ) Error!Impl.SwapChain {
+        desc: ngl.Swapchain.Desc,
+    ) Error!Impl.Swapchain {
         const usage = conv.toVkImageUsageFlags(desc.usage);
         // Usage must not be zero
         if (usage == 0) return Error.InvalidArgument;
@@ -277,20 +277,20 @@ pub const SwapChain = packed struct {
             .compositeAlpha = conv.toVkCompositeAlpha(desc.composite_alpha),
             .presentMode = conv.toVkPresentMode(desc.present_mode),
             .clipped = if (desc.clipped) c.VK_TRUE else c.VK_FALSE,
-            .oldSwapchain = if (desc.old_swap_chain) |x| cast(x.impl).handle else null_handle,
+            .oldSwapchain = if (desc.old_swapchain) |x| cast(x.impl).handle else null_handle,
         }, null, &swapchain));
 
-        return .{ .val = @bitCast(SwapChain{ .handle = swapchain }) };
+        return .{ .val = @bitCast(Swapchain{ .handle = swapchain }) };
     }
 
     pub fn getImages(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
-        swap_chain: Impl.SwapChain,
+        swapchain: Impl.Swapchain,
     ) Error![]ngl.Image {
         const dev = Device.cast(device);
-        const sc = cast(swap_chain);
+        const sc = cast(swapchain);
 
         const n = 8;
         var stk_imgs: [n]c.VkImage = undefined;
@@ -314,14 +314,14 @@ pub const SwapChain = packed struct {
     pub fn nextImage(
         _: *anyopaque,
         device: Impl.Device,
-        swap_chain: Impl.SwapChain,
+        swapchain: Impl.Swapchain,
         timeout: u64,
         semaphore: ?Impl.Semaphore,
         fence: ?Impl.Fence,
-    ) Error!ngl.SwapChain.Index {
+    ) Error!ngl.Swapchain.Index {
         var idx: u32 = undefined;
         const result = Device.cast(device).vkAcquireNextImageKHR(
-            cast(swap_chain).handle,
+            cast(swapchain).handle,
             timeout,
             if (semaphore) |x| Semaphore.cast(x).handle else null_handle,
             if (fence) |x| Fence.cast(x).handle else null_handle,
@@ -346,8 +346,8 @@ pub const SwapChain = packed struct {
         _: *anyopaque,
         _: std.mem.Allocator,
         device: Impl.Device,
-        swap_chain: Impl.SwapChain,
+        swapchain: Impl.Swapchain,
     ) void {
-        Device.cast(device).vkDestroySwapchainKHR(cast(swap_chain).handle, null);
+        Device.cast(device).vkDestroySwapchainKHR(cast(swapchain).handle, null);
     }
 };

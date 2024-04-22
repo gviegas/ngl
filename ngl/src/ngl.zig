@@ -44,7 +44,7 @@ pub const QueryType = @import("core/query.zig").QueryType;
 pub const QueryPool = @import("core/query.zig").QueryPool;
 pub const QueryResolve = @import("core/query.zig").QueryResolve;
 pub const Surface = @import("core/dpy.zig").Surface;
-pub const SwapChain = @import("core/dpy.zig").SwapChain;
+pub const Swapchain = @import("core/dpy.zig").Swapchain;
 
 pub const Error = error{
     NotReady,
