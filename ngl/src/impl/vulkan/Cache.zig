@@ -729,6 +729,15 @@ test getPrimitivePipeline {
     var key = Dynamic.init();
     defer key.clear(testing.allocator);
 
+    const expectRenderPassCount = struct {
+        fn do(device: *const Device, rendering: Rendering, count: usize) !void {
+            try testing.expectEqual(
+                rendering.hash_map.count(),
+                if (device.hasDynamicRendering()) 0 else count,
+            );
+        }
+    }.do;
+
     var set_layt = try ngl.DescriptorSetLayout.init(testing.allocator, &context().device, .{
         .bindings = &.{.{
             .binding = 0,
@@ -853,20 +862,20 @@ test getPrimitivePipeline {
     const pl = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 1);
     try testing.expect(cache.state.hash_map.get(key).?[0] == pl);
-    try testing.expect(cache.rendering.hash_map.count() == 1);
+    try expectRenderPassCount(dev, cache.rendering, 1);
 
     if (!key.state.depth_test_enable.enable) unreachable;
     key.state.depth_test_enable.set(false);
     const pl2 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 2);
-    try testing.expect(cache.rendering.hash_map.count() == 1);
+    try expectRenderPassCount(dev, cache.rendering, 1);
     if (pl2 == pl) log.warn("Identical handles for different pipelines", .{});
 
     if (key.state.depth_test_enable.enable) unreachable;
     key.state.depth_test_enable.set(true);
     const pl3 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 2);
-    try testing.expect(cache.rendering.hash_map.count() == 1);
+    try expectRenderPassCount(dev, cache.rendering, 1);
     try testing.expect(pl3 == pl);
 
     rend.render_area.width /= 2;
@@ -874,7 +883,7 @@ test getPrimitivePipeline {
     key.rendering.set(rend);
     const pl4 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 2);
-    try testing.expect(cache.rendering.hash_map.count() == 1);
+    try expectRenderPassCount(dev, cache.rendering, 1);
     try testing.expect(pl4 == pl);
 
     var view3 = ngl.ImageView{
@@ -887,7 +896,7 @@ test getPrimitivePipeline {
     key.rendering.set(rend);
     const pl5 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 3);
-    try testing.expect(cache.rendering.hash_map.count() == 2);
+    try expectRenderPassCount(dev, cache.rendering, 2);
     if (pl5 == pl4) log.warn("Identical handles for different pipelines", .{});
 
     var view4 = ngl.ImageView{
@@ -898,7 +907,7 @@ test getPrimitivePipeline {
     rend.depth.?.view = &view4;
     const pl6 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 3);
-    try testing.expect(cache.rendering.hash_map.count() == 2);
+    try expectRenderPassCount(dev, cache.rendering, 2);
     try testing.expect(pl6 == pl5);
 
     if (key.state.sample_count.sample_count != .@"1" or
@@ -923,20 +932,20 @@ test getPrimitivePipeline {
     key.rendering.set(rend);
     const pl7 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 4);
-    try testing.expect(cache.rendering.hash_map.count() == 3);
+    try expectRenderPassCount(dev, cache.rendering, 3);
     if (pl7 == pl) log.warn("Identical handles for different pipelines", .{});
 
     key.state.sample_mask.set(~key.state.sample_mask.sample_mask);
     const pl8 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 5);
-    try testing.expect(cache.rendering.hash_map.count() == 3);
+    try expectRenderPassCount(dev, cache.rendering, 3);
     if (pl8 == pl7) log.warn("Identical handles for different pipelines", .{});
 
     rend.depth = null;
     key.rendering.set(rend);
     const pl9 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 6);
-    try testing.expect(cache.rendering.hash_map.count() == 4);
+    try expectRenderPassCount(dev, cache.rendering, 4);
     if (pl9 == pl8) log.warn("Identical handles for different pipelines", .{});
 
     col_attach[0].view = &view;
@@ -946,7 +955,7 @@ test getPrimitivePipeline {
     key.rendering.set(rend);
     const pl10 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 6);
-    try testing.expect(cache.rendering.hash_map.count() == 4);
+    try expectRenderPassCount(dev, cache.rendering, 4);
     try testing.expect(pl10 == pl);
 }
 
