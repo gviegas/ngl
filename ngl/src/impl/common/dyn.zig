@@ -102,7 +102,6 @@ pub fn State(comptime state_mask: anytype) type {
 
     const kind = switch (M) {
         StateMask(.primitive) => .primitive,
-        StateMask(.compute) => .compute,
         else => @compileError("dyn.State's argument must be of type dyn.StateMask"),
     };
 
@@ -179,10 +178,7 @@ pub fn State(comptime state_mask: anytype) type {
     };
 }
 
-pub fn StateMask(comptime kind: enum {
-    primitive,
-    compute,
-}) type {
+pub fn StateMask(comptime kind: enum { primitive }) type {
     const common = [_][:0]const u8{
         // `Cmd.setShaders`.
         "shaders",
@@ -242,7 +238,6 @@ pub fn StateMask(comptime kind: enum {
             // `Cmd.setPrimitiveTopology`.
             "primitive_topology",
         } ++ &common_render,
-        .compute => &[_][:0]const u8{},
     };
 
     const StructField = std.builtin.Type.StructField;
@@ -432,18 +427,12 @@ const None = struct {
     }
 };
 
-fn Shaders(comptime kind: enum {
-    primitive,
-    compute,
-}) type {
+fn Shaders(comptime kind: enum { primitive }) type {
     return struct {
         shader: switch (kind) {
             .primitive => struct {
                 vertex: Impl.Shader = .{ .val = 0 },
                 fragment: Impl.Shader = .{ .val = 0 },
-            },
-            .compute => struct {
-                compute: Impl.Shader = .{ .val = 0 },
             },
         } = .{},
 
@@ -461,10 +450,6 @@ fn Shaders(comptime kind: enum {
                     .primitive => switch (@"type") {
                         .vertex => self.shader.vertex = if (shader) |x| x.impl else dfl,
                         .fragment => self.shader.fragment = if (shader) |x| x.impl else dfl,
-                        else => {},
-                    },
-                    .compute => switch (@"type") {
-                        .compute => self.shader.compute = if (shader) |x| x.impl else dfl,
                         else => {},
                     },
                 }
@@ -1087,7 +1072,7 @@ const testing = std.testing;
 
 fn hashT(value: anytype) u64 {
     switch (@TypeOf(@TypeOf(value).mask)) {
-        StateMask(.primitive), StateMask(.compute), RenderingMask => {},
+        StateMask(.primitive), RenderingMask => {},
         else => unreachable,
     }
     var hasher = std.hash.Wyhash.init(0);
@@ -1144,41 +1129,27 @@ test State {
         if (@field(P.mask, field.name) and @TypeOf(@field(P.init(), field.name)) == None)
             @compileError("Bad dyn.State layout");
 
-    const C = State(StateMask(.compute){ .shaders = true });
-    if (@TypeOf(C.init().shaders) != Shaders(.compute))
-        @compileError("Bad dyn.State layout");
-    inline for (@typeInfo(@TypeOf(P.mask)).Struct.fields[1..]) |field|
-        if (@TypeOf(@field(C.init(), field.name)) != None)
-            @compileError("Bad dyn.State layout");
-
     // TODO: Consider disallowing this case.
     const X = State(StateMask(.primitive){});
     if (@sizeOf(X) != 0)
         @compileError("Bad dyn.State layout");
 
-    inline for (.{ P, C, X }) |T| {
+    inline for (.{ P, X }) |T| {
         const a = T.init();
         const b = T.init();
         try expectEql(a, hashT(a), b);
     }
 
-    var shaders: [3]ngl.Shader = .{
+    var shaders: [2]ngl.Shader = .{
         .{ .impl = .{ .val = 1 } },
         .{ .impl = .{ .val = 2 } },
-        .{ .impl = .{ .val = 3 } },
     };
     inline for (
-        .{ P, C },
-        .{
-            .{
-                &[_]ngl.Shader.Type{ .fragment, .vertex },
-                &[_]*ngl.Shader{ &shaders[0], &shaders[1] },
-            },
-            .{
-                &[_]ngl.Shader.Type{.compute},
-                &[_]*ngl.Shader{&shaders[2]},
-            },
-        },
+        .{P},
+        .{.{
+            &[_]ngl.Shader.Type{ .fragment, .vertex },
+            &[_]*ngl.Shader{ &shaders[0], &shaders[1] },
+        }},
     ) |T, params| {
         var a = T.init();
         var b = T.init();
