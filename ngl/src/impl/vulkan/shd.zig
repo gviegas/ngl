@@ -28,10 +28,14 @@ pub const Shader = packed union {
         // `push_constants` is in `pipeline_layout`'s creation.
         set_layouts: []const c.VkDescriptorSetLayout,
         push_constants: []const c.VkPushConstantRange,
+        // Will be `null_handle` for fragment shaders.
         // TODO: Consider caching this, or change the API so
         // it's passed in the description.
         pipeline_layout: c.VkPipelineLayout,
         specialization: ?c.VkSpecializationInfo,
+        // Will be `null_handle` for non-compute shaders.
+        // TODO: Use an union to save some space.
+        pipeline: c.VkPipeline,
 
         fn init(
             allocator: std.mem.Allocator,
@@ -52,6 +56,7 @@ pub const Shader = packed union {
                     .push_constants = &.{},
                     .pipeline_layout = null_handle,
                     .specialization = null,
+                    .pipeline = null_handle,
                 };
 
                 self.module = blk: {
@@ -177,6 +182,37 @@ pub const Shader = packed union {
                     };
                 };
 
+                self.pipeline = blk: {
+                    if (desc.type != .compute) break :blk null_handle;
+                    var pl: [1]c.VkPipeline = undefined;
+                    // TODO: Use `VkPipelineCache`.
+                    check(device.vkCreateComputePipelines(null_handle, 1, &.{.{
+                        .sType = c.VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+                        .pNext = null,
+                        .flags = 0,
+                        .stage = .{
+                            .sType = c.VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                            .pNext = null,
+                            .flags = 0,
+                            .stage = c.VK_SHADER_STAGE_COMPUTE_BIT,
+                            .module = self.module,
+                            .pName = switch (self.name) {
+                                .array => |*x| x.ptr,
+                                .slice => |*x| x.ptr,
+                            },
+                            .pSpecializationInfo = if (self.specialization) |*x| x else null,
+                        },
+                        .layout = self.pipeline_layout,
+                        .basePipelineHandle = null_handle,
+                        .basePipelineIndex = -1,
+                    }}, null, &pl)) catch |err| {
+                        self.deinit(allocator, device);
+                        shader.* = err;
+                        continue;
+                    };
+                    break :blk pl[0];
+                };
+
                 shader.* = .{ .impl = .{ .val = @bitCast(Shader{ .compat = self }) } };
             }
         }
@@ -194,6 +230,7 @@ pub const Shader = packed union {
                 allocator.free(x.pMapEntries[0..x.mapEntryCount]);
                 allocator.free(@as([*]const u8, @ptrCast(x.pData))[0..x.dataSize]);
             }
+            device.vkDestroyPipeline(self.pipeline, null);
             allocator.destroy(self);
         }
     };
