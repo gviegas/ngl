@@ -10,6 +10,7 @@ const dyn = @import("../common/dyn.zig");
 const conv = @import("conv.zig");
 const null_handle = conv.null_handle;
 const check = conv.check;
+const Cache = @import("Cache.zig");
 const Device = @import("init.zig").Device;
 const Queue = @import("init.zig").Queue;
 const Buffer = @import("res.zig").Buffer;
@@ -937,13 +938,87 @@ pub const CommandBuffer = struct {
         const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d| {
-            d.rendering.set(rendering);
-            // TODO
-            if (!dev.hasDynamicRendering()) {} else {}
-        } else {
-            _ = allocator;
+        if (dev.hasDynamicRendering()) {
+            if (cmd_buf.dyn) |d| d.rendering.set(rendering);
+            // TODO...
             @panic("Not yet implemented");
+        } else {
+            const d = cmd_buf.dyn.?;
+            d.rendering.set(rendering);
+            const rp = dev.cache.getRenderPass(allocator, dev, d.rendering) catch |err| {
+                d.err = err;
+                return;
+            };
+            if (d.fbo != null_handle) unreachable;
+            d.fbo = Cache.createFramebuffer(allocator, dev, d.rendering, rp) catch |err| {
+                d.err = err;
+                return;
+            };
+
+            // TODO: Make `Cache.createRenderPass/createFramebuffer`
+            // put resolves at the end so this can be reduced.
+            const max_clear = ngl.Cmd.max_color_attachment * 2 + 1;
+            var clears: [max_clear]c.VkClearValue = undefined;
+            var clear_i: u32 = 0;
+            var clear_n: u32 = 0;
+            for (rendering.colors) |col| {
+                if (col.clear_value) |val| {
+                    clears[clear_i] = conv.toVkClearValue(val);
+                    clear_n = clear_i + 1;
+                } else clears[clear_i] = .{ .color = .{ .float32 = .{ 0, 0, 0, 0 } } };
+                clear_i += 1;
+                if (col.resolve) |_| {
+                    clears[clear_i] = .{ .color = .{ .float32 = .{ 0, 0, 0, 0 } } };
+                    clear_i += 1;
+                }
+            }
+            const dep_val = if (rendering.depth) |dep|
+                if (dep.clear_value) |val|
+                    val.depth_stencil[0]
+                else
+                    null
+            else
+                null;
+            const sten_val = if (rendering.stencil) |sten|
+                if (sten.clear_value) |val|
+                    val.depth_stencil[1]
+                else
+                    null
+            else
+                null;
+            if (dep_val != null or sten_val != null) {
+                clears[clear_i] = .{
+                    .depthStencil = .{
+                        .depth = dep_val orelse 0,
+                        .stencil = sten_val orelse 0,
+                    },
+                };
+                clear_i += 1;
+                clear_n = clear_i;
+            }
+
+            dev.vkCmdBeginRenderPass(
+                cmd_buf.handle,
+                &.{
+                    .sType = c.VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                    .pNext = null,
+                    .renderPass = rp,
+                    .framebuffer = d.fbo,
+                    .renderArea = .{
+                        .offset = .{
+                            .x = @min(rendering.render_area.x, std.math.maxInt(i32)),
+                            .y = @min(rendering.render_area.y, std.math.maxInt(i32)),
+                        },
+                        .extent = .{
+                            .width = rendering.render_area.width,
+                            .height = rendering.render_area.height,
+                        },
+                    },
+                    .clearValueCount = clear_n,
+                    .pClearValues = if (clear_n > 0) &clears else null,
+                },
+                c.VK_SUBPASS_CONTENTS_INLINE, // TODO
+            );
         }
     }
 
@@ -955,11 +1030,17 @@ pub const CommandBuffer = struct {
         const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d| {
+        if (dev.hasDynamicRendering()) {
+            if (cmd_buf.dyn) |d| d.rendering.clear(null);
+            // TODO...
+            @panic("Not yet implemented");
+        } else {
+            const d = cmd_buf.dyn.?;
             d.rendering.clear(null);
-            // TODO
-            if (!dev.hasDynamicRendering()) {} else {}
-        } else @panic("Not yet implemented");
+            dev.vkCmdEndRenderPass(cmd_buf.handle);
+            dev.vkDestroyFramebuffer(d.fbo, null);
+            d.fbo = null_handle;
+        }
     }
 
     pub fn draw(
@@ -2024,14 +2105,44 @@ test CommandBuffer {
     );
     try testing.expect(!prev_col_write.eql(d.state.color_write));
 
-    // NOTE: This assumes that the calls below won't actually
-    // begin/end the render pass.
-    // TODO: Update this as needed.
-    var view = ngl.ImageView{
-        .impl = .{ .val = 1 },
+    var image = try ngl.Image.init(testing.allocator, &ctx.device, .{
+        .type = .@"2d",
         .format = .rgba8_unorm,
+        .width = 1,
+        .height = 1,
+        .depth_or_layers = 1,
+        .levels = 1,
         .samples = .@"1",
+        .tiling = .optimal,
+        .usage = .{ .color_attachment = true },
+        .misc = .{},
+        .initial_layout = .unknown,
+    });
+    defer image.deinit(testing.allocator, &ctx.device);
+    var mem = blk: {
+        const mem_reqs = image.getMemoryRequirements(&ctx.device);
+        var mem = try (&ctx.device).alloc(testing.allocator, .{
+            .size = mem_reqs.size,
+            .type_index = mem_reqs.findType(ctx.device, .{ .device_local = true }, null).?,
+        });
+        errdefer (&ctx.device).free(testing.allocator, &mem);
+        try image.bind(&ctx.device, &mem, 0);
+        break :blk mem;
     };
+    defer (&ctx.device).free(testing.allocator, &mem);
+    var view = try ngl.ImageView.init(testing.allocator, &ctx.device, .{
+        .image = &image,
+        .type = .@"2d",
+        .format = .rgba8_unorm,
+        .range = .{
+            .aspect_mask = .{ .color = true },
+            .level = 0,
+            .levels = 1,
+            .layer = 0,
+            .layers = 1,
+        },
+    });
+    defer view.deinit(testing.allocator, &ctx.device);
 
     const prev_rend = d.rendering;
     CommandBuffer.beginRendering(undefined, testing.allocator, dev, cmd_buf, .{
