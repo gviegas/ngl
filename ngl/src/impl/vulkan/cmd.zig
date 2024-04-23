@@ -15,6 +15,7 @@ const Device = @import("init.zig").Device;
 const Queue = @import("init.zig").Queue;
 const Buffer = @import("res.zig").Buffer;
 const Image = @import("res.zig").Image;
+const Shader = @import("shd.zig").Shader;
 const RenderPass = @import("pass.zig").RenderPass;
 const FrameBuffer = @import("pass.zig").FrameBuffer;
 const PipelineLayout = @import("desc.zig").PipelineLayout;
@@ -297,15 +298,25 @@ pub const CommandBuffer = struct {
         types: []const ngl.Shader.Type,
         shaders: []const ?*ngl.Shader,
     ) void {
+        const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
 
         if (cmd_buf.dyn) |d| {
             d.state.shaders.set(types, shaders);
             if (types.len > 1 or types[0] != .compute)
                 d.changed = true;
+            for (types, shaders) |t, shd|
+                if (t == .compute) {
+                    if (shd) |s|
+                        dev.vkCmdBindPipeline(
+                            cmd_buf.handle,
+                            c.VK_PIPELINE_BIND_POINT_COMPUTE,
+                            Shader.cast(s.impl).compat.pipeline,
+                        );
+                    break;
+                };
         } else {
             _ = allocator;
-            _ = device;
             @panic("Not yet implemented");
         }
     }
