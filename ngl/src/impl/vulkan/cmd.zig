@@ -299,9 +299,11 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.shaders.set(types, shaders)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.shaders.set(types, shaders);
+            if (types.len > 1 or types[0] != .compute)
+                d.changed = true;
+        } else {
             _ = allocator;
             _ = device;
             @panic("Not yet implemented");
@@ -382,11 +384,12 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
+        if (cmd_buf.dyn) |d| {
             d.state.vertex_input.set(allocator, bindings, attributes) catch |err| {
                 d.err = err;
-            }
-        else {
+            };
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -400,9 +403,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.primitive_topology.set(topology)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.primitive_topology.set(topology);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -555,9 +559,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.rasterization_enable.set(enable)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.rasterization_enable.set(enable);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -571,9 +576,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.polygon_mode.set(polygon_mode)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.polygon_mode.set(polygon_mode);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -587,9 +593,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.cull_mode.set(cull_mode)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.cull_mode.set(cull_mode);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -603,9 +610,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.front_face.set(front_face)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.front_face.set(front_face);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -619,9 +627,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.sample_count.set(sample_count)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.sample_count.set(sample_count);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -635,9 +644,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.sample_mask.set(sample_mask)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.sample_mask.set(sample_mask);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -651,9 +661,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.depth_bias_enable.set(enable)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.depth_bias_enable.set(enable);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -678,9 +689,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.depth_test_enable.set(enable)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.depth_test_enable.set(enable);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -694,9 +706,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.depth_compare_op.set(compare_op)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.depth_compare_op.set(compare_op);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -710,9 +723,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.depth_write_enable.set(enable)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.depth_write_enable.set(enable);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -726,9 +740,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.stencil_test_enable.set(enable)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.stencil_test_enable.set(enable);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -746,9 +761,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.stencil_op.set(stencil_face, fail_op, pass_op, depth_fail_op, compare_op)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.stencil_op.set(stencil_face, fail_op, pass_op, depth_fail_op, compare_op);
+            d.changed = true;
+        } else {
             _ = device;
             @panic("Not yet implemented");
         }
@@ -806,9 +822,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.color_blend_enable.set(first_attachment, enable)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.color_blend_enable.set(first_attachment, enable);
+            d.changed = true;
+        } else {
             _ = allocator;
             _ = device;
             @panic("Not yet implemented");
@@ -825,9 +842,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.color_blend.set(first_attachment, blend)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.color_blend.set(first_attachment, blend);
+            d.changed = true;
+        } else {
             _ = allocator;
             _ = device;
             @panic("Not yet implemented");
@@ -844,9 +862,10 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d|
-            d.state.color_write.set(first_attachment, write_masks)
-        else {
+        if (cmd_buf.dyn) |d| {
+            d.state.color_write.set(first_attachment, write_masks);
+            d.changed = true;
+        } else {
             _ = allocator;
             _ = device;
             @panic("Not yet implemented");
@@ -939,12 +958,16 @@ pub const CommandBuffer = struct {
         const cmd_buf = cast(command_buffer);
 
         if (dev.hasDynamicRendering()) {
-            if (cmd_buf.dyn) |d| d.rendering.set(rendering);
+            if (cmd_buf.dyn) |d| {
+                d.rendering.set(rendering);
+                d.changed = true;
+            }
             // TODO...
             @panic("Not yet implemented");
         } else {
             const d = cmd_buf.dyn.?;
             d.rendering.set(rendering);
+            d.changed = true;
             const rp = dev.cache.getRenderPass(dev.gpa, dev, d.rendering) catch |err| {
                 d.err = err;
                 return;
@@ -1029,6 +1052,8 @@ pub const CommandBuffer = struct {
     ) void {
         const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
+
+        // Should be unnecessary to set `Dynamic.changed` here.
 
         if (dev.hasDynamicRendering()) {
             if (cmd_buf.dyn) |d| d.rendering.clear(null);
@@ -1756,6 +1781,7 @@ pub const CommandBuffer = struct {
 pub const Dynamic = struct {
     state: dyn.State(state_mask),
     rendering: dyn.Rendering(rendering_mask),
+    changed: bool,
     fbo: c.VkFramebuffer,
     err: ?Error,
 
@@ -1816,6 +1842,7 @@ pub const Dynamic = struct {
         var self: @This() = undefined;
         self.state = @TypeOf(self.state).init();
         self.rendering = @TypeOf(self.rendering).init();
+        self.changed = true;
         self.fbo = null_handle;
         self.err = null;
         return self;
@@ -1825,6 +1852,7 @@ pub const Dynamic = struct {
         self.state.clear(allocator);
         self.rendering.clear(allocator);
         device.vkDestroyFramebuffer(self.fbo, null);
+        self.changed = true;
         self.fbo = null_handle;
         self.err = null;
     }
