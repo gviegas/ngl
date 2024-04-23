@@ -716,11 +716,13 @@ const testing = std.testing;
 const context = @import("../../test/test.zig").context;
 
 test "Cache" {
+    const dev = Device.cast(context().device.impl);
+
     var cache = @This(){};
-    defer cache.deinit(testing.allocator, Device.cast(context().device.impl));
+    defer cache.deinit(testing.allocator, dev);
 
     var d = Dynamic.init();
-    defer d.clear(testing.allocator);
+    defer d.clear(testing.allocator, dev);
 
     try cache.state.hash_map.put(testing.allocator, d, .{ null_handle, 1 });
     try testing.expect(cache.state.hash_map.contains(d));
@@ -809,7 +811,7 @@ test "Cache" {
         else
             try testing.expect(cache.rendering.hash_map.contains(d.rendering));
 
-        d.clear(null);
+        d.clear(null, dev);
         try testing.expect(cache.state.hash_map.contains(d));
         try testing.expect(cache.rendering.hash_map.contains(d.rendering));
     }
@@ -822,7 +824,7 @@ test getPrimitivePipeline {
     defer cache.deinit(testing.allocator, dev);
 
     var key = Dynamic.init();
-    defer key.clear(testing.allocator);
+    defer key.clear(testing.allocator, dev);
 
     const expectRenderPassCount = struct {
         fn do(device: *const Device, rendering: Rendering, count: usize) !void {
@@ -1061,7 +1063,7 @@ test getRenderPass {
     defer cache.deinit(testing.allocator, dev);
 
     var d = Dynamic.init();
-    defer d.clear(testing.allocator);
+    defer d.clear(testing.allocator, dev);
     const key = &d.rendering;
 
     key.set(.{
@@ -1384,7 +1386,7 @@ test createPrimitivePipeline {
     const dev = Device.cast(context().device.impl);
 
     var key = Dynamic.init();
-    defer key.clear(testing.allocator);
+    defer key.clear(testing.allocator, dev);
 
     var set_layt = try ngl.DescriptorSetLayout.init(testing.allocator, &context().device, .{
         .bindings = &.{.{

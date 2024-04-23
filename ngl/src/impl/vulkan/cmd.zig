@@ -116,7 +116,7 @@ pub const CommandPool = struct {
             cmd_pool.unused.unset(idx);
             const ptr = cmd_pool.allocs.items[idx];
             ptr.handle = handle;
-            if (need_dyn) ptr.dyn.?.clear(null);
+            if (need_dyn) ptr.dyn.?.clear(null, dev);
             cmd_buf.impl = .{ .val = @intFromPtr(ptr) };
         }
     }
@@ -141,7 +141,7 @@ pub const CommandPool = struct {
 
         var iter = cmd_pool.unused.iterator(.{ .kind = .unset });
         while (iter.next()) |idx|
-            cmd_pool.allocs.items[idx].dyn.?.clear(null);
+            cmd_pool.allocs.items[idx].dyn.?.clear(null, dev);
     }
 
     pub fn free(
@@ -204,7 +204,7 @@ pub const CommandPool = struct {
                 // BUG: This assumes that the same allocator is
                 // used by both `CommandPool` and `CommandBuffer`
                 // (need to enforce this in the client API).
-                ptr.dyn.?.clear(allocator);
+                ptr.dyn.?.clear(allocator, dev);
                 allocator.destroy(ptr.dyn.?);
             }
             allocator.destroy(ptr);
@@ -1675,6 +1675,8 @@ pub const CommandBuffer = struct {
 pub const Dynamic = struct {
     state: dyn.State(state_mask),
     rendering: dyn.Rendering(rendering_mask),
+    fbo: c.VkFramebuffer,
+    err: ?Error,
 
     pub const state_mask = dyn.StateMask(.primitive){
         .shaders = true,
@@ -1698,7 +1700,7 @@ pub const Dynamic = struct {
     };
 
     // Note that this is the union of render pass and
-    // frame buffer requirements.
+    // framebuffer requirements.
     pub const rendering_mask = dyn.RenderingMask{
         .color_view = true,
         .color_format = true,
@@ -1733,12 +1735,17 @@ pub const Dynamic = struct {
         var self: @This() = undefined;
         self.state = @TypeOf(self.state).init();
         self.rendering = @TypeOf(self.rendering).init();
+        self.fbo = null_handle;
+        self.err = null;
         return self;
     }
 
-    pub fn clear(self: *@This(), allocator: ?std.mem.Allocator) void {
+    pub fn clear(self: *@This(), allocator: ?std.mem.Allocator, device: *Device) void {
         self.state.clear(allocator);
         self.rendering.clear(allocator);
+        device.vkDestroyFramebuffer(self.fbo, null);
+        self.fbo = null_handle;
+        self.err = null;
     }
 };
 
