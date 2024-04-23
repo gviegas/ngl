@@ -381,11 +381,11 @@ pub const CommandBuffer = struct {
     ) void {
         const cmd_buf = cast(command_buffer);
 
-        if (cmd_buf.dyn) |d| {
-            // TODO: Defer error to `end`.
-            d.state.vertex_input.set(allocator, bindings, attributes) catch
-                @panic("dyn.State.vertex_input.set failed");
-        } else {
+        if (cmd_buf.dyn) |d|
+            d.state.vertex_input.set(allocator, bindings, attributes) catch |err| {
+                d.err = err;
+            }
+        else {
             _ = device;
             @panic("Not yet implemented");
         }
