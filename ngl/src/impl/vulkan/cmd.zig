@@ -930,7 +930,7 @@ pub const CommandBuffer = struct {
 
     pub fn beginRendering(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
         rendering: ngl.Cmd.Rendering,
@@ -945,12 +945,12 @@ pub const CommandBuffer = struct {
         } else {
             const d = cmd_buf.dyn.?;
             d.rendering.set(rendering);
-            const rp = dev.cache.getRenderPass(allocator, dev, d.rendering) catch |err| {
+            const rp = dev.cache.getRenderPass(dev.gpa, dev, d.rendering) catch |err| {
                 d.err = err;
                 return;
             };
             if (d.fbo != null_handle) unreachable;
-            d.fbo = Cache.createFramebuffer(allocator, dev, d.rendering, rp) catch |err| {
+            d.fbo = Cache.createFramebuffer(dev.gpa, dev, d.rendering, rp) catch |err| {
                 d.err = err;
                 return;
             };

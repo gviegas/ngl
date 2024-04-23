@@ -1506,6 +1506,7 @@ pub const Device = struct {
 
     fn deinit(_: *anyopaque, _: std.mem.Allocator, device: Impl.Device) void {
         const dev = cast(device);
+        dev.cache.deinit(dev.gpa, dev);
         // NOTE: This assumes that all device-level objects
         // have been destroyed.
         dev.vkDestroyDevice(null);
