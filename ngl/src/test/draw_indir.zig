@@ -52,7 +52,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         const position_offset = @offsetOf(Vertex, "x");
         const color_offset = @offsetOf(Vertex, "r");
         const topology = ngl.Primitive.Topology.triangle_list;
-        const clockwise = !indexed;
+        const front_face: ngl.Cmd.FrontFace = if (indexed) .counter_clockwise else .clockwise;
 
         const Vertex = packed struct {
             x: f32,
@@ -181,106 +181,39 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
     });
     defer color_view.deinit(gpa, dev);
 
-    var rp = try ngl.RenderPass.init(gpa, dev, .{
-        .attachments = &.{.{
-            .format = .rgba8_unorm,
-            .samples = .@"1",
-            .load_op = .clear,
-            .store_op = .store,
-            .initial_layout = .unknown,
-            .final_layout = .transfer_source_optimal,
-            .resolve_mode = null,
-            .combined = null,
-            .may_alias = false,
-        }},
-        .subpasses = &.{.{
-            .pipeline_type = .graphics,
-            .input_attachments = null,
-            .color_attachments = &.{.{
-                .index = 0,
-                .layout = .color_attachment_optimal,
-                .aspect_mask = .{ .color = true },
-                .resolve = null,
-            }},
-            .depth_stencil_attachment = null,
-            .preserve_attachments = null,
-        }},
-        .dependencies = null,
+    const shaders = try ngl.Shader.init(gpa, dev, &.{
+        .{
+            .type = .vertex,
+            .next = .{ .fragment = true },
+            .code = &vert_spv,
+            .name = "main",
+            .set_layouts = &.{},
+            .push_constants = &.{},
+            .specialization = null,
+            .link = true,
+        },
+        .{
+            .type = .fragment,
+            .next = .{},
+            .code = &frag_spv,
+            .name = "main",
+            .set_layouts = &.{},
+            .push_constants = &.{},
+            .specialization = null,
+            .link = true,
+        },
     });
-    defer rp.deinit(gpa, dev);
-
-    var fb = try ngl.FrameBuffer.init(gpa, dev, .{
-        .render_pass = &rp,
-        .attachments = &.{&color_view},
-        .width = width,
-        .height = height,
-        .layers = 1,
-    });
-    defer fb.deinit(gpa, dev);
+    defer {
+        for (shaders) |*shd|
+            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+        gpa.free(shaders);
+    }
 
     var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
         .descriptor_set_layouts = null,
         .push_constant_ranges = null,
     });
     defer pl_layt.deinit(gpa, dev);
-
-    var pl = blk: {
-        const s = try ngl.Pipeline.initGraphics(gpa, dev, .{
-            .states = &.{.{
-                .stages = &.{
-                    .{
-                        .stage = .vertex,
-                        .code = &vert_spv,
-                        .name = "main",
-                    },
-                    .{
-                        .stage = .fragment,
-                        .code = &frag_spv,
-                        .name = "main",
-                    },
-                },
-                .layout = &pl_layt,
-                .primitive = &.{
-                    .bindings = &.{.{
-                        .binding = 0,
-                        .stride = triangle.stride,
-                        .step_rate = .vertex,
-                    }},
-                    .attributes = &.{
-                        .{
-                            .location = 0,
-                            .binding = 0,
-                            .format = triangle.position_format,
-                            .offset = triangle.position_offset,
-                        },
-                        .{
-                            .location = 1,
-                            .binding = 0,
-                            .format = triangle.color_format,
-                            .offset = triangle.color_offset,
-                        },
-                    },
-                    .topology = triangle.topology,
-                },
-                .rasterization = &.{
-                    .polygon_mode = .fill,
-                    .cull_mode = .back,
-                    .clockwise = triangle.clockwise,
-                    .samples = .@"1",
-                },
-                .depth_stencil = null,
-                .color_blend = &.{
-                    .attachments = &.{.{ .blend = null, .write = .all }},
-                },
-                .render_pass = &rp,
-                .subpass = 0,
-            }},
-            .cache = null,
-        });
-        defer gpa.free(s);
-        break :blk s[0];
-    };
-    defer pl.deinit(gpa, dev);
 
     const indir_stg_pad = blk: {
         const vert_align = @alignOf(@TypeOf(triangle.data));
@@ -374,6 +307,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
     const drawCall = if (!indexed) ngl.Cmd.drawIndirect else ngl.Cmd.drawIndexedIndirect;
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
+
     cmd.copyBuffer(&[_]ngl.Cmd.BufferCopy{
         .{
             .source = &stg_buf,
@@ -402,6 +336,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
             .size = @sizeOf(@TypeOf(triangle.indices)),
         }},
     }} else &[_]ngl.Cmd.BufferCopy{});
+
     cmd.pipelineBarrier(&.{.{
         .global_dependencies = &.{.{
             .source_stage_mask = .{ .copy = true },
@@ -417,23 +352,60 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
                 .vertex_attribute_read = true,
             },
         }},
+        .image_dependencies = &.{.{
+            .source_stage_mask = .{},
+            .source_access_mask = .{},
+            .dest_stage_mask = .{ .color_attachment_output = true },
+            .dest_access_mask = .{ .color_attachment_write = true },
+            .queue_transfer = null,
+            .old_layout = .unknown,
+            .new_layout = .color_attachment_optimal,
+            .image = &color_img,
+            .range = .{
+                .aspect_mask = .{ .color = true },
+                .level = 0,
+                .levels = 1,
+                .layer = 0,
+                .layers = 1,
+            },
+        }},
         .by_region = false,
     }});
-    cmd.beginRenderPass(
-        .{
-            .render_pass = &rp,
-            .frame_buffer = &fb,
-            .render_area = .{
-                .x = 0,
-                .y = 0,
-                .width = width,
-                .height = height,
-            },
-            .clear_values = &.{clear_val},
+
+    cmd.setShaders(
+        &.{
+            .vertex,
+            .fragment,
         },
-        .{ .contents = .inline_only },
+        &.{
+            if (shaders[0]) |*shd| shd else |err| return err,
+            if (shaders[1]) |*shd| shd else |err| return err,
+        },
     );
-    cmd.setPipeline(&pl);
+
+    cmd.setVertexInput(
+        &.{.{
+            .binding = 0,
+            .stride = triangle.stride,
+            .step_rate = .vertex,
+        }},
+        &.{
+            .{
+                .location = 0,
+                .binding = 0,
+                .format = triangle.position_format,
+                .offset = triangle.position_offset,
+            },
+            .{
+                .location = 1,
+                .binding = 0,
+                .format = triangle.color_format,
+                .offset = triangle.color_offset,
+            },
+        },
+    );
+    cmd.setPrimitiveTopology(triangle.topology);
+
     cmd.setScissorRects(&.{.{
         .x = 0,
         .y = 0,
@@ -448,32 +420,78 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         .znear = 0,
         .zfar = 0,
     }});
+
+    cmd.setRasterizationEnable(true);
+    cmd.setPolygonMode(.fill);
+    cmd.setCullMode(.back);
+    cmd.setFrontFace(triangle.front_face);
+    cmd.setSampleCount(.@"1");
+    cmd.setSampleMask(0b1);
+    cmd.setDepthBiasEnable(false);
+    cmd.setDepthTestEnable(false);
+    cmd.setStencilTestEnable(false);
+    cmd.setColorBlendEnable(0, &.{false});
+    cmd.setColorWrite(0, &.{.all});
+
+    cmd.beginRendering(.{
+        .colors = &.{.{
+            .view = &color_view,
+            .layout = .color_attachment_optimal,
+            .load_op = .clear,
+            .store_op = .store,
+            .clear_value = clear_val,
+            .resolve = null,
+        }},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = width, .height = height },
+        .layers = 1,
+    });
+
     if (indexed)
         cmd.setIndexBuffer(.u16, &idx_buf, 0, @sizeOf(@TypeOf(triangle.indices)));
+
     cmd.setVertexBuffers(
         0,
         &.{&vert_buf},
         &.{@offsetOf(@TypeOf(triangle.data), "top_left")},
         &.{@sizeOf(@TypeOf(triangle.data.top_left))},
     );
+
     drawCall(&cmd, &indir_buf, 0, 1, 0);
+
     cmd.setVertexBuffers(
         0,
         &.{&vert_buf},
         &.{@offsetOf(@TypeOf(triangle.data), "bottom_right")},
         &.{@sizeOf(@TypeOf(triangle.data.bottom_right))},
     );
+
     drawCall(&cmd, &indir_buf, indir_size - indir_size / 3, 1, 0);
-    cmd.endRenderPass(.{});
+
+    cmd.endRendering();
+
     cmd.pipelineBarrier(&.{.{
-        .global_dependencies = &.{.{
+        .image_dependencies = &.{.{
             .source_stage_mask = .{ .color_attachment_output = true },
             .source_access_mask = .{ .color_attachment_write = true },
             .dest_stage_mask = .{ .copy = true },
             .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+            .queue_transfer = null,
+            .old_layout = .color_attachment_optimal,
+            .new_layout = .transfer_source_optimal,
+            .image = &color_img,
+            .range = .{
+                .aspect_mask = .{ .color = true },
+                .level = 0,
+                .levels = 1,
+                .layer = 0,
+                .layers = 1,
+            },
         }},
         .by_region = true,
     }});
+
     cmd.copyImageToBuffer(&.{.{
         .buffer = &stg_buf,
         .image = &color_img,
@@ -492,10 +510,12 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
             .image_depth_or_layers = 1,
         }},
     }});
+
     try cmd.end();
 
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);
+
     {
         ctx.lockQueue(queue_i);
         defer ctx.unlockQueue(queue_i);
@@ -506,6 +526,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
             .signal = &.{},
         }});
     }
+
     try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&fence});
 
     const topl_col = [4]u8{
