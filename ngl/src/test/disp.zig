@@ -102,18 +102,20 @@ test "dispatch command" {
     });
     defer pl_layt.deinit(gpa, dev);
 
-    var pl = blk: {
-        const s = try ngl.Pipeline.initCompute(gpa, dev, .{
-            .states = &.{.{
-                .stage = .{ .code = &comp_spv, .name = "main" },
-                .layout = &pl_layt,
-            }},
-            .cache = null,
-        });
-        defer gpa.free(s);
-        break :blk s[0];
-    };
-    defer pl.deinit(gpa, dev);
+    var shader = try ngl.Shader.init(gpa, dev, &.{.{
+        .type = .compute,
+        .next = .{},
+        .code = &comp_spv,
+        .name = "main",
+        .set_layouts = &.{&set_layt},
+        .push_constants = &.{},
+        .specialization = null,
+        .link = false,
+    }});
+    defer {
+        if (shader[0]) |*shd| shd.deinit(gpa, dev) else |_| {}
+        gpa.free(shader);
+    }
 
     var desc_pool = try ngl.DescriptorPool.init(gpa, dev, .{
         .max_sets = 1,
@@ -168,7 +170,7 @@ test "dispatch command" {
         .by_region = false,
     }});
 
-    cmd.setPipeline(&pl);
+    cmd.setShaders(&.{.compute}, &.{if (shader[0]) |*shd| shd else |err| return err});
     cmd.setDescriptors(.compute, &pl_layt, 0, &.{&desc_set});
     cmd.dispatch(groups[0], groups[1], groups[2]);
 
@@ -238,8 +240,8 @@ test "dispatch command" {
             const i = k * 4;
             const p = @as(*const u32, @ptrCast(@alignCast(&s[i])));
             try str.appendSlice(switch (p.*) {
-                0xff_00_00_00, 0x00_00_00_ff => " ♥",
-                0xff_ff_ff_ff => " ♡",
+                0xff_00_00_00, 0x00_00_00_ff => "⚫",
+                0xff_ff_ff_ff => "⚪",
                 else => unreachable,
             });
             if ((k + 1) % w == 0) try str.append('\n');
