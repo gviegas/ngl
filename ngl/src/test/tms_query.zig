@@ -139,8 +139,9 @@ test "timestamp query" {
     if (std.mem.eql(bool, &core_feat.query.timestamp, &[_]bool{false} ** ngl.Queue.max))
         return error.SkipZigTest;
     var queue_i: ngl.Queue.Index = undefined;
-    // We dont' want a transfer-only queue because it may be faster and
-    // also because Vulkan 1.0 doesn't allow filling buffers on such a queue.
+    // We don't want a transfer-only queue here because it might be
+    // faster and also because Vulkan 1.0 doesn't allow filling
+    // buffers on such a queue.
     for (dev.queues[0..dev.queue_n], 0..) |queue, i| {
         if (!core_feat.query.timestamp[i]) continue;
         queue_i = @intCast(i);
