@@ -10,9 +10,9 @@ const dyn = @import("../common/dyn.zig");
 const conv = @import("conv.zig");
 const null_handle = conv.null_handle;
 const check = conv.check;
-const Cache = @import("Cache.zig");
 const Device = @import("init.zig").Device;
 const Queue = @import("init.zig").Queue;
+const Cache = @import("Cache.zig");
 const Buffer = @import("res.zig").Buffer;
 const Image = @import("res.zig").Image;
 const Shader = @import("shd.zig").Shader;
@@ -1079,6 +1079,29 @@ pub const CommandBuffer = struct {
         }
     }
 
+    /// Called by `draw*` commands to (re)bind the
+    /// graphics pipeline as needed.
+    /// It'll update `Dynamic.err`, so the caller
+    /// doesn't need to.
+    fn canDraw(device: Impl.Device, command_buffer: Impl.CommandBuffer) bool {
+        const dev = Device.cast(device);
+        const cmd_buf = cast(command_buffer);
+
+        const d = cmd_buf.dyn orelse return true;
+        if (d.err) |_| return false;
+        if (!d.changed) return true;
+
+        dev.vkCmdBindPipeline(
+            cmd_buf.handle,
+            c.VK_PIPELINE_BIND_POINT_GRAPHICS,
+            dev.cache.getPrimitivePipeline(dev.gpa, dev, d.*) catch |err| {
+                d.err = err;
+                return false;
+            },
+        );
+        return true;
+    }
+
     pub fn draw(
         _: *anyopaque,
         device: Impl.Device,
@@ -1088,13 +1111,14 @@ pub const CommandBuffer = struct {
         first_vertex: u32,
         first_instance: u32,
     ) void {
-        Device.cast(device).vkCmdDraw(
-            cast(command_buffer).handle,
-            vertex_count,
-            instance_count,
-            first_vertex,
-            first_instance,
-        );
+        if (canDraw(device, command_buffer))
+            Device.cast(device).vkCmdDraw(
+                cast(command_buffer).handle,
+                vertex_count,
+                instance_count,
+                first_vertex,
+                first_instance,
+            );
     }
 
     pub fn drawIndexed(
@@ -1107,14 +1131,15 @@ pub const CommandBuffer = struct {
         vertex_offset: i32,
         first_instance: u32,
     ) void {
-        Device.cast(device).vkCmdDrawIndexed(
-            cast(command_buffer).handle,
-            index_count,
-            instance_count,
-            first_index,
-            vertex_offset,
-            first_instance,
-        );
+        if (canDraw(device, command_buffer))
+            Device.cast(device).vkCmdDrawIndexed(
+                cast(command_buffer).handle,
+                index_count,
+                instance_count,
+                first_index,
+                vertex_offset,
+                first_instance,
+            );
     }
 
     pub fn drawIndirect(
@@ -1126,13 +1151,14 @@ pub const CommandBuffer = struct {
         draw_count: u32,
         stride: u32,
     ) void {
-        Device.cast(device).vkCmdDrawIndirect(
-            cast(command_buffer).handle,
-            Buffer.cast(buffer).handle,
-            offset,
-            draw_count,
-            stride,
-        );
+        if (canDraw(device, command_buffer))
+            Device.cast(device).vkCmdDrawIndirect(
+                cast(command_buffer).handle,
+                Buffer.cast(buffer).handle,
+                offset,
+                draw_count,
+                stride,
+            );
     }
 
     pub fn drawIndexedIndirect(
@@ -1144,13 +1170,14 @@ pub const CommandBuffer = struct {
         draw_count: u32,
         stride: u32,
     ) void {
-        Device.cast(device).vkCmdDrawIndexedIndirect(
-            cast(command_buffer).handle,
-            Buffer.cast(buffer).handle,
-            offset,
-            draw_count,
-            stride,
-        );
+        if (canDraw(device, command_buffer))
+            Device.cast(device).vkCmdDrawIndexedIndirect(
+                cast(command_buffer).handle,
+                Buffer.cast(buffer).handle,
+                offset,
+                draw_count,
+                stride,
+            );
     }
 
     pub fn dispatch(
