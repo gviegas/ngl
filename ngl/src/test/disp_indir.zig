@@ -106,18 +106,20 @@ test "dispatchIndirect command" {
         }} },
     }});
 
-    var pl = blk: {
-        const s = try ngl.Pipeline.initCompute(gpa, dev, .{
-            .states = &.{.{
-                .stage = .{ .code = &comp_spv, .name = "main" },
-                .layout = &pl_layt,
-            }},
-            .cache = null,
-        });
-        defer gpa.free(s);
-        break :blk s[0];
-    };
-    defer pl.deinit(gpa, dev);
+    const shader = try ngl.Shader.init(gpa, dev, &.{.{
+        .type = .compute,
+        .next = .{},
+        .code = &comp_spv,
+        .name = "main",
+        .set_layouts = &.{&set_layt},
+        .push_constants = &.{},
+        .specialization = null,
+        .link = false,
+    }});
+    defer {
+        if (shader[0]) |*shd| shd.deinit(gpa, dev) else |_| {}
+        gpa.free(shader);
+    }
 
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[queue_i] });
     defer cmd_pool.deinit(gpa, dev);
@@ -128,6 +130,7 @@ test "dispatchIndirect command" {
     };
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
+
     cmd.copyBuffer(&.{.{
         .source = &stg_buf,
         .dest = &indir_buf,
@@ -137,6 +140,7 @@ test "dispatchIndirect command" {
             .size = @sizeOf(ngl.Cmd.DispatchIndirectCommand),
         }},
     }});
+
     cmd.pipelineBarrier(&.{.{
         .buffer_dependencies = &.{.{
             .source_stage_mask = .{ .copy = true },
@@ -150,9 +154,11 @@ test "dispatchIndirect command" {
         }},
         .by_region = false,
     }});
-    cmd.setPipeline(&pl);
+
+    cmd.setShaders(&.{.compute}, &.{if (shader[0]) |*shd| shd else |err| return err});
     cmd.setDescriptors(.compute, &pl_layt, 0, &.{&desc_set});
     cmd.dispatchIndirect(&indir_buf, 0);
+
     cmd.pipelineBarrier(&.{.{
         .buffer_dependencies = &.{.{
             .source_stage_mask = .{ .compute_shader = true },
@@ -166,6 +172,7 @@ test "dispatchIndirect command" {
         }},
         .by_region = false,
     }});
+
     cmd.copyBuffer(&.{.{
         .source = &stor_buf,
         .dest = &stg_buf,
@@ -175,6 +182,7 @@ test "dispatchIndirect command" {
             .size = 4 * invoc,
         }},
     }});
+
     try cmd.end();
 
     const stg_data = try stg_mem.map(dev, 0, null);
@@ -188,6 +196,7 @@ test "dispatchIndirect command" {
 
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);
+
     {
         ctx.lockQueue(queue_i);
         defer ctx.unlockQueue(queue_i);
@@ -198,6 +207,7 @@ test "dispatchIndirect command" {
             .signal = &.{},
         }});
     }
+
     try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&fence});
 
     // We should have dispatched a total of `invoc` invocations,
