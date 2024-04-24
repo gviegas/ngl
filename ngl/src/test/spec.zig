@@ -13,8 +13,8 @@ test "shader specialization" {
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);
 
-    const groups = .{ 10, 1, 1 };
-    const local = .{ 6, 1, 1 };
+    const groups = .{ 6, 1, 1 };
+    const local = .{ 13, 1, 1 };
     // Two dispatch calls.
     const size = (groups[0] * 2) * local[0] * 4;
 
@@ -87,7 +87,7 @@ test "shader specialization" {
         local_x: u32 = local[0],
     } = .{};
 
-    const spec = ngl.ShaderStage.Specialization{
+    const spec = ngl.Shader.Specialization{
         .constants = &.{
             .{
                 .id = 0,
@@ -107,7 +107,7 @@ test "shader specialization" {
         },
         .data = @as([*]const u8, @ptrCast(&spec_data))[0..@sizeOf(@TypeOf(spec_data))],
     };
-    const spec_2 = ngl.ShaderStage.Specialization{
+    const spec_2 = ngl.Shader.Specialization{
         .constants = &.{
             .{
                 .id = 3,
@@ -123,32 +123,33 @@ test "shader specialization" {
         .data = @as([*]const u8, @ptrCast(&spec_data_2))[0..@sizeOf(@TypeOf(spec_data_2))],
     };
 
-    var pls: [2]ngl.Pipeline = blk: {
-        const s = try ngl.Pipeline.initCompute(gpa, dev, .{
-            .states = &.{
-                .{
-                    .stage = .{
-                        .code = &comp_spv,
-                        .name = "main",
-                        .specialization = spec,
-                    },
-                    .layout = &pl_layt,
-                },
-                .{
-                    .stage = .{
-                        .code = &comp_spv,
-                        .name = "main",
-                        .specialization = spec_2,
-                    },
-                    .layout = &pl_layt,
-                },
-            },
-            .cache = null,
-        });
-        defer gpa.free(s);
-        break :blk s[0..2].*;
-    };
-    defer for (&pls) |*pl| pl.deinit(gpa, dev);
+    const shaders = try ngl.Shader.init(gpa, dev, &.{
+        .{
+            .type = .compute,
+            .next = .{},
+            .code = &comp_spv,
+            .name = "main",
+            .set_layouts = &.{&set_layt},
+            .push_constants = &.{},
+            .specialization = spec,
+            .link = false,
+        },
+        .{
+            .type = .compute,
+            .next = .{},
+            .code = &comp_spv,
+            .name = "main",
+            .set_layouts = &.{&set_layt},
+            .push_constants = &.{},
+            .specialization = spec_2,
+            .link = false,
+        },
+    });
+    defer {
+        for (shaders) |*shd|
+            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+        gpa.free(shaders);
+    }
 
     var desc_pool = try ngl.DescriptorPool.init(gpa, dev, .{
         .max_sets = 1,
@@ -181,9 +182,9 @@ test "shader specialization" {
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
     cmd.setDescriptors(.compute, &pl_layt, 0, &.{&desc_set});
-    cmd.setPipeline(&pls[0]);
+    cmd.setShaders(&.{.compute}, &.{if (shaders[0]) |*shd| shd else |err| return err});
     cmd.dispatch(groups[0], groups[1], groups[2]);
-    cmd.setPipeline(&pls[1]);
+    cmd.setShaders(&.{.compute}, &.{if (shaders[1]) |*shd| shd else |err| return err});
     cmd.dispatch(groups[0], groups[1], groups[2]);
     cmd.pipelineBarrier(&.{.{
         .global_dependencies = &.{.{
@@ -218,10 +219,10 @@ test "shader specialization" {
 
     try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&fence});
 
-    // The two pipelines use the same shader code but with different
-    // specialization to configure its behavior, such that:
-    //  - `pls[0]` writes `values[0]` to even "rows"
-    //  - `pls[1]` writes `values[1]` to odd "rows"
+    // The two shaders use the same shader code, but with different
+    // specializations to configure their behavior such that:
+    //  - `shaders[0]` writes `values[0]` to even "rows"
+    //  - `shaders[1]` writes `values[1]` to odd "rows"
     // (here a row means a contiguous range of length `local[0]`
     // within the storage buffer).
 
