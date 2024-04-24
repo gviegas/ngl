@@ -193,13 +193,15 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         dev.free(gpa, &stg_buf_mem);
     }
 
-    var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{ .bindings = &.{.{
-        .binding = 0,
-        .type = .uniform_buffer,
-        .count = 1,
-        .stage_mask = .{ .vertex = true },
-        .immutable_samplers = null,
-    }} });
+    var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
+        .bindings = &.{.{
+            .binding = 0,
+            .type = .uniform_buffer,
+            .count = 1,
+            .stage_mask = .{ .vertex = true },
+            .immutable_samplers = null,
+        }},
+    });
     defer set_layt.deinit(gpa, dev);
 
     var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
@@ -208,128 +210,33 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     });
     defer pl_layt.deinit(gpa, dev);
 
-    var rp = try ngl.RenderPass.init(gpa, dev, .{
-        .attachments = &.{.{
-            .format = .rgba8_unorm,
-            .samples = .@"1",
-            .load_op = .clear,
-            .store_op = .store,
-            .initial_layout = .unknown,
-            .final_layout = .transfer_source_optimal,
-            .resolve_mode = null,
-            .combined = null,
-            .may_alias = false,
-        }},
-        .subpasses = &.{.{
-            .pipeline_type = .graphics,
-            .input_attachments = null,
-            .color_attachments = &.{.{
-                .index = 0,
-                .layout = .color_attachment_optimal,
-                .aspect_mask = .{ .color = true },
-                .resolve = null,
-            }},
-            .depth_stencil_attachment = null,
-            .preserve_attachments = null,
-        }},
-        .dependencies = &.{
-            .{
-                .source_subpass = .external,
-                .dest_subpass = .{ .index = 0 },
-                .source_stage_mask = .{ .copy = true },
-                .source_access_mask = .{ .transfer_write = true },
-                .dest_stage_mask = .{
-                    .index_input = indexed,
-                    .vertex_attribute_input = true,
-                    .vertex_shader = true,
-                },
-                .dest_access_mask = .{
-                    .index_read = indexed,
-                    .vertex_attribute_read = true,
-                    .uniform_read = true,
-                },
-                .by_region = false,
-            },
-            .{
-                .source_subpass = .{ .index = 0 },
-                .dest_subpass = .external,
-                .source_stage_mask = .{ .color_attachment_output = true },
-                .source_access_mask = .{ .color_attachment_write = true },
-                .dest_stage_mask = .{ .copy = true },
-                .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
-                .by_region = false,
-            },
-        },
-    });
-    defer rp.deinit(gpa, dev);
-
-    const stages = [2]ngl.ShaderStage.Desc{
+    const shaders = try ngl.Shader.init(gpa, dev, &.{
         .{
-            .stage = .fragment,
-            .code = &frag_spv,
-            .name = "main",
-        },
-        .{
-            .stage = .vertex,
+            .type = .vertex,
+            .next = .{ .fragment = true },
             .code = &vert_spv,
             .name = "main",
+            .set_layouts = &.{&set_layt},
+            .push_constants = &.{},
+            .specialization = null,
+            .link = true,
         },
-    };
-
-    const prim = ngl.Primitive{
-        .bindings = &.{.{
-            .binding = 0,
-            .stride = @sizeOf(@TypeOf(vert_data[0])),
-            .step_rate = .vertex,
-        }},
-        .attributes = &.{
-            .{
-                .location = 1,
-                .binding = 0,
-                .format = .rgba32_sfloat,
-                .offset = 3 * 4,
-            },
-            .{
-                .location = 0,
-                .binding = 0,
-                .format = .rgb32_sfloat,
-                .offset = 0,
-            },
+        .{
+            .type = .fragment,
+            .next = .{},
+            .code = &frag_spv,
+            .name = "main",
+            .set_layouts = &.{&set_layt},
+            .push_constants = &.{},
+            .specialization = null,
+            .link = true,
         },
-        .topology = .triangle_list,
-    };
-
-    const raster = ngl.Rasterization{
-        .polygon_mode = .fill,
-        .cull_mode = .front, // Due to the uniform's transform.
-        .clockwise = !indexed,
-        .samples = .@"1",
-    };
-
-    // No depth/stencil state.
-
-    const col_blend = ngl.ColorBlend{
-        .attachments = &.{.{ .blend = null, .write = .all }},
-    };
-
-    var pl = blk: {
-        const s = try ngl.Pipeline.initGraphics(gpa, dev, .{
-            .states = &.{.{
-                .stages = &stages,
-                .layout = &pl_layt,
-                .primitive = &prim,
-                .rasterization = &raster,
-                .depth_stencil = null,
-                .color_blend = &col_blend,
-                .render_pass = &rp,
-                .subpass = 0,
-            }},
-            .cache = null,
-        });
-        defer gpa.free(s);
-        break :blk s[0];
-    };
-    defer pl.deinit(gpa, dev);
+    });
+    defer {
+        for (shaders) |*shd|
+            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+        gpa.free(shaders);
+    }
 
     var desc_pool = try ngl.DescriptorPool.init(gpa, dev, .{
         .max_sets = 1,
@@ -352,15 +259,6 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
             .range = unif_size,
         }} },
     }});
-
-    var fb = try ngl.FrameBuffer.init(gpa, dev, .{
-        .render_pass = &rp,
-        .attachments = &.{&img_view},
-        .width = w,
-        .height = h,
-        .layers = 1,
-    });
-    defer fb.deinit(gpa, dev);
 
     // Keep mapped.
     var p = try stg_buf_mem.map(dev, 0, null);
@@ -427,21 +325,90 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         }},
     }} else &[_]ngl.Cmd.BufferCopy{});
 
-    // No memory barrier necessary here.
+    cmd.pipelineBarrier(&.{.{
+        .global_dependencies = &.{.{
+            .source_stage_mask = .{ .copy = true },
+            .source_access_mask = .{ .transfer_write = true },
+            .dest_stage_mask = .{
+                .index_input = true,
+                .vertex_attribute_input = true,
+                .vertex_shader = true,
+            },
+            .dest_access_mask = .{
+                .index_read = true,
+                .vertex_attribute_read = true,
+                .uniform_read = true,
+            },
+        }},
+        .image_dependencies = &.{.{
+            .source_stage_mask = .{},
+            .source_access_mask = .{},
+            .dest_stage_mask = .{ .color_attachment_output = true },
+            .dest_access_mask = .{ .color_attachment_write = true },
+            .queue_transfer = null,
+            .old_layout = .unknown,
+            .new_layout = .color_attachment_optimal,
+            .image = &image,
+            .range = .{
+                .aspect_mask = .{ .color = true },
+                .level = 0,
+                .levels = 1,
+                .layer = 0,
+                .layers = 1,
+            },
+        }},
+        .by_region = false,
+    }});
 
-    cmd.beginRenderPass(.{
-        .render_pass = &rp,
-        .frame_buffer = &fb,
-        .render_area = .{
-            .x = 0,
-            .y = 0,
-            .width = w,
-            .height = h,
+    cmd.beginRendering(.{
+        .colors = &.{.{
+            .view = &img_view,
+            .layout = .color_attachment_optimal,
+            .load_op = .clear,
+            .store_op = .store,
+            .clear_value = .{ .color_f32 = clear_col },
+            .resolve = null,
+        }},
+        .depth = null,
+        .stencil = null,
+        .render_area = .{ .width = w, .height = h },
+        .layers = 1,
+    });
+
+    cmd.setShaders(
+        &.{
+            .fragment,
+            .vertex,
         },
-        .clear_values = &.{.{ .color_f32 = clear_col }},
-    }, .{ .contents = .inline_only });
-    cmd.setPipeline(&pl);
-    cmd.setDescriptors(.graphics, &pl_layt, 0, &.{&desc_set});
+        &.{
+            if (shaders[1]) |*shd| shd else |err| return err,
+            if (shaders[0]) |*shd| shd else |err| return err,
+        },
+    );
+
+    cmd.setVertexInput(
+        &.{.{
+            .binding = 0,
+            .stride = @sizeOf(@TypeOf(vert_data[0])),
+            .step_rate = .vertex,
+        }},
+        &.{
+            .{
+                .location = 1,
+                .binding = 0,
+                .format = .rgba32_sfloat,
+                .offset = 3 * 4,
+            },
+            .{
+                .location = 0,
+                .binding = 0,
+                .format = .rgb32_sfloat,
+                .offset = 0,
+            },
+        },
+    );
+    cmd.setPrimitiveTopology(.triangle_list);
+
     cmd.setViewports(&.{.{
         .x = 0,
         .y = 0,
@@ -456,16 +423,52 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         .width = w,
         .height = h,
     }});
+
+    cmd.setRasterizationEnable(true);
+    cmd.setPolygonMode(.fill);
+    cmd.setCullMode(.front); // Due to the uniform's transform.
+    cmd.setFrontFace(if (indexed) .counter_clockwise else .clockwise);
+    cmd.setSampleCount(.@"1");
+    cmd.setSampleMask(0b1);
+    cmd.setDepthBiasEnable(false);
+    cmd.setDepthTestEnable(false);
+    cmd.setStencilTestEnable(false);
+    cmd.setColorBlendEnable(0, &.{false});
+    cmd.setColorWrite(0, &.{.all});
+
+    cmd.setDescriptors(.graphics, &pl_layt, 0, &.{&desc_set});
+
     cmd.setVertexBuffers(0, &.{&vert_buf}, &.{0}, &.{vert_size}); // Note `vert_size`.
+
     if (!indexed) {
         cmd.draw(3, 1, 0, 0);
     } else {
         cmd.setIndexBuffer(.u16, &idx_buf, 0, idx_size);
         cmd.drawIndexed(3, 1, 0, 0, 0);
     }
-    cmd.endRenderPass(.{});
 
-    // No memory barrier necessary here.
+    cmd.endRendering();
+
+    cmd.pipelineBarrier(&.{.{
+        .image_dependencies = &.{.{
+            .source_stage_mask = .{ .color_attachment_output = true },
+            .source_access_mask = .{ .color_attachment_write = true },
+            .dest_stage_mask = .{ .copy = true },
+            .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+            .queue_transfer = null,
+            .old_layout = .color_attachment_optimal,
+            .new_layout = .transfer_source_optimal,
+            .image = &image,
+            .range = .{
+                .aspect_mask = .{ .color = true },
+                .level = 0,
+                .levels = 1,
+                .layer = 0,
+                .layers = 1,
+            },
+        }},
+        .by_region = false,
+    }});
 
     cmd.copyImageToBuffer(&.{.{
         .buffer = &stg_buf,
@@ -548,8 +551,8 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
                 const i = (x + w * y) * 4;
                 const data = @as([*]const u32, @ptrCast(@alignCast(p + i)))[0];
                 try str.appendSlice(switch (data) {
-                    clear_col_un => " 🂿",
-                    vert_col_un => " 🃟",
+                    clear_col_un => "⚫",
+                    vert_col_un => "🐩",
                     else => unreachable,
                 });
             }
