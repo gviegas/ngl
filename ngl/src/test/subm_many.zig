@@ -58,155 +58,57 @@ test "submission of multiple command buffers" {
     });
     defer view.deinit(gpa, dev);
 
-    var rp = try ngl.RenderPass.init(gpa, dev, .{
-        .attachments = &.{.{
-            .format = .r8_unorm,
-            .samples = .@"1",
-            .load_op = .load,
-            .store_op = .store,
-            .initial_layout = .color_attachment_optimal,
-            .final_layout = .color_attachment_optimal,
-            .resolve_mode = null,
-            .combined = null,
-            .may_alias = false,
-        }},
-        .subpasses = &.{.{
-            .pipeline_type = .graphics,
-            .input_attachments = null,
-            .color_attachments = &.{.{
-                .index = 0,
-                .layout = .color_attachment_optimal,
-                .aspect_mask = .{ .color = true },
-                .resolve = null,
-            }},
-            .depth_stencil_attachment = null,
-            .preserve_attachments = null,
-        }},
-        .dependencies = null,
-    });
-    defer rp.deinit(gpa, dev);
-    var fb = try ngl.FrameBuffer.init(gpa, dev, .{
-        .render_pass = &rp,
-        .attachments = &.{&view},
-        .width = width,
-        .height = height,
-        .layers = 1,
-    });
-    defer fb.deinit(gpa, dev);
-
     var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
         .descriptor_set_layouts = null,
         .push_constant_ranges = null,
     });
     defer pl_layt.deinit(gpa, dev);
 
-    // Clear, `pls[0]` draw, `pls[1]` draw.
+    // Clear, `shaders[1]` draw, `shaders[2]` draw.
     const colors = [_]f32{ 1, 0.3, 0.6 };
 
-    const pls = blk: {
-        const const_data = @as([*]const u8, @ptrCast(&colors))[4..12];
-        const prim = ngl.Primitive{
-            .bindings = &.{},
-            .attributes = &.{},
-            .topology = .triangle_list,
-        };
-        const raster = ngl.Rasterization{
-            .polygon_mode = .fill,
-            .cull_mode = .back,
-            .clockwise = false,
-            .samples = .@"1",
-        };
-        break :blk (try ngl.Pipeline.initGraphics(gpa, dev, .{
-            .states = &.{
-                .{
-                    .stages = &.{
-                        .{
-                            .stage = .vertex,
-                            .code = &vert_spv,
-                            .name = "main",
-                        },
-                        .{
-                            .stage = .fragment,
-                            .code = &frag_spv,
-                            .name = "main",
-                            .specialization = .{
-                                .constants = &.{.{
-                                    .id = 0,
-                                    .offset = 0,
-                                    .size = 4,
-                                }},
-                                .data = const_data,
-                            },
-                        },
-                    },
-                    .layout = &pl_layt,
-                    .primitive = &prim,
-                    .rasterization = &raster,
-                    .depth_stencil = null,
-                    .color_blend = &.{
-                        .attachments = &.{.{
-                            .blend = .{
-                                .color_source_factor = .one,
-                                .color_dest_factor = .one,
-                                .color_op = .reverse_subtract,
-                                .alpha_source_factor = .zero,
-                                .alpha_dest_factor = .zero,
-                                .alpha_op = .add,
-                            },
-                            .write = .all,
-                        }},
-                    },
-                    .render_pass = &rp,
-                    .subpass = 0,
-                },
-                .{
-                    .stages = &.{
-                        .{
-                            .stage = .vertex,
-                            .code = &vert_spv,
-                            .name = "main",
-                        },
-                        .{
-                            .stage = .fragment,
-                            .code = &frag_spv,
-                            .name = "main",
-                            .specialization = .{
-                                .constants = &.{.{
-                                    .id = 0,
-                                    .offset = 4,
-                                    .size = 4,
-                                }},
-                                .data = const_data,
-                            },
-                        },
-                    },
-                    .layout = &pl_layt,
-                    .primitive = &prim,
-                    .rasterization = &raster,
-                    .depth_stencil = null,
-                    .color_blend = &.{
-                        .attachments = &.{.{
-                            .blend = .{
-                                .color_source_factor = .dest_color,
-                                .color_dest_factor = .one,
-                                .color_op = .reverse_subtract,
-                                .alpha_source_factor = .zero,
-                                .alpha_dest_factor = .zero,
-                                .alpha_op = .add,
-                            },
-                            .write = .all,
-                        }},
-                    },
-                    .render_pass = &rp,
-                    .subpass = 0,
-                },
+    const shaders = try ngl.Shader.init(gpa, dev, &.{
+        .{
+            .type = .vertex,
+            .next = .{ .fragment = true },
+            .code = &vert_spv,
+            .name = "main",
+            .set_layouts = &.{},
+            .push_constants = &.{},
+            .specialization = null,
+            .link = false,
+        },
+        .{
+            .type = .fragment,
+            .next = .{},
+            .code = &frag_spv,
+            .name = "main",
+            .set_layouts = &.{},
+            .push_constants = &.{},
+            .specialization = .{
+                .constants = &.{.{ .id = 0, .offset = 0, .size = 4 }},
+                .data = @as([*]const u8, @ptrCast(&colors))[4..12],
             },
-            .cache = null,
-        }))[0..2];
-    };
+            .link = false,
+        },
+        .{
+            .type = .fragment,
+            .next = .{},
+            .code = &frag_spv,
+            .name = "main",
+            .set_layouts = &.{},
+            .push_constants = &.{},
+            .specialization = .{
+                .constants = &.{.{ .id = 0, .offset = 4, .size = 4 }},
+                .data = @as([*]const u8, @ptrCast(&colors))[4..12],
+            },
+            .link = false,
+        },
+    });
     defer {
-        for (pls) |*pl| pl.deinit(gpa, dev);
-        gpa.free(pls);
+        for (shaders) |*shd|
+            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+        gpa.free(shaders);
     }
 
     var buf = try ngl.Buffer.init(gpa, dev, .{
@@ -229,17 +131,35 @@ test "submission of multiple command buffers" {
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);
 
+    const blends = [2]ngl.Cmd.Blend{
+        .{
+            .color_source_factor = .one,
+            .color_dest_factor = .one,
+            .color_op = .reverse_subtract,
+            .alpha_source_factor = .zero,
+            .alpha_dest_factor = .zero,
+            .alpha_op = .add,
+        },
+        .{
+            .color_source_factor = .dest_color,
+            .color_dest_factor = .one,
+            .color_op = .reverse_subtract,
+            .alpha_source_factor = .zero,
+            .alpha_dest_factor = .zero,
+            .alpha_op = .add,
+        },
+    };
     const subm_orders = [_][2]usize{ .{ 0, 1 }, .{ 1, 0 } };
     const expect_cols = blk: {
         const clr = colors[0];
-        const pl0 = colors[1];
-        const pl1 = colors[2];
-        // Clear color -> `pls[0]` color -> `pls[1]` color.
-        const x = clr * 1 - pl0 * 1;
-        const f = x * 1 - pl1 * x;
-        // Clear color -> `pls[1]` color -> `pls[0]` color.
-        const y = clr * 1 - pl1 * clr;
-        const s = y * 1 - pl0 * 1;
+        const fs0 = colors[1];
+        const fs1 = colors[2];
+        // Clear color -> `shaders[1]` color -> `shaders[2]` color.
+        const x = clr * 1 - fs0 * 1;
+        const f = x * 1 - fs1 * x;
+        // Clear color -> `shaders[2]` color -> `shaders[1]` color.
+        const y = clr * 1 - fs1 * clr;
+        const s = y * 1 - fs0 * 1;
         break :blk [_]u8{ @round(f * 255), @round(s * 255) };
     };
     const deviation = 1;
@@ -249,26 +169,37 @@ test "submission of multiple command buffers" {
             @memset(data, @intFromFloat(255 * colors[0]));
 
             // Draw.
-            for (cmd_bufs[0..2], pls) |*cmd_buf, *pl| {
+            for (cmd_bufs[0..2], shaders[1..3], blends) |*cmd_buf, *frag_shd, blend| {
                 var cmd = try cmd_buf.begin(gpa, dev, .{
                     .one_time_submit = true,
                     .inheritance = null,
                 });
-                cmd.beginRenderPass(
-                    .{
-                        .render_pass = &rp,
-                        .frame_buffer = &fb,
-                        .render_area = .{
-                            .x = 0,
-                            .y = 0,
-                            .width = width,
-                            .height = height,
-                        },
-                        .clear_values = &.{null},
+                cmd.beginRendering(.{
+                    .colors = &.{.{
+                        .view = &view,
+                        .layout = .color_attachment_optimal,
+                        .load_op = .load,
+                        .store_op = .store,
+                        .clear_value = null,
+                        .resolve = null,
+                    }},
+                    .depth = null,
+                    .stencil = null,
+                    .render_area = .{ .width = width, .height = height },
+                    .layers = 1,
+                });
+                cmd.setShaders(
+                    &.{
+                        .vertex,
+                        .fragment,
                     },
-                    .{ .contents = .inline_only },
+                    &.{
+                        if (shaders[0]) |*shd| shd else |err| return err,
+                        if (frag_shd.*) |*shd| shd else |err| return err,
+                    },
                 );
-                cmd.setPipeline(pl);
+                cmd.setVertexInput(&.{}, &.{});
+                cmd.setPrimitiveTopology(.triangle_list);
                 cmd.setViewports(&.{.{
                     .x = 0,
                     .y = 0,
@@ -283,8 +214,20 @@ test "submission of multiple command buffers" {
                     .width = width,
                     .height = height,
                 }});
+                cmd.setRasterizationEnable(true);
+                cmd.setPolygonMode(.fill);
+                cmd.setCullMode(.back);
+                cmd.setFrontFace(.counter_clockwise);
+                cmd.setSampleCount(.@"1");
+                cmd.setSampleMask(0b1);
+                cmd.setDepthBiasEnable(false);
+                cmd.setDepthTestEnable(false);
+                cmd.setStencilTestEnable(false);
+                cmd.setColorBlendEnable(0, &.{true});
+                cmd.setColorBlend(0, &.{blend});
+                cmd.setColorWrite(0, &.{.all});
                 cmd.draw(3, 1, 0, 0);
-                cmd.endRenderPass(.{});
+                cmd.endRendering();
                 try cmd.end();
             }
 
