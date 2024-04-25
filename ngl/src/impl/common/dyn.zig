@@ -221,13 +221,13 @@ pub fn StateMask(comptime kind: enum { primitive }) type {
         "stencil_write_mask",
         // `Cmd.setStencilReference`.
         "stencil_reference",
-        // `Cmd.setColorBlendEnable.`
+        // `Cmd.setColorBlendEnable`.
         "color_blend_enable",
-        // `Cmd.setColorBlend.`
+        // `Cmd.setColorBlend`.
         "color_blend",
-        // `Cmd.setColorWrite.`
+        // `Cmd.setColorWrite`.
         "color_write",
-        // `Cmd.setBlendConstants.`
+        // `Cmd.setBlendConstants`.
         "blend_constants",
     };
 
