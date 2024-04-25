@@ -4,6 +4,7 @@ pub const log = std.log.scoped(.@"ngl|common");
 
 const ngl = @import("../../ngl.zig");
 const Cmd = ngl.Cmd;
+const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 
 /// Every field of `K` must support default initialization.
@@ -31,6 +32,29 @@ fn getClearFn(comptime K: type) (fn (*K, ?std.mem.Allocator) void) {
             }
         }
     }.clear;
+}
+
+/// Every field of `K` that cannot be shallow-copied must have
+/// both `clone` and `clear` methods.
+fn getCloneFn(comptime K: type) (fn (K, std.mem.Allocator) Error!K) {
+    return struct {
+        fn clone(self: K, allocator: std.mem.Allocator) Error!K {
+            const fields = @typeInfo(K).Struct.fields;
+            var cloned: K = undefined;
+            inline for (fields, 0..) |field, i| {
+                errdefer {
+                    inline for (0..i) |j|
+                        if (@hasDecl(fields[j].type, "clone"))
+                            @field(cloned, fields[j].name).clear(allocator);
+                }
+                @field(cloned, field.name) = if (@hasDecl(field.type, "clone"))
+                    try @field(self, field.name).clone(allocator)
+                else
+                    @field(self, field.name);
+            }
+            return cloned;
+        }
+    }.clone;
 }
 
 /// Every field of `K` must have an `eql` method.
@@ -171,6 +195,7 @@ pub fn State(comptime state_mask: anytype) type {
 
         pub const init = getInitFn(@This());
         pub const clear = getClearFn(@This());
+        pub const clone = getCloneFn(@This());
         pub const eql = getEqlFn(@This());
         pub const hash = getHashFn(@This());
         pub const eqlSubset = getEqlSubsetFn(@This());
@@ -337,6 +362,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
 
         pub const init = getInitFn(@This());
         pub const clear = getClearFn(@This());
+        pub const clone = getCloneFn(@This());
         pub const eql = getEqlFn(@This());
         pub const hash = getHashFn(@This());
         pub const eqlSubset = getEqlSubsetFn(@This());
@@ -519,6 +545,15 @@ const VertexInput = struct {
             self.bindings.clearRetainingCapacity();
             self.attributes.clearRetainingCapacity();
         }
+    }
+
+    pub fn clone(self: @This(), allocator: std.mem.Allocator) Error!@This() {
+        var bindings = try self.bindings.clone(allocator);
+        errdefer bindings.deinit(allocator);
+        return .{
+            .bindings = bindings,
+            .attributes = try self.attributes.clone(allocator),
+        };
     }
 };
 

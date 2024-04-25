@@ -60,9 +60,11 @@ const State = struct {
     };
 
     fn deinit(self: *@This(), allocator: std.mem.Allocator, device: *Device) void {
-        var iter = self.hash_map.valueIterator();
-        while (iter.next()) |val|
-            device.vkDestroyPipeline(val[0], null);
+        var iter = self.hash_map.iterator();
+        while (iter.next()) |kv| {
+            kv.key_ptr.clear(allocator, device);
+            device.vkDestroyPipeline(kv.value_ptr[0], null);
+        }
         self.hash_map.deinit(allocator);
     }
 };
@@ -109,9 +111,11 @@ const Rendering = struct {
     };
 
     fn deinit(self: *@This(), allocator: std.mem.Allocator, device: *Device) void {
-        var iter = self.hash_map.valueIterator();
-        while (iter.next()) |val|
-            device.vkDestroyRenderPass(val[0], null);
+        var iter = self.hash_map.iterator();
+        while (iter.next()) |kv| {
+            kv.key_ptr.clear(allocator);
+            device.vkDestroyRenderPass(kv.value_ptr[0], null);
+        }
         self.hash_map.deinit(allocator);
     }
 };
@@ -153,7 +157,7 @@ pub fn getPrimitivePipeline(
             null_handle,
     );
     errdefer device.vkDestroyPipeline(pl, null);
-    try self.state.hash_map.putNoClobber(allocator, key, .{ pl, 1 });
+    try self.state.hash_map.putNoClobber(allocator, try key.clone(allocator), .{ pl, 1 });
     return pl;
 }
 
@@ -170,7 +174,7 @@ pub fn getRenderPass(
 
     const rp = try createRenderPass(allocator, device, key);
     errdefer device.vkDestroyRenderPass(rp, null);
-    try self.rendering.hash_map.putNoClobber(allocator, key, .{ rp, 1 });
+    try self.rendering.hash_map.putNoClobber(allocator, try key.clone(allocator), .{ rp, 1 });
     return rp;
 }
 

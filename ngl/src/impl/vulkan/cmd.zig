@@ -1894,6 +1894,19 @@ pub const Dynamic = struct {
         self.fbo = null_handle;
         self.err = null;
     }
+
+    /// Note that this only pertains to key-related fields.
+    pub fn clone(self: @This(), allocator: std.mem.Allocator) Error!@This() {
+        var state = try self.state.clone(allocator);
+        errdefer state.clear(allocator);
+        return .{
+            .state = state,
+            .rendering = try self.rendering.clone(allocator),
+            .changed = true,
+            .fbo = null_handle,
+            .err = null,
+        };
+    }
 };
 
 const testing = std.testing;
