@@ -176,9 +176,9 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     const triangle = struct {
         const format = ngl.Format.rgb32_sfloat;
         const topology = ngl.Primitive.Topology.triangle_list;
-        const clockwise = true;
+        const front_face = .clockwise;
 
-        // Each triangle will cover half the render area.
+        // Each triangle will cover one half of the render area.
         const data: struct {
             left: [3 * 3]f32 = .{
                 0,  -3, 0,
@@ -298,119 +298,38 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     });
     defer depth_view.deinit(gpa, dev);
 
-    var rp = try ngl.RenderPass.init(gpa, dev, .{
-        .attachments = &.{
-            .{
-                .format = .rgba8_unorm,
-                .samples = .@"1",
-                .load_op = .dont_care,
-                .store_op = .dont_care,
-                .initial_layout = .unknown,
-                .final_layout = .color_attachment_optimal,
-                .resolve_mode = null,
-                .combined = null,
-                .may_alias = false,
-            },
-            .{
-                .format = .d16_unorm,
-                .samples = .@"1",
-                .load_op = .clear,
-                .store_op = .dont_care,
-                .initial_layout = .unknown,
-                .final_layout = .depth_stencil_attachment_optimal,
-                .resolve_mode = null,
-                .combined = null,
-                .may_alias = false,
-            },
-        },
-        .subpasses = &.{.{
-            .pipeline_type = .graphics,
-            .input_attachments = null,
-            .color_attachments = &.{.{
-                .index = 0,
-                .layout = .color_attachment_optimal,
-                .aspect_mask = .{ .color = true },
-                .resolve = null,
-            }},
-            .depth_stencil_attachment = .{
-                .index = 1,
-                .layout = .depth_stencil_attachment_optimal,
-                .aspect_mask = .{ .depth = true },
-                .resolve = null,
-            },
-            .preserve_attachments = null,
-        }},
-        .dependencies = null,
-    });
-    defer rp.deinit(gpa, dev);
-
-    var fb = try ngl.FrameBuffer.init(gpa, dev, .{
-        .render_pass = &rp,
-        .attachments = &.{ &color_view, &depth_view },
-        .width = width,
-        .height = height,
-        .layers = 1,
-    });
-    defer fb.deinit(gpa, dev);
-
     var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
         .descriptor_set_layouts = null,
         .push_constant_ranges = null,
     });
     defer pl_layt.deinit(gpa, dev);
 
-    const pl = try ngl.Pipeline.initGraphics(gpa, dev, .{
-        .states = &.{.{
-            .stages = &.{
-                .{
-                    .stage = .vertex,
-                    .code = &vert_spv,
-                    .name = "main",
-                },
-                .{
-                    .stage = .fragment,
-                    .code = &frag_spv,
-                    .name = "main",
-                },
-            },
-            .layout = &pl_layt,
-            .primitive = &.{
-                .bindings = &.{.{
-                    .binding = 0,
-                    .stride = 12,
-                    .step_rate = .vertex,
-                }},
-                .attributes = &.{.{
-                    .location = 0,
-                    .binding = 0,
-                    .format = triangle.format,
-                    .offset = 0,
-                }},
-                .topology = triangle.topology,
-            },
-            .rasterization = &.{
-                .polygon_mode = .fill,
-                .cull_mode = .back,
-                .clockwise = triangle.clockwise,
-                .samples = .@"1",
-            },
-            .depth_stencil = &.{
-                .depth_compare = .less,
-                .depth_write = true,
-                .stencil_front = null,
-                .stencil_back = null,
-            },
-            .color_blend = &.{
-                .attachments = &.{.{ .blend = null, .write = .all }},
-            },
-            .render_pass = &rp,
-            .subpass = 0,
-        }},
-        .cache = null,
+    var shaders = try ngl.Shader.init(gpa, dev, &.{
+        .{
+            .type = .vertex,
+            .next = .{ .fragment = true },
+            .code = &vert_spv,
+            .name = "main",
+            .set_layouts = &.{},
+            .push_constants = &.{},
+            .specialization = null,
+            .link = true,
+        },
+        .{
+            .type = .fragment,
+            .next = .{},
+            .code = &frag_spv,
+            .name = "main",
+            .set_layouts = &.{},
+            .push_constants = &.{},
+            .specialization = null,
+            .link = true,
+        },
     });
     defer {
-        pl[0].deinit(gpa, dev);
-        gpa.free(pl);
+        for (shaders) |*shd|
+            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+        gpa.free(shaders);
     }
 
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[queue_i] });
@@ -423,21 +342,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
     cmd.resetQueryPool(&query_pool, 0, query_count);
-    cmd.beginRenderPass(
-        .{
-            .render_pass = &rp,
-            .frame_buffer = &fb,
-            .render_area = .{
-                .x = 0,
-                .y = 0,
-                .width = width,
-                .height = height,
-            },
-            .clear_values = &.{ null, .{ .depth_stencil = .{ 1, undefined } } },
-        },
-        .{ .contents = .inline_only },
-    );
-    cmd.setPipeline(&pl[0]);
+    cmd.setShaders(&.{.fragment}, &.{if (shaders[1]) |*shd| shd else |err| return err});
     cmd.setViewports(&.{.{
         .x = 0,
         .y = 0,
@@ -452,6 +357,97 @@ fn testOcclusionQuery(comptime precise: bool) !void {
         .width = width,
         .height = height,
     }});
+    cmd.setRasterizationEnable(true);
+    cmd.setPolygonMode(.fill);
+    cmd.setCullMode(.back);
+    cmd.setFrontFace(triangle.front_face);
+    cmd.setSampleCount(.@"1");
+    cmd.setSampleMask(~@as(u64, 0));
+    cmd.setDepthBiasEnable(false);
+    cmd.setDepthTestEnable(true);
+    cmd.setDepthCompareOp(.less);
+    cmd.setDepthWriteEnable(true);
+    cmd.setStencilTestEnable(false);
+    cmd.setColorBlendEnable(0, &.{false});
+    cmd.setColorWrite(0, &.{.all});
+    cmd.pipelineBarrier(&.{.{
+        .image_dependencies = &.{
+            .{
+                .source_stage_mask = .{},
+                .source_access_mask = .{},
+                .dest_stage_mask = .{ .color_attachment_output = true },
+                .dest_access_mask = .{ .color_attachment_write = true },
+                .queue_transfer = null,
+                .old_layout = .unknown,
+                .new_layout = .color_attachment_optimal,
+                .image = &color_img,
+                .range = .{
+                    .aspect_mask = .{ .color = true },
+                    .level = 0,
+                    .levels = 1,
+                    .layer = 0,
+                    .layers = 1,
+                },
+            },
+            .{
+                .source_stage_mask = .{},
+                .source_access_mask = .{},
+                .dest_stage_mask = .{
+                    .early_fragment_tests = true,
+                    .late_fragment_tests = true,
+                },
+                .dest_access_mask = .{
+                    .depth_stencil_attachment_read = true,
+                    .depth_stencil_attachment_write = true,
+                },
+                .queue_transfer = null,
+                .old_layout = .unknown,
+                .new_layout = .depth_stencil_attachment_optimal,
+                .image = &depth_img,
+                .range = .{
+                    .aspect_mask = .{ .depth = true },
+                    .level = 0,
+                    .levels = 1,
+                    .layer = 0,
+                    .layers = 1,
+                },
+            },
+        },
+        .by_region = false,
+    }});
+    cmd.beginRendering(.{
+        .colors = &.{.{
+            .view = &color_view,
+            .layout = .color_attachment_optimal,
+            .load_op = .dont_care,
+            .store_op = .dont_care,
+            .clear_value = null,
+            .resolve = null,
+        }},
+        .depth = .{
+            .view = &depth_view,
+            .layout = .depth_stencil_attachment_optimal,
+            .load_op = .clear,
+            .store_op = .dont_care,
+            .clear_value = .{ .depth_stencil = .{ 1, undefined } },
+            .resolve = null,
+        },
+        .stencil = null,
+        .render_area = .{ .width = width, .height = height },
+        .layers = 1,
+    });
+    cmd.setShaders(&.{.vertex}, &.{if (shaders[0]) |*shd| shd else |err| return err});
+    cmd.setVertexInput(&.{.{
+        .binding = 0,
+        .stride = 12,
+        .step_rate = .vertex,
+    }}, &.{.{
+        .location = 0,
+        .binding = 0,
+        .format = triangle.format,
+        .offset = 0,
+    }});
+    cmd.setPrimitiveTopology(triangle.topology);
 
     // samples_passed == width / 2 * height (or > 0).
     cmd.beginQuery(&query_pool, 0, .{ .precise = precise });
@@ -499,7 +495,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     cmd.draw(3, 1, 0, 0);
     cmd.endQuery(&query_pool, 3);
 
-    cmd.endRenderPass(.{});
+    cmd.endRendering();
     cmd.copyQueryPoolResults(&query_pool, 0, query_count, &query_buf, 0, .{});
     try cmd.end();
 
