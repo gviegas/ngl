@@ -1813,7 +1813,14 @@ pub const CommandBuffer = struct {
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
     ) Error!void {
-        try check(Device.cast(device).vkEndCommandBuffer(cast(command_buffer).handle));
+        const dev = Device.cast(device);
+        const cmd_buf = cast(command_buffer);
+
+        const ret = check(dev.vkEndCommandBuffer(cmd_buf.handle));
+        if (cmd_buf.dyn) |d|
+            // Prioritize this error.
+            if (d.err) |err| return err;
+        return ret;
     }
 };
 
