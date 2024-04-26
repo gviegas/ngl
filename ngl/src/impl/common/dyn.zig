@@ -1495,6 +1495,28 @@ test State {
     h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
+    var cloned = try s1.clone(testing.allocator);
+    defer cloned.clear(testing.allocator);
+    try expectEql(s1, h1, cloned);
+    try cloned.vertex_input.set(testing.allocator, &.{.{
+        .binding = 0,
+        .stride = 16,
+        .step_rate = .vertex,
+    }}, &.{.{
+        .location = 1,
+        .binding = 0,
+        .format = .rgba32_sfloat,
+        .offset = 0,
+    }});
+    try expectNotEql(s1, h1, cloned);
+    var cloned_2 = try cloned.clone(testing.allocator);
+    defer cloned_2.clear(testing.allocator);
+    try expectEql(cloned, hashT(cloned), cloned_2);
+    cloned_2.vertex_input.clear(testing.allocator);
+    try expectNotEql(cloned, hashT(cloned), cloned_2);
+    comptime if (!@hasDecl(VertexInput, "clone")) unreachable;
+    try testing.expectError(error.OutOfMemory, cloned.clone(testing.failing_allocator));
+
     comptime var m = P.mask;
     m.color_blend = false;
     s2.color_blend.set(1, &.{.{
@@ -1980,6 +2002,16 @@ test Rendering {
     try expectNotEql(r1, h1, r2);
     r2.view_mask.view_mask = 0x1;
     try expectEql(r1, h1, r2);
+
+    var cloned = try r1.clone(testing.allocator);
+    defer cloned.clear(testing.allocator);
+    try expectEql(r1, h1, cloned);
+    comptime {
+        for (@typeInfo(R).Struct.fields) |field|
+            if (@hasDecl(field.type, "clone")) unreachable;
+    }
+    // Shouldn't fail and shouldn't leak.
+    _ = try cloned.clone(testing.failing_allocator);
 
     comptime var m = R.mask;
     m.color_view = false;
