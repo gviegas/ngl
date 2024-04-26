@@ -9,31 +9,31 @@ test "color blending" {
     var t = try T.init();
     defer t.deinit();
     {
-        try t.setColorBlend(.{
+        const blend = ngl.Cmd.Blend{
             .color_source_factor = .one,
             .color_dest_factor = .one,
             .color_op = .add,
             .alpha_source_factor = .one,
             .alpha_dest_factor = .one,
             .alpha_op = .subtract,
-        });
+        };
         const source = @Vector(4, f32){ 0.35, 0.125, 0.2, 1 };
         const dest = @Vector(4, f32){ 0.25, 0.6, 0.01, 0.75 };
-        try t.render(source, dest, null);
+        try t.render(blend, source, dest, null);
         try t.validate(@as([4]f32, source + dest)[0..3].* ++ [_]f32{(source - dest)[3]});
     }
     {
-        try t.setColorBlend(.{
+        const blend = ngl.Cmd.Blend{
             .color_source_factor = .dest_alpha,
             .color_dest_factor = .source_alpha,
             .color_op = .subtract,
             .alpha_source_factor = .zero,
             .alpha_dest_factor = .one_minus_dest_alpha,
             .alpha_op = .add,
-        });
+        };
         const source = @Vector(4, f32){ 1, 0.8, 0.6, 0.5 };
         const dest = @Vector(4, f32){ 0.5, 0.9, 0.2, 1 };
-        try t.render(source, dest, null);
+        try t.render(blend, source, dest, null);
         try t.validate(
             source * @as(@Vector(4, f32), @splat(dest[3])) -
                 dest * @as(@Vector(4, f32), @splat(source[3])),
@@ -41,84 +41,84 @@ test "color blending" {
         );
     }
     {
-        try t.setColorBlend(.{
+        const blend = ngl.Cmd.Blend{
             .color_source_factor = .source_color,
             .color_dest_factor = .one,
             .color_op = .reverse_subtract,
             .alpha_source_factor = .source_alpha,
             .alpha_dest_factor = .dest_alpha,
             .alpha_op = .min,
-        });
+        };
         const source = @Vector(4, f32){ 0.05, 0.1, 0.3333, 0.6666 };
         const dest = @Vector(4, f32){ 1, 1, 1, 1 };
-        try t.render(source, dest, null);
+        try t.render(blend, source, dest, null);
         try t.validate(
             @as([4]f32, dest - source * source)[0..3].* ++ [_]f32{@min(source, dest)[3]},
         );
     }
     {
-        try t.setColorBlend(.{
+        const blend = ngl.Cmd.Blend{
             .color_source_factor = .source_alpha,
             .color_dest_factor = .one_minus_source_alpha,
             .color_op = .add,
             .alpha_source_factor = .source_alpha,
             .alpha_dest_factor = .one_minus_source_alpha,
             .alpha_op = .add,
-        });
+        };
         const source = @Vector(4, f32){ 0.2, 0.4, 0.6, 0.8 };
         const dest = @Vector(4, f32){ 0.3, 0.6, 0.9, 1 };
-        try t.render(source, dest, null);
+        try t.render(blend, source, dest, null);
         try t.validate(
             source * @as(@Vector(4, f32), @splat(source[3])) +
                 dest * @as(@Vector(4, f32), @splat(1 - source[3])),
         );
     }
     {
-        try t.setColorBlend(.{
+        const blend = ngl.Cmd.Blend{
             .color_source_factor = .constant_color,
             .color_dest_factor = .constant_color,
             .color_op = .add,
             .alpha_source_factor = .constant_alpha,
             .alpha_dest_factor = .constant_alpha,
             .alpha_op = .add,
-        });
+        };
         const source = @Vector(4, f32){ 0.4, 0.3, 0.2, 0.1 };
         const dest = @Vector(4, f32){ 0.6, 0.4, 0.25, 0.75 };
         const consts = @Vector(4, f32){ 0.5, 0, 1, 0.25 };
-        try t.render(source, dest, consts);
+        try t.render(blend, source, dest, consts);
         try t.validate(source * consts + dest * consts);
     }
     {
-        try t.setColorBlend(.{
+        const blend = ngl.Cmd.Blend{
             .color_source_factor = .one,
             .color_dest_factor = .one_minus_constant_color,
             .color_op = .reverse_subtract,
             .alpha_source_factor = .constant_color,
             .alpha_dest_factor = .zero,
             .alpha_op = .add,
-        });
+        };
         const source = @Vector(4, f32){ 0.4444, 0.3333, 0.2222, 0.1111 };
         const dest = @Vector(4, f32){ 1, 0.9, 0.8, 0 };
         const consts = @Vector(4, f32){ 0.5, 0.6, 0.7, 0.8 };
-        try t.render(source, dest, consts);
+        try t.render(blend, source, dest, consts);
         try t.validate(
             @as([4]f32, dest * (@Vector(4, f32){ 1, 1, 1, 1 } - consts) - source)[0..3].* ++
                 [_]f32{source[3] * consts[3]},
         );
     }
     {
-        try t.setColorBlend(.{
+        const blend = ngl.Cmd.Blend{
             .color_source_factor = .constant_color,
             .color_dest_factor = .zero,
             .color_op = .min,
             .alpha_source_factor = .one,
             .alpha_dest_factor = .constant_alpha,
             .alpha_op = .max,
-        });
+        };
         const source = @Vector(4, f32){ 1, 0.8, 0.04, 0.95 };
         const dest = @Vector(4, f32){ 0.5, 0.9, 0.3, 1 };
         const consts: @Vector(4, f32) = @splat(0.1);
-        try t.render(source, dest, consts);
+        try t.render(blend, source, dest, consts);
         try t.validate(
             @as([4]f32, @min(source, dest))[0..3].* ++ [_]f32{@max(source[3], dest[3])},
         );
@@ -139,10 +139,9 @@ const T = struct {
     stg_buf: ngl.Buffer,
     stg_mem: ngl.Memory,
     stg_data: []u8,
-    rp: ngl.RenderPass,
-    fb: ngl.FrameBuffer,
     pl_layt: ngl.PipelineLayout,
-    pl: ?ngl.Pipeline,
+    vert_shd: ngl.Shader,
+    frag_shd: ngl.Shader,
     clear_col: ?[4]f32,
 
     const width = 100;
@@ -154,8 +153,8 @@ const T = struct {
     const triangle = struct {
         const format = ngl.Format.rgb32_sfloat;
         const stride = 12;
-        const topology = ngl.Primitive.Topology.triangle_list;
-        const clockwise = false;
+        const topology = ngl.Cmd.PrimitiveTopology.triangle_list;
+        const front_face = ngl.Cmd.FrontFace.counter_clockwise;
 
         const data = [3 * 3]f32{
             0, -1, 0,
@@ -255,52 +254,43 @@ const T = struct {
         errdefer dev.free(gpa, &stg_mem);
         const stg_data = (try stg_mem.map(dev, 0, stg_size))[0..stg_size];
 
-        var rp = try ngl.RenderPass.init(gpa, dev, .{
-            .attachments = &.{.{
-                .format = .rgba8_unorm,
-                .samples = .@"1",
-                .load_op = .clear,
-                .store_op = .store,
-                .initial_layout = .unknown,
-                .final_layout = .transfer_source_optimal,
-                .resolve_mode = null,
-                .combined = null,
-                .may_alias = false,
-            }},
-            .subpasses = &.{.{
-                .pipeline_type = .graphics,
-                .input_attachments = null,
-                .color_attachments = &.{.{
-                    .index = 0,
-                    .layout = .color_attachment_optimal,
-                    .aspect_mask = .{ .color = true },
-                    .resolve = null,
-                }},
-                .depth_stencil_attachment = null,
-                .preserve_attachments = null,
-            }},
-            .dependencies = null,
-        });
-        errdefer rp.deinit(gpa, dev);
-
-        var fb = try ngl.FrameBuffer.init(gpa, dev, .{
-            .render_pass = &rp,
-            .attachments = &.{&col_view},
-            .width = width,
-            .height = height,
-            .layers = 1,
-        });
-        errdefer fb.deinit(gpa, dev);
+        const push_consts = [1]ngl.PushConstantRange{.{
+            .offset = 0,
+            .size = 16,
+            .stage_mask = .{ .fragment = true },
+        }};
 
         var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
             .descriptor_set_layouts = null,
-            .push_constant_ranges = &.{.{
-                .offset = 0,
-                .size = 16,
-                .stage_mask = .{ .fragment = true },
-            }},
+            .push_constant_ranges = &push_consts,
         });
         errdefer pl_layt.deinit(gpa, dev);
+
+        const shaders = try ngl.Shader.init(gpa, dev, &.{
+            .{
+                .type = .vertex,
+                .next = .{ .fragment = true },
+                .code = &vert_spv,
+                .name = "main",
+                .set_layouts = &.{},
+                .push_constants = &push_consts,
+                .specialization = null,
+                .link = true,
+            },
+            .{
+                .type = .fragment,
+                .next = .{},
+                .code = &frag_spv,
+                .name = "main",
+                .set_layouts = &.{},
+                .push_constants = &push_consts,
+                .specialization = null,
+                .link = true,
+            },
+        });
+        defer gpa.free(shaders);
+        errdefer for (shaders) |*shd|
+            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
 
         // Vertices won't change so copy them upfront.
         @memcpy(
@@ -343,74 +333,20 @@ const T = struct {
             .stg_buf = stg_buf,
             .stg_mem = stg_mem,
             .stg_data = stg_data,
-            .rp = rp,
-            .fb = fb,
             .pl_layt = pl_layt,
-            .pl = null,
+            .vert_shd = if (shaders[0]) |shd| shd else |err| return err,
+            .frag_shd = if (shaders[1]) |shd| shd else |err| return err,
             .clear_col = null,
         };
     }
 
-    // This will create/recreate the pipeline.
-    fn setColorBlend(self: *@This(), blend_equation: ngl.ColorBlend.BlendEquation) !void {
-        const dev = &context().device;
-
-        if (self.pl) |*pl| {
-            pl.deinit(gpa, dev);
-            self.pl = null;
-            self.clear_col = null;
-        }
-
-        const pl = try ngl.Pipeline.initGraphics(gpa, dev, .{
-            .states = &.{.{
-                .stages = &.{
-                    .{
-                        .stage = .vertex,
-                        .code = &vert_spv,
-                        .name = "main",
-                    },
-                    .{
-                        .stage = .fragment,
-                        .code = &frag_spv,
-                        .name = "main",
-                    },
-                },
-                .layout = &self.pl_layt,
-                .primitive = &.{
-                    .bindings = &.{.{
-                        .binding = 0,
-                        .stride = triangle.stride,
-                        .step_rate = .vertex,
-                    }},
-                    .attributes = &.{.{
-                        .location = 0,
-                        .binding = 0,
-                        .format = triangle.format,
-                        .offset = 0,
-                    }},
-                    .topology = triangle.topology,
-                },
-                .rasterization = &.{
-                    .polygon_mode = .fill,
-                    .cull_mode = .back,
-                    .clockwise = triangle.clockwise,
-                    .samples = .@"1",
-                },
-                .depth_stencil = null,
-                .color_blend = &.{
-                    .attachments = &.{.{ .blend = blend_equation, .write = .all }},
-                },
-                .render_pass = &self.rp,
-                .subpass = 0,
-            }},
-            .cache = null,
-        });
-        defer gpa.free(pl);
-
-        self.pl = pl[0];
-    }
-
-    fn render(self: *@This(), source_color: [4]f32, dest_color: [4]f32, constants: ?[4]f32) !void {
+    fn render(
+        self: *@This(),
+        blend: ngl.Cmd.Blend,
+        source_color: [4]f32,
+        dest_color: [4]f32,
+        constants: ?[4]f32,
+    ) !void {
         const ctx = context();
         const dev = &ctx.device;
 
@@ -419,28 +355,82 @@ const T = struct {
             .one_time_submit = true,
             .inheritance = null,
         });
-        cmd.beginRenderPass(
-            .{
-                .render_pass = &self.rp,
-                .frame_buffer = &self.fb,
-                .render_area = .{
-                    .x = 0,
-                    .y = 0,
-                    .width = width,
-                    .height = height,
+
+        cmd.pipelineBarrier(&.{.{
+            .image_dependencies = &.{.{
+                .source_stage_mask = .{},
+                .source_access_mask = .{},
+                .dest_stage_mask = .{ .color_attachment_output = true },
+                .dest_access_mask = .{ .color_attachment_write = true },
+                .queue_transfer = null,
+                .old_layout = .unknown,
+                .new_layout = .color_attachment_optimal,
+                .image = &self.col_img,
+                .range = .{
+                    .aspect_mask = .{ .color = true },
+                    .level = 0,
+                    .levels = 1,
+                    .layer = 0,
+                    .layers = 1,
                 },
-                .clear_values = &.{.{ .color_f32 = dest_color }},
-            },
-            .{ .contents = .inline_only },
-        );
-        cmd.setPipeline(&self.pl.?);
+            }},
+            .by_region = false,
+        }});
+
+        cmd.beginRendering(.{
+            .colors = &.{.{
+                .view = &self.col_view,
+                .layout = .color_attachment_optimal,
+                .load_op = .clear,
+                .store_op = .store,
+                .clear_value = .{ .color_f32 = dest_color },
+                .resolve = null,
+            }},
+            .depth = null,
+            .stencil = null,
+            .render_area = .{ .width = width, .height = height },
+            .layers = 1,
+        });
+
         cmd.setPushConstants(
             &self.pl_layt,
             .{ .fragment = true },
             0,
             @as([*]align(4) const u8, @ptrCast(&source_color))[0..16],
         );
+
+        cmd.setShaders(&.{ .fragment, .vertex }, &.{ &self.frag_shd, &self.vert_shd });
+
+        cmd.setColorBlendEnable(0, &.{true});
+        cmd.setColorBlend(0, &.{blend});
+        if (constants) |x|
+            cmd.setBlendConstants(x);
+
+        cmd.setRasterizationEnable(true);
+        cmd.setPolygonMode(.fill);
+        cmd.setCullMode(.back);
+        cmd.setFrontFace(triangle.front_face);
+        cmd.setSampleCount(.@"1");
+        cmd.setSampleMask(0b1);
+        cmd.setDepthBiasEnable(false);
+        cmd.setDepthTestEnable(false);
+        cmd.setStencilTestEnable(false);
+        cmd.setColorWrite(0, &.{.all});
+
         cmd.setVertexBuffers(0, &.{&self.vert_buf}, &.{0}, &.{@sizeOf(@TypeOf(triangle.data))});
+
+        cmd.setVertexInput(&.{.{
+            .binding = 0,
+            .stride = triangle.stride,
+            .step_rate = .vertex,
+        }}, &.{.{
+            .location = 0,
+            .binding = 0,
+            .format = triangle.format,
+            .offset = 0,
+        }});
+        cmd.setPrimitiveTopology(triangle.topology);
+
         cmd.setViewports(&.{.{
             .x = 0,
             .y = 0,
@@ -455,19 +445,32 @@ const T = struct {
             .width = width,
             .height = height,
         }});
-        if (constants) |x|
-            cmd.setBlendConstants(x);
+
         cmd.draw(3, 1, 0, 0);
-        cmd.endRenderPass(.{});
+
+        cmd.endRendering();
+
         cmd.pipelineBarrier(&.{.{
-            .global_dependencies = &.{.{
+            .image_dependencies = &.{.{
                 .source_stage_mask = .{ .color_attachment_output = true },
                 .source_access_mask = .{ .color_attachment_write = true },
                 .dest_stage_mask = .{ .copy = true },
                 .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+                .queue_transfer = null,
+                .old_layout = .color_attachment_optimal,
+                .new_layout = .transfer_source_optimal,
+                .image = &self.col_img,
+                .range = .{
+                    .aspect_mask = .{ .color = true },
+                    .level = 0,
+                    .levels = 1,
+                    .layer = 0,
+                    .layers = 1,
+                },
             }},
             .by_region = false,
         }});
+
         cmd.copyImageToBuffer(&.{.{
             .buffer = &self.stg_buf,
             .image = &self.col_img,
@@ -486,9 +489,11 @@ const T = struct {
                 .image_depth_or_layers = 1,
             }},
         }});
+
         try cmd.end();
 
         try ngl.Fence.reset(gpa, dev, &.{&self.fence});
+
         {
             ctx.lockQueue(self.queue_i);
             defer ctx.unlockQueue(self.queue_i);
@@ -499,6 +504,7 @@ const T = struct {
                 .signal = &.{},
             }});
         }
+
         try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&self.fence});
 
         self.clear_col = dest_color;
@@ -537,10 +543,9 @@ const T = struct {
 
     fn deinit(self: *@This()) void {
         const dev = &context().device;
-        if (self.pl) |*pl| pl.deinit(gpa, dev);
+        self.frag_shd.deinit(gpa, dev);
+        self.vert_shd.deinit(gpa, dev);
         self.pl_layt.deinit(gpa, dev);
-        self.fb.deinit(gpa, dev);
-        self.rp.deinit(gpa, dev);
         dev.free(gpa, &self.stg_mem);
         self.stg_buf.deinit(gpa, dev);
         dev.free(gpa, &self.vert_mem);
