@@ -528,7 +528,7 @@ const VertexInput = struct {
         allocator: std.mem.Allocator,
         bindings: []const Cmd.VertexInputBinding,
         attributes: []const Cmd.VertexInputAttribute,
-    ) !void {
+    ) Error!void {
         try self.bindings.ensureTotalCapacity(allocator, bindings.len);
         try self.attributes.ensureTotalCapacity(allocator, attributes.len);
         self.bindings.clearRetainingCapacity();
