@@ -1305,7 +1305,9 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
     const col_blend = create_info.pColorBlendState orelse return error.NullPtr;
     try testing.expect(col_blend.*.logicOpEnable == c.VK_FALSE);
     try testing.expect(col_blend.*.attachmentCount == col_n);
-    for (
+    if (col_n == 0)
+        try testing.expect(col_blend.*.pAttachments == null)
+    else for (
         state.color_blend_enable.enable[0..col_n],
         state.color_blend.blend[0..col_n],
         state.color_write.write_masks[0..col_n],
