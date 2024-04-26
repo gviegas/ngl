@@ -1081,8 +1081,8 @@ pub const CommandBuffer = struct {
 
     /// Called by `draw*` commands to (re)bind the
     /// graphics pipeline as needed.
-    /// It'll update `Dynamic.err`, so the caller
-    /// doesn't need to.
+    /// It'll set `Dynamic`'s `changed` and `err`
+    /// fields, so the caller doesn't need to.
     fn canDraw(device: Impl.Device, command_buffer: Impl.CommandBuffer) bool {
         const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
@@ -1099,6 +1099,7 @@ pub const CommandBuffer = struct {
                 return false;
             },
         );
+        d.changed = false;
         return true;
     }
 
