@@ -13,8 +13,8 @@ test "depth-only rendering" {
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);
 
-    const w = 48;
-    const h = 30;
+    const w = 45;
+    const h = 27;
 
     const unif_data = [2][16]f32{
         .{
@@ -180,117 +180,22 @@ test "depth-only rendering" {
     });
     defer pl_layt.deinit(gpa, dev);
 
-    var rp = try ngl.RenderPass.init(gpa, dev, .{
-        .attachments = &.{.{
-            .format = .d16_unorm,
-            .samples = .@"1",
-            .load_op = .clear,
-            .store_op = .store,
-            .initial_layout = .unknown,
-            .final_layout = .transfer_source_optimal,
-            .resolve_mode = null,
-            .combined = null,
-            .may_alias = false,
-        }},
-        .subpasses = &.{.{
-            .pipeline_type = .graphics,
-            .input_attachments = null,
-            .color_attachments = null,
-            .depth_stencil_attachment = .{
-                .index = 0,
-                .layout = .depth_stencil_attachment_optimal,
-                .aspect_mask = .{ .depth = true },
-                .resolve = null,
-            },
-            .preserve_attachments = null,
-        }},
-        .dependencies = &.{
-            .{
-                .source_subpass = .{ .index = 0 },
-                .dest_subpass = .external,
-                .source_stage_mask = .{ .early_fragment_tests = true, .late_fragment_tests = true },
-                .source_access_mask = .{ .depth_stencil_attachment_write = true },
-                .dest_stage_mask = .{ .copy = true },
-                .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
-                .by_region = false,
-            },
-            .{
-                .source_subpass = .external,
-                .dest_subpass = .{ .index = 0 },
-                .source_stage_mask = .{ .copy = true },
-                .source_access_mask = .{ .transfer_write = true },
-                .dest_stage_mask = .{
-                    .index_input = true,
-                    .vertex_attribute_input = true,
-                    .vertex_shader = true,
-                },
-                .dest_access_mask = .{
-                    .index_read = true,
-                    .vertex_attribute_read = true,
-                    .uniform_read = true,
-                },
-                .by_region = false,
-            },
-        },
-    });
-    defer rp.deinit(gpa, dev);
-
-    // Vertex stage only.
-    const stages = [_]ngl.ShaderStage.Desc{.{
-        .stage = .vertex,
-        .code = &vert_spv,
-        .name = "main",
-    }};
-
-    const prim = ngl.Primitive{
-        .bindings = &.{.{
-            .binding = 0,
-            .stride = 3 * 4,
-            .step_rate = .vertex,
-        }},
-        .attributes = &.{.{
-            .location = 0,
-            .binding = 0,
-            .format = .rgb32_sfloat,
-            .offset = 0,
-        }},
-        .topology = .triangle_list,
-    };
-
-    const raster = ngl.Rasterization{
-        .polygon_mode = .fill,
-        .cull_mode = .back,
-        .clockwise = true,
-        .samples = .@"1",
-    };
-
-    const ds = ngl.DepthStencil{
-        .depth_compare = .less,
-        .depth_write = true,
-        .stencil_front = null,
-        .stencil_back = null,
-    };
-
-    // No color blend state.
-
-    var pl = blk: {
-        const s = try ngl.Pipeline.initGraphics(gpa, dev, .{
-            .states = &.{.{
-                .stages = &stages,
-                .layout = &pl_layt,
-                .primitive = &prim,
-                .rasterization = &raster,
-                .depth_stencil = &ds,
-                .color_blend = null,
-                .render_pass = &rp,
-                .subpass = 0,
-            }},
-            .cache = null,
-        });
+    // Just the vertex shader.
+    var vert_shd = blk: {
+        const s = try ngl.Shader.init(gpa, dev, &.{.{
+            .type = .vertex,
+            .next = .{},
+            .code = &vert_spv,
+            .name = "main",
+            .set_layouts = &.{&set_layt},
+            .push_constants = &.{},
+            .specialization = null,
+            .link = false,
+        }});
         defer gpa.free(s);
-        break :blk s[0];
+        break :blk if (s[0]) |shd| shd else |err| return err;
     };
-    defer pl.deinit(gpa, dev);
+    defer vert_shd.deinit(gpa, dev);
 
     var desc_pool = try ngl.DescriptorPool.init(gpa, dev, .{
         .max_sets = 2,
@@ -322,15 +227,6 @@ test "depth-only rendering" {
             }} },
         },
     });
-
-    var fb = try ngl.FrameBuffer.init(gpa, dev, .{
-        .render_pass = &rp,
-        .attachments = &.{&img_view},
-        .width = w,
-        .height = h,
-        .layers = 1,
-    });
-    defer fb.deinit(gpa, dev);
 
     // Keep mapped.
     var p = try stg_buf_mem.map(dev, 0, null);
@@ -408,22 +304,76 @@ test "depth-only rendering" {
         },
     });
 
-    // No memory barrier necessary here.
+    cmd.pipelineBarrier(&.{.{
+        .global_dependencies = &.{.{
+            .source_stage_mask = .{ .copy = true },
+            .source_access_mask = .{ .transfer_write = true },
+            .dest_stage_mask = .{
+                .index_input = true,
+                .vertex_attribute_input = true,
+                .vertex_shader = true,
+            },
+            .dest_access_mask = .{
+                .index_read = true,
+                .vertex_attribute_read = true,
+                .uniform_read = true,
+            },
+        }},
+        .image_dependencies = &.{.{
+            .source_stage_mask = .{},
+            .source_access_mask = .{},
+            .dest_stage_mask = .{
+                .early_fragment_tests = true,
+                .late_fragment_tests = true,
+            },
+            .dest_access_mask = .{
+                .depth_stencil_attachment_read = true,
+                .depth_stencil_attachment_write = true,
+            },
+            .queue_transfer = null,
+            .old_layout = .unknown,
+            .new_layout = .depth_stencil_attachment_optimal,
+            .image = &image,
+            .range = .{
+                .aspect_mask = .{ .depth = true },
+                .level = 0,
+                .levels = 1,
+                .layer = 0,
+                .layers = 1,
+            },
+        }},
+        .by_region = false,
+    }});
 
-    cmd.beginRenderPass(.{
-        .render_pass = &rp,
-        .frame_buffer = &fb,
-        .render_area = .{
-            .x = 0,
-            .y = 0,
-            .width = w,
-            .height = h,
+    cmd.beginRendering(.{
+        .colors = &.{},
+        .depth = .{
+            .view = &img_view,
+            .layout = .depth_stencil_attachment_optimal,
+            .load_op = .clear,
+            .store_op = .store,
+            .clear_value = .{ .depth_stencil = .{ 1, undefined } },
+            .resolve = null,
         },
-        .clear_values = &.{.{ .depth_stencil = .{ 1, undefined } }},
-    }, .{ .contents = .inline_only });
-    cmd.setPipeline(&pl);
-    cmd.setIndexBuffer(.u16, &prim_buf, idx_off, @sizeOf(@TypeOf(idx_data)));
-    cmd.setVertexBuffers(0, &.{&prim_buf}, &.{vert_off}, &.{@sizeOf(@TypeOf(vert_data))});
+        .stencil = null,
+        .render_area = .{ .width = w, .height = h },
+        .layers = 1,
+    });
+
+    cmd.setShaders(&.{.vertex}, &.{&vert_shd});
+
+    cmd.setVertexInput(&.{.{
+        .binding = 0,
+        .stride = 3 * 4,
+        .step_rate = .vertex,
+    }}, &.{.{
+        .location = 0,
+        .binding = 0,
+        .format = .rgb32_sfloat,
+        .offset = 0,
+    }});
+    cmd.setPrimitiveTopology(.triangle_list);
+
     cmd.setViewports(&.{.{
         .x = 0,
         .y = 0,
@@ -438,13 +388,55 @@ test "depth-only rendering" {
         .width = w,
         .height = h,
     }});
-    cmd.setDescriptors(.graphics, &pl_layt, 0, &.{&desc_sets[0]});
-    cmd.drawIndexed(6, 1, 0, 0, 0);
-    cmd.setDescriptors(.graphics, &pl_layt, 0, &.{&desc_sets[1]});
-    cmd.drawIndexed(6, 1, 0, 0, 0);
-    cmd.endRenderPass(.{});
 
-    // No memory barrier necessary here.
+    cmd.setRasterizationEnable(true);
+    cmd.setPolygonMode(.fill);
+    cmd.setCullMode(.back);
+    cmd.setFrontFace(.clockwise);
+    cmd.setSampleCount(.@"1");
+    cmd.setSampleMask(0b1);
+    cmd.setDepthBiasEnable(false);
+    cmd.setDepthTestEnable(true);
+    cmd.setDepthCompareOp(.less);
+    cmd.setDepthWriteEnable(true);
+    cmd.setStencilTestEnable(false);
+
+    cmd.setIndexBuffer(.u16, &prim_buf, idx_off, @sizeOf(@TypeOf(idx_data)));
+    cmd.setVertexBuffers(0, &.{&prim_buf}, &.{vert_off}, &.{@sizeOf(@TypeOf(vert_data))});
+
+    for (&[_]*ngl.DescriptorSet{ &desc_sets[0], &desc_sets[1] }) |desc_set| {
+        cmd.setDescriptors(.graphics, &pl_layt, 0, &.{desc_set});
+        cmd.drawIndexed(6, 1, 0, 0, 0);
+    }
+
+    cmd.endRendering();
+
+    cmd.pipelineBarrier(&.{.{
+        .image_dependencies = &.{.{
+            .source_stage_mask = .{
+                .early_fragment_tests = true,
+                .late_fragment_tests = true,
+            },
+            .source_access_mask = .{ .depth_stencil_attachment_write = true },
+            .dest_stage_mask = .{ .copy = true },
+            .dest_access_mask = .{
+                .transfer_read = true,
+                .transfer_write = true,
+            },
+            .queue_transfer = null,
+            .old_layout = .depth_stencil_attachment_optimal,
+            .new_layout = .transfer_source_optimal,
+            .image = &image,
+            .range = .{
+                .aspect_mask = .{ .color = true },
+                .level = 0,
+                .levels = 1,
+                .layer = 0,
+                .layers = 1,
+            },
+        }},
+        .by_region = false,
+    }});
 
     cmd.copyImageToBuffer(&.{.{
         .buffer = &stg_buf,
@@ -525,9 +517,9 @@ test "depth-only rendering" {
                 const i = (x + w * y) * 2;
                 const data = @as([*]const u16, @ptrCast(@alignCast(p + i)))[0];
                 try str.appendSlice(switch (data) {
-                    clear_dep => " ⋅",
-                    vert_dep[0] => " ■",
-                    vert_dep[1] => " □",
+                    clear_dep => "⚫",
+                    vert_dep[0] => "🙊",
+                    vert_dep[1] => "🍌",
                     else => unreachable,
                 });
             }
