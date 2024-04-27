@@ -44,7 +44,7 @@ test "CommandBuffer.begin/Cmd.end" {
         .one_time_submit = true,
         // This field must be set for secondary command buffers.
         .inheritance = .{
-            .render_pass_continue = null,
+            .rendering_continue = null,
             .query_continue = null,
         },
     });
@@ -68,14 +68,14 @@ test "CommandBuffer.begin/Cmd.end" {
                 var _cmd = try command_buffers[0].begin(gpa, device, .{
                     .one_time_submit = true,
                     .inheritance = .{
-                        .render_pass_continue = null,
+                        .rendering_continue = null,
                         .query_continue = null,
                     },
                 });
                 var _cmd_2 = try command_buffers[1].begin(gpa, device, .{
                     .one_time_submit = false,
                     .inheritance = .{
-                        .render_pass_continue = null,
+                        .rendering_continue = null,
                         .query_continue = null,
                     },
                 });

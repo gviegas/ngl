@@ -232,19 +232,24 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         desc: ngl.Cmd.Desc,
     ) Error!void {
+        const dev = Device.cast(device);
+        const cmd_buf = cast(command_buffer);
+
         const flags = blk: {
             var flags: c.VkCommandBufferUsageFlags = 0;
             if (desc.one_time_submit)
                 flags |= c.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            if (desc.inheritance != null and desc.inheritance.?.render_pass_continue != null)
+            if (desc.inheritance != null and desc.inheritance.?.rendering_continue != null)
                 flags |= c.VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
             // Disallow simultaneous use.
             break :blk flags;
         };
 
-        const inher_info = blk: {
-            const inher = desc.inheritance orelse break :blk null;
-            var info = c.VkCommandBufferInheritanceInfo{
+        var inher_info: c.VkCommandBufferInheritanceInfo = undefined;
+        var inher_rend_info: c.VkCommandBufferInheritanceRenderingInfo = undefined;
+
+        if (desc.inheritance) |inher| {
+            inher_info = .{
                 .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
                 .pNext = null,
                 .renderPass = null_handle,
@@ -254,25 +259,101 @@ pub const CommandBuffer = struct {
                 .queryFlags = 0,
                 .pipelineStatistics = 0,
             };
-            if (inher.render_pass_continue) |x| {
-                info.renderPass = RenderPass.cast(x.render_pass.impl).handle;
-                info.subpass = x.subpass;
-                info.framebuffer = FrameBuffer.cast(x.frame_buffer.impl).handle;
+
+            if (inher.rendering_continue) |x| {
+                if (dev.hasDynamicRendering()) {
+                    _ = &inher_rend_info;
+                    @panic("Not yet implemented");
+                } else {
+                    // TODO: Add functionality to `Cache` for
+                    // this purpose. We only need a compatible
+                    // render pass here.
+                    var key = dyn.Rendering(Dynamic.rendering_mask).init();
+
+                    const max_col = ngl.Cmd.max_color_attachment;
+                    var cols: [max_col]ngl.Cmd.Rendering.Attachment = undefined;
+                    var dep: ngl.Cmd.Rendering.Attachment = undefined;
+                    var sten: ngl.Cmd.Rendering.Attachment = undefined;
+                    var views: [max_col + 1]ngl.ImageView = undefined;
+                    var view_i: u32 = 0;
+
+                    for (cols[0..x.color_formats.len], x.color_formats) |*col, fmt| {
+                        views[view_i] = .{
+                            .impl = .{ .val = 0 },
+                            .format = fmt,
+                            .samples = x.samples,
+                        };
+                        col.* = .{
+                            .view = &views[view_i],
+                            .layout = .color_attachment_optimal,
+                            .load_op = .dont_care,
+                            .store_op = .dont_care,
+                            .clear_value = null,
+                            .resolve = null,
+                        };
+                        view_i += 1;
+                    }
+
+                    if (x.depth_format) |fmt| {
+                        views[view_i] = .{
+                            .impl = .{ .val = 0 },
+                            .format = fmt,
+                            .samples = x.samples,
+                        };
+                        dep = .{
+                            .view = &views[view_i],
+                            .layout = .depth_stencil_attachment_optimal,
+                            .load_op = .dont_care,
+                            .store_op = .dont_care,
+                            .clear_value = null,
+                            .resolve = null,
+                        };
+                        // Don't increment `view_i`.
+                    }
+
+                    if (x.stencil_format) |fmt| {
+                        views[view_i] = .{
+                            .impl = .{ .val = 0 },
+                            .format = fmt,
+                            .samples = x.samples,
+                        };
+                        sten = .{
+                            .view = &views[view_i],
+                            .layout = .depth_stencil_attachment_optimal,
+                            .load_op = .dont_care,
+                            .store_op = .dont_care,
+                            .clear_value = null,
+                            .resolve = null,
+                        };
+                    }
+
+                    key.set(.{
+                        .colors = cols[0..x.color_formats.len],
+                        .depth = if (x.depth_format) |_| dep else null,
+                        .stencil = if (x.stencil_format) |_| sten else null,
+                        .render_area = .{ .width = 1, .height = 1 },
+                        .layers = if (x.view_mask != 0) 0 else 1,
+                        .view_mask = x.view_mask,
+                        .contents = .@"inline",
+                    });
+
+                    inher_info.renderPass = try dev.cache.getRenderPass(dev.gpa, dev, key);
+                }
             }
+
             if (inher.query_continue) |x| {
                 if (x.occlusion)
-                    info.occlusionQueryEnable = c.VK_TRUE;
+                    inher_info.occlusionQueryEnable = c.VK_TRUE;
                 if (x.control.precise)
-                    info.queryFlags = c.VK_QUERY_CONTROL_PRECISE_BIT;
+                    inher_info.queryFlags = c.VK_QUERY_CONTROL_PRECISE_BIT;
             }
-            break :blk &info;
-        };
+        }
 
-        try check(Device.cast(device).vkBeginCommandBuffer(cast(command_buffer).handle, &.{
+        try check(dev.vkBeginCommandBuffer(cmd_buf.handle, &.{
             .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .pNext = null,
             .flags = flags,
-            .pInheritanceInfo = inher_info,
+            .pInheritanceInfo = if (desc.inheritance != null) &inher_info else null,
         }));
     }
 

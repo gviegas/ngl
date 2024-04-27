@@ -58,7 +58,7 @@ test "executeCommands command (copying)" {
             @memset(self.data, @TypeOf(t).top_val);
             var cmd = try self.t.cmd_bufs[1].begin(gpa, self.dev, .{
                 .one_time_submit = true,
-                .inheritance = .{ .render_pass_continue = null, .query_continue = null },
+                .inheritance = .{ .rendering_continue = null, .query_continue = null },
             });
             cmd.copyBuffer(&.{.{
                 .source = self.buf,
@@ -77,7 +77,7 @@ test "executeCommands command (copying)" {
             @memset(self.data, @TypeOf(t).bot_val);
             var cmd = try self.t.cmd_bufs[2].begin(gpa, self.dev, .{
                 .one_time_submit = true,
-                .inheritance = .{ .render_pass_continue = null, .query_continue = null },
+                .inheritance = .{ .rendering_continue = null, .query_continue = null },
             });
             cmd.copyBuffer(&.{.{
                 .source = self.buf,
@@ -265,7 +265,7 @@ test "executeCommands command (dispatching)" {
             errdefer |err| @panic(@errorName(err));
             var cmd = try self.cmd_buf.begin(gpa, self.dev, .{
                 .one_time_submit = true,
-                .inheritance = .{ .render_pass_continue = null, .query_continue = null },
+                .inheritance = .{ .rendering_continue = null, .query_continue = null },
             });
             cmd.setDescriptors(.compute, self.pl_layt, 0, &.{self.desc_set});
             cmd.setShaders(&.{.compute}, &.{self.shd});

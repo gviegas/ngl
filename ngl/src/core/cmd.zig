@@ -129,13 +129,15 @@ pub const CommandBuffer = struct {
             /// when beginning a secondary command buffer.
             inheritance: ?struct {
                 /// Constrains the secondary command buffer
-                /// to a specific subpass of a render pass.
+                /// to a specific render pass.
                 /// If set to `null`, then it must only be
                 /// executed from outside of render passes.
-                render_pass_continue: ?struct {
-                    render_pass: *RenderPass,
-                    subpass: RenderPass.Index,
-                    frame_buffer: *FrameBuffer,
+                rendering_continue: ?struct {
+                    color_formats: []const Format,
+                    depth_format: ?Format,
+                    stencil_format: ?Format,
+                    samples: SampleCount,
+                    view_mask: u32 = 0,
                 },
                 /// `Feature.core.query.inherited`.
                 /// If set to `null`, then there must not be
