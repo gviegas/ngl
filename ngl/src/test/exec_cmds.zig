@@ -209,7 +209,7 @@ test "executeCommands command (dispatching)" {
     const height = @TypeOf(t).height / 2;
 
     const consts = blk: {
-        var consts: [12]ngl.ShaderStage.Specialization.Constant = undefined;
+        var consts: [12]ngl.Shader.Specialization.Constant = undefined;
         for (&consts, 0..) |*c, i|
             c.* = .{
                 .id = @intCast(i % 3),
@@ -225,29 +225,29 @@ test "executeCommands command (dispatching)" {
         0,      height, @TypeOf(t).bot_val,
     };
 
-    const states = blk: {
-        var states = [_]ngl.ComputeState{.{
-            .stage = .{
-                .code = &comp_spv,
-                .name = "main",
-                .specialization = undefined,
-            },
-            .layout = &pl_layt,
+    const shaders = blk: {
+        const set_layts: [1]*ngl.DescriptorSetLayout = .{&set_layt};
+        var shd_descs = [_]ngl.Shader.Desc{.{
+            .type = .compute,
+            .next = .{},
+            .code = &comp_spv,
+            .name = "main",
+            .set_layouts = &set_layts,
+            .push_constants = &.{},
+            .specialization = null,
+            .link = false,
         }} ** 4;
-        for (&states, 0..) |*state, i|
-            state.stage.specialization = .{
+        for (&shd_descs, 0..) |*shd_desc, i|
+            shd_desc.specialization = .{
                 .constants = consts[i * 3 .. i * 3 + 3],
                 .data = @as([*]const u8, @ptrCast(&const_data))[0 .. const_data.len * 4],
             };
-        break :blk states;
+        break :blk try ngl.Shader.init(gpa, dev, &shd_descs);
     };
-    const pls = try ngl.Pipeline.initCompute(gpa, dev, .{
-        .states = &states,
-        .cache = null,
-    });
     defer {
-        for (pls) |*pl| pl.deinit(gpa, dev);
-        gpa.free(pls);
+        for (shaders) |*shd|
+            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+        gpa.free(shaders);
     }
 
     var rem: u3 = 4;
@@ -256,7 +256,7 @@ test "executeCommands command (dispatching)" {
         dev: *ngl.Device,
         pl_layt: *ngl.PipelineLayout,
         desc_set: *ngl.DescriptorSet,
-        pl: *ngl.Pipeline,
+        shd: *ngl.Shader,
         cmd_buf: *ngl.CommandBuffer,
         wg_count: [3]u32,
         rem: *u3,
@@ -268,7 +268,7 @@ test "executeCommands command (dispatching)" {
                 .inheritance = .{ .render_pass_continue = null, .query_continue = null },
             });
             cmd.setDescriptors(.compute, self.pl_layt, 0, &.{self.desc_set});
-            cmd.setPipeline(self.pl);
+            cmd.setShaders(&.{.compute}, &.{self.shd});
             cmd.dispatch(self.wg_count[0], self.wg_count[1], self.wg_count[2]);
             try cmd.end();
             _ = @atomicRmw(@TypeOf(self.rem.*), self.rem, .Sub, 1, .acq_rel);
@@ -279,7 +279,7 @@ test "executeCommands command (dispatching)" {
             .dev = dev,
             .pl_layt = &pl_layt,
             .desc_set = &desc_set[0],
-            .pl = &pls[0],
+            .shd = if (shaders[0]) |*shd| shd else |err| return err,
             .cmd_buf = &t.cmd_bufs[1],
             .wg_count = .{ lwidth, height, 1 },
             .rem = &rem,
@@ -289,7 +289,7 @@ test "executeCommands command (dispatching)" {
             .dev = dev,
             .pl_layt = &pl_layt,
             .desc_set = &desc_set[0],
-            .pl = &pls[1],
+            .shd = if (shaders[1]) |*shd| shd else |err| return err,
             .cmd_buf = &t.cmd_bufs[2],
             .wg_count = .{ rwidth, height, 1 },
             .rem = &rem,
@@ -299,7 +299,7 @@ test "executeCommands command (dispatching)" {
             .dev = dev,
             .pl_layt = &pl_layt,
             .desc_set = &desc_set[0],
-            .pl = &pls[2],
+            .shd = if (shaders[2]) |*shd| shd else |err| return err,
             .cmd_buf = &t.cmd_bufs[3],
             .wg_count = .{ rwidth, height, 1 },
             .rem = &rem,
@@ -309,7 +309,7 @@ test "executeCommands command (dispatching)" {
             .dev = dev,
             .pl_layt = &pl_layt,
             .desc_set = &desc_set[0],
-            .pl = &pls[3],
+            .shd = if (shaders[3]) |*shd| shd else |err| return err,
             .cmd_buf = &t.cmd_bufs[4],
             .wg_count = .{ lwidth, height, 1 },
             .rem = &rem,
@@ -404,449 +404,452 @@ test "executeCommands command (dispatching)" {
     try t.validate();
 }
 
-test "executeCommands command (drawing)" {
-    const ctx = context();
-    const dev = &ctx.device;
+// TODO: Dynamic rendering doesn't support execution of
+// secondary command buffers yet.
 
-    var t = try T(3).init(.{ .graphics = true });
-    defer t.deinit();
-
-    var image = try ngl.Image.init(gpa, dev, .{
-        .type = .@"2d",
-        .format = @TypeOf(t).format,
-        .width = @TypeOf(t).width,
-        .height = @TypeOf(t).height,
-        .depth_or_layers = 1,
-        .levels = 1,
-        .samples = .@"1",
-        .tiling = .optimal,
-        .usage = .{ .color_attachment = true, .transfer_source = true },
-        .misc = .{},
-        .initial_layout = .unknown,
-    });
-    defer image.deinit(gpa, dev);
-    const img_reqs = image.getMemoryRequirements(dev);
-    var img_mem = try dev.alloc(gpa, .{
-        .size = img_reqs.size,
-        .type_index = img_reqs.findType(dev.*, .{ .device_local = true }, null).?,
-    });
-    defer dev.free(gpa, &img_mem);
-    try image.bind(dev, &img_mem, 0);
-    var view = try ngl.ImageView.init(gpa, dev, .{
-        .image = &image,
-        .type = .@"2d",
-        .format = @TypeOf(t).format,
-        .range = .{
-            .aspect_mask = .{ .color = true },
-            .level = 0,
-            .levels = 1,
-            .layer = 0,
-            .layers = 1,
-        },
-    });
-    defer view.deinit(gpa, dev);
-
-    var rp = try ngl.RenderPass.init(gpa, dev, .{
-        .attachments = &.{.{
-            .format = @TypeOf(t).format,
-            .samples = .@"1",
-            .load_op = .dont_care,
-            .store_op = .store,
-            .initial_layout = .unknown,
-            .final_layout = .transfer_source_optimal,
-            .resolve_mode = null,
-            .combined = null,
-            .may_alias = false,
-        }},
-        .subpasses = &.{.{
-            .pipeline_type = .graphics,
-            .input_attachments = null,
-            .color_attachments = &.{.{
-                .index = 0,
-                .layout = .color_attachment_optimal,
-                .aspect_mask = .{ .color = true },
-                .resolve = null,
-            }},
-            .depth_stencil_attachment = null,
-            .preserve_attachments = null,
-        }},
-        .dependencies = null,
-    });
-    defer rp.deinit(gpa, dev);
-    var fb = try ngl.FrameBuffer.init(gpa, dev, .{
-        .render_pass = &rp,
-        .attachments = &.{&view},
-        .width = @TypeOf(t).width,
-        .height = @TypeOf(t).height,
-        .layers = 1,
-    });
-    defer fb.deinit(gpa, dev);
-
-    const triangle = struct {
-        const format = ngl.Format.rg32_sfloat;
-        const topology = ngl.Primitive.Topology.triangle_list;
-        const clockwise = true;
-
-        const data: struct {
-            topl: [3 * 2]f32 = .{
-                0,  0,
-                -2, 0,
-                0,  -2,
-            },
-            topr: [3 * 2]f32 = .{
-                0, 0,
-                0, -2,
-                2, 0,
-            },
-            botr: [3 * 2]f32 = .{
-                0, 0,
-                2, 0,
-                0, 2,
-            },
-            botl: [3 * 2]f32 = .{
-                0,  0,
-                0,  2,
-                -2, 0,
-            },
-        } = .{};
-    };
-
-    comptime if (@TypeOf(t).size < @sizeOf(@TypeOf(triangle.data))) unreachable;
-
-    var buf = try ngl.Buffer.init(gpa, dev, .{
-        .size = @sizeOf(@TypeOf(triangle.data)),
-        .usage = .{ .vertex_buffer = true, .transfer_dest = true },
-    });
-    defer buf.deinit(gpa, dev);
-    const buf_reqs = buf.getMemoryRequirements(dev);
-    var buf_mem = try dev.alloc(gpa, .{
-        .size = buf_reqs.size,
-        .type_index = buf_reqs.findType(dev.*, .{ .device_local = true }, null).?,
-    });
-    defer dev.free(gpa, &buf_mem);
-    try buf.bind(dev, &buf_mem, 0);
-
-    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = null,
-        .push_constant_ranges = null,
-    });
-    defer pl_layt.deinit(gpa, dev);
-
-    var stages = [_][2]ngl.ShaderStage.Desc{.{
-        .{
-            .stage = .vertex,
-            .code = &vert_spv,
-            .name = "main",
-        },
-        .{
-            .stage = .fragment,
-            .code = &frag_spv,
-            .name = "main",
-            .specialization = .{
-                .constants = &.{.{
-                    .id = 0,
-                    .offset = 0,
-                    .size = 4,
-                }},
-                .data = undefined,
-            },
-        },
-    }} ** 2;
-    stages[0][1].specialization.?.data = @as([*]const u8, @ptrCast(&@TypeOf(t).top_val))[0..4];
-    stages[1][1].specialization.?.data = @as([*]const u8, @ptrCast(&@TypeOf(t).bot_val))[0..4];
-
-    const prim = ngl.Primitive{
-        .bindings = &.{.{
-            .binding = 0,
-            .stride = 8,
-            .step_rate = .vertex,
-        }},
-        .attributes = &.{.{
-            .location = 0,
-            .binding = 0,
-            .format = triangle.format,
-            .offset = 0,
-        }},
-        .topology = triangle.topology,
-    };
-
-    const raster = ngl.Rasterization{
-        .polygon_mode = .fill,
-        .cull_mode = .back,
-        .clockwise = triangle.clockwise,
-        .samples = .@"1",
-    };
-
-    const col_blend = ngl.ColorBlend{
-        .attachments = &.{.{ .blend = null, .write = .all }},
-    };
-
-    const pls = try ngl.Pipeline.initGraphics(gpa, dev, .{
-        .states = &.{
-            .{
-                .stages = &stages[0],
-                .layout = &pl_layt,
-                .primitive = &prim,
-                .rasterization = &raster,
-                .depth_stencil = null,
-                .color_blend = &col_blend,
-                .render_pass = &rp,
-                .subpass = 0,
-            },
-            .{
-                .stages = &stages[1],
-                .layout = &pl_layt,
-                .primitive = &prim,
-                .rasterization = &raster,
-                .depth_stencil = null,
-                .color_blend = &col_blend,
-                .render_pass = &rp,
-                .subpass = 0,
-            },
-        },
-        .cache = null,
-    });
-    defer {
-        for (pls) |*pl| pl.deinit(gpa, dev);
-        gpa.free(pls);
-    }
-
-    var done: u3 = 0;
-
-    const rec: [3]struct {
-        dev: *ngl.Device,
-        rp: *ngl.RenderPass,
-        fb: *ngl.FrameBuffer,
-        buf: *ngl.Buffer,
-        pl: *ngl.Pipeline,
-        cmd_buf: *ngl.CommandBuffer,
-        done: *u3,
-
-        fn cmdBuf1(self: @This()) void {
-            errdefer |err| @panic(@errorName(err));
-            var cmd = try self.cmd_buf.begin(gpa, self.dev, .{
-                .one_time_submit = true,
-                .inheritance = .{
-                    .render_pass_continue = .{
-                        .render_pass = self.rp,
-                        .subpass = 0,
-                        .frame_buffer = self.fb,
-                    },
-                    .query_continue = null,
-                },
-            });
-            cmd.setPipeline(self.pl);
-            cmd.setViewports(&.{.{
-                .x = 0,
-                .y = 0,
-                .width = @TypeOf(t).width,
-                .height = @TypeOf(t).height,
-                .znear = 0,
-                .zfar = 0,
-            }});
-            cmd.setScissorRects(&.{.{
-                .x = 0,
-                .y = 0,
-                .width = @TypeOf(t).width,
-                .height = @TypeOf(t).height,
-            }});
-            cmd.setVertexBuffers(
-                0,
-                &.{self.buf},
-                &.{@offsetOf(@TypeOf(triangle.data), "botr")},
-                &.{@sizeOf(@TypeOf(triangle.data.botr))},
-            );
-            cmd.draw(3, 1, 0, 0);
-            cmd.setVertexBuffers(
-                0,
-                &.{self.buf},
-                &.{@offsetOf(@TypeOf(triangle.data), "botl")},
-                &.{@sizeOf(@TypeOf(triangle.data.botl))},
-            );
-            cmd.draw(3, 1, 0, 0);
-            try cmd.end();
-            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 1, .acq_rel);
-        }
-
-        fn cmdBuf2(self: @This()) void {
-            self.cmdBufs23(.@"2");
-            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 2, .acq_rel);
-        }
-
-        fn cmdBuf3(self: @This()) void {
-            self.cmdBufs23(.@"3");
-            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 4, .acq_rel);
-        }
-
-        fn cmdBufs23(self: @This(), comptime cb: enum { @"2", @"3" }) void {
-            errdefer |err| @panic(@errorName(err));
-            var cmd = try self.cmd_buf.begin(gpa, self.dev, .{
-                .one_time_submit = true,
-                .inheritance = .{
-                    .render_pass_continue = .{
-                        .render_pass = self.rp,
-                        .subpass = 0,
-                        .frame_buffer = self.fb,
-                    },
-                    .query_continue = null,
-                },
-            });
-            cmd.setPipeline(self.pl);
-            cmd.setViewports(&.{.{
-                .x = 0,
-                .y = 0,
-                .width = @TypeOf(t).width,
-                .height = @TypeOf(t).height,
-                .znear = 0,
-                .zfar = 0,
-            }});
-            cmd.setScissorRects(&.{.{
-                .x = 0,
-                .y = 0,
-                .width = @TypeOf(t).width,
-                .height = @TypeOf(t).height,
-            }});
-            switch (cb) {
-                .@"2" => cmd.setVertexBuffers(
-                    0,
-                    &.{self.buf},
-                    &.{@offsetOf(@TypeOf(triangle.data), "topl")},
-                    &.{@sizeOf(@TypeOf(triangle.data.topl))},
-                ),
-                .@"3" => cmd.setVertexBuffers(
-                    0,
-                    &.{self.buf},
-                    &.{@offsetOf(@TypeOf(triangle.data), "topr")},
-                    &.{@sizeOf(@TypeOf(triangle.data.topr))},
-                ),
-            }
-            cmd.draw(3, 1, 0, 0);
-            try cmd.end();
-        }
-    } = .{
-        .{
-            .dev = dev,
-            .rp = &rp,
-            .fb = &fb,
-            .buf = &buf,
-            .pl = &pls[1],
-            .cmd_buf = &t.cmd_bufs[1],
-            .done = &done,
-        },
-        .{
-            .dev = dev,
-            .rp = &rp,
-            .fb = &fb,
-            .buf = &buf,
-            .pl = &pls[0],
-            .cmd_buf = &t.cmd_bufs[2],
-            .done = &done,
-        },
-        .{
-            .dev = dev,
-            .rp = &rp,
-            .fb = &fb,
-            .buf = &buf,
-            .pl = &pls[0],
-            .cmd_buf = &t.cmd_bufs[3],
-            .done = &done,
-        },
-    };
-
-    const thrds = [3]std.Thread{
-        try std.Thread.spawn(.{ .allocator = gpa }, @TypeOf(rec[0]).cmdBuf1, .{rec[0]}),
-        try std.Thread.spawn(.{ .allocator = gpa }, @TypeOf(rec[1]).cmdBuf2, .{rec[1]}),
-        try std.Thread.spawn(.{ .allocator = gpa }, @TypeOf(rec[2]).cmdBuf3, .{rec[2]}),
-    };
-    defer for (thrds) |thrd| thrd.join();
-
-    @memcpy(
-        t.stg_data[0..@sizeOf(@TypeOf(triangle.data))],
-        @as([*]const u8, @ptrCast(&triangle.data))[0..@sizeOf(@TypeOf(triangle.data))],
-    );
-
-    var cmd = try t.cmd_bufs[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
-    cmd.copyBuffer(&.{.{
-        .source = &t.stg_buf,
-        .dest = &buf,
-        .regions = &.{.{
-            .source_offset = 0,
-            .dest_offset = 0,
-            .size = @sizeOf(@TypeOf(triangle.data)),
-        }},
-    }});
-    cmd.pipelineBarrier(&.{.{
-        .global_dependencies = &.{.{
-            .source_stage_mask = .{ .copy = true },
-            .source_access_mask = .{ .transfer_read = true, .transfer_write = true },
-            .dest_stage_mask = .{ .vertex_attribute_input = true },
-            .dest_access_mask = .{ .vertex_attribute_read = true },
-        }},
-        .by_region = false,
-    }});
-    cmd.beginRenderPass(
-        .{
-            .render_pass = &rp,
-            .frame_buffer = &fb,
-            .render_area = .{
-                .x = 0,
-                .y = 0,
-                .width = @TypeOf(t).width,
-                .height = @TypeOf(t).height,
-            },
-            .clear_values = &.{null},
-        },
-        // Only `Cmd.executeCommands` allowed in this subpass.
-        .{ .contents = .secondary_command_buffers_only },
-    );
-    while (@atomicLoad(@TypeOf(done), &done, .acquire) != (1 << rec.len) - 1) {}
-    cmd.executeCommands(blk: {
-        var ptrs: [rec.len]*ngl.CommandBuffer = undefined;
-        for (&ptrs, t.cmd_bufs[1..]) |*p, *c| p.* = c;
-        break :blk &ptrs;
-    });
-    cmd.endRenderPass(.{});
-    cmd.pipelineBarrier(&.{.{
-        .global_dependencies = &.{.{
-            .source_stage_mask = .{ .color_attachment_output = true },
-            .source_access_mask = .{ .color_attachment_write = true },
-            .dest_stage_mask = .{ .copy = true },
-            .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
-        }},
-        .by_region = false,
-    }});
-    cmd.copyImageToBuffer(&.{.{
-        .buffer = &t.stg_buf,
-        .image = &image,
-        .image_layout = .transfer_source_optimal,
-        .regions = &.{.{
-            .buffer_offset = 0,
-            .buffer_row_length = @TypeOf(t).width,
-            .buffer_image_height = @TypeOf(t).height,
-            .image_aspect = .color,
-            .image_level = 0,
-            .image_x = 0,
-            .image_y = 0,
-            .image_z_or_layer = 0,
-            .image_width = @TypeOf(t).width,
-            .image_height = @TypeOf(t).height,
-            .image_depth_or_layers = 1,
-        }},
-    }});
-    try cmd.end();
-    {
-        ctx.lockQueue(t.queue_i);
-        defer ctx.unlockQueue(t.queue_i);
-        try t.queue.submit(gpa, dev, &t.fence, &.{.{
-            .commands = &.{.{ .command_buffer = &t.cmd_bufs[0] }},
-            .wait = &.{},
-            .signal = &.{},
-        }});
-    }
-    try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&t.fence});
-
-    try t.validate();
-}
+//test "executeCommands command (drawing)" {
+//    const ctx = context();
+//    const dev = &ctx.device;
+//
+//    var t = try T(3).init(.{ .graphics = true });
+//    defer t.deinit();
+//
+//    var image = try ngl.Image.init(gpa, dev, .{
+//        .type = .@"2d",
+//        .format = @TypeOf(t).format,
+//        .width = @TypeOf(t).width,
+//        .height = @TypeOf(t).height,
+//        .depth_or_layers = 1,
+//        .levels = 1,
+//        .samples = .@"1",
+//        .tiling = .optimal,
+//        .usage = .{ .color_attachment = true, .transfer_source = true },
+//        .misc = .{},
+//        .initial_layout = .unknown,
+//    });
+//    defer image.deinit(gpa, dev);
+//    const img_reqs = image.getMemoryRequirements(dev);
+//    var img_mem = try dev.alloc(gpa, .{
+//        .size = img_reqs.size,
+//        .type_index = img_reqs.findType(dev.*, .{ .device_local = true }, null).?,
+//    });
+//    defer dev.free(gpa, &img_mem);
+//    try image.bind(dev, &img_mem, 0);
+//    var view = try ngl.ImageView.init(gpa, dev, .{
+//        .image = &image,
+//        .type = .@"2d",
+//        .format = @TypeOf(t).format,
+//        .range = .{
+//            .aspect_mask = .{ .color = true },
+//            .level = 0,
+//            .levels = 1,
+//            .layer = 0,
+//            .layers = 1,
+//        },
+//    });
+//    defer view.deinit(gpa, dev);
+//
+//    var rp = try ngl.RenderPass.init(gpa, dev, .{
+//        .attachments = &.{.{
+//            .format = @TypeOf(t).format,
+//            .samples = .@"1",
+//            .load_op = .dont_care,
+//            .store_op = .store,
+//            .initial_layout = .unknown,
+//            .final_layout = .transfer_source_optimal,
+//            .resolve_mode = null,
+//            .combined = null,
+//            .may_alias = false,
+//        }},
+//        .subpasses = &.{.{
+//            .pipeline_type = .graphics,
+//            .input_attachments = null,
+//            .color_attachments = &.{.{
+//                .index = 0,
+//                .layout = .color_attachment_optimal,
+//                .aspect_mask = .{ .color = true },
+//                .resolve = null,
+//            }},
+//            .depth_stencil_attachment = null,
+//            .preserve_attachments = null,
+//        }},
+//        .dependencies = null,
+//    });
+//    defer rp.deinit(gpa, dev);
+//    var fb = try ngl.FrameBuffer.init(gpa, dev, .{
+//        .render_pass = &rp,
+//        .attachments = &.{&view},
+//        .width = @TypeOf(t).width,
+//        .height = @TypeOf(t).height,
+//        .layers = 1,
+//    });
+//    defer fb.deinit(gpa, dev);
+//
+//    const triangle = struct {
+//        const format = ngl.Format.rg32_sfloat;
+//        const topology = ngl.Primitive.Topology.triangle_list;
+//        const clockwise = true;
+//
+//        const data: struct {
+//            topl: [3 * 2]f32 = .{
+//                0,  0,
+//                -2, 0,
+//                0,  -2,
+//            },
+//            topr: [3 * 2]f32 = .{
+//                0, 0,
+//                0, -2,
+//                2, 0,
+//            },
+//            botr: [3 * 2]f32 = .{
+//                0, 0,
+//                2, 0,
+//                0, 2,
+//            },
+//            botl: [3 * 2]f32 = .{
+//                0,  0,
+//                0,  2,
+//                -2, 0,
+//            },
+//        } = .{};
+//    };
+//
+//    comptime if (@TypeOf(t).size < @sizeOf(@TypeOf(triangle.data))) unreachable;
+//
+//    var buf = try ngl.Buffer.init(gpa, dev, .{
+//        .size = @sizeOf(@TypeOf(triangle.data)),
+//        .usage = .{ .vertex_buffer = true, .transfer_dest = true },
+//    });
+//    defer buf.deinit(gpa, dev);
+//    const buf_reqs = buf.getMemoryRequirements(dev);
+//    var buf_mem = try dev.alloc(gpa, .{
+//        .size = buf_reqs.size,
+//        .type_index = buf_reqs.findType(dev.*, .{ .device_local = true }, null).?,
+//    });
+//    defer dev.free(gpa, &buf_mem);
+//    try buf.bind(dev, &buf_mem, 0);
+//
+//    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
+//        .descriptor_set_layouts = null,
+//        .push_constant_ranges = null,
+//    });
+//    defer pl_layt.deinit(gpa, dev);
+//
+//    var stages = [_][2]ngl.ShaderStage.Desc{.{
+//        .{
+//            .stage = .vertex,
+//            .code = &vert_spv,
+//            .name = "main",
+//        },
+//        .{
+//            .stage = .fragment,
+//            .code = &frag_spv,
+//            .name = "main",
+//            .specialization = .{
+//                .constants = &.{.{
+//                    .id = 0,
+//                    .offset = 0,
+//                    .size = 4,
+//                }},
+//                .data = undefined,
+//            },
+//        },
+//    }} ** 2;
+//    stages[0][1].specialization.?.data = @as([*]const u8, @ptrCast(&@TypeOf(t).top_val))[0..4];
+//    stages[1][1].specialization.?.data = @as([*]const u8, @ptrCast(&@TypeOf(t).bot_val))[0..4];
+//
+//    const prim = ngl.Primitive{
+//        .bindings = &.{.{
+//            .binding = 0,
+//            .stride = 8,
+//            .step_rate = .vertex,
+//        }},
+//        .attributes = &.{.{
+//            .location = 0,
+//            .binding = 0,
+//            .format = triangle.format,
+//            .offset = 0,
+//        }},
+//        .topology = triangle.topology,
+//    };
+//
+//    const raster = ngl.Rasterization{
+//        .polygon_mode = .fill,
+//        .cull_mode = .back,
+//        .clockwise = triangle.clockwise,
+//        .samples = .@"1",
+//    };
+//
+//    const col_blend = ngl.ColorBlend{
+//        .attachments = &.{.{ .blend = null, .write = .all }},
+//    };
+//
+//    const pls = try ngl.Pipeline.initGraphics(gpa, dev, .{
+//        .states = &.{
+//            .{
+//                .stages = &stages[0],
+//                .layout = &pl_layt,
+//                .primitive = &prim,
+//                .rasterization = &raster,
+//                .depth_stencil = null,
+//                .color_blend = &col_blend,
+//                .render_pass = &rp,
+//                .subpass = 0,
+//            },
+//            .{
+//                .stages = &stages[1],
+//                .layout = &pl_layt,
+//                .primitive = &prim,
+//                .rasterization = &raster,
+//                .depth_stencil = null,
+//                .color_blend = &col_blend,
+//                .render_pass = &rp,
+//                .subpass = 0,
+//            },
+//        },
+//        .cache = null,
+//    });
+//    defer {
+//        for (pls) |*pl| pl.deinit(gpa, dev);
+//        gpa.free(pls);
+//    }
+//
+//    var done: u3 = 0;
+//
+//    const rec: [3]struct {
+//        dev: *ngl.Device,
+//        rp: *ngl.RenderPass,
+//        fb: *ngl.FrameBuffer,
+//        buf: *ngl.Buffer,
+//        pl: *ngl.Pipeline,
+//        cmd_buf: *ngl.CommandBuffer,
+//        done: *u3,
+//
+//        fn cmdBuf1(self: @This()) void {
+//            errdefer |err| @panic(@errorName(err));
+//            var cmd = try self.cmd_buf.begin(gpa, self.dev, .{
+//                .one_time_submit = true,
+//                .inheritance = .{
+//                    .render_pass_continue = .{
+//                        .render_pass = self.rp,
+//                        .subpass = 0,
+//                        .frame_buffer = self.fb,
+//                    },
+//                    .query_continue = null,
+//                },
+//            });
+//            cmd.setPipeline(self.pl);
+//            cmd.setViewports(&.{.{
+//                .x = 0,
+//                .y = 0,
+//                .width = @TypeOf(t).width,
+//                .height = @TypeOf(t).height,
+//                .znear = 0,
+//                .zfar = 0,
+//            }});
+//            cmd.setScissorRects(&.{.{
+//                .x = 0,
+//                .y = 0,
+//                .width = @TypeOf(t).width,
+//                .height = @TypeOf(t).height,
+//            }});
+//            cmd.setVertexBuffers(
+//                0,
+//                &.{self.buf},
+//                &.{@offsetOf(@TypeOf(triangle.data), "botr")},
+//                &.{@sizeOf(@TypeOf(triangle.data.botr))},
+//            );
+//            cmd.draw(3, 1, 0, 0);
+//            cmd.setVertexBuffers(
+//                0,
+//                &.{self.buf},
+//                &.{@offsetOf(@TypeOf(triangle.data), "botl")},
+//                &.{@sizeOf(@TypeOf(triangle.data.botl))},
+//            );
+//            cmd.draw(3, 1, 0, 0);
+//            try cmd.end();
+//            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 1, .acq_rel);
+//        }
+//
+//        fn cmdBuf2(self: @This()) void {
+//            self.cmdBufs23(.@"2");
+//            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 2, .acq_rel);
+//        }
+//
+//        fn cmdBuf3(self: @This()) void {
+//            self.cmdBufs23(.@"3");
+//            _ = @atomicRmw(@TypeOf(self.done.*), self.done, .Or, 4, .acq_rel);
+//        }
+//
+//        fn cmdBufs23(self: @This(), comptime cb: enum { @"2", @"3" }) void {
+//            errdefer |err| @panic(@errorName(err));
+//            var cmd = try self.cmd_buf.begin(gpa, self.dev, .{
+//                .one_time_submit = true,
+//                .inheritance = .{
+//                    .render_pass_continue = .{
+//                        .render_pass = self.rp,
+//                        .subpass = 0,
+//                        .frame_buffer = self.fb,
+//                    },
+//                    .query_continue = null,
+//                },
+//            });
+//            cmd.setPipeline(self.pl);
+//            cmd.setViewports(&.{.{
+//                .x = 0,
+//                .y = 0,
+//                .width = @TypeOf(t).width,
+//                .height = @TypeOf(t).height,
+//                .znear = 0,
+//                .zfar = 0,
+//            }});
+//            cmd.setScissorRects(&.{.{
+//                .x = 0,
+//                .y = 0,
+//                .width = @TypeOf(t).width,
+//                .height = @TypeOf(t).height,
+//            }});
+//            switch (cb) {
+//                .@"2" => cmd.setVertexBuffers(
+//                    0,
+//                    &.{self.buf},
+//                    &.{@offsetOf(@TypeOf(triangle.data), "topl")},
+//                    &.{@sizeOf(@TypeOf(triangle.data.topl))},
+//                ),
+//                .@"3" => cmd.setVertexBuffers(
+//                    0,
+//                    &.{self.buf},
+//                    &.{@offsetOf(@TypeOf(triangle.data), "topr")},
+//                    &.{@sizeOf(@TypeOf(triangle.data.topr))},
+//                ),
+//            }
+//            cmd.draw(3, 1, 0, 0);
+//            try cmd.end();
+//        }
+//    } = .{
+//        .{
+//            .dev = dev,
+//            .rp = &rp,
+//            .fb = &fb,
+//            .buf = &buf,
+//            .pl = &pls[1],
+//            .cmd_buf = &t.cmd_bufs[1],
+//            .done = &done,
+//        },
+//        .{
+//            .dev = dev,
+//            .rp = &rp,
+//            .fb = &fb,
+//            .buf = &buf,
+//            .pl = &pls[0],
+//            .cmd_buf = &t.cmd_bufs[2],
+//            .done = &done,
+//        },
+//        .{
+//            .dev = dev,
+//            .rp = &rp,
+//            .fb = &fb,
+//            .buf = &buf,
+//            .pl = &pls[0],
+//            .cmd_buf = &t.cmd_bufs[3],
+//            .done = &done,
+//        },
+//    };
+//
+//    const thrds = [3]std.Thread{
+//        try std.Thread.spawn(.{ .allocator = gpa }, @TypeOf(rec[0]).cmdBuf1, .{rec[0]}),
+//        try std.Thread.spawn(.{ .allocator = gpa }, @TypeOf(rec[1]).cmdBuf2, .{rec[1]}),
+//        try std.Thread.spawn(.{ .allocator = gpa }, @TypeOf(rec[2]).cmdBuf3, .{rec[2]}),
+//    };
+//    defer for (thrds) |thrd| thrd.join();
+//
+//    @memcpy(
+//        t.stg_data[0..@sizeOf(@TypeOf(triangle.data))],
+//        @as([*]const u8, @ptrCast(&triangle.data))[0..@sizeOf(@TypeOf(triangle.data))],
+//    );
+//
+//    var cmd = try t.cmd_bufs[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
+//    cmd.copyBuffer(&.{.{
+//        .source = &t.stg_buf,
+//        .dest = &buf,
+//        .regions = &.{.{
+//            .source_offset = 0,
+//            .dest_offset = 0,
+//            .size = @sizeOf(@TypeOf(triangle.data)),
+//        }},
+//    }});
+//    cmd.pipelineBarrier(&.{.{
+//        .global_dependencies = &.{.{
+//            .source_stage_mask = .{ .copy = true },
+//            .source_access_mask = .{ .transfer_read = true, .transfer_write = true },
+//            .dest_stage_mask = .{ .vertex_attribute_input = true },
+//            .dest_access_mask = .{ .vertex_attribute_read = true },
+//        }},
+//        .by_region = false,
+//    }});
+//    cmd.beginRenderPass(
+//        .{
+//            .render_pass = &rp,
+//            .frame_buffer = &fb,
+//            .render_area = .{
+//                .x = 0,
+//                .y = 0,
+//                .width = @TypeOf(t).width,
+//                .height = @TypeOf(t).height,
+//            },
+//            .clear_values = &.{null},
+//        },
+//        // Only `Cmd.executeCommands` allowed in this subpass.
+//        .{ .contents = .secondary_command_buffers_only },
+//    );
+//    while (@atomicLoad(@TypeOf(done), &done, .acquire) != (1 << rec.len) - 1) {}
+//    cmd.executeCommands(blk: {
+//        var ptrs: [rec.len]*ngl.CommandBuffer = undefined;
+//        for (&ptrs, t.cmd_bufs[1..]) |*p, *c| p.* = c;
+//        break :blk &ptrs;
+//    });
+//    cmd.endRenderPass(.{});
+//    cmd.pipelineBarrier(&.{.{
+//        .global_dependencies = &.{.{
+//            .source_stage_mask = .{ .color_attachment_output = true },
+//            .source_access_mask = .{ .color_attachment_write = true },
+//            .dest_stage_mask = .{ .copy = true },
+//            .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+//        }},
+//        .by_region = false,
+//    }});
+//    cmd.copyImageToBuffer(&.{.{
+//        .buffer = &t.stg_buf,
+//        .image = &image,
+//        .image_layout = .transfer_source_optimal,
+//        .regions = &.{.{
+//            .buffer_offset = 0,
+//            .buffer_row_length = @TypeOf(t).width,
+//            .buffer_image_height = @TypeOf(t).height,
+//            .image_aspect = .color,
+//            .image_level = 0,
+//            .image_x = 0,
+//            .image_y = 0,
+//            .image_z_or_layer = 0,
+//            .image_width = @TypeOf(t).width,
+//            .image_height = @TypeOf(t).height,
+//            .image_depth_or_layers = 1,
+//        }},
+//    }});
+//    try cmd.end();
+//    {
+//        ctx.lockQueue(t.queue_i);
+//        defer ctx.unlockQueue(t.queue_i);
+//        try t.queue.submit(gpa, dev, &t.fence, &.{.{
+//            .commands = &.{.{ .command_buffer = &t.cmd_bufs[0] }},
+//            .wait = &.{},
+//            .signal = &.{},
+//        }});
+//    }
+//    try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&t.fence});
+//
+//    try t.validate();
+//}
 
 fn T(comptime cmd_buf_sec_n: u32) type {
     return struct {
