@@ -373,6 +373,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         .stencil = null,
         .render_area = .{ .width = w, .height = h },
         .layers = 1,
+        .contents = .@"inline",
     });
 
     cmd.setShaders(

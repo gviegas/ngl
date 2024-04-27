@@ -798,6 +798,7 @@ test "Cache" {
         .render_area = .{ .width = 1, .height = 1 },
         .layers = 0,
         .view_mask = 0x1,
+        .contents = .@"inline",
     };
 
     inline for (@typeInfo(@TypeOf(Dynamic.rendering_mask)).Struct.fields) |field| {
@@ -957,6 +958,7 @@ test getPrimitivePipeline {
         .stencil = null,
         .render_area = .{ .width = 1600, .height = 900 },
         .layers = 1,
+        .contents = .@"inline",
     };
     key.rendering.set(rend);
 
@@ -1076,6 +1078,7 @@ test getRenderPass {
         .stencil = null,
         .render_area = .{ .width = 1184, .height = 666 },
         .layers = 1,
+        .contents = .@"inline",
     });
     const rp = try cache.getRenderPass(testing.allocator, dev, key.*);
     try testing.expect(cache.rendering.hash_map.count() == 1);
@@ -1092,6 +1095,7 @@ test getRenderPass {
         .stencil = null,
         .render_area = .{ .width = 1024, .height = 1024 },
         .layers = 1,
+        .contents = .@"inline",
     });
     const rp3 = try cache.getRenderPass(testing.allocator, dev, key.*);
     try testing.expect(cache.rendering.hash_map.count() == 1);
@@ -1115,6 +1119,7 @@ test getRenderPass {
         .stencil = null,
         .render_area = .{ .width = 1184, .height = 666 },
         .layers = 1,
+        .contents = .@"inline",
     });
     const rp4 = try cache.getRenderPass(testing.allocator, dev, key.*);
     try testing.expect(cache.rendering.hash_map.count() == 2);
@@ -1139,6 +1144,7 @@ test getRenderPass {
         .stencil = null,
         .render_area = .{ .width = 1184, .height = 666 },
         .layers = 1,
+        .contents = .@"inline",
     });
     const rp5 = try cache.getRenderPass(testing.allocator, dev, key.*);
     try testing.expect(cache.rendering.hash_map.count() == 2);
@@ -1163,6 +1169,7 @@ test getRenderPass {
         .stencil = null,
         .render_area = .{ .width = 1184, .height = 666 },
         .layers = 1,
+        .contents = .@"inline",
     });
     const rp6 = try cache.getRenderPass(testing.allocator, dev, key.*);
     try testing.expect(cache.rendering.hash_map.count() == 3);
@@ -1571,6 +1578,7 @@ test createPrimitivePipeline {
         },
         .render_area = .{ .width = 1920, .height = 1080 },
         .layers = 1,
+        .contents = .@"inline",
     });
     const rp = if (!dev.hasDynamicRendering())
         try createRenderPass(testing.allocator, dev, key.rendering)
@@ -1677,6 +1685,7 @@ test createRenderPass {
         .stencil = null,
         .render_area = .{ .width = 1024, .height = 1024 },
         .layers = 1,
+        .contents = .@"inline",
     });
     const dep_only = try createRenderPass(testing.allocator, dev, key);
     dev.vkDestroyRenderPass(dep_only, null);
@@ -1701,6 +1710,7 @@ test createRenderPass {
             },
             .render_area = .{ .width = 240, .height = 135 },
             .layers = 1,
+            .contents = .@"inline",
         });
         const sten_only = try createRenderPass(testing.allocator, dev, key);
         dev.vkDestroyRenderPass(sten_only, null);
@@ -1728,6 +1738,7 @@ test createRenderPass {
         .stencil = null,
         .render_area = .{ .width = 2048, .height = 2048 },
         .layers = 1,
+        .contents = .@"inline",
     });
     // TODO: Implement this.
     const ms_dep_only = createRenderPass(testing.allocator, dev, key);
@@ -1771,6 +1782,7 @@ test createRenderPass {
             .stencil = null,
             .render_area = .{ .width = 800, .height = 450 },
             .layers = 1,
+            .contents = .@"inline",
         });
         const col_only = try createRenderPass(testing.allocator, dev, key);
         dev.vkDestroyRenderPass(col_only, null);
@@ -1845,6 +1857,7 @@ test createRenderPass {
             .stencil = null,
             .render_area = .{ .width = 1024, .height = 576 },
             .layers = 1,
+            .contents = .@"inline",
         });
         const ms_col_only = try createRenderPass(testing.allocator, dev, key);
         dev.vkDestroyRenderPass(ms_col_only, null);
@@ -1915,6 +1928,7 @@ test createRenderPass {
         },
         .render_area = .{ .width = 1920, .height = 1080 },
         .layers = 1,
+        .contents = .@"inline",
     });
     const ms_col_ds = try createRenderPass(testing.allocator, dev, key);
     dev.vkDestroyRenderPass(ms_col_ds, null);
@@ -1989,6 +2003,7 @@ test createFramebuffer {
         .stencil = null,
         .render_area = .{ .width = 240, .height = 135 },
         .layers = 1,
+        .contents = .@"inline",
     });
     const no_attach_rp = try createRenderPass(testing.allocator, dev, key);
     defer dev.vkDestroyRenderPass(no_attach_rp, null);
@@ -2061,6 +2076,7 @@ test createFramebuffer {
         .stencil = null,
         .render_area = .{ .width = width, .height = height },
         .layers = 1,
+        .contents = .@"inline",
     });
     const col_only_rp = try createRenderPass(testing.allocator, dev, key);
     defer dev.vkDestroyRenderPass(col_only_rp, null);
@@ -2130,6 +2146,7 @@ test createFramebuffer {
         .stencil = null,
         .render_area = .{ .width = width, .height = height },
         .layers = 1,
+        .contents = .@"inline",
     });
     const dep_only_rp = try createRenderPass(testing.allocator, dev, key);
     defer dev.vkDestroyRenderPass(dep_only_rp, null);
@@ -2156,6 +2173,7 @@ test createFramebuffer {
         .stencil = null,
         .render_area = .{ .width = width, .height = height },
         .layers = 1,
+        .contents = .@"inline",
     });
     const col_dep_rp = try createRenderPass(testing.allocator, dev, key);
     defer dev.vkDestroyRenderPass(col_dep_rp, null);
@@ -2196,6 +2214,7 @@ test createFramebuffer {
         .stencil = null,
         .render_area = .{ .width = width, .height = height },
         .layers = 1,
+        .contents = .@"inline",
     });
     const ms_rp = try createRenderPass(testing.allocator, dev, key);
     defer dev.vkDestroyRenderPass(ms_rp, null);

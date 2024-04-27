@@ -1051,7 +1051,10 @@ pub const CommandBuffer = struct {
                     .clearValueCount = clear_n,
                     .pClearValues = if (clear_n > 0) &clears else null,
                 },
-                c.VK_SUBPASS_CONTENTS_INLINE, // TODO
+                switch (rendering.contents) {
+                    .@"inline" => c.VK_SUBPASS_CONTENTS_INLINE,
+                    .replay => c.VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS,
+                },
             );
         }
     }
@@ -2245,6 +2248,7 @@ test CommandBuffer {
         .stencil = null,
         .render_area = .{ .width = 1, .height = 1 },
         .layers = 1,
+        .contents = .@"inline",
     });
     try testing.expect(!prev_rend.eql(d.rendering));
 

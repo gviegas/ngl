@@ -187,6 +187,7 @@ test "submission of multiple command buffers" {
                     .stencil = null,
                     .render_area = .{ .width = width, .height = height },
                     .layers = 1,
+                    .contents = .@"inline",
                 });
                 cmd.setShaders(
                     &.{

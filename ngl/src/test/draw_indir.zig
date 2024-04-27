@@ -446,6 +446,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         .stencil = null,
         .render_area = .{ .width = width, .height = height },
         .layers = 1,
+        .contents = .@"inline",
     });
 
     if (indexed)

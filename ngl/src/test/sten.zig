@@ -416,6 +416,7 @@ test "stencil test" {
         },
         .render_area = .{ .width = w, .height = h },
         .layers = 1,
+        .contents = .@"inline",
     });
 
     for ([_]u64{

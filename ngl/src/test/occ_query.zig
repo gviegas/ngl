@@ -435,6 +435,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
         .stencil = null,
         .render_area = .{ .width = width, .height = height },
         .layers = 1,
+        .contents = .@"inline",
     });
     cmd.setShaders(&.{.vertex}, &.{if (shaders[0]) |*shd| shd else |err| return err});
     cmd.setVertexInput(&.{.{

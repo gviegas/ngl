@@ -358,6 +358,7 @@ test "depth-only rendering" {
         .stencil = null,
         .render_area = .{ .width = w, .height = h },
         .layers = 1,
+        .contents = .@"inline",
     });
 
     cmd.setShaders(&.{.vertex}, &.{&vert_shd});

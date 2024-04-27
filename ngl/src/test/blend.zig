@@ -390,6 +390,7 @@ const T = struct {
             .stencil = null,
             .render_area = .{ .width = width, .height = height },
             .layers = 1,
+            .contents = .@"inline",
         });
 
         cmd.setPushConstants(

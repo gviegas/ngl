@@ -1635,6 +1635,7 @@ test Rendering {
         .stencil = null,
         .render_area = .{ .width = 512, .height = 512 },
         .layers = 1,
+        .contents = .@"inline",
     };
     const rend = Cmd.Rendering{
         .colors = &.{
@@ -1697,6 +1698,7 @@ test Rendering {
         },
         .render_area = .{ .width = 480, .height = 270 },
         .layers = 1,
+        .contents = .@"inline",
     };
 
     r2.color_view.set(rend_empty);
@@ -1980,6 +1982,7 @@ test Rendering {
         .stencil = null,
         .render_area = .{ .width = 1, .height = 1 },
         .layers = 2,
+        .contents = .@"inline",
     });
     h1 = hashT(r1);
     try expectNotEql(r1, h1, r2);
@@ -1997,6 +2000,7 @@ test Rendering {
         .render_area = .{ .width = 1, .height = 1 },
         .layers = 0,
         .view_mask = 0x1,
+        .contents = .@"inline",
     });
     h1 = hashT(r1);
     try expectNotEql(r1, h1, r2);

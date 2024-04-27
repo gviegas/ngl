@@ -887,6 +887,7 @@ pub const CommandBuffer = struct {
             },
             layers: u32,
             view_mask: u32 = 0,
+            contents: Contents,
 
             pub const Attachment = struct {
                 view: *ImageView,
@@ -899,6 +900,15 @@ pub const CommandBuffer = struct {
                     layout: Image.Layout,
                     mode: ResolveMode,
                 },
+            };
+
+            pub const Contents = enum {
+                /// Calling `executeCommands` is disallowed.
+                @"inline",
+                /// Calling any commands other than
+                /// `executeCommands` and `endRendering` is
+                /// disallowed.
+                replay,
             };
         };
 
