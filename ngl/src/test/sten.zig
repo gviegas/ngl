@@ -192,172 +192,33 @@ test "stencil test" {
     });
     defer pl_layt.deinit(gpa, dev);
 
-    var rp = try ngl.RenderPass.init(gpa, dev, .{
-        .attachments = &.{
-            .{
-                .format = .r16_uint,
-                .samples = .@"1",
-                .load_op = .clear,
-                .store_op = .store,
-                .initial_layout = .unknown,
-                .final_layout = .transfer_source_optimal,
-                .resolve_mode = null,
-                .combined = null,
-                .may_alias = false,
-            },
-            .{
-                .format = ds_fmt,
-                .samples = .@"1",
-                .load_op = .clear,
-                .store_op = .dont_care,
-                .initial_layout = .unknown,
-                .final_layout = .transfer_source_optimal,
-                .resolve_mode = null,
-                .combined = .{
-                    .stencil_load_op = .clear,
-                    .stencil_store_op = .store,
-                },
-                .may_alias = false,
-            },
+    const shaders = try ngl.Shader.init(gpa, dev, &.{
+        .{
+            .type = .vertex,
+            .next = .{ .fragment = true },
+            .code = &vert_spv,
+            .name = "main",
+            .set_layouts = &.{},
+            .push_constants = &.{},
+            .specialization = null,
+            .link = true,
         },
-        .subpasses = &.{.{
-            .pipeline_type = .graphics,
-            .input_attachments = null,
-            .color_attachments = &.{.{
-                .index = 0,
-                .layout = .color_attachment_optimal,
-                .aspect_mask = .{ .color = true },
-                .resolve = null,
-            }},
-            .depth_stencil_attachment = .{
-                .index = 1,
-                .layout = .depth_stencil_attachment_optimal,
-                .aspect_mask = .{ .depth = true, .stencil = true },
-                .resolve = null,
-            },
-            .preserve_attachments = null,
-        }},
-        .dependencies = &.{
-            .{
-                .source_subpass = .external,
-                .dest_subpass = .{ .index = 0 },
-                .source_stage_mask = .{ .copy = true },
-                .source_access_mask = .{ .transfer_write = true },
-                .dest_stage_mask = .{ .vertex_attribute_input = true },
-                .dest_access_mask = .{ .vertex_attribute_read = true },
-                .by_region = false,
-            },
-            .{
-                .source_subpass = .{ .index = 0 },
-                .dest_subpass = .external,
-                .source_stage_mask = .{
-                    .late_fragment_tests = true,
-                    .color_attachment_output = true,
-                },
-                .source_access_mask = .{
-                    .color_attachment_write = true,
-                    .depth_stencil_attachment_write = true,
-                },
-                .dest_stage_mask = .{ .copy = true },
-                .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
-                .by_region = false,
-            },
+        .{
+            .type = .fragment,
+            .next = .{},
+            .code = &frag_spv,
+            .name = "main",
+            .set_layouts = &.{},
+            .push_constants = &.{},
+            .specialization = null,
+            .link = true,
         },
     });
-    defer rp.deinit(gpa, dev);
-
-    var fb = try ngl.FrameBuffer.init(gpa, dev, .{
-        .render_pass = &rp,
-        .attachments = &.{ &col_view, &ds_view },
-        .width = w,
-        .height = h,
-        .layers = 1,
-    });
-    defer fb.deinit(gpa, dev);
-
-    const state = ngl.GraphicsState{
-        .stages = &.{
-            .{
-                .stage = .vertex,
-                .code = &vert_spv,
-                .name = "main",
-            },
-            .{
-                .stage = .fragment,
-                .code = &frag_spv,
-                .name = "main",
-            },
-        },
-        .layout = &pl_layt,
-        .primitive = &.{
-            .bindings = &.{
-                .{
-                    .binding = 0,
-                    .stride = (3 + (1)) * 1,
-                    .step_rate = .vertex,
-                },
-                .{
-                    .binding = 1,
-                    .stride = (1 + (1)) * 2,
-                    .step_rate = .vertex,
-                },
-            },
-            .attributes = &.{
-                .{
-                    .location = 0,
-                    .binding = 1,
-                    .format = .r16_uint,
-                    .offset = 0,
-                },
-                .{
-                    .location = 1,
-                    .binding = 0,
-                    .format = .rgb8_snorm,
-                    .offset = 0,
-                },
-            },
-            .topology = .triangle_list,
-        },
-        .rasterization = &.{
-            .polygon_mode = .fill,
-            // Don't cull anything since we want to check
-            // the stencil attachment updates.
-            .cull_mode = .none,
-            .clockwise = true,
-            .samples = .@"1",
-        },
-        .depth_stencil = &.{
-            .depth_compare = .less,
-            .depth_write = true,
-            // The front-facing primitive must pass both the
-            // stencil test and the depth test.
-            .stencil_front = .{
-                .fail_op = .zero,
-                .pass_op = .increment_clamp,
-                .depth_fail_op = .zero,
-                .compare = .greater,
-            },
-            // The backing-face primitive must pass the stencil
-            // test and fail the depth test.
-            .stencil_back = .{
-                .fail_op = .zero,
-                .pass_op = .zero,
-                .depth_fail_op = .decrement_clamp,
-                .compare = .equal,
-            },
-        },
-        .color_blend = &.{
-            .attachments = &.{.{ .blend = null, .write = .all }},
-        },
-        .render_pass = &rp,
-        .subpass = 0,
-    };
-    var pl = blk: {
-        const s = try ngl.Pipeline.initGraphics(gpa, dev, .{ .states = &.{state}, .cache = null });
-        defer gpa.free(s);
-        break :blk s[0];
-    };
-    defer pl.deinit(gpa, dev);
+    defer {
+        for (shaders) |*shd|
+            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+        gpa.free(shaders);
+    }
 
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[queue_i] });
     defer cmd_pool.deinit(gpa, dev);
@@ -385,6 +246,100 @@ test "stencil test" {
         }},
     }});
 
+    cmd.pipelineBarrier(&.{.{
+        .buffer_dependencies = &.{.{
+            .source_stage_mask = .{ .copy = true },
+            .source_access_mask = .{ .transfer_write = true },
+            .dest_stage_mask = .{ .vertex_attribute_input = true },
+            .dest_access_mask = .{ .vertex_attribute_read = true },
+            .queue_transfer = null,
+            .buffer = &vert_buf,
+            .offset = 0,
+            .size = vert_size,
+        }},
+        .image_dependencies = &.{
+            .{
+                .source_stage_mask = .{},
+                .source_access_mask = .{},
+                .dest_stage_mask = .{ .color_attachment_output = true },
+                .dest_access_mask = .{ .color_attachment_write = true },
+                .queue_transfer = null,
+                .old_layout = .unknown,
+                .new_layout = .color_attachment_optimal,
+                .image = &col_img,
+                .range = .{
+                    .aspect_mask = .{ .color = true },
+                    .level = 0,
+                    .levels = 1,
+                    .layer = 0,
+                    .layers = 1,
+                },
+            },
+            .{
+                .source_stage_mask = .{},
+                .source_access_mask = .{},
+                .dest_stage_mask = .{ .early_fragment_tests = true, .late_fragment_tests = true },
+                .dest_access_mask = .{
+                    .depth_stencil_attachment_read = true,
+                    .depth_stencil_attachment_write = true,
+                },
+                .queue_transfer = null,
+                .old_layout = .unknown,
+                .new_layout = .depth_stencil_attachment_optimal,
+                .image = &ds_img,
+                .range = .{
+                    .aspect_mask = .{ .depth = true, .stencil = true },
+                    .level = 0,
+                    .levels = 1,
+                    .layer = 0,
+                    .layers = 1,
+                },
+            },
+        },
+        .by_region = false,
+    }});
+
+    cmd.setShaders(
+        &.{
+            .vertex,
+            .fragment,
+        },
+        &.{
+            if (shaders[0]) |*shd| shd else |err| return err,
+            if (shaders[1]) |*shd| shd else |err| return err,
+        },
+    );
+
+    cmd.setVertexInput(
+        &.{
+            .{
+                .binding = 0,
+                .stride = (3 + (1)) * 1,
+                .step_rate = .vertex,
+            },
+            .{
+                .binding = 1,
+                .stride = (1 + (1)) * 2,
+                .step_rate = .vertex,
+            },
+        },
+        &.{
+            .{
+                .location = 0,
+                .binding = 1,
+                .format = .r16_uint,
+                .offset = 0,
+            },
+            .{
+                .location = 1,
+                .binding = 0,
+                .format = .rgb8_snorm,
+                .offset = 0,
+            },
+        },
+    );
+    cmd.setPrimitiveTopology(.triangle_list);
+
     cmd.setViewports(&.{.{
         .x = 0,
         .y = 0,
@@ -400,51 +355,118 @@ test "stencil test" {
         .height = h,
     }});
 
-    // Has front and back stencil tests defined.
-    cmd.setPipeline(&pl);
+    cmd.setRasterizationEnable(true);
+    cmd.setPolygonMode(.fill);
+    // Don't cull anything since we want to check
+    // the stencil attachment updates.
+    cmd.setCullMode(.none);
+    cmd.setFrontFace(.clockwise);
+    cmd.setSampleCount(.@"1");
+    cmd.setSampleMask(0b1);
+    cmd.setDepthBiasEnable(false);
+    cmd.setColorBlendEnable(0, &.{false});
+    cmd.setColorWrite(0, &.{.all});
+
+    cmd.setDepthTestEnable(true);
+    cmd.setDepthCompareOp(.less);
+    cmd.setDepthWriteEnable(true);
+    cmd.setStencilTestEnable(true);
+
+    // The front-facing primitive must pass the
+    // stencil and depth tests.
+    cmd.setStencilOp(.front, .zero, .increment_clamp, .zero, .greater);
+    cmd.setStencilReadMask(.front, 0x0f);
+    cmd.setStencilWriteMask(.front, 0x0f);
+
+    // The back-facing primitive must pass the
+    // stencil test and fail the depth test.
+    cmd.setStencilOp(.back, .zero, .zero, .decrement_clamp, .equal);
+    cmd.setStencilReadMask(.back, 0xf0);
+    cmd.setStencilWriteMask(.back, 0xf0);
+
+    cmd.setStencilReference(.front_and_back, 0x8f);
+
     // Binding #1 is the same for both draws.
     cmd.setVertexBuffers(1, &.{&vert_buf}, &.{0}, &.{@sizeOf(@TypeOf(col_data))});
 
-    const front_mask = 0x0f;
-    const back_mask = 0xf0;
-    inline for (.{ .front, .back }, .{ front_mask, back_mask }) |face, mask| {
-        cmd.setStencilReadMask(face, mask);
-        cmd.setStencilWriteMask(face, mask);
+    cmd.beginRendering(.{
+        .colors = &.{.{
+            .view = &col_view,
+            .layout = .color_attachment_optimal,
+            .load_op = .clear,
+            .store_op = .store,
+            .clear_value = .{ .color_u32 = .{ 2, 0, 0, 0 } },
+            .resolve = null,
+        }},
+        .depth = .{
+            .view = &ds_view,
+            .layout = .depth_stencil_attachment_optimal,
+            .load_op = .clear,
+            .store_op = .dont_care,
+            .clear_value = .{ .depth_stencil = .{ 0.5, undefined } },
+            .resolve = null,
+        },
+        .stencil = .{
+            .view = &ds_view,
+            .layout = .depth_stencil_attachment_optimal,
+            .load_op = .clear,
+            .store_op = .store,
+            .clear_value = .{ .depth_stencil = .{ undefined, 0x80 } },
+            .resolve = null,
+        },
+        .render_area = .{ .width = w, .height = h },
+        .layers = 1,
+    });
+
+    for ([_]u64{
+        @sizeOf(@TypeOf(col_data)),
+        @sizeOf(@TypeOf(col_data)) + @sizeOf(@TypeOf(pos_data)) / 2,
+    }) |vb_off| {
+        cmd.setVertexBuffers(0, &.{&vert_buf}, &.{vb_off}, &.{@sizeOf(@TypeOf(pos_data)) / 2});
+        cmd.draw(3, 1, 0, 0);
     }
 
-    const reference = 0x8f;
-    cmd.setStencilReference(.front_and_back, reference);
+    cmd.endRendering();
 
-    cmd.beginRenderPass(.{
-        .render_pass = &rp,
-        .frame_buffer = &fb,
-        .render_area = .{
-            .x = 0,
-            .y = 0,
-            .width = w,
-            .height = h,
+    cmd.pipelineBarrier(&.{.{
+        .image_dependencies = &.{
+            .{
+                .source_stage_mask = .{ .color_attachment_output = true },
+                .source_access_mask = .{ .color_attachment_write = true },
+                .dest_stage_mask = .{ .copy = true },
+                .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+                .queue_transfer = null,
+                .old_layout = .color_attachment_optimal,
+                .new_layout = .transfer_source_optimal,
+                .image = &col_img,
+                .range = .{
+                    .aspect_mask = .{ .color = true },
+                    .level = 0,
+                    .levels = 1,
+                    .layer = 0,
+                    .layers = 1,
+                },
+            },
+            .{
+                .source_stage_mask = .{ .early_fragment_tests = true, .late_fragment_tests = true },
+                .source_access_mask = .{ .depth_stencil_attachment_write = true },
+                .dest_stage_mask = .{ .copy = true },
+                .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+                .queue_transfer = null,
+                .old_layout = .depth_stencil_attachment_optimal,
+                .new_layout = .transfer_source_optimal,
+                .image = &ds_img,
+                .range = .{
+                    .aspect_mask = .{ .depth = true, .stencil = true },
+                    .level = 0,
+                    .levels = 1,
+                    .layer = 0,
+                    .layers = 1,
+                },
+            },
         },
-        .clear_values = &.{
-            .{ .color_u32 = .{ 2, 0, 0, 0 } },
-            // The second draw must fail the depth test.
-            .{ .depth_stencil = .{ 0.5, 0x80 } },
-        },
-    }, .{ .contents = .inline_only });
-    cmd.setVertexBuffers(
-        0,
-        &.{&vert_buf},
-        &.{@sizeOf(@TypeOf(col_data))},
-        &.{@sizeOf(@TypeOf(pos_data)) / 2},
-    );
-    cmd.draw(3, 1, 0, 0);
-    cmd.setVertexBuffers(
-        0,
-        &.{&vert_buf},
-        &.{@sizeOf(@TypeOf(col_data)) + @sizeOf(@TypeOf(pos_data)) / 2},
-        &.{@sizeOf(@TypeOf(pos_data)) / 2},
-    );
-    cmd.draw(3, 1, 0, 0);
-    cmd.endRenderPass(.{});
+        .by_region = false,
+    }});
 
     cmd.copyImageToBuffer(&.{
         .{
@@ -566,7 +588,7 @@ test "stencil test" {
                 const i = (x + w * y) * 2;
                 const data = @as(*const u16, @ptrCast(@alignCast(p + i))).*;
                 try str.appendSlice(switch (data) {
-                    clear_col => " ∙",
+                    clear_col => "⚫",
                     vert_col => "🐝",
                     else => unreachable,
                 });
@@ -579,9 +601,9 @@ test "stencil test" {
                 const i = copy_sten_off + (x + w * y) * 1;
                 const data = p[i];
                 try str.appendSlice(switch (data) {
-                    clear_sten => " ∙",
-                    sten_front => " ●",
-                    sten_back => " ○",
+                    clear_sten => "⚫",
+                    sten_front => "🟡",
+                    sten_back => "⚪",
                     else => unreachable,
                 });
             }
