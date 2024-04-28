@@ -268,7 +268,8 @@ pub const CommandBuffer = struct {
                     // TODO: Add functionality to `Cache` for
                     // this purpose. We only need a compatible
                     // render pass here.
-                    var key = dyn.Rendering(Dynamic.rendering_mask).init();
+                    const d = cmd_buf.dyn.?;
+                    var key = &d.rendering;
 
                     const max_col = ngl.Cmd.max_color_attachment;
                     var cols: [max_col]ngl.Cmd.Rendering.Attachment = undefined;
@@ -337,7 +338,7 @@ pub const CommandBuffer = struct {
                         .contents = .@"inline",
                     });
 
-                    inher_info.renderPass = try dev.cache.getRenderPass(dev.gpa, dev, key);
+                    inher_info.renderPass = try dev.cache.getRenderPass(dev.gpa, dev, key.*);
                 }
             }
 
@@ -353,7 +354,10 @@ pub const CommandBuffer = struct {
             .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .pNext = null,
             .flags = flags,
-            .pInheritanceInfo = if (desc.inheritance != null) &inher_info else null,
+            .pInheritanceInfo = if (desc.inheritance != null)
+                &inher_info
+            else
+                null,
         }));
     }
 
