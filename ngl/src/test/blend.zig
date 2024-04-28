@@ -415,6 +415,7 @@ const T = struct {
         cmd.setSampleMask(0b1);
         cmd.setDepthBiasEnable(false);
         cmd.setDepthTestEnable(false);
+        cmd.setDepthWriteEnable(false);
         cmd.setStencilTestEnable(false);
         cmd.setColorWrite(0, &.{.all});
 

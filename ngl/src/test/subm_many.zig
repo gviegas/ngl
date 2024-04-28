@@ -223,6 +223,7 @@ test "submission of multiple command buffers" {
                 cmd.setSampleMask(0b1);
                 cmd.setDepthBiasEnable(false);
                 cmd.setDepthTestEnable(false);
+                cmd.setDepthWriteEnable(false);
                 cmd.setStencilTestEnable(false);
                 cmd.setColorBlendEnable(0, &.{true});
                 cmd.setColorBlend(0, &.{blend});

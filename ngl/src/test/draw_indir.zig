@@ -429,6 +429,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
     cmd.setSampleMask(0b1);
     cmd.setDepthBiasEnable(false);
     cmd.setDepthTestEnable(false);
+    cmd.setDepthWriteEnable(false);
     cmd.setStencilTestEnable(false);
     cmd.setColorBlendEnable(0, &.{false});
     cmd.setColorWrite(0, &.{.all});
