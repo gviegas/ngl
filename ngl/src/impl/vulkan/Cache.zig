@@ -356,8 +356,8 @@ pub fn createPrimitivePipeline(
 
     const col_n = blk: {
         var n: u32 = 0;
-        for (rendering.color_view.views) |view| {
-            if (view.val == 0) break;
+        for (rendering.color_format.formats) |fmt| {
+            if (fmt == .unknown) break;
             n += 1;
         }
         break :blk n;
@@ -1305,7 +1305,8 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
 
     const col_n = blk: {
         var col_n: u32 = ngl.Cmd.max_color_attachment;
-        while (col_n != 0 and rendering.color_view.views[col_n - 1].val == 0) : (col_n -= 1) {}
+        const col_fmts = &rendering.color_format.formats;
+        while (col_n != 0 and col_fmts[col_n - 1] == .unknown) : (col_n -= 1) {}
         break :blk col_n;
     };
 
