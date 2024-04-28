@@ -206,7 +206,9 @@ pub const CommandPool = struct {
                 // BUG: This assumes that the same allocator is
                 // used by both `CommandPool` and `CommandBuffer`
                 // (need to enforce this in the client API).
-                ptr.dyn.?.clear(allocator, dev);
+                //ptr.dyn.?.clear(allocator, dev);
+                // BUG #2: See `CommandBuffer.setVertexInput`.
+                ptr.dyn.?.clear(dev.gpa, dev);
                 allocator.destroy(ptr.dyn.?);
             }
             allocator.destroy(ptr);
@@ -377,7 +379,7 @@ pub const CommandBuffer = struct {
 
     pub fn setShaders(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
         types: []const ngl.Shader.Type,
@@ -400,10 +402,7 @@ pub const CommandBuffer = struct {
                         );
                     break;
                 };
-        } else {
-            _ = allocator;
-            @panic("Not yet implemented");
-        }
+        } else @panic("Not yet implemented");
     }
 
     pub fn setDescriptors(
@@ -472,23 +471,22 @@ pub const CommandBuffer = struct {
 
     pub fn setVertexInput(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
         bindings: []const ngl.Cmd.VertexInputBinding,
         attributes: []const ngl.Cmd.VertexInputAttribute,
     ) void {
+        const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
 
         if (cmd_buf.dyn) |d| {
-            d.state.vertex_input.set(allocator, bindings, attributes) catch |err| {
+            // BUG: Note `dev.gpa`.
+            d.state.vertex_input.set(dev.gpa, bindings, attributes) catch |err| {
                 d.err = err;
             };
             d.changed = true;
-        } else {
-            _ = device;
-            @panic("Not yet implemented");
-        }
+        } else @panic("Not yet implemented");
     }
 
     pub fn setPrimitiveTopology(
@@ -910,7 +908,7 @@ pub const CommandBuffer = struct {
 
     pub fn setColorBlendEnable(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
         first_attachment: ngl.Cmd.ColorAttachmentIndex,
@@ -922,7 +920,6 @@ pub const CommandBuffer = struct {
             d.state.color_blend_enable.set(first_attachment, enable);
             d.changed = true;
         } else {
-            _ = allocator;
             _ = device;
             @panic("Not yet implemented");
         }
@@ -930,7 +927,7 @@ pub const CommandBuffer = struct {
 
     pub fn setColorBlend(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
         first_attachment: ngl.Cmd.ColorAttachmentIndex,
@@ -942,7 +939,6 @@ pub const CommandBuffer = struct {
             d.state.color_blend.set(first_attachment, blend);
             d.changed = true;
         } else {
-            _ = allocator;
             _ = device;
             @panic("Not yet implemented");
         }
@@ -950,7 +946,7 @@ pub const CommandBuffer = struct {
 
     pub fn setColorWrite(
         _: *anyopaque,
-        allocator: std.mem.Allocator,
+        _: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
         first_attachment: ngl.Cmd.ColorAttachmentIndex,
@@ -962,7 +958,6 @@ pub const CommandBuffer = struct {
             d.state.color_write.set(first_attachment, write_masks);
             d.changed = true;
         } else {
-            _ = allocator;
             _ = device;
             @panic("Not yet implemented");
         }
@@ -1068,8 +1063,12 @@ pub const CommandBuffer = struct {
                 d.err = err;
                 return;
             };
-            if (d.fbo != null_handle) unreachable;
-            d.fbo = Cache.createFramebuffer(dev.gpa, dev, d.rendering, rp) catch |err| {
+            const fbo = Cache.createFramebuffer(dev.gpa, dev, d.rendering, rp) catch |err| {
+                d.err = err;
+                return;
+            };
+            d.fbo.append(dev.gpa, fbo) catch |err| {
+                dev.vkDestroyFramebuffer(fbo, null);
                 d.err = err;
                 return;
             };
@@ -1122,7 +1121,7 @@ pub const CommandBuffer = struct {
                     .sType = c.VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
                     .pNext = null,
                     .renderPass = rp,
-                    .framebuffer = d.fbo,
+                    .framebuffer = fbo,
                     .renderArea = .{
                         .offset = .{
                             .x = @min(rendering.render_area.x, std.math.maxInt(i32)),
@@ -1162,8 +1161,6 @@ pub const CommandBuffer = struct {
             const d = cmd_buf.dyn.?;
             d.rendering.clear(null);
             dev.vkCmdEndRenderPass(cmd_buf.handle);
-            dev.vkDestroyFramebuffer(d.fbo, null);
-            d.fbo = null_handle;
         }
     }
 
@@ -1916,7 +1913,7 @@ pub const Dynamic = struct {
     state: dyn.State(state_mask),
     rendering: dyn.Rendering(rendering_mask),
     changed: bool,
-    fbo: c.VkFramebuffer,
+    fbo: std.ArrayListUnmanaged(c.VkFramebuffer),
     err: ?Error,
 
     pub const state_mask = dyn.StateMask(.primitive){
@@ -1977,7 +1974,7 @@ pub const Dynamic = struct {
         self.state = @TypeOf(self.state).init();
         self.rendering = @TypeOf(self.rendering).init();
         self.changed = true;
-        self.fbo = null_handle;
+        self.fbo = .{};
         self.err = null;
         return self;
     }
@@ -1985,9 +1982,13 @@ pub const Dynamic = struct {
     pub fn clear(self: *@This(), allocator: ?std.mem.Allocator, device: *Device) void {
         self.state.clear(allocator);
         self.rendering.clear(allocator);
-        device.vkDestroyFramebuffer(self.fbo, null);
         self.changed = true;
-        self.fbo = null_handle;
+        for (self.fbo.items) |x|
+            device.vkDestroyFramebuffer(x, null);
+        if (allocator) |x|
+            self.fbo.clearAndFree(x)
+        else
+            self.fbo.clearRetainingCapacity();
         self.err = null;
     }
 
@@ -1999,7 +2000,7 @@ pub const Dynamic = struct {
             .state = state,
             .rendering = try self.rendering.clone(allocator),
             .changed = true,
-            .fbo = null_handle,
+            .fbo = .{},
             .err = null,
         };
     }
