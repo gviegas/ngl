@@ -3161,18 +3161,18 @@ const vtable = Impl.VTable{
     .initShader = @import("shd.zig").Shader.init,
     .deinitShader = @import("shd.zig").Shader.deinit,
 
-    .initDescriptorSetLayout = @import("desc.zig").DescriptorSetLayout.init,
-    .deinitDescriptorSetLayout = @import("desc.zig").DescriptorSetLayout.deinit,
+    .initDescriptorSetLayout = @import("shd.zig").DescriptorSetLayout.init,
+    .deinitDescriptorSetLayout = @import("shd.zig").DescriptorSetLayout.deinit,
 
-    .initPipelineLayout = @import("desc.zig").PipelineLayout.init,
-    .deinitPipelineLayout = @import("desc.zig").PipelineLayout.deinit,
+    .initPipelineLayout = @import("shd.zig").PipelineLayout.init,
+    .deinitPipelineLayout = @import("shd.zig").PipelineLayout.deinit,
 
-    .initDescriptorPool = @import("desc.zig").DescriptorPool.init,
-    .allocDescriptorSets = @import("desc.zig").DescriptorPool.alloc,
-    .resetDescriptorPool = @import("desc.zig").DescriptorPool.reset,
-    .deinitDescriptorPool = @import("desc.zig").DescriptorPool.deinit,
+    .initDescriptorPool = @import("shd.zig").DescriptorPool.init,
+    .allocDescriptorSets = @import("shd.zig").DescriptorPool.alloc,
+    .resetDescriptorPool = @import("shd.zig").DescriptorPool.reset,
+    .deinitDescriptorPool = @import("shd.zig").DescriptorPool.deinit,
 
-    .writeDescriptorSets = @import("desc.zig").DescriptorSet.write,
+    .writeDescriptorSets = @import("shd.zig").DescriptorSet.write,
 
     .initPipelinesGraphics = @import("state.zig").Pipeline.initGraphics,
     .initPipelinesCompute = @import("state.zig").Pipeline.initCompute,

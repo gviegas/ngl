@@ -20,7 +20,7 @@ test "DescriptorPool.init/deinit" {
             .sampler = 3,
             .sampled_image = 5,
             .uniform_buffer = 1,
-            .input_attachment = 1,
+            //.input_attachment = 1,
         },
     });
     defer desc_pool_2.deinit(gpa, dev);
@@ -31,7 +31,7 @@ test "DescriptorPool.init/deinit" {
             .combined_image_sampler = 20,
             .uniform_buffer = 16,
             .storage_buffer = 4,
-            .input_attachment = 2,
+            //.input_attachment = 2,
         },
     });
     defer desc_pool_3.deinit(gpa, dev);
@@ -47,7 +47,7 @@ test "DescriptorPool.init/deinit" {
             .storage_texel_buffer = 3,
             .uniform_buffer = 75,
             .storage_buffer = 8,
-            .input_attachment = 12,
+            //.input_attachment = 12,
         },
     });
     desc_pool_4.deinit(gpa, dev);
@@ -123,7 +123,7 @@ test "DescriptorPool.alloc/reset" {
         .storage_texel_buffer = 0 + 0 + 0,
         .uniform_buffer = 1 + 0 + 8,
         .storage_buffer = 0 + 0 + 0,
-        .input_attachment = 0 + 0 + 0,
+        //.input_attachment = 0 + 0 + 0,
     };
 
     var pool = try ngl.DescriptorPool.init(gpa, dev, .{ .max_sets = 3, .pool_size = size });

@@ -663,7 +663,7 @@ pub fn toVkDescriptorType(descriptor_type: ngl.DescriptorType) c.VkDescriptorTyp
         .storage_texel_buffer => c.VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
         .uniform_buffer => c.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         .storage_buffer => c.VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-        .input_attachment => c.VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
+        //.input_attachment => c.VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,
     };
 }
 

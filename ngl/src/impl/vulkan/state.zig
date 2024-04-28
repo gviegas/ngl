@@ -10,7 +10,7 @@ const null_handle = conv.null_handle;
 const ndhOrNull = conv.ndhOrNull;
 const check = conv.check;
 const Device = @import("init.zig").Device;
-const PipelineLayout = @import("desc.zig").PipelineLayout;
+const PipelineLayout = @import("shd.zig").PipelineLayout;
 const RenderPass = @import("pass.zig").RenderPass;
 
 pub const Pipeline = struct {
