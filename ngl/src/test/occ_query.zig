@@ -175,7 +175,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
 
     const triangle = struct {
         const format = ngl.Format.rgb32_sfloat;
-        const topology = ngl.Primitive.Topology.triangle_list;
+        const topology = ngl.Cmd.PrimitiveTopology.triangle_list;
         const front_face = .clockwise;
 
         // Each triangle will cover one half of the render area.

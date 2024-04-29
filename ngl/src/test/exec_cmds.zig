@@ -449,7 +449,7 @@ test "executeCommands command (drawing)" {
 
     const triangle = struct {
         const format = ngl.Format.rg32_sfloat;
-        const topology = ngl.Primitive.Topology.triangle_list;
+        const topology = ngl.Cmd.PrimitiveTopology.triangle_list;
         const front_face = ngl.Cmd.FrontFace.clockwise;
 
         const data: struct {

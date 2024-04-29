@@ -548,7 +548,7 @@ test "stencil test" {
 
     const stenValue = struct {
         fn f(param: struct {
-            stencil_op: ngl.DepthStencil.StencilOp,
+            stencil_op: ngl.Cmd.StencilOp,
             write_mask: u8,
             attachment: u8,
         }) u8 {

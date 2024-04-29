@@ -51,7 +51,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         const color_format = ngl.Format.rgba32_sfloat;
         const position_offset = @offsetOf(Vertex, "x");
         const color_offset = @offsetOf(Vertex, "r");
-        const topology = ngl.Primitive.Topology.triangle_list;
+        const topology = ngl.Cmd.PrimitiveTopology.triangle_list;
         const front_face: ngl.Cmd.FrontFace = if (indexed) .counter_clockwise else .clockwise;
 
         const Vertex = packed struct {
