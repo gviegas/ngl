@@ -108,7 +108,7 @@ pub const RenderPass = packed struct {
             for (subp_descs, desc.subpasses) |*subp_desc, subp| {
                 subp_desc.* = .{
                     .flags = 0,
-                    .pipelineBindPoint = conv.toVkPipelineBindPoint(subp.pipeline_type),
+                    .pipelineBindPoint = conv.toVkPipelineBindPoint(.graphics),
                     .inputAttachmentCount = undefined,
                     .pInputAttachments = undefined,
                     .colorAttachmentCount = undefined,

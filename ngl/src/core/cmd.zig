@@ -14,6 +14,7 @@ const Access = ngl.Access;
 const RenderPass = ngl.RenderPass;
 const FrameBuffer = ngl.FrameBuffer;
 const Shader = ngl.Shader;
+const BindPoint = ngl.BindPoint;
 const PipelineLayout = ngl.PipelineLayout;
 const DescriptorSet = ngl.DescriptorSet;
 const Pipeline = ngl.Pipeline;
@@ -175,7 +176,7 @@ pub const CommandBuffer = struct {
         /// ✘ Transfer queue
         pub fn setDescriptors(
             self: *Cmd,
-            pipeline_type: Pipeline.Type,
+            bind_point: BindPoint,
             pipeline_layout: *PipelineLayout,
             first_set: u32,
             descriptor_sets: []const *DescriptorSet,
@@ -184,7 +185,7 @@ pub const CommandBuffer = struct {
                 self.allocator,
                 self.device.impl,
                 self.command_buffer.impl,
-                pipeline_type,
+                bind_point,
                 pipeline_layout.impl,
                 first_set,
                 descriptor_sets,

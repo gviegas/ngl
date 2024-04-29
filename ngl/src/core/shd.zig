@@ -67,6 +67,11 @@ pub const Shader = struct {
     }
 };
 
+pub const BindPoint = enum {
+    graphics,
+    compute,
+};
+
 pub const DescriptorType = enum {
     sampler,
     combined_image_sampler,

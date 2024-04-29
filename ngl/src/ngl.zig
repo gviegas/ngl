@@ -25,6 +25,7 @@ pub const Sampler = @import("core/res.zig").Sampler;
 pub const RenderPass = @import("core/pass.zig").RenderPass;
 pub const FrameBuffer = @import("core/pass.zig").FrameBuffer;
 pub const Shader = @import("core/shd.zig").Shader;
+pub const BindPoint = @import("core/shd.zig").BindPoint;
 pub const DescriptorType = @import("core/shd.zig").DescriptorType;
 pub const DescriptorSetLayout = @import("core/shd.zig").DescriptorSetLayout;
 pub const PushConstantRange = @import("core/shd.zig").PushConstantRange;

@@ -396,7 +396,7 @@ pub const CommandBuffer = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        pipeline_type: ngl.Pipeline.Type,
+        bind_point: ngl.BindPoint,
         pipeline_layout: Impl.PipelineLayout,
         first_set: u32,
         descriptor_sets: []const *ngl.DescriptorSet,
@@ -412,7 +412,7 @@ pub const CommandBuffer = struct {
                     allocator,
                     device,
                     command_buffer,
-                    pipeline_type,
+                    bind_point,
                     pipeline_layout,
                     @intCast(first_set + i),
                     descriptor_sets[i .. i + 1],
@@ -426,7 +426,7 @@ pub const CommandBuffer = struct {
 
         Device.cast(device).vkCmdBindDescriptorSets(
             cast(command_buffer).handle,
-            conv.toVkPipelineBindPoint(pipeline_type),
+            conv.toVkPipelineBindPoint(bind_point),
             PipelineLayout.cast(pipeline_layout).handle,
             first_set,
             @intCast(desc_sets.len),

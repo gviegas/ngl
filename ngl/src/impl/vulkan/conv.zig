@@ -667,8 +667,8 @@ pub fn toVkDescriptorType(descriptor_type: ngl.DescriptorType) c.VkDescriptorTyp
     };
 }
 
-pub fn toVkPipelineBindPoint(pipeline_type: ngl.Pipeline.Type) c.VkPipelineBindPoint {
-    return switch (pipeline_type) {
+pub fn toVkPipelineBindPoint(bind_point: ngl.BindPoint) c.VkPipelineBindPoint {
+    return switch (bind_point) {
         .graphics => c.VK_PIPELINE_BIND_POINT_GRAPHICS,
         .compute => c.VK_PIPELINE_BIND_POINT_COMPUTE,
     };
