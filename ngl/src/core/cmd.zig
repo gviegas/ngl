@@ -1376,6 +1376,9 @@ pub const CommandBuffer = struct {
         /// One must ensure that `endRendering` and `endQuery`
         /// have been called for any active render pass and
         /// query, respectively.
+        /// If `end` returns an error, then the command buffer
+        /// is in an invalid state and must not be submitted
+        /// for execution.
         /// Note that this isn't a command.
         pub fn end(self: *Cmd) Error!void {
             defer self.* = undefined;

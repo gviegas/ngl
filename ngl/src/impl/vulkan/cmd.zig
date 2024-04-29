@@ -1818,11 +1818,14 @@ pub const CommandBuffer = struct {
         const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
 
-        const ret = check(dev.vkEndCommandBuffer(cmd_buf.handle));
+        // We only end the command buffer if there
+        // was no error during recording, as the
+        // caller is required to reset it before
+        // beginning again.
         if (cmd_buf.dyn) |d|
-            // Prioritize this error.
             if (d.err) |err| return err;
-        return ret;
+
+        return check(dev.vkEndCommandBuffer(cmd_buf.handle));
     }
 };
 
