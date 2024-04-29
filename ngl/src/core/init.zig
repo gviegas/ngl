@@ -3,6 +3,7 @@ const std = @import("std");
 const ngl = @import("../ngl.zig");
 const DriverApi = ngl.DriverApi;
 const CommandBuffer = ngl.CommandBuffer;
+const Cmd = ngl.Cmd;
 const Stage = ngl.Stage;
 const Fence = ngl.Fence;
 const Semaphore = ngl.Semaphore;
@@ -381,16 +382,16 @@ pub const Feature = union(enum) {
             max_size: u64 = 1073741824,
             min_map_alignment: u64,
         },
-        sampler: struct {
-            max_count: u32 = 4000,
-            max_anisotropy: u5 = 1,
-            address_mode_mirror_clamp_to_edge: bool,
+        buffer: struct {
+            max_size: u64 = 1073741824,
+            max_texel_elements: u32 = 65536,
+            min_texel_offset_alignment: u64 = 256,
         },
         image: struct {
-            max_dimension_1d: u32 = 4096,
-            max_dimension_2d: u32 = 4096,
-            max_dimension_cube: u32 = 4096,
-            max_dimension_3d: u32 = 256,
+            max_1d_extent: u32 = 4096,
+            max_2d_extent: u32 = 4096,
+            max_cube_extent: u32 = 4096,
+            max_3d_extent: u32 = 256,
             max_layers: u32 = 256,
             sampled_color_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
             sampled_integer_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true },
@@ -399,10 +400,30 @@ pub const Feature = union(enum) {
             storage_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true },
             cube_array: bool,
         },
-        buffer: struct {
-            max_size: u64 = 1073741824,
-            max_texel_elements: u32 = 65536,
-            min_texel_offset_alignment: u64 = 256,
+        sampler: struct {
+            max_count: u32 = 4000,
+            max_anisotropy: u5 = 1,
+            address_mode_mirror_clamp_to_edge: bool,
+        },
+        vertex: struct {
+            max_output_components: u32 = 64,
+            stores_and_atomics: bool,
+        },
+        fragment: struct {
+            max_input_components: u32 = 64,
+            max_output_attachments: u32 = 4,
+            max_combined_output_resources: u32 = 4,
+            stores_and_atomics: bool,
+        },
+        compute: struct {
+            max_shared_memory_size: u32 = 16384,
+            max_group_count_x: u32 = 65535,
+            max_group_count_y: u32 = 65535,
+            max_group_count_z: u32 = 65535,
+            max_local_invocations: u32 = 128,
+            max_local_size_x: u32 = 128,
+            max_local_size_y: u32 = 128,
+            max_local_size_z: u32 = 64,
         },
         descriptor: struct {
             max_bound_sets: u32 = 4,
@@ -411,13 +432,13 @@ pub const Feature = union(enum) {
             max_storage_images: u32 = 24,
             max_uniform_buffers: u32 = 72,
             max_storage_buffers: u32 = 24,
-            max_input_attachments: u32 = 4,
+            //max_input_attachments: u32 = 4,
             max_per_stage_samplers: u32 = 16,
             max_per_stage_sampled_images: u32 = 16,
             max_per_stage_storage_images: u32 = 4,
             max_per_stage_uniform_buffers: u32 = 12,
             max_per_stage_storage_buffers: u32 = 4,
-            max_per_stage_input_attachments: u32 = 4,
+            //max_per_stage_input_attachments: u32 = 4,
             max_per_stage_resources: u32 = 128,
             max_push_constants_size: u32 = 128,
             min_uniform_buffer_offset_alignment: u64 = 256,
@@ -425,30 +446,7 @@ pub const Feature = union(enum) {
             min_storage_buffer_offset_alignment: u64 = 256,
             max_storage_buffer_range: u64 = 134217728,
         },
-        subpass: struct {
-            max_color_attachments: u17 = 4,
-        },
-        frame_buffer: struct {
-            max_width: u32 = 4096,
-            max_height: u32 = 4096,
-            max_layers: u32 = 256,
-            color_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
-            integer_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true },
-            depth_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
-            stencil_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
-            no_attachment_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
-        },
-        draw: struct {
-            max_index_value: u32 = 16777215,
-            indirect_command: bool,
-            indexed_indirect_command: bool,
-            max_indirect_count: u32 = 1,
-            indirect_first_instance: bool,
-        },
-        dispatch: struct {
-            indirect_command: bool,
-        },
-        primitive: struct {
+        vertex_input: struct {
             max_bindings: u32 = 8,
             max_attributes: u32 = 16,
             max_binding_stride: u32 = 2048,
@@ -470,25 +468,31 @@ pub const Feature = union(enum) {
         color_blend: struct {
             independent_blend: bool,
         },
-        vertex: struct {
-            max_output_components: u32 = 64,
-            stores_and_atomics: bool,
+        rendering: struct {
+            /// Note that `Cmd.max_color_attachment` defines an
+            /// implicit upper bound for this maximum.
+            max_colors: std.meta.Int(
+                .unsigned,
+                @floor(1 + @log2(@as(comptime_float, Cmd.max_color_attachment))),
+            ) = 4,
+            max_width: u32 = 4096,
+            max_height: u32 = 4096,
+            max_layers: u32 = 256,
+            color_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
+            integer_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true },
+            depth_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
+            stencil_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
+            no_attachment_sample_counts: ngl.SampleCount.Flags = .{ .@"1" = true, .@"4" = true },
         },
-        fragment: struct {
-            max_input_components: u32 = 64,
-            max_output_attachments: u32 = 4,
-            max_combined_output_resources: u32 = 4,
-            stores_and_atomics: bool,
+        draw: struct {
+            max_index_value: u32 = 16777215,
+            indirect_command: bool,
+            indexed_indirect_command: bool,
+            max_indirect_count: u32 = 1,
+            indirect_first_instance: bool,
         },
-        compute: struct {
-            max_shared_memory_size: u32 = 16384,
-            max_group_count_x: u32 = 65535,
-            max_group_count_y: u32 = 65535,
-            max_group_count_z: u32 = 65535,
-            max_local_invocations: u32 = 128,
-            max_local_size_x: u32 = 128,
-            max_local_size_y: u32 = 128,
-            max_local_size_z: u32 = 64,
+        dispatch: struct {
+            indirect_command: bool,
         },
         query: struct {
             occlusion_precise: bool,

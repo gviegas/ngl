@@ -182,7 +182,7 @@ test "timestamp query" {
     var image: ngl.Image = undefined;
     var img_mem: ngl.Memory = undefined;
     const extent = blk: {
-        var extent: u32 = 2 * core_feat.image.max_dimension_2d;
+        var extent: u32 = 2 * core_feat.image.max_2d_extent;
         while (extent > 4096) {
             extent /= 2;
             image = ngl.Image.init(gpa, dev, .{

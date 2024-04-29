@@ -2856,12 +2856,13 @@ fn getFeature(
             const f = &ft.features_2.features;
 
             var mem_max_size: u64 = 1073741824;
-            var fb_int_spl_cnts = ngl.SampleCount.Flags{ .@"1" = true };
-            var splr_mirror_clamp_to_edge = false;
             var buf_max_size: u64 = 1073741824;
+            var splr_mirror_clamp_to_edge = false;
+            var rend_int_spl_cnts = ngl.SampleCount.Flags{ .@"1" = true };
 
             if (ver >= c.VK_API_VERSION_1_2) {
                 mem_max_size = prop.@"1.1".maxMemoryAllocationSize;
+                splr_mirror_clamp_to_edge = ft.@"1.2".samplerMirrorClampToEdge == c.VK_TRUE;
 
                 // Certain devices may lie about MS support
                 // for signed integer formats.
@@ -2881,9 +2882,7 @@ fn getFeature(
                     // Use the default (no MS).
                     log.warn("Feature.core.frame_buffer.integer_sample_counts workaround", .{})
                 else
-                    fb_int_spl_cnts = convSpls(mask);
-
-                splr_mirror_clamp_to_edge = ft.@"1.2".samplerMirrorClampToEdge == c.VK_TRUE;
+                    rend_int_spl_cnts = convSpls(mask);
             }
 
             if (ver >= c.VK_API_VERSION_1_3)
@@ -2895,16 +2894,16 @@ fn getFeature(
                     .max_size = mem_max_size,
                     .min_map_alignment = l.minMemoryMapAlignment,
                 },
-                .sampler = .{
-                    .max_count = l.maxSamplerAllocationCount,
-                    .max_anisotropy = @intFromFloat(@min(16, @max(1, l.maxSamplerAnisotropy))),
-                    .address_mode_mirror_clamp_to_edge = splr_mirror_clamp_to_edge,
+                .buffer = .{
+                    .max_size = buf_max_size,
+                    .max_texel_elements = l.maxTexelBufferElements,
+                    .min_texel_offset_alignment = l.minTexelBufferOffsetAlignment,
                 },
                 .image = .{
-                    .max_dimension_1d = l.maxImageDimension1D,
-                    .max_dimension_2d = l.maxImageDimension2D,
-                    .max_dimension_cube = l.maxImageDimensionCube,
-                    .max_dimension_3d = l.maxImageDimension3D,
+                    .max_1d_extent = l.maxImageDimension1D,
+                    .max_2d_extent = l.maxImageDimension2D,
+                    .max_cube_extent = l.maxImageDimensionCube,
+                    .max_3d_extent = l.maxImageDimension3D,
                     .max_layers = l.maxImageArrayLayers,
                     .sampled_color_sample_counts = convSpls(l.sampledImageColorSampleCounts),
                     .sampled_integer_sample_counts = convSpls(l.sampledImageIntegerSampleCounts),
@@ -2913,10 +2912,30 @@ fn getFeature(
                     .storage_sample_counts = convSpls(l.storageImageSampleCounts),
                     .cube_array = f.imageCubeArray == c.VK_TRUE,
                 },
-                .buffer = .{
-                    .max_size = buf_max_size,
-                    .max_texel_elements = l.maxTexelBufferElements,
-                    .min_texel_offset_alignment = l.minTexelBufferOffsetAlignment,
+                .sampler = .{
+                    .max_count = l.maxSamplerAllocationCount,
+                    .max_anisotropy = @intFromFloat(@min(16, @max(1, l.maxSamplerAnisotropy))),
+                    .address_mode_mirror_clamp_to_edge = splr_mirror_clamp_to_edge,
+                },
+                .vertex = .{
+                    .max_output_components = l.maxVertexOutputComponents,
+                    .stores_and_atomics = f.vertexPipelineStoresAndAtomics == c.VK_TRUE,
+                },
+                .fragment = .{
+                    .max_input_components = l.maxFragmentInputComponents,
+                    .max_output_attachments = l.maxFragmentOutputAttachments,
+                    .max_combined_output_resources = l.maxFragmentCombinedOutputResources,
+                    .stores_and_atomics = f.fragmentStoresAndAtomics == c.VK_TRUE,
+                },
+                .compute = .{
+                    .max_shared_memory_size = l.maxComputeSharedMemorySize,
+                    .max_group_count_x = l.maxComputeWorkGroupCount[0],
+                    .max_group_count_y = l.maxComputeWorkGroupCount[1],
+                    .max_group_count_z = l.maxComputeWorkGroupCount[2],
+                    .max_local_invocations = l.maxComputeWorkGroupInvocations,
+                    .max_local_size_x = l.maxComputeWorkGroupSize[0],
+                    .max_local_size_y = l.maxComputeWorkGroupSize[1],
+                    .max_local_size_z = l.maxComputeWorkGroupSize[2],
                 },
                 .descriptor = .{
                     .max_bound_sets = l.maxBoundDescriptorSets,
@@ -2925,13 +2944,13 @@ fn getFeature(
                     .max_storage_images = l.maxDescriptorSetStorageImages,
                     .max_uniform_buffers = l.maxDescriptorSetUniformBuffers,
                     .max_storage_buffers = l.maxDescriptorSetStorageBuffers,
-                    .max_input_attachments = l.maxDescriptorSetInputAttachments,
+                    //.max_input_attachments = l.maxDescriptorSetInputAttachments,
                     .max_per_stage_samplers = l.maxPerStageDescriptorSamplers,
                     .max_per_stage_sampled_images = l.maxPerStageDescriptorSampledImages,
                     .max_per_stage_storage_images = l.maxPerStageDescriptorStorageImages,
                     .max_per_stage_uniform_buffers = l.maxPerStageDescriptorUniformBuffers,
                     .max_per_stage_storage_buffers = l.maxPerStageDescriptorStorageBuffers,
-                    .max_per_stage_input_attachments = l.maxPerStageDescriptorInputAttachments,
+                    //.max_per_stage_input_attachments = l.maxPerStageDescriptorInputAttachments,
                     .max_per_stage_resources = l.maxPerStageResources,
                     .max_push_constants_size = l.maxPushConstantsSize,
                     .min_uniform_buffer_offset_alignment = l.minUniformBufferOffsetAlignment,
@@ -2939,33 +2958,7 @@ fn getFeature(
                     .min_storage_buffer_offset_alignment = l.minStorageBufferOffsetAlignment,
                     .max_storage_buffer_range = l.maxStorageBufferRange,
                 },
-                .subpass = .{
-                    .max_color_attachments = @min(
-                        @as(u17, ngl.Cmd.max_color_attachment),
-                        l.maxColorAttachments,
-                    ),
-                },
-                .frame_buffer = .{
-                    .max_width = l.maxFramebufferWidth,
-                    .max_height = l.maxFramebufferHeight,
-                    .max_layers = l.maxFramebufferLayers,
-                    .color_sample_counts = convSpls(l.framebufferColorSampleCounts),
-                    .integer_sample_counts = fb_int_spl_cnts,
-                    .depth_sample_counts = convSpls(l.framebufferDepthSampleCounts),
-                    .stencil_sample_counts = convSpls(l.framebufferStencilSampleCounts),
-                    .no_attachment_sample_counts = convSpls(l.framebufferNoAttachmentsSampleCounts),
-                },
-                .draw = .{
-                    .max_index_value = l.maxDrawIndexedIndexValue,
-                    .indirect_command = true,
-                    .indexed_indirect_command = true,
-                    .max_indirect_count = l.maxDrawIndirectCount,
-                    .indirect_first_instance = f.drawIndirectFirstInstance == c.VK_TRUE,
-                },
-                .dispatch = .{
-                    .indirect_command = true,
-                },
-                .primitive = .{
+                .vertex_input = .{
                     .max_bindings = l.maxVertexInputBindings,
                     .max_attributes = l.maxVertexInputAttributes,
                     .max_binding_stride = l.maxVertexInputBindingStride,
@@ -2987,25 +2980,26 @@ fn getFeature(
                 .color_blend = .{
                     .independent_blend = f.independentBlend == c.VK_TRUE,
                 },
-                .vertex = .{
-                    .max_output_components = l.maxVertexOutputComponents,
-                    .stores_and_atomics = f.vertexPipelineStoresAndAtomics == c.VK_TRUE,
+                .rendering = .{
+                    .max_colors = @min(ngl.Cmd.max_color_attachment, l.maxColorAttachments),
+                    .max_width = l.maxFramebufferWidth,
+                    .max_height = l.maxFramebufferHeight,
+                    .max_layers = l.maxFramebufferLayers,
+                    .color_sample_counts = convSpls(l.framebufferColorSampleCounts),
+                    .integer_sample_counts = rend_int_spl_cnts,
+                    .depth_sample_counts = convSpls(l.framebufferDepthSampleCounts),
+                    .stencil_sample_counts = convSpls(l.framebufferStencilSampleCounts),
+                    .no_attachment_sample_counts = convSpls(l.framebufferNoAttachmentsSampleCounts),
                 },
-                .fragment = .{
-                    .max_input_components = l.maxFragmentInputComponents,
-                    .max_output_attachments = l.maxFragmentOutputAttachments,
-                    .max_combined_output_resources = l.maxFragmentCombinedOutputResources,
-                    .stores_and_atomics = f.fragmentStoresAndAtomics == c.VK_TRUE,
+                .draw = .{
+                    .max_index_value = l.maxDrawIndexedIndexValue,
+                    .indirect_command = true,
+                    .indexed_indirect_command = true,
+                    .max_indirect_count = l.maxDrawIndirectCount,
+                    .indirect_first_instance = f.drawIndirectFirstInstance == c.VK_TRUE,
                 },
-                .compute = .{
-                    .max_shared_memory_size = l.maxComputeSharedMemorySize,
-                    .max_group_count_x = l.maxComputeWorkGroupCount[0],
-                    .max_group_count_y = l.maxComputeWorkGroupCount[1],
-                    .max_group_count_z = l.maxComputeWorkGroupCount[2],
-                    .max_local_invocations = l.maxComputeWorkGroupInvocations,
-                    .max_local_size_x = l.maxComputeWorkGroupSize[0],
-                    .max_local_size_y = l.maxComputeWorkGroupSize[1],
-                    .max_local_size_z = l.maxComputeWorkGroupSize[2],
+                .dispatch = .{
+                    .indirect_command = true,
                 },
                 .query = .{
                     .occlusion_precise = f.occlusionQueryPrecise == c.VK_TRUE,

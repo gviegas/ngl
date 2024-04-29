@@ -64,8 +64,8 @@ test "Image capabilities" {
         const U = @typeInfo(ngl.SampleCount.Flags).Struct.backing_integer.?;
 
         fn dimensions(capabilities: ngl.Image.Capabilities, core_feat: CoreFeat) !void {
-            try testing.expect(capabilities.max_width >= core_feat.image.max_dimension_2d);
-            try testing.expect(capabilities.max_height >= core_feat.image.max_dimension_2d);
+            try testing.expect(capabilities.max_width >= core_feat.image.max_2d_extent);
+            try testing.expect(capabilities.max_height >= core_feat.image.max_2d_extent);
             try testing.expect(capabilities.max_depth_or_layers >= core_feat.image.max_layers);
         }
 
@@ -82,15 +82,15 @@ test "Image capabilities" {
             if (usage.color_attachment or usage.depth_stencil_attachment) {
                 if (aspect_mask.color) {
                     min &= if (std.mem.indexOf(u8, format_name, "int") == null)
-                        @bitCast(core_feat.frame_buffer.color_sample_counts)
+                        @bitCast(core_feat.rendering.color_sample_counts)
                     else
-                        @bitCast(core_feat.frame_buffer.integer_sample_counts);
+                        @bitCast(core_feat.rendering.integer_sample_counts);
                 } else if (aspect_mask.depth) {
-                    min &= @bitCast(core_feat.frame_buffer.depth_sample_counts);
+                    min &= @bitCast(core_feat.rendering.depth_sample_counts);
                     if (aspect_mask.stencil)
-                        min &= @bitCast(core_feat.frame_buffer.stencil_sample_counts);
+                        min &= @bitCast(core_feat.rendering.stencil_sample_counts);
                 } else if (aspect_mask.stencil) {
-                    min &= @bitCast(core_feat.frame_buffer.stencil_sample_counts);
+                    min &= @bitCast(core_feat.rendering.stencil_sample_counts);
                 } else unreachable;
             }
 
