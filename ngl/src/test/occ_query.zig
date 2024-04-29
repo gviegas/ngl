@@ -298,12 +298,6 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     });
     defer depth_view.deinit(gpa, dev);
 
-    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = null,
-        .push_constant_ranges = null,
-    });
-    defer pl_layt.deinit(gpa, dev);
-
     var shaders = try ngl.Shader.init(gpa, dev, &.{
         .{
             .type = .vertex,

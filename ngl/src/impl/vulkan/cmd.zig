@@ -16,7 +16,7 @@ const Cache = @import("Cache.zig");
 const Buffer = @import("res.zig").Buffer;
 const Image = @import("res.zig").Image;
 const Shader = @import("shd.zig").Shader;
-const PipelineLayout = @import("shd.zig").PipelineLayout;
+const ShaderLayout = @import("shd.zig").ShaderLayout;
 const DescriptorSet = @import("shd.zig").DescriptorSet;
 const getQueryLayout = @import("query.zig").getQueryLayout;
 const QueryPool = @import("query.zig").QueryPool;
@@ -393,8 +393,8 @@ pub const CommandBuffer = struct {
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        bind_point: ngl.BindPoint,
-        pipeline_layout: Impl.PipelineLayout,
+        bind_point: ngl.Cmd.BindPoint,
+        shader_layout: Impl.ShaderLayout,
         first_set: u32,
         descriptor_sets: []const *ngl.DescriptorSet,
     ) void {
@@ -410,7 +410,7 @@ pub const CommandBuffer = struct {
                     device,
                     command_buffer,
                     bind_point,
-                    pipeline_layout,
+                    shader_layout,
                     @intCast(first_set + i),
                     descriptor_sets[i .. i + 1],
                 );
@@ -424,7 +424,7 @@ pub const CommandBuffer = struct {
         Device.cast(device).vkCmdBindDescriptorSets(
             cast(command_buffer).handle,
             conv.toVkPipelineBindPoint(bind_point),
-            PipelineLayout.cast(pipeline_layout).handle,
+            ShaderLayout.cast(shader_layout).handle,
             first_set,
             @intCast(desc_sets.len),
             desc_sets.ptr,
@@ -437,14 +437,14 @@ pub const CommandBuffer = struct {
         _: *anyopaque,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        pipeline_layout: Impl.PipelineLayout,
+        shader_layout: Impl.ShaderLayout,
         shader_mask: ngl.Shader.Type.Flags,
         offset: u16,
         constants: []align(4) const u8,
     ) void {
         Device.cast(device).vkCmdPushConstants(
             cast(command_buffer).handle,
-            PipelineLayout.cast(pipeline_layout).handle,
+            ShaderLayout.cast(shader_layout).handle,
             conv.toVkShaderStageFlags(shader_mask),
             offset,
             @intCast(constants.len),

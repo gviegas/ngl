@@ -273,6 +273,67 @@ pub const Shader = packed union {
     }
 };
 
+pub const ShaderLayout = packed struct {
+    handle: c.VkPipelineLayout,
+
+    pub fn cast(impl: Impl.ShaderLayout) ShaderLayout {
+        return @bitCast(impl.val);
+    }
+
+    pub fn init(
+        _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        desc: ngl.ShaderLayout.Desc,
+    ) Error!Impl.ShaderLayout {
+        const set_layt_n: u32 = @intCast(desc.set_layouts.len);
+        const set_layts: []c.VkDescriptorSetLayout = blk: {
+            if (set_layt_n == 0) break :blk &.{};
+            const s = try allocator.alloc(c.VkDescriptorSetLayout, set_layt_n);
+            for (s, desc.set_layouts) |*handle, set_layt|
+                handle.* = DescriptorSetLayout.cast(set_layt.impl).handle;
+            break :blk s;
+        };
+        defer if (set_layt_n > 0) allocator.free(set_layts);
+
+        const push_const_n: u32 = @intCast(desc.push_constants.len);
+        const push_consts: []c.VkPushConstantRange = blk: {
+            if (push_const_n == 0) break :blk &.{};
+            const s = try allocator.alloc(c.VkPushConstantRange, push_const_n);
+            for (s, desc.push_constants) |*vk_push_const, push_const|
+                vk_push_const.* = .{
+                    .stageFlags = conv.toVkShaderStageFlags(push_const.shader_mask),
+                    .offset = push_const.offset,
+                    .size = push_const.size,
+                };
+            break :blk s;
+        };
+        defer if (push_const_n > 0) allocator.free(push_consts);
+
+        var pl_layt: c.VkPipelineLayout = undefined;
+        try check(Device.cast(device).vkCreatePipelineLayout(&.{
+            .sType = c.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+            .pNext = null,
+            .flags = 0,
+            .setLayoutCount = set_layt_n,
+            .pSetLayouts = if (set_layts.len > 0) set_layts.ptr else null,
+            .pushConstantRangeCount = push_const_n,
+            .pPushConstantRanges = if (push_consts.len > 0) push_consts.ptr else null,
+        }, null, &pl_layt));
+
+        return .{ .val = @bitCast(ShaderLayout{ .handle = pl_layt }) };
+    }
+
+    pub fn deinit(
+        _: *anyopaque,
+        _: std.mem.Allocator,
+        device: Impl.Device,
+        shader_layout: Impl.ShaderLayout,
+    ) void {
+        Device.cast(device).vkDestroyPipelineLayout(cast(shader_layout).handle, null);
+    }
+};
+
 pub const DescriptorSetLayout = packed struct {
     handle: c.VkDescriptorSetLayout,
 
@@ -319,16 +380,16 @@ pub const DescriptorSetLayout = packed struct {
         defer if (binds.len > 0) allocator.free(binds);
         defer if (splrs.len > 0) allocator.free(splrs);
 
-        var set_layout: c.VkDescriptorSetLayout = undefined;
+        var set_layt: c.VkDescriptorSetLayout = undefined;
         try check(Device.cast(device).vkCreateDescriptorSetLayout(&.{
             .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .pNext = null,
             .flags = 0,
             .bindingCount = bind_n,
             .pBindings = if (bind_n > 0) binds.ptr else null,
-        }, null, &set_layout));
+        }, null, &set_layt));
 
-        return .{ .val = @bitCast(DescriptorSetLayout{ .handle = set_layout }) };
+        return .{ .val = @bitCast(DescriptorSetLayout{ .handle = set_layt }) };
     }
 
     pub fn deinit(
@@ -338,67 +399,6 @@ pub const DescriptorSetLayout = packed struct {
         descriptor_set_layout: Impl.DescriptorSetLayout,
     ) void {
         Device.cast(device).vkDestroyDescriptorSetLayout(cast(descriptor_set_layout).handle, null);
-    }
-};
-
-pub const PipelineLayout = packed struct {
-    handle: c.VkPipelineLayout,
-
-    pub fn cast(impl: Impl.PipelineLayout) PipelineLayout {
-        return @bitCast(impl.val);
-    }
-
-    pub fn init(
-        _: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Impl.Device,
-        desc: ngl.PipelineLayout.Desc,
-    ) Error!Impl.PipelineLayout {
-        const set_layout_n: u32 = if (desc.descriptor_set_layouts) |x| @intCast(x.len) else 0;
-        const set_layouts: ?[]c.VkDescriptorSetLayout = blk: {
-            if (set_layout_n == 0) break :blk null;
-            const handles = try allocator.alloc(c.VkDescriptorSetLayout, set_layout_n);
-            for (handles, desc.descriptor_set_layouts.?) |*handle, set_layout|
-                handle.* = DescriptorSetLayout.cast(set_layout.impl).handle;
-            break :blk handles;
-        };
-        defer if (set_layouts) |x| allocator.free(x);
-
-        const const_range_n: u32 = if (desc.push_constant_ranges) |x| @intCast(x.len) else 0;
-        const const_ranges: ?[]c.VkPushConstantRange = blk: {
-            if (const_range_n == 0) break :blk null;
-            const const_ranges = try allocator.alloc(c.VkPushConstantRange, const_range_n);
-            for (const_ranges, desc.push_constant_ranges.?) |*vk_const_range, const_range|
-                vk_const_range.* = .{
-                    .stageFlags = conv.toVkShaderStageFlags(const_range.shader_mask),
-                    .offset = const_range.offset,
-                    .size = const_range.size,
-                };
-            break :blk const_ranges;
-        };
-        defer if (const_ranges) |x| allocator.free(x);
-
-        var pl_layout: c.VkPipelineLayout = undefined;
-        try check(Device.cast(device).vkCreatePipelineLayout(&.{
-            .sType = c.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-            .pNext = null,
-            .flags = 0,
-            .setLayoutCount = set_layout_n,
-            .pSetLayouts = if (set_layouts) |x| x.ptr else null,
-            .pushConstantRangeCount = const_range_n,
-            .pPushConstantRanges = if (const_ranges) |x| x.ptr else null,
-        }, null, &pl_layout));
-
-        return .{ .val = @bitCast(PipelineLayout{ .handle = pl_layout }) };
-    }
-
-    pub fn deinit(
-        _: *anyopaque,
-        _: std.mem.Allocator,
-        device: Impl.Device,
-        pipeline_layout: Impl.PipelineLayout,
-    ) void {
-        Device.cast(device).vkDestroyPipelineLayout(cast(pipeline_layout).handle, null);
     }
 };
 
@@ -453,9 +453,9 @@ pub const DescriptorPool = packed struct {
         desc: ngl.DescriptorSet.Desc,
         descriptor_sets: []ngl.DescriptorSet,
     ) Error!void {
-        const set_layouts = try allocator.alloc(c.VkDescriptorSetLayout, desc.layouts.len);
-        defer allocator.free(set_layouts);
-        for (set_layouts, desc.layouts) |*handle, layout|
+        const set_layts = try allocator.alloc(c.VkDescriptorSetLayout, desc.layouts.len);
+        defer allocator.free(set_layts);
+        for (set_layts, desc.layouts) |*handle, layout|
             handle.* = DescriptorSetLayout.cast(layout.impl).handle;
 
         const handles = try allocator.alloc(c.VkDescriptorSet, desc.layouts.len);
@@ -465,8 +465,8 @@ pub const DescriptorPool = packed struct {
             .sType = c.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
             .pNext = null,
             .descriptorPool = cast(descriptor_pool).handle,
-            .descriptorSetCount = @intCast(set_layouts.len),
-            .pSetLayouts = set_layouts.ptr,
+            .descriptorSetCount = @intCast(set_layts.len),
+            .pSetLayouts = set_layts.ptr,
         };
 
         try check(Device.cast(device).vkAllocateDescriptorSets(&alloc_info, handles.ptr));

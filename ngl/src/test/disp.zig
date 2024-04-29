@@ -96,11 +96,11 @@ test "dispatch command" {
     }} });
     defer set_layt.deinit(gpa, dev);
 
-    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = &.{&set_layt},
-        .push_constant_ranges = null,
+    var shd_layt = try ngl.ShaderLayout.init(gpa, dev, .{
+        .set_layouts = &.{&set_layt},
+        .push_constants = &.{},
     });
-    defer pl_layt.deinit(gpa, dev);
+    defer shd_layt.deinit(gpa, dev);
 
     var shader = try ngl.Shader.init(gpa, dev, &.{.{
         .type = .compute,
@@ -171,7 +171,7 @@ test "dispatch command" {
     }});
 
     cmd.setShaders(&.{.compute}, &.{if (shader[0]) |*shd| shd else |err| return err});
-    cmd.setDescriptors(.compute, &pl_layt, 0, &.{&desc_set});
+    cmd.setDescriptors(.compute, &shd_layt, 0, &.{&desc_set});
     cmd.dispatch(groups[0], groups[1], groups[2]);
 
     cmd.pipelineBarrier(&.{.{

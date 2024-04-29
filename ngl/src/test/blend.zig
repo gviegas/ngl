@@ -139,7 +139,7 @@ const T = struct {
     stg_buf: ngl.Buffer,
     stg_mem: ngl.Memory,
     stg_data: []u8,
-    pl_layt: ngl.PipelineLayout,
+    shd_layt: ngl.ShaderLayout,
     vert_shd: ngl.Shader,
     frag_shd: ngl.Shader,
     clear_col: ?[4]f32,
@@ -260,11 +260,11 @@ const T = struct {
             .shader_mask = .{ .fragment = true },
         }};
 
-        var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-            .descriptor_set_layouts = null,
-            .push_constant_ranges = &push_consts,
+        var shd_layt = try ngl.ShaderLayout.init(gpa, dev, .{
+            .set_layouts = &.{},
+            .push_constants = &push_consts,
         });
-        errdefer pl_layt.deinit(gpa, dev);
+        errdefer shd_layt.deinit(gpa, dev);
 
         const shaders = try ngl.Shader.init(gpa, dev, &.{
             .{
@@ -333,7 +333,7 @@ const T = struct {
             .stg_buf = stg_buf,
             .stg_mem = stg_mem,
             .stg_data = stg_data,
-            .pl_layt = pl_layt,
+            .shd_layt = shd_layt,
             .vert_shd = if (shaders[0]) |shd| shd else |err| return err,
             .frag_shd = if (shaders[1]) |shd| shd else |err| return err,
             .clear_col = null,
@@ -394,7 +394,7 @@ const T = struct {
         });
 
         cmd.setPushConstants(
-            &self.pl_layt,
+            &self.shd_layt,
             .{ .fragment = true },
             0,
             @as([*]align(4) const u8, @ptrCast(&source_color))[0..16],
@@ -547,7 +547,7 @@ const T = struct {
         const dev = &context().device;
         self.frag_shd.deinit(gpa, dev);
         self.vert_shd.deinit(gpa, dev);
-        self.pl_layt.deinit(gpa, dev);
+        self.shd_layt.deinit(gpa, dev);
         dev.free(gpa, &self.stg_mem);
         self.stg_buf.deinit(gpa, dev);
         dev.free(gpa, &self.vert_mem);

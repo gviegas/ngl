@@ -181,11 +181,11 @@ test "executeCommands command (dispatching)" {
         .immutable_samplers = &.{},
     }} });
     defer set_layt.deinit(gpa, dev);
-    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = &.{&set_layt},
-        .push_constant_ranges = null,
+    var shd_layt = try ngl.ShaderLayout.init(gpa, dev, .{
+        .set_layouts = &.{&set_layt},
+        .push_constants = &.{},
     });
-    defer pl_layt.deinit(gpa, dev);
+    defer shd_layt.deinit(gpa, dev);
 
     var desc_pool = try ngl.DescriptorPool.init(gpa, dev, .{
         .max_sets = 1,
@@ -254,7 +254,7 @@ test "executeCommands command (dispatching)" {
 
     const rec: [4]struct {
         dev: *ngl.Device,
-        pl_layt: *ngl.PipelineLayout,
+        shd_layt: *ngl.ShaderLayout,
         desc_set: *ngl.DescriptorSet,
         shd: *ngl.Shader,
         cmd_buf: *ngl.CommandBuffer,
@@ -267,7 +267,7 @@ test "executeCommands command (dispatching)" {
                 .one_time_submit = true,
                 .inheritance = .{ .rendering_continue = null, .query_continue = null },
             });
-            cmd.setDescriptors(.compute, self.pl_layt, 0, &.{self.desc_set});
+            cmd.setDescriptors(.compute, self.shd_layt, 0, &.{self.desc_set});
             cmd.setShaders(&.{.compute}, &.{self.shd});
             cmd.dispatch(self.wg_count[0], self.wg_count[1], self.wg_count[2]);
             try cmd.end();
@@ -277,7 +277,7 @@ test "executeCommands command (dispatching)" {
         // Top-left.
         .{
             .dev = dev,
-            .pl_layt = &pl_layt,
+            .shd_layt = &shd_layt,
             .desc_set = &desc_set[0],
             .shd = if (shaders[0]) |*shd| shd else |err| return err,
             .cmd_buf = &t.cmd_bufs[1],
@@ -287,7 +287,7 @@ test "executeCommands command (dispatching)" {
         // Top-right.
         .{
             .dev = dev,
-            .pl_layt = &pl_layt,
+            .shd_layt = &shd_layt,
             .desc_set = &desc_set[0],
             .shd = if (shaders[1]) |*shd| shd else |err| return err,
             .cmd_buf = &t.cmd_bufs[2],
@@ -297,7 +297,7 @@ test "executeCommands command (dispatching)" {
         // Bottom-right.
         .{
             .dev = dev,
-            .pl_layt = &pl_layt,
+            .shd_layt = &shd_layt,
             .desc_set = &desc_set[0],
             .shd = if (shaders[2]) |*shd| shd else |err| return err,
             .cmd_buf = &t.cmd_bufs[3],
@@ -307,7 +307,7 @@ test "executeCommands command (dispatching)" {
         // Bottom-left.
         .{
             .dev = dev,
-            .pl_layt = &pl_layt,
+            .shd_layt = &shd_layt,
             .desc_set = &desc_set[0],
             .shd = if (shaders[3]) |*shd| shd else |err| return err,
             .cmd_buf = &t.cmd_bufs[4],
@@ -490,12 +490,6 @@ test "executeCommands command (drawing)" {
     });
     defer dev.free(gpa, &buf_mem);
     try buf.bind(dev, &buf_mem, 0);
-
-    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = null,
-        .push_constant_ranges = null,
-    });
-    defer pl_layt.deinit(gpa, dev);
 
     const shaders = blk: {
         const consts = [1]ngl.Shader.Specialization.Constant{.{

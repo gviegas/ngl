@@ -209,12 +209,6 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         gpa.free(shaders);
     }
 
-    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = null,
-        .push_constant_ranges = null,
-    });
-    defer pl_layt.deinit(gpa, dev);
-
     const indir_stg_pad = blk: {
         const vert_align = @alignOf(@TypeOf(triangle.data));
         break :blk vert_align - (indir_size % vert_align);

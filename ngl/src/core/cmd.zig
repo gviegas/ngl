@@ -11,13 +11,9 @@ const ImageView = ngl.ImageView;
 const CompareOp = ngl.CompareOp;
 const Stage = ngl.Stage;
 const Access = ngl.Access;
-const RenderPass = ngl.RenderPass;
-const FrameBuffer = ngl.FrameBuffer;
 const Shader = ngl.Shader;
-const BindPoint = ngl.BindPoint;
-const PipelineLayout = ngl.PipelineLayout;
+const ShaderLayout = ngl.ShaderLayout;
 const DescriptorSet = ngl.DescriptorSet;
-const Pipeline = ngl.Pipeline;
 const QueryPool = ngl.QueryPool;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
@@ -167,6 +163,11 @@ pub const CommandBuffer = struct {
             );
         }
 
+        pub const BindPoint = enum {
+            graphics,
+            compute,
+        };
+
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope
@@ -177,7 +178,7 @@ pub const CommandBuffer = struct {
         pub fn setDescriptors(
             self: *Cmd,
             bind_point: BindPoint,
-            pipeline_layout: *PipelineLayout,
+            shader_layout: *ShaderLayout,
             first_set: u32,
             descriptor_sets: []const *DescriptorSet,
         ) void {
@@ -186,7 +187,7 @@ pub const CommandBuffer = struct {
                 self.device.impl,
                 self.command_buffer.impl,
                 bind_point,
-                pipeline_layout.impl,
+                shader_layout.impl,
                 first_set,
                 descriptor_sets,
             );
@@ -201,7 +202,7 @@ pub const CommandBuffer = struct {
         /// ✘ Transfer queue
         pub fn setPushConstants(
             self: *Cmd,
-            pipeline_layout: *PipelineLayout,
+            shader_layout: *ShaderLayout,
             shader_mask: Shader.Type.Flags,
             offset: u16,
             constants: []align(4) const u8,
@@ -209,7 +210,7 @@ pub const CommandBuffer = struct {
             Impl.get().setPushConstants(
                 self.device.impl,
                 self.command_buffer.impl,
-                pipeline_layout.impl,
+                shader_layout.impl,
                 shader_mask,
                 offset,
                 constants,

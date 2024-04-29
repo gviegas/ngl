@@ -3144,11 +3144,11 @@ const vtable = Impl.VTable{
     .initShader = @import("shd.zig").Shader.init,
     .deinitShader = @import("shd.zig").Shader.deinit,
 
+    .initShaderLayout = @import("shd.zig").ShaderLayout.init,
+    .deinitShaderLayout = @import("shd.zig").ShaderLayout.deinit,
+
     .initDescriptorSetLayout = @import("shd.zig").DescriptorSetLayout.init,
     .deinitDescriptorSetLayout = @import("shd.zig").DescriptorSetLayout.deinit,
-
-    .initPipelineLayout = @import("shd.zig").PipelineLayout.init,
-    .deinitPipelineLayout = @import("shd.zig").PipelineLayout.deinit,
 
     .initDescriptorPool = @import("shd.zig").DescriptorPool.init,
     .allocDescriptorSets = @import("shd.zig").DescriptorPool.alloc,

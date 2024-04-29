@@ -58,12 +58,6 @@ test "submission of multiple command buffers" {
     });
     defer view.deinit(gpa, dev);
 
-    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = null,
-        .push_constant_ranges = null,
-    });
-    defer pl_layt.deinit(gpa, dev);
-
     // Clear, `shaders[1]` draw, `shaders[2]` draw.
     const colors = [_]f32{ 1, 0.3, 0.6 };
 

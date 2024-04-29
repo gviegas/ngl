@@ -204,11 +204,11 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     });
     defer set_layt.deinit(gpa, dev);
 
-    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = &.{&set_layt},
-        .push_constant_ranges = null,
+    var shd_layt = try ngl.ShaderLayout.init(gpa, dev, .{
+        .set_layouts = &.{&set_layt},
+        .push_constants = &.{},
     });
-    defer pl_layt.deinit(gpa, dev);
+    defer shd_layt.deinit(gpa, dev);
 
     const shaders = try ngl.Shader.init(gpa, dev, &.{
         .{
@@ -438,7 +438,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     cmd.setColorBlendEnable(0, &.{false});
     cmd.setColorWrite(0, &.{.all});
 
-    cmd.setDescriptors(.graphics, &pl_layt, 0, &.{&desc_set});
+    cmd.setDescriptors(.graphics, &shd_layt, 0, &.{&desc_set});
 
     cmd.setVertexBuffers(0, &.{&vert_buf}, &.{0}, &.{vert_size}); // Note `vert_size`.
 

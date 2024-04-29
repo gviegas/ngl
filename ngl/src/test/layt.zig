@@ -4,7 +4,7 @@ const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 
-test "DescriptorSetLayout and PipelineLayout" {
+test "ShaderLayout and DescriptorSetLayout" {
     const dev = &context().device;
 
     var splr = try ngl.Sampler.init(gpa, dev, .{
@@ -57,25 +57,25 @@ test "DescriptorSetLayout and PipelineLayout" {
     }} });
     defer set_layt_2.deinit(gpa, dev);
 
-    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = &.{&set_layt},
-        .push_constant_ranges = null,
+    var shd_layt = try ngl.ShaderLayout.init(gpa, dev, .{
+        .set_layouts = &.{&set_layt},
+        .push_constants = &.{},
     });
-    defer pl_layt.deinit(gpa, dev);
+    defer shd_layt.deinit(gpa, dev);
 
-    var pl_layt_2 = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = &.{ &set_layt_2, &set_layt },
-        .push_constant_ranges = &.{.{
+    var shd_layt_2 = try ngl.ShaderLayout.init(gpa, dev, .{
+        .set_layouts = &.{ &set_layt_2, &set_layt },
+        .push_constants = &.{.{
             .offset = 0,
             .size = 64,
             .shader_mask = .{ .vertex = true },
         }},
     });
-    defer pl_layt_2.deinit(gpa, dev);
+    defer shd_layt_2.deinit(gpa, dev);
 
-    var pl_layt_3 = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = null,
-        .push_constant_ranges = &.{
+    var shd_layt_3 = try ngl.ShaderLayout.init(gpa, dev, .{
+        .set_layouts = &.{},
+        .push_constants = &.{
             .{
                 .offset = 16,
                 .size = 8,
@@ -97,14 +97,14 @@ test "DescriptorSetLayout and PipelineLayout" {
             },
         },
     });
-    defer pl_layt_3.deinit(gpa, dev);
+    defer shd_layt_3.deinit(gpa, dev);
 
     // Needn't use any shader resources at all.
-    var pl_layt_4 = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = null,
-        .push_constant_ranges = null,
+    var shd_layt_4 = try ngl.ShaderLayout.init(gpa, dev, .{
+        .set_layouts = &.{},
+        .push_constants = &.{},
     });
-    defer pl_layt_4.deinit(gpa, dev);
+    defer shd_layt_4.deinit(gpa, dev);
 
     {
         var set_layt_3 = try ngl.DescriptorSetLayout.init(gpa, dev, .{ .bindings = &.{.{
@@ -115,9 +115,9 @@ test "DescriptorSetLayout and PipelineLayout" {
             .immutable_samplers = &.{},
         }} });
 
-        var pl_layt_5 = ngl.PipelineLayout.init(gpa, dev, .{
-            .descriptor_set_layouts = &.{&set_layt_3},
-            .push_constant_ranges = null,
+        var shd_layt_5 = ngl.ShaderLayout.init(gpa, dev, .{
+            .set_layouts = &.{&set_layt_3},
+            .push_constants = &.{},
         }) catch |err| {
             set_layt_3.deinit(gpa, dev);
             return err;
@@ -126,6 +126,6 @@ test "DescriptorSetLayout and PipelineLayout" {
         // Shouldn't retain the set layouts.
         // TODO: Try doing this during command recording.
         set_layt_3.deinit(gpa, dev);
-        pl_layt_5.deinit(gpa, dev);
+        shd_layt_5.deinit(gpa, dev);
     }
 }

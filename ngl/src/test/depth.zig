@@ -174,11 +174,11 @@ test "depth-only rendering" {
     }} });
     defer set_layt.deinit(gpa, dev);
 
-    var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{
-        .descriptor_set_layouts = &.{&set_layt},
-        .push_constant_ranges = null,
+    var shd_layt = try ngl.ShaderLayout.init(gpa, dev, .{
+        .set_layouts = &.{&set_layt},
+        .push_constants = &.{},
     });
-    defer pl_layt.deinit(gpa, dev);
+    defer shd_layt.deinit(gpa, dev);
 
     // Just the vertex shader.
     var vert_shd = blk: {
@@ -406,7 +406,7 @@ test "depth-only rendering" {
     cmd.setVertexBuffers(0, &.{&prim_buf}, &.{vert_off}, &.{@sizeOf(@TypeOf(vert_data))});
 
     for (&[_]*ngl.DescriptorSet{ &desc_sets[0], &desc_sets[1] }) |desc_set| {
-        cmd.setDescriptors(.graphics, &pl_layt, 0, &.{desc_set});
+        cmd.setDescriptors(.graphics, &shd_layt, 0, &.{desc_set});
         cmd.drawIndexed(6, 1, 0, 0, 0);
     }
 

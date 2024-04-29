@@ -38,8 +38,8 @@ pub const Image = Type(ngl.Image);
 pub const ImageView = Type(ngl.ImageView);
 pub const Sampler = Type(ngl.Sampler);
 pub const Shader = Type(ngl.Shader);
+pub const ShaderLayout = Type(ngl.ShaderLayout);
 pub const DescriptorSetLayout = Type(ngl.DescriptorSetLayout);
-pub const PipelineLayout = Type(ngl.PipelineLayout);
 pub const DescriptorPool = Type(ngl.DescriptorPool);
 pub const DescriptorSet = Type(ngl.DescriptorSet);
 pub const QueryPool = Type(ngl.QueryPool);
@@ -214,8 +214,8 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        bind_point: ngl.BindPoint,
-        pipeline_layout: PipelineLayout,
+        bind_point: ngl.Cmd.BindPoint,
+        shader_layout: ShaderLayout,
         first_set: u32,
         descriptor_sets: []const *ngl.DescriptorSet,
     ) void,
@@ -224,7 +224,7 @@ pub const VTable = struct {
         ctx: *anyopaque,
         device: Device,
         command_buffer: CommandBuffer,
-        pipeline_layout: PipelineLayout,
+        shader_layout: ShaderLayout,
         shader_mask: ngl.Shader.Type.Flags,
         offset: u16,
         constants: []align(4) const u8,
@@ -827,6 +827,22 @@ pub const VTable = struct {
         shader: Shader,
     ) void,
 
+    // ShaderLayout ----------------------------------------
+
+    initShaderLayout: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        desc: ngl.ShaderLayout.Desc,
+    ) Error!ShaderLayout,
+
+    deinitShaderLayout: *const fn (
+        ctx: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Device,
+        shader_layout: ShaderLayout,
+    ) void,
+
     // DescriptorSetLayout ---------------------------------
 
     initDescriptorSetLayout: *const fn (
@@ -841,22 +857,6 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         descriptor_set_layout: DescriptorSetLayout,
-    ) void,
-
-    // PipelineLayout --------------------------------------
-
-    initPipelineLayout: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        desc: ngl.PipelineLayout.Desc,
-    ) Error!PipelineLayout,
-
-    deinitPipelineLayout: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        pipeline_layout: PipelineLayout,
     ) void,
 
     // DescriptorPool --------------------------------------
@@ -1264,8 +1264,8 @@ pub fn setDescriptors(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    bind_point: ngl.BindPoint,
-    pipeline_layout: PipelineLayout,
+    bind_point: ngl.Cmd.BindPoint,
+    shader_layout: ShaderLayout,
     first_set: u32,
     descriptor_sets: []const *ngl.DescriptorSet,
 ) void {
@@ -1275,7 +1275,7 @@ pub fn setDescriptors(
         device,
         command_buffer,
         bind_point,
-        pipeline_layout,
+        shader_layout,
         first_set,
         descriptor_sets,
     );
@@ -1285,7 +1285,7 @@ pub fn setPushConstants(
     self: *Self,
     device: Device,
     command_buffer: CommandBuffer,
-    pipeline_layout: PipelineLayout,
+    shader_layout: ShaderLayout,
     shader_mask: ngl.Shader.Type.Flags,
     offset: u16,
     constants: []align(4) const u8,
@@ -1294,7 +1294,7 @@ pub fn setPushConstants(
         self.ptr,
         device,
         command_buffer,
-        pipeline_layout,
+        shader_layout,
         shader_mask,
         offset,
         constants,
@@ -2111,6 +2111,24 @@ pub fn deinitShader(
     self.vtable.deinitShader(self.ptr, allocator, device, shader);
 }
 
+pub fn initShaderLayout(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    desc: ngl.ShaderLayout.Desc,
+) Error!ShaderLayout {
+    return self.vtable.initShaderLayout(self.ptr, allocator, device, desc);
+}
+
+pub fn deinitShaderLayout(
+    self: *Self,
+    allocator: std.mem.Allocator,
+    device: Device,
+    shader_layout: ShaderLayout,
+) void {
+    self.vtable.deinitShaderLayout(self.ptr, allocator, device, shader_layout);
+}
+
 pub fn initDescriptorSetLayout(
     self: *Self,
     allocator: std.mem.Allocator,
@@ -2127,24 +2145,6 @@ pub fn deinitDescriptorSetLayout(
     descriptor_set_layout: DescriptorSetLayout,
 ) void {
     self.vtable.deinitDescriptorSetLayout(self.ptr, allocator, device, descriptor_set_layout);
-}
-
-pub fn initPipelineLayout(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    desc: ngl.PipelineLayout.Desc,
-) Error!PipelineLayout {
-    return self.vtable.initPipelineLayout(self.ptr, allocator, device, desc);
-}
-
-pub fn deinitPipelineLayout(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    pipeline_layout: PipelineLayout,
-) void {
-    self.vtable.deinitPipelineLayout(self.ptr, allocator, device, pipeline_layout);
 }
 
 pub fn initDescriptorPool(

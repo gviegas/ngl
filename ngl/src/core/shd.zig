@@ -67,9 +67,24 @@ pub const Shader = struct {
     }
 };
 
-pub const BindPoint = enum {
-    graphics,
-    compute,
+pub const ShaderLayout = struct {
+    impl: Impl.ShaderLayout,
+
+    pub const Desc = struct {
+        set_layouts: []const *DescriptorSetLayout,
+        push_constants: []const PushConstantRange,
+    };
+
+    const Self = @This();
+
+    pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        return .{ .impl = try Impl.get().initShaderLayout(allocator, device.impl, desc) };
+    }
+
+    pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
+        Impl.get().deinitShaderLayout(allocator, device.impl, self.impl);
+        self.* = undefined;
+    }
 };
 
 pub const DescriptorType = enum {
@@ -116,26 +131,6 @@ pub const PushConstantRange = struct {
     offset: u16,
     size: u16,
     shader_mask: Shader.Type.Flags,
-};
-
-pub const PipelineLayout = struct {
-    impl: Impl.PipelineLayout,
-
-    pub const Desc = struct {
-        descriptor_set_layouts: ?[]const *DescriptorSetLayout,
-        push_constant_ranges: ?[]const PushConstantRange,
-    };
-
-    const Self = @This();
-
-    pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
-        return .{ .impl = try Impl.get().initPipelineLayout(allocator, device.impl, desc) };
-    }
-
-    pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {
-        Impl.get().deinitPipelineLayout(allocator, device.impl, self.impl);
-        self.* = undefined;
-    }
 };
 
 pub const DescriptorPool = struct {
