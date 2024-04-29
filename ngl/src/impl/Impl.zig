@@ -229,7 +229,7 @@ pub const VTable = struct {
         device: Device,
         command_buffer: CommandBuffer,
         pipeline_layout: PipelineLayout,
-        stage_mask: ngl.ShaderStage.Flags,
+        shader_mask: ngl.Shader.Type.Flags,
         offset: u16,
         constants: []align(4) const u8,
     ) void,
@@ -1370,7 +1370,7 @@ pub fn setPushConstants(
     device: Device,
     command_buffer: CommandBuffer,
     pipeline_layout: PipelineLayout,
-    stage_mask: ngl.ShaderStage.Flags,
+    shader_mask: ngl.Shader.Type.Flags,
     offset: u16,
     constants: []align(4) const u8,
 ) void {
@@ -1379,7 +1379,7 @@ pub fn setPushConstants(
         device,
         command_buffer,
         pipeline_layout,
-        stage_mask,
+        shader_mask,
         offset,
         constants,
     );

@@ -16,7 +16,6 @@ const FrameBuffer = ngl.FrameBuffer;
 const Shader = ngl.Shader;
 const PipelineLayout = ngl.PipelineLayout;
 const DescriptorSet = ngl.DescriptorSet;
-const ShaderStage = ngl.ShaderStage;
 const Pipeline = ngl.Pipeline;
 const QueryPool = ngl.QueryPool;
 const Error = ngl.Error;
@@ -202,7 +201,7 @@ pub const CommandBuffer = struct {
         pub fn setPushConstants(
             self: *Cmd,
             pipeline_layout: *PipelineLayout,
-            stage_mask: ShaderStage.Flags,
+            shader_mask: Shader.Type.Flags,
             offset: u16,
             constants: []align(4) const u8,
         ) void {
@@ -210,7 +209,7 @@ pub const CommandBuffer = struct {
                 self.device.impl,
                 self.command_buffer.impl,
                 pipeline_layout.impl,
-                stage_mask,
+                shader_mask,
                 offset,
                 constants,
             );
