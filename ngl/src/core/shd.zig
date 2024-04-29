@@ -93,11 +93,11 @@ pub const DescriptorSetLayout = struct {
         type: DescriptorType,
         count: u32,
         shader_mask: Shader.Type.Flags,
-        immutable_samplers: ?[]const *Sampler,
+        immutable_samplers: []const *Sampler,
     };
 
     pub const Desc = struct {
-        bindings: ?[]const Binding,
+        bindings: []const Binding,
     };
 
     const Self = @This();

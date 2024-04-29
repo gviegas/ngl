@@ -75,7 +75,7 @@ test "dispatchIndirect command" {
             .type = .storage_buffer,
             .count = 1,
             .shader_mask = .{ .compute = true },
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         }},
     });
     defer set_layt.deinit(gpa, dev);

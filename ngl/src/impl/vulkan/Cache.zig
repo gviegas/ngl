@@ -846,7 +846,7 @@ test getPrimitivePipeline {
             .type = .combined_image_sampler,
             .count = 1,
             .shader_mask = .{ .fragment = true },
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         }},
     });
     defer set_layt.deinit(testing.allocator, &context().device);
@@ -1408,7 +1408,7 @@ test createPrimitivePipeline {
             .type = .combined_image_sampler,
             .count = 1,
             .shader_mask = .{ .fragment = true },
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         }},
     });
     defer set_layt.deinit(testing.allocator, &context().device);

@@ -29,21 +29,21 @@ test "DescriptorSetLayout and PipelineLayout" {
             .type = .sampler,
             .count = 1,
             .shader_mask = .{ .fragment = true },
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
         .{
             .binding = 1,
             .type = .sampled_image,
             .count = 1,
             .shader_mask = .{ .fragment = true },
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
         .{
             .binding = 2,
             .type = .uniform_buffer,
             .count = 1,
             .shader_mask = .{ .vertex = true, .fragment = true },
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
     } });
     defer set_layt.deinit(gpa, dev);
@@ -112,7 +112,7 @@ test "DescriptorSetLayout and PipelineLayout" {
             .type = .storage_image,
             .count = 1,
             .shader_mask = .{ .compute = true },
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         }} });
 
         var pl_layt_5 = ngl.PipelineLayout.init(gpa, dev, .{

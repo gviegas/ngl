@@ -92,7 +92,7 @@ test "dispatch command" {
         .type = .storage_image,
         .count = 1,
         .shader_mask = .{ .compute = true },
-        .immutable_samplers = null,
+        .immutable_samplers = &.{},
     }} });
     defer set_layt.deinit(gpa, dev);
 

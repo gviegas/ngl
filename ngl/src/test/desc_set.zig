@@ -117,21 +117,21 @@ test "DescriptorSet.write" {
             .type = .combined_image_sampler,
             .count = 2,
             .shader_mask = shader_mask,
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
         .{
             .binding = 1,
             .type = .storage_texel_buffer,
             .count = 1,
             .shader_mask = shader_mask,
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
         .{
             .binding = 2,
             .type = .uniform_buffer,
             .count = 2,
             .shader_mask = shader_mask,
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
     } });
     defer layt.deinit(gpa, dev);
@@ -142,7 +142,7 @@ test "DescriptorSet.write" {
             .type = .sampler,
             .count = 1,
             .shader_mask = shader_mask,
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
         .{
             .binding = 0,

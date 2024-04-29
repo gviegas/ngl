@@ -286,42 +286,38 @@ pub const DescriptorSetLayout = packed struct {
         device: Impl.Device,
         desc: ngl.DescriptorSetLayout.Desc,
     ) Error!Impl.DescriptorSetLayout {
-        const bind_n: u32 = if (desc.bindings) |x| @intCast(x.len) else 0;
-        var binds: ?[]c.VkDescriptorSetLayoutBinding = undefined;
-        var splrs: ?[]c.VkSampler = undefined;
+        const bind_n: u32 = @intCast(desc.bindings.len);
+        var binds: []c.VkDescriptorSetLayoutBinding = &.{};
+        var splrs: []c.VkSampler = &.{};
         if (bind_n > 0) {
             binds = try allocator.alloc(c.VkDescriptorSetLayoutBinding, bind_n);
-            errdefer allocator.free(binds.?);
+            errdefer allocator.free(binds);
             var splr_n: usize = 0;
-            for (desc.bindings.?) |bind| {
-                if (bind.immutable_samplers) |x| splr_n += x.len;
-            }
+            for (desc.bindings) |bind|
+                splr_n += bind.immutable_samplers.len;
             var splrs_ptr: [*]c.VkSampler = undefined;
             if (splr_n > 0) {
                 splrs = try allocator.alloc(c.VkSampler, splr_n);
-                splrs_ptr = splrs.?.ptr;
-            } else splrs = null;
-            for (binds.?, desc.bindings.?) |*vk_bind, bind| {
+                splrs_ptr = splrs.ptr;
+            }
+            for (binds, desc.bindings) |*vk_bind, bind|
                 vk_bind.* = .{
                     .binding = bind.binding,
                     .descriptorType = conv.toVkDescriptorType(bind.type),
                     .descriptorCount = bind.count,
                     .stageFlags = conv.toVkShaderStageFlags(bind.shader_mask),
                     .pImmutableSamplers = blk: {
-                        const bind_splrs = bind.immutable_samplers orelse &.{};
-                        if (bind_splrs.len == 0) break :blk null;
-                        for (bind_splrs, 0..) |s, i| splrs_ptr[i] = Sampler.cast(s.impl).handle;
-                        splrs_ptr += bind_splrs.len;
-                        break :blk splrs_ptr - bind_splrs.len;
+                        const n = bind.immutable_samplers.len;
+                        if (n == 0) break :blk null;
+                        for (splrs_ptr[0..n], bind.immutable_samplers) |*vk_splr, splr|
+                            vk_splr.* = Sampler.cast(splr.impl).handle;
+                        splrs_ptr += n;
+                        break :blk splrs_ptr - n;
                     },
                 };
-            }
-        } else {
-            binds = null;
-            splrs = null;
         }
-        defer if (binds) |x| allocator.free(x);
-        defer if (splrs) |x| allocator.free(x);
+        defer if (binds.len > 0) allocator.free(binds);
+        defer if (splrs.len > 0) allocator.free(splrs);
 
         var set_layout: c.VkDescriptorSetLayout = undefined;
         try check(Device.cast(device).vkCreateDescriptorSetLayout(&.{
@@ -329,7 +325,7 @@ pub const DescriptorSetLayout = packed struct {
             .pNext = null,
             .flags = 0,
             .bindingCount = bind_n,
-            .pBindings = if (binds) |x| x.ptr else null,
+            .pBindings = if (bind_n > 0) binds.ptr else null,
         }, null, &set_layout));
 
         return .{ .val = @bitCast(DescriptorSetLayout{ .handle = set_layout }) };
@@ -515,9 +511,9 @@ pub const DescriptorSet = packed struct {
         const desc_set_writes = try allocator.alloc(c.VkWriteDescriptorSet, writes.len);
         defer allocator.free(desc_set_writes);
 
-        var img_infos: ?[]c.VkDescriptorImageInfo = undefined;
-        var buf_infos: ?[]c.VkDescriptorBufferInfo = undefined;
-        var buf_views: ?[]c.VkBufferView = undefined;
+        var img_infos: []c.VkDescriptorImageInfo = undefined;
+        var buf_infos: []c.VkDescriptorBufferInfo = undefined;
+        var buf_views: []c.VkBufferView = undefined;
         {
             var img_info_n: usize = 0;
             var buf_info_n: usize = 0;
@@ -544,27 +540,27 @@ pub const DescriptorSet = packed struct {
             img_infos = if (img_info_n > 0) try allocator.alloc(
                 c.VkDescriptorImageInfo,
                 img_info_n,
-            ) else null;
-            errdefer if (img_infos) |x| allocator.free(x);
+            ) else &.{};
+            errdefer if (img_infos.len > 0) allocator.free(img_infos);
 
             buf_infos = if (buf_info_n > 0) try allocator.alloc(
                 c.VkDescriptorBufferInfo,
                 buf_info_n,
-            ) else null;
-            errdefer if (buf_infos) |x| allocator.free(x);
+            ) else &.{};
+            errdefer if (buf_infos.len > 0) allocator.free(buf_infos);
 
             buf_views = if (buf_view_n > 0) try allocator.alloc(
                 c.VkBufferView,
                 buf_view_n,
-            ) else null;
+            ) else &.{};
         }
-        defer if (img_infos) |x| allocator.free(x);
-        defer if (buf_infos) |x| allocator.free(x);
-        defer if (buf_views) |x| allocator.free(x);
+        defer if (img_infos.len > 0) allocator.free(img_infos);
+        defer if (buf_infos.len > 0) allocator.free(buf_infos);
+        defer if (buf_views.len > 0) allocator.free(buf_views);
 
-        var img_infos_ptr = if (img_infos) |x| x.ptr else undefined;
-        var buf_infos_ptr = if (buf_infos) |x| x.ptr else undefined;
-        var buf_views_ptr = if (buf_views) |x| x.ptr else undefined;
+        var img_infos_ptr = img_infos.ptr;
+        var buf_infos_ptr = buf_infos.ptr;
+        var buf_views_ptr = buf_views.ptr;
 
         for (desc_set_writes, writes) |*dsw, w| {
             dsw.* = .{

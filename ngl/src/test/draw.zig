@@ -199,7 +199,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
             .type = .uniform_buffer,
             .count = 1,
             .shader_mask = .{ .vertex = true },
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         }},
     });
     defer set_layt.deinit(gpa, dev);

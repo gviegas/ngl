@@ -68,21 +68,21 @@ test "DescriptorPool.alloc/reset" {
             .type = .sampler,
             .count = 1,
             .shader_mask = shader_mask,
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
         .{
             .binding = 1,
             .type = .sampled_image,
             .count = 1,
             .shader_mask = shader_mask,
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
         .{
             .binding = 2,
             .type = .uniform_buffer,
             .count = 1,
             .shader_mask = shader_mask,
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
     } });
     defer layt.deinit(gpa, dev);
@@ -92,7 +92,7 @@ test "DescriptorPool.alloc/reset" {
         .type = .storage_image,
         .count = 12,
         .shader_mask = shader_mask,
-        .immutable_samplers = null,
+        .immutable_samplers = &.{},
     }} });
     defer layt_2.deinit(gpa, dev);
 
@@ -102,14 +102,14 @@ test "DescriptorPool.alloc/reset" {
             .type = .combined_image_sampler,
             .count = 10,
             .shader_mask = shader_mask,
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
         .{
             .binding = 0,
             .type = .uniform_buffer,
             .count = 8,
             .shader_mask = shader_mask,
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
     } });
     defer layt_3.deinit(gpa, dev);
@@ -171,14 +171,14 @@ test "DescriptorPool.alloc/reset" {
             .type = .combined_image_sampler,
             .count = 3,
             .shader_mask = shader_mask,
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
         .{
             .binding = 0,
             .type = .uniform_buffer,
             .count = 3,
             .shader_mask = shader_mask,
-            .immutable_samplers = null,
+            .immutable_samplers = &.{},
         },
     } });
     defer layt_4.deinit(gpa, dev);
