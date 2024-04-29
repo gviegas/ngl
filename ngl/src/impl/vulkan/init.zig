@@ -3064,7 +3064,6 @@ const vtable = Impl.VTable{
     .deinitCommandPool = @import("cmd.zig").CommandPool.deinit,
 
     .beginCommandBuffer = @import("cmd.zig").CommandBuffer.begin,
-    .setPipeline = @import("cmd.zig").CommandBuffer.setPipeline,
     .setShaders = @import("cmd.zig").CommandBuffer.setShaders,
     .setDescriptors = @import("cmd.zig").CommandBuffer.setDescriptors,
     .setPushConstants = @import("cmd.zig").CommandBuffer.setPushConstants,
@@ -3094,9 +3093,6 @@ const vtable = Impl.VTable{
     .setColorBlend = @import("cmd.zig").CommandBuffer.setColorBlend,
     .setColorWrite = @import("cmd.zig").CommandBuffer.setColorWrite,
     .setBlendConstants = @import("cmd.zig").CommandBuffer.setBlendConstants,
-    .beginRenderPass = @import("cmd.zig").CommandBuffer.beginRenderPass,
-    .nextSubpass = @import("cmd.zig").CommandBuffer.nextSubpass,
-    .endRenderPass = @import("cmd.zig").CommandBuffer.endRenderPass,
     .beginRendering = @import("cmd.zig").CommandBuffer.beginRendering,
     .endRendering = @import("cmd.zig").CommandBuffer.endRendering,
     .draw = @import("cmd.zig").CommandBuffer.draw,

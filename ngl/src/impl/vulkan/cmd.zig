@@ -363,20 +363,6 @@ pub const CommandBuffer = struct {
         }));
     }
 
-    pub fn setPipeline(
-        _: *anyopaque,
-        device: Impl.Device,
-        command_buffer: Impl.CommandBuffer,
-        @"type": ngl.Pipeline.Type,
-        pipeline: Impl.Pipeline,
-    ) void {
-        return Device.cast(device).vkCmdBindPipeline(
-            cast(command_buffer).handle,
-            conv.toVkPipelineBindPoint(@"type"),
-            Pipeline.cast(pipeline).handle,
-        );
-    }
-
     pub fn setShaders(
         _: *anyopaque,
         _: std.mem.Allocator,
@@ -970,72 +956,6 @@ pub const CommandBuffer = struct {
         constants: [4]f32,
     ) void {
         Device.cast(device).vkCmdSetBlendConstants(cast(command_buffer).handle, &constants);
-    }
-
-    pub fn beginRenderPass(
-        _: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Impl.Device,
-        command_buffer: Impl.CommandBuffer,
-        render_pass_begin: ngl.Cmd.RenderPassBegin,
-        subpass_begin: ngl.Cmd.SubpassBegin,
-    ) void {
-        const n = 16;
-        var stk_clears: [n]c.VkClearValue = undefined;
-        const clears = if (render_pass_begin.clear_values.len > n) allocator.alloc(
-            c.VkClearValue,
-            render_pass_begin.clear_values.len,
-        ) catch {
-            // TODO: Handle this somehow.
-            @panic("OOM");
-        } else stk_clears[0..render_pass_begin.clear_values.len];
-        defer if (clears.len > n) allocator.free(clears);
-
-        for (clears, render_pass_begin.clear_values) |*vk_clear, clear|
-            vk_clear.* = if (clear) |x| conv.toVkClearValue(x) else undefined;
-
-        const render_area: c.VkRect2D = .{
-            .offset = .{
-                .x = @min(render_pass_begin.render_area.x, std.math.maxInt(i32)),
-                .y = @min(render_pass_begin.render_area.y, std.math.maxInt(i32)),
-            },
-            .extent = .{
-                .width = render_pass_begin.render_area.width,
-                .height = render_pass_begin.render_area.height,
-            },
-        };
-
-        Device.cast(device).vkCmdBeginRenderPass(cast(command_buffer).handle, &.{
-            .sType = c.VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .pNext = null,
-            .renderPass = RenderPass.cast(render_pass_begin.render_pass.impl).handle,
-            .framebuffer = FrameBuffer.cast(render_pass_begin.frame_buffer.impl).handle,
-            .renderArea = render_area,
-            .clearValueCount = @as(u32, @intCast(clears.len)),
-            .pClearValues = clears.ptr,
-        }, conv.toVkSubpassContents(subpass_begin.contents));
-    }
-
-    pub fn nextSubpass(
-        _: *anyopaque,
-        device: Impl.Device,
-        command_buffer: Impl.CommandBuffer,
-        next_begin: ngl.Cmd.SubpassBegin,
-        _: ngl.Cmd.SubpassEnd,
-    ) void {
-        Device.cast(device).vkCmdNextSubpass(
-            cast(command_buffer).handle,
-            conv.toVkSubpassContents(next_begin.contents),
-        );
-    }
-
-    pub fn endRenderPass(
-        _: *anyopaque,
-        device: Impl.Device,
-        command_buffer: Impl.CommandBuffer,
-        _: ngl.Cmd.SubpassEnd,
-    ) void {
-        Device.cast(device).vkCmdEndRenderPass(cast(command_buffer).handle);
     }
 
     pub fn beginRendering(

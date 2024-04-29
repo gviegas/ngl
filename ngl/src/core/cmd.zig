@@ -52,7 +52,7 @@ pub const CommandPool = struct {
         std.debug.assert(desc.count > 0);
         const cmd_bufs = try allocator.alloc(CommandBuffer, desc.count);
         errdefer allocator.free(cmd_bufs);
-        // TODO: Update this when adding more fields to `CommandBuffer`
+        // TODO: Update this when adding more fields to `CommandBuffer`.
         if (@typeInfo(CommandBuffer).Struct.fields.len > 1) @compileError("Uninitialized field(s)");
         try Impl.get().allocCommandBuffers(allocator, device.impl, self.impl, desc, cmd_bufs);
         return cmd_bufs;
@@ -149,25 +149,6 @@ pub const CommandBuffer = struct {
                 },
             },
         };
-
-        /// It doesn't override a previous call with differing
-        /// `Pipeline.Type`.
-        ///
-        /// ✔ Primary command buffer
-        /// ✔ Secondary command buffer
-        /// ✔ Global scope
-        /// ✔ Render pass scope
-        /// ✔ Graphics queue
-        /// ✔ Compute queue
-        /// ✘ Transfer queue
-        pub fn setPipeline(self: *Cmd, pipeline: *Pipeline) void {
-            Impl.get().setPipeline(
-                self.device.impl,
-                self.command_buffer.impl,
-                pipeline.type,
-                pipeline.impl,
-            );
-        }
 
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
@@ -763,98 +744,6 @@ pub const CommandBuffer = struct {
             Impl.get().setBlendConstants(self.device.impl, self.command_buffer.impl, constants);
         }
 
-        pub const ClearValue = union(enum) {
-            color_f32: [4]f32,
-            color_i32: [4]i32,
-            color_u32: [4]u32,
-            depth_stencil: struct { f32, u32 },
-        };
-
-        pub const RenderPassBegin = struct {
-            render_pass: *RenderPass,
-            frame_buffer: *FrameBuffer,
-            render_area: struct {
-                x: u32 = 0,
-                y: u32 = 0,
-                width: u32,
-                height: u32,
-            },
-            /// For any attachment in the render pass whose `LoadOp`
-            /// isn't `.clear`, its corresponding entry must be set
-            /// to `null`. For non-null entries, the variant must
-            /// be compatible with the attachment's format.
-            clear_values: []const ?ClearValue,
-        };
-
-        pub const SubpassContents = enum {
-            /// Calling `executeCommands` in the subpass is disallowed.
-            inline_only,
-            /// Calling any commands other than `executeCommands`,
-            /// `nextSubpass` and `endRenderPass` is disallowed.
-            secondary_command_buffers_only,
-        };
-
-        pub const SubpassBegin = struct {
-            contents: SubpassContents,
-        };
-
-        pub const SubpassEnd = struct {};
-
-        /// It must be paired with `endRenderPass`.
-        ///
-        /// ✔ Primary command buffer
-        /// ✘ Secondary command buffer
-        /// ✔ Global scope
-        /// ✘ Render pass scope
-        /// ✔ Graphics queue
-        /// ✘ Compute queue
-        /// ✘ Transfer queue
-        pub fn beginRenderPass(
-            self: *Cmd,
-            render_pass_begin: RenderPassBegin,
-            subpass_begin: SubpassBegin,
-        ) void {
-            Impl.get().beginRenderPass(
-                self.allocator,
-                self.device.impl,
-                self.command_buffer.impl,
-                render_pass_begin,
-                subpass_begin,
-            );
-        }
-
-        /// Not used with render passes that have a single subpass.
-        ///
-        /// ✔ Primary command buffer
-        /// ✘ Secondary command buffer
-        /// ✘ Global scope
-        /// ✔ Render pass scope
-        /// ✔ Graphics queue
-        /// ✘ Compute queue
-        /// ✘ Transfer queue
-        pub fn nextSubpass(self: *Cmd, next_begin: SubpassBegin, current_end: SubpassEnd) void {
-            Impl.get().nextSubpass(
-                self.device.impl,
-                self.command_buffer.impl,
-                next_begin,
-                current_end,
-            );
-        }
-
-        /// Called in the last subpass of a render pass.
-        /// Note that it replaces the call to `nextSubpass`.
-        ///
-        /// ✔ Primary command buffer
-        /// ✘ Secondary command buffer
-        /// ✘ Global scope
-        /// ✔ Render pass scope
-        /// ✔ Graphics queue
-        /// ✘ Compute queue
-        /// ✘ Transfer queue
-        pub fn endRenderPass(self: *Cmd, subpass_end: SubpassEnd) void {
-            Impl.get().endRenderPass(self.device.impl, self.command_buffer.impl, subpass_end);
-        }
-
         pub const LoadOp = enum {
             load,
             clear,
@@ -866,6 +755,13 @@ pub const CommandBuffer = struct {
             dont_care,
             // TODO
             //none,
+        };
+
+        pub const ClearValue = union(enum) {
+            color_f32: [4]f32,
+            color_i32: [4]i32,
+            color_u32: [4]u32,
+            depth_stencil: struct { f32, u32 },
         };
 
         pub const ResolveMode = enum {
@@ -1290,8 +1186,7 @@ pub const CommandBuffer = struct {
 
         /// If called outside of a render pass, then it must also end
         /// outside of a render pass, and must not span across multiple
-        /// render passes. When called within a render pass, it must
-        /// end in the same subpass.
+        /// render passes.
         /// The type of the query must not be `.timestamp`.
         /// It must be paired with `endQuery`.
         ///
@@ -1478,9 +1373,9 @@ pub const CommandBuffer = struct {
         }
 
         /// Finishes recording and invalidates `self`.
-        /// One must ensure that `endRenderPass` and `endQuery`
-        /// have been called for any active render pass and query,
-        /// respectively.
+        /// One must ensure that `endRendering` and `endQuery`
+        /// have been called for any active render pass and
+        /// query, respectively.
         /// Note that this isn't a command.
         pub fn end(self: *Cmd) Error!void {
             defer self.* = undefined;

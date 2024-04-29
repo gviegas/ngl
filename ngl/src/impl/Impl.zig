@@ -204,14 +204,6 @@ pub const VTable = struct {
         desc: ngl.Cmd.Desc,
     ) Error!void,
 
-    setPipeline: *const fn (
-        ctx: *anyopaque,
-        device: Device,
-        command_buffer: CommandBuffer,
-        type: ngl.Pipeline.Type,
-        pipeline: Pipeline,
-    ) void,
-
     setShaders: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -448,30 +440,6 @@ pub const VTable = struct {
         device: Device,
         command_buffer: CommandBuffer,
         constants: [4]f32,
-    ) void,
-
-    beginRenderPass: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        command_buffer: CommandBuffer,
-        render_pass_begin: ngl.Cmd.RenderPassBegin,
-        subpass_begin: ngl.Cmd.SubpassBegin,
-    ) void,
-
-    nextSubpass: *const fn (
-        ctx: *anyopaque,
-        device: Device,
-        command_buffer: CommandBuffer,
-        next_begin: ngl.Cmd.SubpassBegin,
-        current_end: ngl.Cmd.SubpassEnd,
-    ) void,
-
-    endRenderPass: *const fn (
-        ctx: *anyopaque,
-        device: Device,
-        command_buffer: CommandBuffer,
-        subpass_end: ngl.Cmd.SubpassEnd,
     ) void,
 
     beginRendering: *const fn (
@@ -1364,16 +1332,6 @@ pub fn beginCommandBuffer(
     try self.vtable.beginCommandBuffer(self.ptr, allocator, device, command_buffer, desc);
 }
 
-pub fn setPipeline(
-    self: *Self,
-    device: Device,
-    command_buffer: CommandBuffer,
-    @"type": ngl.Pipeline.Type,
-    pipeline: Pipeline,
-) void {
-    self.vtable.setPipeline(self.ptr, device, command_buffer, @"type", pipeline);
-}
-
 pub fn setShaders(
     self: *Self,
     allocator: std.mem.Allocator,
@@ -1724,43 +1682,6 @@ pub fn setBlendConstants(
     constants: [4]f32,
 ) void {
     self.vtable.setBlendConstants(self.ptr, device, command_buffer, constants);
-}
-
-pub fn beginRenderPass(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    command_buffer: CommandBuffer,
-    render_pass_begin: ngl.Cmd.RenderPassBegin,
-    subpass_begin: ngl.Cmd.SubpassBegin,
-) void {
-    self.vtable.beginRenderPass(
-        self.ptr,
-        allocator,
-        device,
-        command_buffer,
-        render_pass_begin,
-        subpass_begin,
-    );
-}
-
-pub fn nextSubpass(
-    self: *Self,
-    device: Device,
-    command_buffer: CommandBuffer,
-    next_begin: ngl.Cmd.SubpassBegin,
-    current_end: ngl.Cmd.SubpassEnd,
-) void {
-    self.vtable.nextSubpass(self.ptr, device, command_buffer, next_begin, current_end);
-}
-
-pub fn endRenderPass(
-    self: *Self,
-    device: Device,
-    command_buffer: CommandBuffer,
-    subpass_end: ngl.Cmd.SubpassEnd,
-) void {
-    self.vtable.endRenderPass(self.ptr, device, command_buffer, subpass_end);
 }
 
 pub fn beginRendering(
