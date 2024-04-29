@@ -7,19 +7,19 @@ const Error = ngl.Error;
 pub const null_handle = switch (@typeInfo(@TypeOf(c.VK_NULL_HANDLE))) {
     .Optional => null,
     .Int => 0,
-    else => @compileError("Should never happen"),
+    else => unreachable,
 };
 
 /// Returns either a valid non-dispatchable handle or `null`.
 pub fn ndhOrNull(handle: anytype) switch (@typeInfo(@TypeOf(null_handle))) {
     .Null => @TypeOf(handle),
     .ComptimeInt => ?@TypeOf(handle),
-    else => @compileError("Should never happen"),
+    else => unreachable,
 } {
     return switch (@typeInfo(@TypeOf(null_handle))) {
         .Null => handle orelse null,
         .ComptimeInt => if (handle != 0) handle else null,
-        else => @compileError("Should never happen"),
+        else => unreachable,
     };
 }
 
@@ -674,8 +674,8 @@ pub fn toVkPipelineBindPoint(bind_point: ngl.BindPoint) c.VkPipelineBindPoint {
     };
 }
 
-pub fn toVkShaderStage(shader_stage: ngl.ShaderStage) c.VkShaderStageFlagBits {
-    return switch (shader_stage) {
+pub fn toVkShaderStage(shader_type: ngl.Shader.Type) c.VkShaderStageFlagBits {
+    return switch (shader_type) {
         .vertex => c.VK_SHADER_STAGE_VERTEX_BIT,
         .fragment => c.VK_SHADER_STAGE_FRAGMENT_BIT,
         .compute => c.VK_SHADER_STAGE_COMPUTE_BIT,
@@ -808,13 +808,6 @@ pub fn toVkStencilFaceFlags(stencil_face: ngl.Cmd.StencilFace) c.VkStencilFaceFl
         .front => c.VK_STENCIL_FACE_FRONT_BIT,
         .back => c.VK_STENCIL_FACE_BACK_BIT,
         .front_and_back => c.VK_STENCIL_FACE_FRONT_AND_BACK,
-    };
-}
-
-pub fn toVkSubpassContents(subpass_contents: ngl.Cmd.SubpassContents) c.VkSubpassContents {
-    return switch (subpass_contents) {
-        .inline_only => c.VK_SUBPASS_CONTENTS_INLINE,
-        .secondary_command_buffers_only => c.VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS,
     };
 }
 

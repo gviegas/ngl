@@ -2941,7 +2941,7 @@ fn getFeature(
                 },
                 .subpass = .{
                     .max_color_attachments = @min(
-                        @as(u17, ngl.RenderPass.max_attachment_index) + 1,
+                        @as(u17, ngl.Cmd.max_color_attachment),
                         l.maxColorAttachments,
                     ),
                 },
@@ -3147,13 +3147,6 @@ const vtable = Impl.VTable{
     .initSampler = @import("res.zig").Sampler.init,
     .deinitSampler = @import("res.zig").Sampler.deinit,
 
-    .initRenderPass = @import("pass.zig").RenderPass.init,
-    .getRenderAreaGranularity = @import("pass.zig").RenderPass.getRenderAreaGranularity,
-    .deinitRenderPass = @import("pass.zig").RenderPass.deinit,
-
-    .initFrameBuffer = @import("pass.zig").FrameBuffer.init,
-    .deinitFrameBuffer = @import("pass.zig").FrameBuffer.deinit,
-
     .initShader = @import("shd.zig").Shader.init,
     .deinitShader = @import("shd.zig").Shader.deinit,
 
@@ -3169,13 +3162,6 @@ const vtable = Impl.VTable{
     .deinitDescriptorPool = @import("shd.zig").DescriptorPool.deinit,
 
     .writeDescriptorSets = @import("shd.zig").DescriptorSet.write,
-
-    .initPipelinesGraphics = @import("state.zig").Pipeline.initGraphics,
-    .initPipelinesCompute = @import("state.zig").Pipeline.initCompute,
-    .deinitPipeline = @import("state.zig").Pipeline.deinit,
-
-    .initPipelineCache = @import("state.zig").PipelineCache.init,
-    .deinitPipelineCache = @import("state.zig").PipelineCache.deinit,
 
     .getQueryLayout = @import("query.zig").getQueryLayout,
 

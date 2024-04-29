@@ -37,15 +37,11 @@ pub const BufferView = Type(ngl.BufferView);
 pub const Image = Type(ngl.Image);
 pub const ImageView = Type(ngl.ImageView);
 pub const Sampler = Type(ngl.Sampler);
-pub const RenderPass = Type(ngl.RenderPass);
-pub const FrameBuffer = Type(ngl.FrameBuffer);
 pub const Shader = Type(ngl.Shader);
 pub const DescriptorSetLayout = Type(ngl.DescriptorSetLayout);
 pub const PipelineLayout = Type(ngl.PipelineLayout);
 pub const DescriptorPool = Type(ngl.DescriptorPool);
 pub const DescriptorSet = Type(ngl.DescriptorSet);
-pub const Pipeline = Type(ngl.Pipeline);
-pub const PipelineCache = Type(ngl.PipelineCache);
 pub const QueryPool = Type(ngl.QueryPool);
 pub const Surface = Type(ngl.Surface);
 pub const Swapchain = Type(ngl.Swapchain);
@@ -814,44 +810,6 @@ pub const VTable = struct {
         sampler: Sampler,
     ) void,
 
-    // RenderPass ------------------------------------------
-
-    initRenderPass: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        desc: ngl.RenderPass.Desc,
-    ) Error!RenderPass,
-
-    getRenderAreaGranularity: *const fn (
-        ctx: *anyopaque,
-        device: Device,
-        render_pass: RenderPass,
-    ) [2]u32,
-
-    deinitRenderPass: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        render_pass: RenderPass,
-    ) void,
-
-    // FrameBuffer -----------------------------------------
-
-    initFrameBuffer: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        desc: ngl.FrameBuffer.Desc,
-    ) Error!FrameBuffer,
-
-    deinitFrameBuffer: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        frame_buffer: FrameBuffer,
-    ) void,
-
     // Shader ----------------------------------------------
 
     initShader: *const fn (
@@ -940,48 +898,6 @@ pub const VTable = struct {
         device: Device,
         writes: []const ngl.DescriptorSet.Write,
     ) Error!void,
-
-    // Pipeline --------------------------------------------
-
-    initPipelinesGraphics: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        desc: ngl.Pipeline.Desc(ngl.GraphicsState),
-        pipelines: []ngl.Pipeline,
-    ) Error!void,
-
-    initPipelinesCompute: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        desc: ngl.Pipeline.Desc(ngl.ComputeState),
-        pipelines: []ngl.Pipeline,
-    ) Error!void,
-
-    deinitPipeline: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        pipeline: Pipeline,
-        type: ngl.Pipeline.Type,
-    ) void,
-
-    // PipelineCache ---------------------------------------
-
-    initPipelineCache: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        desc: ngl.PipelineCache.Desc,
-    ) Error!PipelineCache,
-
-    deinitPipelineCache: *const fn (
-        ctx: *anyopaque,
-        allocator: std.mem.Allocator,
-        device: Device,
-        pipeline_cache: PipelineCache,
-    ) void,
 
     // QueryType -------------------------------------------
 
@@ -2176,46 +2092,6 @@ pub fn deinitSampler(
     self.vtable.deinitSampler(self.ptr, allocator, device, sampler);
 }
 
-pub fn initRenderPass(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    desc: ngl.RenderPass.Desc,
-) Error!RenderPass {
-    return self.vtable.initRenderPass(self.ptr, allocator, device, desc);
-}
-
-pub fn getRenderAreaGranularity(self: *Self, device: Device, render_pass: RenderPass) [2]u32 {
-    return self.vtable.getRenderAreaGranularity(self.ptr, device, render_pass);
-}
-
-pub fn deinitRenderPass(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    render_pass: RenderPass,
-) void {
-    self.vtable.deinitRenderPass(self.ptr, allocator, device, render_pass);
-}
-
-pub fn initFrameBuffer(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    desc: ngl.FrameBuffer.Desc,
-) Error!FrameBuffer {
-    return self.vtable.initFrameBuffer(self.ptr, allocator, device, desc);
-}
-
-pub fn deinitFrameBuffer(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    frame_buffer: FrameBuffer,
-) void {
-    self.vtable.deinitFrameBuffer(self.ptr, allocator, device, frame_buffer);
-}
-
 pub fn initShader(
     self: *Self,
     allocator: std.mem.Allocator,
@@ -2322,54 +2198,6 @@ pub fn writeDescriptorSets(
     writes: []const ngl.DescriptorSet.Write,
 ) Error!void {
     try self.vtable.writeDescriptorSets(self.ptr, allocator, device, writes);
-}
-
-pub fn initPipelinesGraphics(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    desc: ngl.Pipeline.Desc(ngl.GraphicsState),
-    pipelines: []ngl.Pipeline,
-) Error!void {
-    try self.vtable.initPipelinesGraphics(self.ptr, allocator, device, desc, pipelines);
-}
-
-pub fn initPipelinesCompute(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    desc: ngl.Pipeline.Desc(ngl.ComputeState),
-    pipelines: []ngl.Pipeline,
-) Error!void {
-    try self.vtable.initPipelinesCompute(self.ptr, allocator, device, desc, pipelines);
-}
-
-pub fn deinitPipeline(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    pipeline: Pipeline,
-    @"type": ngl.Pipeline.Type,
-) void {
-    self.vtable.deinitPipeline(self, allocator, device, pipeline, @"type");
-}
-
-pub fn initPipelineCache(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    desc: ngl.PipelineCache.Desc,
-) Error!PipelineCache {
-    return self.vtable.initPipelineCache(self.ptr, allocator, device, desc);
-}
-
-pub fn deinitPipelineCache(
-    self: *Self,
-    allocator: std.mem.Allocator,
-    device: Device,
-    pipeline_cache: PipelineCache,
-) void {
-    self.vtable.deinitPipelineCache(self.ptr, allocator, device, pipeline_cache);
 }
 
 pub fn getQueryLayout(

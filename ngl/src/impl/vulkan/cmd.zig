@@ -16,11 +16,8 @@ const Cache = @import("Cache.zig");
 const Buffer = @import("res.zig").Buffer;
 const Image = @import("res.zig").Image;
 const Shader = @import("shd.zig").Shader;
-const RenderPass = @import("pass.zig").RenderPass;
-const FrameBuffer = @import("pass.zig").FrameBuffer;
 const PipelineLayout = @import("shd.zig").PipelineLayout;
 const DescriptorSet = @import("shd.zig").DescriptorSet;
-const Pipeline = @import("state.zig").Pipeline;
 const getQueryLayout = @import("query.zig").getQueryLayout;
 const QueryPool = @import("query.zig").QueryPool;
 
