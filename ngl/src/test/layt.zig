@@ -28,21 +28,21 @@ test "DescriptorSetLayout and PipelineLayout" {
             .binding = 0,
             .type = .sampler,
             .count = 1,
-            .stage_mask = .{ .fragment = true },
+            .shader_mask = .{ .fragment = true },
             .immutable_samplers = null,
         },
         .{
             .binding = 1,
             .type = .sampled_image,
             .count = 1,
-            .stage_mask = .{ .fragment = true },
+            .shader_mask = .{ .fragment = true },
             .immutable_samplers = null,
         },
         .{
             .binding = 2,
             .type = .uniform_buffer,
             .count = 1,
-            .stage_mask = .{ .vertex = true, .fragment = true },
+            .shader_mask = .{ .vertex = true, .fragment = true },
             .immutable_samplers = null,
         },
     } });
@@ -52,7 +52,7 @@ test "DescriptorSetLayout and PipelineLayout" {
         .binding = 0,
         .type = .combined_image_sampler,
         .count = 3,
-        .stage_mask = .{ .fragment = true },
+        .shader_mask = .{ .fragment = true },
         .immutable_samplers = &.{ &splr, &splr, &splr },
     }} });
     defer set_layt_2.deinit(gpa, dev);
@@ -68,7 +68,7 @@ test "DescriptorSetLayout and PipelineLayout" {
         .push_constant_ranges = &.{.{
             .offset = 0,
             .size = 64,
-            .stage_mask = .{ .vertex = true },
+            .shader_mask = .{ .vertex = true },
         }},
     });
     defer pl_layt_2.deinit(gpa, dev);
@@ -79,17 +79,17 @@ test "DescriptorSetLayout and PipelineLayout" {
             .{
                 .offset = 16,
                 .size = 8,
-                .stage_mask = .{ .fragment = true, .compute = true },
+                .shader_mask = .{ .fragment = true, .compute = true },
             },
             .{
                 .offset = 32,
                 .size = 64,
-                .stage_mask = .{ .compute = true },
+                .shader_mask = .{ .compute = true },
             },
             .{
                 .offset = 0,
                 .size = 16,
-                .stage_mask = .{
+                .shader_mask = .{
                     .vertex = true,
                     .fragment = true,
                     .compute = true,
@@ -111,7 +111,7 @@ test "DescriptorSetLayout and PipelineLayout" {
             .binding = 0,
             .type = .storage_image,
             .count = 1,
-            .stage_mask = .{ .compute = true },
+            .shader_mask = .{ .compute = true },
             .immutable_samplers = null,
         }} });
 

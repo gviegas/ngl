@@ -169,7 +169,7 @@ test "depth-only rendering" {
         .binding = 0,
         .type = .uniform_buffer,
         .count = 1,
-        .stage_mask = .{ .vertex = true },
+        .shader_mask = .{ .vertex = true },
         .immutable_samplers = null,
     }} });
     defer set_layt.deinit(gpa, dev);

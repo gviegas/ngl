@@ -65,7 +65,7 @@ test "shader specialization" {
         .binding = 0,
         .type = .storage_buffer,
         .count = 1,
-        .stage_mask = .{ .compute = true },
+        .shader_mask = .{ .compute = true },
         .immutable_samplers = null,
     }} });
     errdefer set_layt.deinit(gpa, dev);

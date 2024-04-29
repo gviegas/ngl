@@ -198,7 +198,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
             .binding = 0,
             .type = .uniform_buffer,
             .count = 1,
-            .stage_mask = .{ .vertex = true },
+            .shader_mask = .{ .vertex = true },
             .immutable_samplers = null,
         }},
     });

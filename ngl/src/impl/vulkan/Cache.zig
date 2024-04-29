@@ -845,7 +845,7 @@ test getPrimitivePipeline {
             .binding = 0,
             .type = .combined_image_sampler,
             .count = 1,
-            .stage_mask = .{ .fragment = true },
+            .shader_mask = .{ .fragment = true },
             .immutable_samplers = null,
         }},
     });
@@ -853,7 +853,7 @@ test getPrimitivePipeline {
     const push_consts = [1]ngl.PushConstantRange{.{
         .offset = 0,
         .size = 64,
-        .stage_mask = .{ .vertex = true },
+        .shader_mask = .{ .vertex = true },
     }};
     const shaders = try ngl.Shader.init(testing.allocator, &context().device, &.{
         .{
@@ -1407,7 +1407,7 @@ test createPrimitivePipeline {
             .binding = 0,
             .type = .combined_image_sampler,
             .count = 1,
-            .stage_mask = .{ .fragment = true },
+            .shader_mask = .{ .fragment = true },
             .immutable_samplers = null,
         }},
     });
@@ -1415,7 +1415,7 @@ test createPrimitivePipeline {
     const push_const = [1]ngl.PushConstantRange{.{
         .offset = 0,
         .size = 64,
-        .stage_mask = .{ .vertex = true },
+        .shader_mask = .{ .vertex = true },
     }};
     const shaders = try ngl.Shader.init(testing.allocator, &context().device, &.{
         .{

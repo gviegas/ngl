@@ -91,7 +91,7 @@ test "dispatch command" {
         .binding = 0,
         .type = .storage_image,
         .count = 1,
-        .stage_mask = .{ .compute = true },
+        .shader_mask = .{ .compute = true },
         .immutable_samplers = null,
     }} });
     defer set_layt.deinit(gpa, dev);

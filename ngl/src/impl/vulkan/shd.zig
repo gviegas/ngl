@@ -117,8 +117,7 @@ pub const Shader = packed union {
                     };
                     for (push_consts, desc.push_constants) |*dest, src|
                         dest.* = .{
-                            // TODO: Should be `Shader.Type.Flags`.
-                            .stageFlags = conv.toVkShaderStageFlags(src.stage_mask),
+                            .stageFlags = conv.toVkShaderStageFlags(src.shader_mask),
                             .offset = src.offset,
                             .size = src.size,
                         };
@@ -307,7 +306,7 @@ pub const DescriptorSetLayout = packed struct {
                     .binding = bind.binding,
                     .descriptorType = conv.toVkDescriptorType(bind.type),
                     .descriptorCount = bind.count,
-                    .stageFlags = conv.toVkShaderStageFlags(bind.stage_mask),
+                    .stageFlags = conv.toVkShaderStageFlags(bind.shader_mask),
                     .pImmutableSamplers = blk: {
                         const bind_splrs = bind.immutable_samplers orelse &.{};
                         if (bind_splrs.len == 0) break :blk null;
@@ -375,7 +374,7 @@ pub const PipelineLayout = packed struct {
             const const_ranges = try allocator.alloc(c.VkPushConstantRange, const_range_n);
             for (const_ranges, desc.push_constant_ranges.?) |*vk_const_range, const_range|
                 vk_const_range.* = .{
-                    .stageFlags = conv.toVkShaderStageFlags(const_range.stage_mask),
+                    .stageFlags = conv.toVkShaderStageFlags(const_range.shader_mask),
                     .offset = const_range.offset,
                     .size = const_range.size,
                 };

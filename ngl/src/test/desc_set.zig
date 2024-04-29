@@ -7,7 +7,7 @@ const context = @import("test.zig").context;
 test "DescriptorSet.write" {
     const dev = &context().device;
 
-    const stage_mask = ngl.ShaderStage.Flags{
+    const shader_mask = ngl.Shader.Type.Flags{
         .vertex = true,
         .fragment = true,
         .compute = true,
@@ -116,21 +116,21 @@ test "DescriptorSet.write" {
             .binding = 0,
             .type = .combined_image_sampler,
             .count = 2,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = null,
         },
         .{
             .binding = 1,
             .type = .storage_texel_buffer,
             .count = 1,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = null,
         },
         .{
             .binding = 2,
             .type = .uniform_buffer,
             .count = 2,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = null,
         },
     } });
@@ -141,14 +141,14 @@ test "DescriptorSet.write" {
             .binding = 1,
             .type = .sampler,
             .count = 1,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = null,
         },
         .{
             .binding = 0,
             .type = .combined_image_sampler,
             .count = 1,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = &.{&splr},
         },
     } });

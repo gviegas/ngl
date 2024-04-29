@@ -682,14 +682,13 @@ pub fn toVkShaderStage(shader_stage: ngl.ShaderStage) c.VkShaderStageFlagBits {
     };
 }
 
-// TODO: `ngl.Shader.Type.Flags` instead.
-pub fn toVkShaderStageFlags(shader_stage_flags: ngl.ShaderStage.Flags) c.VkShaderStageFlags {
+pub fn toVkShaderStageFlags(shader_mask: ngl.Shader.Type.Flags) c.VkShaderStageFlags {
     var flags: c.VkShaderStageFlags = 0;
-    if (shader_stage_flags.vertex)
+    if (shader_mask.vertex)
         flags |= c.VK_SHADER_STAGE_VERTEX_BIT;
-    if (shader_stage_flags.fragment)
+    if (shader_mask.fragment)
         flags |= c.VK_SHADER_STAGE_FRAGMENT_BIT;
-    if (shader_stage_flags.compute)
+    if (shader_mask.compute)
         flags |= c.VK_SHADER_STAGE_COMPUTE_BIT;
     return flags;
 }

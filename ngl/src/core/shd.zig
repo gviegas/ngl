@@ -87,7 +87,7 @@ pub const DescriptorSetLayout = struct {
         binding: u32,
         type: DescriptorType,
         count: u32,
-        stage_mask: ShaderStage.Flags,
+        shader_mask: Shader.Type.Flags,
         immutable_samplers: ?[]const *Sampler,
     };
 
@@ -110,7 +110,7 @@ pub const DescriptorSetLayout = struct {
 pub const PushConstantRange = struct {
     offset: u16,
     size: u16,
-    stage_mask: ShaderStage.Flags,
+    shader_mask: Shader.Type.Flags,
 };
 
 pub const PipelineLayout = struct {

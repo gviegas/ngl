@@ -257,7 +257,7 @@ const T = struct {
         const push_consts = [1]ngl.PushConstantRange{.{
             .offset = 0,
             .size = 16,
-            .stage_mask = .{ .fragment = true },
+            .shader_mask = .{ .fragment = true },
         }};
 
         var pl_layt = try ngl.PipelineLayout.init(gpa, dev, .{

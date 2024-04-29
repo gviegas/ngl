@@ -74,7 +74,7 @@ test "dispatchIndirect command" {
             .binding = 0,
             .type = .storage_buffer,
             .count = 1,
-            .stage_mask = .{ .compute = true },
+            .shader_mask = .{ .compute = true },
             .immutable_samplers = null,
         }},
     });

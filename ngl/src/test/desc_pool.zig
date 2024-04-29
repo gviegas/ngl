@@ -56,7 +56,7 @@ test "DescriptorPool.init/deinit" {
 test "DescriptorPool.alloc/reset" {
     const dev = &context().device;
 
-    const stage_mask = ngl.ShaderStage.Flags{
+    const shader_mask = ngl.Shader.Type.Flags{
         .vertex = true,
         .fragment = true,
         .compute = true,
@@ -67,21 +67,21 @@ test "DescriptorPool.alloc/reset" {
             .binding = 0,
             .type = .sampler,
             .count = 1,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = null,
         },
         .{
             .binding = 1,
             .type = .sampled_image,
             .count = 1,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = null,
         },
         .{
             .binding = 2,
             .type = .uniform_buffer,
             .count = 1,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = null,
         },
     } });
@@ -91,7 +91,7 @@ test "DescriptorPool.alloc/reset" {
         .binding = 0,
         .type = .storage_image,
         .count = 12,
-        .stage_mask = stage_mask,
+        .shader_mask = shader_mask,
         .immutable_samplers = null,
     }} });
     defer layt_2.deinit(gpa, dev);
@@ -101,14 +101,14 @@ test "DescriptorPool.alloc/reset" {
             .binding = 0,
             .type = .combined_image_sampler,
             .count = 10,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = null,
         },
         .{
             .binding = 0,
             .type = .uniform_buffer,
             .count = 8,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = null,
         },
     } });
@@ -170,14 +170,14 @@ test "DescriptorPool.alloc/reset" {
             .binding = 0,
             .type = .combined_image_sampler,
             .count = 3,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = null,
         },
         .{
             .binding = 0,
             .type = .uniform_buffer,
             .count = 3,
-            .stage_mask = stage_mask,
+            .shader_mask = shader_mask,
             .immutable_samplers = null,
         },
     } });
