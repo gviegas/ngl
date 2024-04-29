@@ -1528,6 +1528,11 @@ pub const Device = struct {
         return self.version >= c.VK_API_VERSION_1_3;
     }
 
+    // TODO: Extension.
+    pub fn hasSynchronization2(self: Device) bool {
+        return self.version >= c.VK_API_VERSION_1_3;
+    }
+
     // Wrappers --------------------------------------------
 
     pub fn vkDestroyDevice(self: *Device, vk_allocator: ?*const c.VkAllocationCallbacks) void {
