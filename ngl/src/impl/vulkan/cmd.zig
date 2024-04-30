@@ -556,34 +556,46 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         viewports: []const ngl.Cmd.Viewport,
     ) void {
+        const dev = Device.cast(device);
+        const cmd_buf = cast(command_buffer);
+
+        const convViewport = struct {
+            fn do(dest: *c.VkViewport, source: ngl.Cmd.Viewport) void {
+                dest.* = .{
+                    .x = source.x,
+                    .y = source.y,
+                    .width = source.width,
+                    .height = source.height,
+                    .minDepth = source.znear,
+                    .maxDepth = source.zfar,
+                };
+            }
+        }.do;
+
+        if (cmd_buf.dyn) |d| {
+            d.state.viewport_count.set(viewports);
+            d.changed = true;
+        }
+
         const n = 1;
         var stk_vports: [n]c.VkViewport = undefined;
-        const vports = if (viewports.len > n) allocator.alloc(c.VkViewport, viewports.len) catch {
-            var i: usize = 0;
-            while (i < viewports.len) : (i += n) {
-                const j = @min(i + n, viewports.len);
-                setViewports(undefined, allocator, device, command_buffer, viewports[i..j]);
+        const vports = if (viewports.len > n) allocator.alloc(
+            c.VkViewport,
+            viewports.len,
+        ) catch {
+            // Vulkan allows setting the viewports
+            // in separate calls.
+            for (viewports, 0..) |vport, i| {
+                convViewport(&stk_vports[0], vport);
+                dev.vkCmdSetViewport(cmd_buf.handle, @intCast(i), 1, &stk_vports);
             }
             return;
         } else stk_vports[0..viewports.len];
         defer if (vports.len > n) allocator.free(vports);
 
-        for (vports, viewports) |*vport, viewport|
-            vport.* = .{
-                .x = viewport.x,
-                .y = viewport.y,
-                .width = viewport.width,
-                .height = viewport.height,
-                .minDepth = viewport.znear,
-                .maxDepth = viewport.zfar,
-            };
-
-        Device.cast(device).vkCmdSetViewport(
-            cast(command_buffer).handle,
-            0,
-            @intCast(viewports.len),
-            vports.ptr,
-        );
+        for (vports, viewports) |*dest, source|
+            convViewport(dest, source);
+        dev.vkCmdSetViewport(cmd_buf.handle, 0, @intCast(viewports.len), vports.ptr);
     }
 
     pub fn setScissorRects(
@@ -593,39 +605,43 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         scissor_rects: []const ngl.Cmd.ScissorRect,
     ) void {
+        const dev = Device.cast(device);
+        const cmd_buf = cast(command_buffer);
+
+        const convScissorRect = struct {
+            fn do(dest: *c.VkRect2D, source: ngl.Cmd.ScissorRect) void {
+                dest.* = .{
+                    .offset = .{
+                        .x = @min(source.x, std.math.maxInt(i32)),
+                        .y = @min(source.y, std.math.maxInt(i32)),
+                    },
+                    .extent = .{
+                        .width = source.width,
+                        .height = source.height,
+                    },
+                };
+            }
+        }.do;
+
         const n = 1;
         var stk_rects: [n]c.VkRect2D = undefined;
         const rects = if (scissor_rects.len > n) allocator.alloc(
             c.VkRect2D,
             scissor_rects.len,
         ) catch {
-            var i: usize = 0;
-            while (i < scissor_rects.len) : (i += n) {
-                const j = @min(i + n, scissor_rects.len);
-                setScissorRects(undefined, allocator, device, command_buffer, scissor_rects[i..j]);
+            // Vulkan allows setting the scissor rects
+            // in separate calls.
+            for (scissor_rects, 0..) |rect, i| {
+                convScissorRect(&stk_rects[0], rect);
+                dev.vkCmdSetScissor(cmd_buf.handle, @intCast(i), 1, &stk_rects);
             }
             return;
         } else stk_rects[0..scissor_rects.len];
         defer if (rects.len > n) allocator.free(rects);
 
-        for (rects, scissor_rects) |*rect, scissor_rect|
-            rect.* = .{
-                .offset = .{
-                    .x = @min(scissor_rect.x, std.math.maxInt(i32)),
-                    .y = @min(scissor_rect.y, std.math.maxInt(i32)),
-                },
-                .extent = .{
-                    .width = scissor_rect.width,
-                    .height = scissor_rect.height,
-                },
-            };
-
-        Device.cast(device).vkCmdSetScissor(
-            cast(command_buffer).handle,
-            0,
-            @intCast(scissor_rects.len),
-            rects.ptr,
-        );
+        for (rects, scissor_rects) |*dest, source|
+            convScissorRect(dest, source);
+        dev.vkCmdSetScissor(cmd_buf.handle, 0, @intCast(scissor_rects.len), rects.ptr);
     }
 
     pub fn setRasterizationEnable(
@@ -1843,6 +1859,7 @@ pub const Dynamic = struct {
         .shaders = true,
         .vertex_input = true,
         .primitive_topology = true,
+        .viewport_count = true,
         .rasterization_enable = true,
         .polygon_mode = true,
         .cull_mode = true,
@@ -2122,6 +2139,17 @@ test CommandBuffer {
     const prev_prim_top = d.state.primitive_topology;
     CommandBuffer.setPrimitiveTopology(undefined, dev, cmd_buf, .line_list);
     try testing.expect(!prev_prim_top.eql(d.state.primitive_topology));
+
+    const prev_vport_cnt = d.state.viewport_count;
+    CommandBuffer.setViewports(undefined, testing.failing_allocator, dev, cmd_buf, &.{.{
+        .x = 0,
+        .y = 0,
+        .width = 1,
+        .height = 1,
+        .znear = 0,
+        .zfar = 1,
+    }});
+    try testing.expect(!prev_vport_cnt.eql(d.state.viewport_count));
 
     const prev_raster_enable = d.state.rasterization_enable;
     CommandBuffer.setRasterizationEnable(undefined, dev, cmd_buf, false);

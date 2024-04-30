@@ -270,13 +270,12 @@ pub fn createPrimitivePipeline(
         .primitiveRestartEnable = c.VK_FALSE,
     };
 
-    // BUG: Need dynamic state for viewport/scissor rect count.
     const vport = c.VkPipelineViewportStateCreateInfo{
         .sType = c.VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
         .flags = 0,
-        .viewportCount = 1,
+        .viewportCount = state.viewport_count.count,
         .pViewports = null,
-        .scissorCount = 1,
+        .scissorCount = state.viewport_count.count,
         .pScissors = null,
     };
 
@@ -1247,8 +1246,9 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
     if (create_info.pTessellationState != null) return error.NonnullPtr;
 
     const vport = create_info.pViewportState orelse return error.NullPtr;
-    // TODO: Test counts when dynamic state for them is added.
+    try testing.expect(state.viewport_count.count == vport.*.viewportCount);
     try testing.expect(vport.*.pViewports == null);
+    try testing.expect(state.viewport_count.count == vport.*.scissorCount);
     try testing.expect(vport.*.pScissors == null);
 
     const raster = create_info.pRasterizationState orelse return error.NullPtr;
@@ -1508,20 +1508,19 @@ test createPrimitivePipeline {
     // It relies on `key.rendering` to infer the number
     // of color attachments used; just the blend-related
     // state set above is not sufficient.
-    // Note that the view's `impl.val` must not be zero.
     var col_views = [_]ngl.ImageView{
         .{
-            .impl = .{ .val = 1 },
+            .impl = .{ .val = 0 },
             .format = .rgba16_sfloat,
             .samples = .@"4",
         },
         .{
-            .impl = .{ .val = 2 },
+            .impl = .{ .val = 1 },
             .format = .rgba16_sfloat,
             .samples = .@"1",
         },
         .{
-            .impl = .{ .val = 3 },
+            .impl = .{ .val = 2 },
             .format = .rgba8_unorm,
             .samples = .@"4",
         },
