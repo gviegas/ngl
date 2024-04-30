@@ -646,39 +646,39 @@ pub const CommandBuffer = struct {
             );
         }
 
-        pub const BlendFactor = enum {
-            zero,
-            one,
-            source_color,
-            one_minus_source_color,
-            dest_color,
-            one_minus_dest_color,
-            source_alpha,
-            one_minus_source_alpha,
-            dest_alpha,
-            one_minus_dest_alpha,
-            constant_color,
-            one_minus_constant_color,
-            constant_alpha,
-            one_minus_constant_alpha,
-            source_alpha_saturate,
-        };
-
-        pub const BlendOp = enum {
-            add,
-            subtract,
-            reverse_subtract,
-            min,
-            max,
-        };
-
         pub const Blend = struct {
-            color_source_factor: BlendFactor = .one,
-            color_dest_factor: BlendFactor = .zero,
-            color_op: BlendOp = .add,
-            alpha_source_factor: BlendFactor = .one,
-            alpha_dest_factor: BlendFactor = .zero,
-            alpha_op: BlendOp = .add,
+            color_source_factor: Factor = .one,
+            color_dest_factor: Factor = .zero,
+            color_op: Op = .add,
+            alpha_source_factor: Factor = .one,
+            alpha_dest_factor: Factor = .zero,
+            alpha_op: Op = .add,
+
+            pub const Factor = enum {
+                zero,
+                one,
+                source_color,
+                one_minus_source_color,
+                dest_color,
+                one_minus_dest_color,
+                source_alpha,
+                one_minus_source_alpha,
+                dest_alpha,
+                one_minus_dest_alpha,
+                constant_color,
+                one_minus_constant_color,
+                constant_alpha,
+                one_minus_constant_alpha,
+                source_alpha_saturate,
+            };
+
+            pub const Op = enum {
+                add,
+                subtract,
+                reverse_subtract,
+                min,
+                max,
+            };
         };
 
         /// ✔ Primary command buffer
