@@ -137,6 +137,7 @@ pub fn State(comptime state_mask: anytype) type {
                 .shaders => if (has) Shaders(kind) else None,
                 .vertex_input => if (has) VertexInput else None,
                 .primitive_topology => if (has) PrimitiveTopology else None,
+                .viewport_count => if (has) ViewportCount else None,
                 .viewports => if (has) Viewports else None,
                 .scissor_rects => if (has) ScissorRects else None,
                 .rasterization_enable => if (has) Enable(true) else None,
@@ -168,6 +169,7 @@ pub fn State(comptime state_mask: anytype) type {
         shaders: getType(.shaders),
         vertex_input: getType(.vertex_input),
         primitive_topology: getType(.primitive_topology),
+        viewport_count: getType(.viewport_count),
         viewports: getType(.viewports),
         scissor_rects: getType(.scissor_rects),
         rasterization_enable: getType(.rasterization_enable),
@@ -210,6 +212,10 @@ pub fn StateMask(comptime kind: enum { primitive }) type {
     };
 
     const common_render = [_][:0]const u8{
+        // Number of viewports in `Cmd.setViewports`.
+        // There's no equivalent for scissor rects
+        // because the counts must match.
+        "viewport_count",
         // `Cmd.setViewports`.
         "viewports",
         // `Cmd.setScissorRects`.
@@ -565,6 +571,17 @@ const PrimitiveTopology = struct {
 
     pub fn set(self: *@This(), topology: Cmd.PrimitiveTopology) void {
         self.topology = topology;
+    }
+};
+
+const ViewportCount = struct {
+    count: u32 = 0,
+
+    pub const hash = getDefaultHashFn(@This());
+    pub const eql = getDefaultEqlFn(@This());
+
+    pub fn set(self: *@This(), viewports: []const Cmd.Viewport) void {
+        self.count = @intCast(viewports.len);
     }
 };
 
@@ -1135,6 +1152,7 @@ test State {
         .shaders = true,
         .vertex_input = true,
         .primitive_topology = true,
+        .viewport_count = true,
         .viewports = false,
         .scissor_rects = false,
         .rasterization_enable = true,
@@ -1262,6 +1280,26 @@ test State {
     h1 = hashT(s1);
     try expectNotEql(s1, h1, s2);
     s2.vertex_input.clear(testing.allocator);
+    try expectEql(s1, h1, s2);
+
+    s2.viewport_count.set(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = 1,
+        .height = 1,
+        .znear = 0,
+        .zfar = 1,
+    }});
+    try expectNotEql(s1, h1, s2);
+    s1.viewport_count.set(&.{.{
+        .x = 256,
+        .y = 256,
+        .width = 256,
+        .height = 256,
+        .znear = 1,
+        .zfar = 0,
+    }});
+    h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 
     s2.rasterization_enable.set(false);
