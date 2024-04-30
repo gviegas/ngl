@@ -325,8 +325,8 @@ test "executeCommands command (dispatching)" {
     defer for (thrds) |thrd| thrd.join();
 
     var cmd = try t.cmd_bufs[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
             .dest_stage_mask = .{ .compute_shader = true },
@@ -343,7 +343,6 @@ test "executeCommands command (dispatching)" {
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
     while (@atomicLoad(@TypeOf(rem), &rem, .acquire) > 0) {}
     cmd.executeCommands(blk: {
@@ -351,8 +350,8 @@ test "executeCommands command (dispatching)" {
         for (&ptrs, t.cmd_bufs[1..]) |*p, *c| p.* = c;
         break :blk &ptrs;
     });
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .image = &.{.{
             .source_stage_mask = .{ .compute_shader = true },
             .source_access_mask = .{ .shader_storage_write = true },
             .dest_stage_mask = .{ .copy = true },
@@ -369,7 +368,6 @@ test "executeCommands command (dispatching)" {
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
     cmd.copyImageToBuffer(&.{.{
         .buffer = &t.stg_buf,
@@ -740,8 +738,8 @@ test "executeCommands command (drawing)" {
             .size = @sizeOf(@TypeOf(triangle.data)),
         }},
     }});
-    cmd.pipelineBarrier(&.{.{
-        .buffer_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .buffer = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_read = true, .transfer_write = true },
             .dest_stage_mask = .{ .vertex_attribute_input = true },
@@ -751,7 +749,7 @@ test "executeCommands command (drawing)" {
             .offset = 0,
             .size = @sizeOf(@TypeOf(triangle.data)),
         }},
-        .image_dependencies = &.{.{
+        .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
             .dest_stage_mask = .{ .color_attachment_output = true },
@@ -768,7 +766,6 @@ test "executeCommands command (drawing)" {
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
     cmd.beginRendering(.{
         .colors = &.{.{
@@ -795,8 +792,8 @@ test "executeCommands command (drawing)" {
         break :blk &ptrs;
     });
     cmd.endRendering();
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .image = &.{.{
             .source_stage_mask = .{ .color_attachment_output = true },
             .source_access_mask = .{ .color_attachment_write = true },
             .dest_stage_mask = .{ .copy = true },
@@ -813,7 +810,6 @@ test "executeCommands command (drawing)" {
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
     cmd.copyImageToBuffer(&.{.{
         .buffer = &t.stg_buf,

@@ -111,8 +111,8 @@ test "copy between resources" {
     cmd.clearBuffer(&bufs[0], 0, size / 2, 0x9d);
     cmd.clearBuffer(&bufs[0], size / 2, size / 2, 0xfa);
 
-    cmd.pipelineBarrier(&.{.{
-        .buffer_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .buffer = &.{.{
             .source_stage_mask = .{ .clear = true },
             .source_access_mask = .{ .memory_write = true },
             .dest_stage_mask = .{ .copy = true },
@@ -122,7 +122,7 @@ test "copy between resources" {
             .offset = 0,
             .size = size,
         }},
-        .image_dependencies = &.{.{
+        .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
             .dest_stage_mask = .{ .copy = true },
@@ -139,7 +139,6 @@ test "copy between resources" {
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
 
     // Invert the top and bottom halves.
@@ -177,8 +176,8 @@ test "copy between resources" {
         },
     }});
 
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{
+    cmd.barrier(&.{.{
+        .image = &.{
             .{
                 .source_stage_mask = .{ .copy = true },
                 .source_access_mask = .{ .memory_write = true },
@@ -214,7 +213,6 @@ test "copy between resources" {
                 },
             },
         },
-        .by_region = false,
     }});
 
     // Invert the top and bottom halves for the first layer.
@@ -273,8 +271,8 @@ test "copy between resources" {
         },
     }});
 
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .image = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .memory_write = true },
             .dest_stage_mask = .{ .copy = true },
@@ -291,7 +289,6 @@ test "copy between resources" {
                 .layers = 2,
             },
         }},
-        .by_region = false,
     }});
 
     // Nothing fancy here, just copy the second image's layers

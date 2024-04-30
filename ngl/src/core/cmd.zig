@@ -1290,22 +1290,29 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// At least one of `global_dependencies`, `buffer_dependencies`
-        /// or `image_dependencies` must be provided.
-        pub const Dependency = struct {
-            global_dependencies: []const GlobalDependency = &.{},
-            buffer_dependencies: []const BufferDependency = &.{},
-            image_dependencies: []const ImageDependency = &.{},
-            by_region: bool,
+        pub const Dependency = enum {
+            by_region,
+            view_local,
+            device_group,
 
-            pub const GlobalDependency = struct {
+            pub const Flags = ngl.Flags(Dependency);
+        };
+
+        /// `global`, `buffer` and `image` must not all be empty.
+        pub const Barrier = struct {
+            global: []const GlobalBarrier = &.{},
+            buffer: []const BufferBarrier = &.{},
+            image: []const ImageBarrier = &.{},
+            dependency_mask: Dependency.Flags = .{},
+
+            pub const GlobalBarrier = struct {
                 source_stage_mask: Stage.Flags,
                 source_access_mask: Access.Flags,
                 dest_stage_mask: Stage.Flags,
                 dest_access_mask: Access.Flags,
             };
 
-            pub const BufferDependency = struct {
+            pub const BufferBarrier = struct {
                 source_stage_mask: Stage.Flags,
                 source_access_mask: Access.Flags,
                 dest_stage_mask: Stage.Flags,
@@ -1316,10 +1323,10 @@ pub const CommandBuffer = struct {
                 },
                 buffer: *Buffer,
                 offset: u64,
-                size: ?u64,
+                size: u64,
             };
 
-            pub const ImageDependency = struct {
+            pub const ImageBarrier = struct {
                 source_stage_mask: Stage.Flags,
                 source_access_mask: Access.Flags,
                 dest_stage_mask: Stage.Flags,
@@ -1342,12 +1349,12 @@ pub const CommandBuffer = struct {
         /// ✔ Graphics queue
         /// ✔ Compute queue
         /// ✔ Transfer queue
-        pub fn pipelineBarrier(self: *Cmd, dependencies: []const Dependency) void {
-            Impl.get().pipelineBarrier(
+        pub fn barrier(self: *Cmd, barriers: []const Barrier) void {
+            Impl.get().barrier(
                 self.allocator,
                 self.device.impl,
                 self.command_buffer.impl,
-                dependencies,
+                barriers,
             );
         }
 

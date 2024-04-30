@@ -232,8 +232,9 @@ test "Queue.present" {
             .one_time_submit = true,
             .inheritance = null,
         });
-        cmd.pipelineBarrier(&.{.{
-            .image_dependencies = &.{.{
+
+        cmd.barrier(&.{.{
+            .image = &.{.{
                 .source_stage_mask = .{},
                 .source_access_mask = .{},
                 .dest_stage_mask = .{},
@@ -250,7 +251,6 @@ test "Queue.present" {
                     .layers = 1,
                 },
             }},
-            .by_region = false,
         }});
         try cmd.end();
 

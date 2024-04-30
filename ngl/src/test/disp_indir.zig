@@ -141,8 +141,8 @@ test "dispatchIndirect command" {
         }},
     }});
 
-    cmd.pipelineBarrier(&.{.{
-        .buffer_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .buffer = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
             .dest_stage_mask = .{ .draw_indirect = true },
@@ -150,17 +150,16 @@ test "dispatchIndirect command" {
             .queue_transfer = null,
             .buffer = &indir_buf,
             .offset = 0,
-            .size = null,
+            .size = @sizeOf(ngl.Cmd.DispatchIndirectCommand),
         }},
-        .by_region = false,
     }});
 
     cmd.setShaders(&.{.compute}, &.{if (shader[0]) |*shd| shd else |err| return err});
     cmd.setDescriptors(.compute, &shd_layt, 0, &.{&desc_set});
     cmd.dispatchIndirect(&indir_buf, 0);
 
-    cmd.pipelineBarrier(&.{.{
-        .buffer_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .buffer = &.{.{
             .source_stage_mask = .{ .compute_shader = true },
             .source_access_mask = .{ .shader_storage_write = true },
             .dest_stage_mask = .{ .copy = true },
@@ -168,9 +167,8 @@ test "dispatchIndirect command" {
             .queue_transfer = null,
             .buffer = &stor_buf,
             .offset = 0,
-            .size = null,
+            .size = 4 * invoc,
         }},
-        .by_region = false,
     }});
 
     cmd.copyBuffer(&.{.{

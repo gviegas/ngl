@@ -325,8 +325,8 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         }},
     }} else &[_]ngl.Cmd.BufferCopy{});
 
-    cmd.pipelineBarrier(&.{.{
-        .global_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .global = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
             .dest_stage_mask = .{
@@ -340,7 +340,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
                 .uniform_read = true,
             },
         }},
-        .image_dependencies = &.{.{
+        .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
             .dest_stage_mask = .{ .color_attachment_output = true },
@@ -357,7 +357,6 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
 
     cmd.beginRendering(.{
@@ -451,8 +450,8 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
 
     cmd.endRendering();
 
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .image = &.{.{
             .source_stage_mask = .{ .color_attachment_output = true },
             .source_access_mask = .{ .color_attachment_write = true },
             .dest_stage_mask = .{ .copy = true },
@@ -469,7 +468,6 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
 
     cmd.copyImageToBuffer(&.{.{

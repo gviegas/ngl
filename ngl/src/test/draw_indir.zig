@@ -331,8 +331,8 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         }},
     }} else &[_]ngl.Cmd.BufferCopy{});
 
-    cmd.pipelineBarrier(&.{.{
-        .global_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .global = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
             .dest_stage_mask = .{
@@ -346,7 +346,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
                 .vertex_attribute_read = true,
             },
         }},
-        .image_dependencies = &.{.{
+        .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
             .dest_stage_mask = .{ .color_attachment_output = true },
@@ -363,7 +363,6 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
 
     cmd.setShaders(
@@ -467,8 +466,8 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
 
     cmd.endRendering();
 
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .image = &.{.{
             .source_stage_mask = .{ .color_attachment_output = true },
             .source_access_mask = .{ .color_attachment_write = true },
             .dest_stage_mask = .{ .copy = true },
@@ -485,7 +484,6 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
                 .layers = 1,
             },
         }},
-        .by_region = true,
     }});
 
     cmd.copyImageToBuffer(&.{.{

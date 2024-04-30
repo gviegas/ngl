@@ -149,8 +149,8 @@ test "dispatch command" {
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
 
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
             .dest_stage_mask = .{ .compute_shader = true },
@@ -167,22 +167,20 @@ test "dispatch command" {
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
 
     cmd.setShaders(&.{.compute}, &.{if (shader[0]) |*shd| shd else |err| return err});
     cmd.setDescriptors(.compute, &shd_layt, 0, &.{&desc_set});
     cmd.dispatch(groups[0], groups[1], groups[2]);
 
-    cmd.pipelineBarrier(&.{.{
+    cmd.barrier(&.{.{
         // Leave the image in the general layout.
-        .global_dependencies = &.{.{
+        .global = &.{.{
             .source_stage_mask = .{ .compute_shader = true },
             .source_access_mask = .{ .shader_storage_write = true },
             .dest_stage_mask = .{ .copy = true },
             .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
         }},
-        .by_region = false,
     }});
 
     cmd.copyImageToBuffer(&.{.{

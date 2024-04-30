@@ -1583,108 +1583,17 @@ pub const CommandBuffer = struct {
         );
     }
 
-    pub fn pipelineBarrier(
+    pub fn barrier(
         _: *anyopaque,
         allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
-        dependencies: []const ngl.Cmd.Dependency,
+        barriers: []const ngl.Cmd.Barrier,
     ) void {
         const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
 
-        // TODO: Need synchronization2 to implement this efficiently.
-        if (true) {
-            for (dependencies) |x| {
-                const depend_flags: c.VkDependencyFlags = if (x.by_region)
-                    c.VK_DEPENDENCY_BY_REGION_BIT
-                else
-                    0;
-                for (x.global_dependencies) |d|
-                    dev.vkCmdPipelineBarrier(
-                        cmd_buf.handle,
-                        conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
-                        conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
-                        depend_flags,
-                        1,
-                        &[1]c.VkMemoryBarrier{.{
-                            .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
-                            .pNext = null,
-                            .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
-                            .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
-                        }},
-                        0,
-                        null,
-                        0,
-                        null,
-                    );
-                for (x.buffer_dependencies) |d|
-                    dev.vkCmdPipelineBarrier(
-                        cmd_buf.handle,
-                        conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
-                        conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
-                        depend_flags,
-                        0,
-                        null,
-                        1,
-                        &[1]c.VkBufferMemoryBarrier{.{
-                            .sType = c.VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                            .pNext = null,
-                            .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
-                            .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
-                            .srcQueueFamilyIndex = if (d.queue_transfer) |t|
-                                Queue.cast(t.source.impl).family
-                            else
-                                c.VK_QUEUE_FAMILY_IGNORED,
-                            .dstQueueFamilyIndex = if (d.queue_transfer) |t|
-                                Queue.cast(t.dest.impl).family
-                            else
-                                c.VK_QUEUE_FAMILY_IGNORED,
-                            .buffer = Buffer.cast(d.buffer.impl).handle,
-                            .offset = d.offset,
-                            .size = d.size orelse c.VK_WHOLE_SIZE,
-                        }},
-                        0,
-                        null,
-                    );
-                for (x.image_dependencies) |d|
-                    dev.vkCmdPipelineBarrier(
-                        cmd_buf.handle,
-                        conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
-                        conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
-                        depend_flags,
-                        0,
-                        null,
-                        0,
-                        null,
-                        1,
-                        &[1]c.VkImageMemoryBarrier{.{
-                            .sType = c.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                            .pNext = null,
-                            .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
-                            .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
-                            .oldLayout = conv.toVkImageLayout(d.old_layout),
-                            .newLayout = conv.toVkImageLayout(d.new_layout),
-                            .srcQueueFamilyIndex = if (d.queue_transfer) |t|
-                                Queue.cast(t.source.impl).family
-                            else
-                                c.VK_QUEUE_FAMILY_IGNORED,
-                            .dstQueueFamilyIndex = if (d.queue_transfer) |t|
-                                Queue.cast(t.dest.impl).family
-                            else
-                                c.VK_QUEUE_FAMILY_IGNORED,
-                            .image = Image.cast(d.image.impl).handle,
-                            .subresourceRange = .{
-                                .aspectMask = conv.toVkImageAspectFlags(d.range.aspect_mask),
-                                .baseMipLevel = d.range.level,
-                                .levelCount = d.range.levels,
-                                .baseArrayLayer = d.range.layer,
-                                .layerCount = d.range.layers,
-                            },
-                        }},
-                    );
-            }
-        } else {
+        if (dev.hasSynchronization2()) {
             var mem_barrier: [1]c.VkMemoryBarrier2 = undefined;
             var buf_barrier: [1]c.VkBufferMemoryBarrier2 = undefined;
             var img_barrier: [1]c.VkImageMemoryBarrier2 = undefined;
@@ -1697,10 +1606,10 @@ pub const CommandBuffer = struct {
                 if (img_barriers.len > 1) allocator.free(img_barriers);
             }
 
-            for (dependencies) |x| {
-                const mem_n = x.global_dependencies.len;
-                const buf_n = x.buffer_dependencies.len;
-                const img_n = x.image_dependencies.len;
+            for (barriers) |x| {
+                const mem_n = x.global.len;
+                const buf_n = x.buffer.len;
+                const img_n = x.image.len;
 
                 if (mem_n > mem_barriers.len) {
                     if (mem_barriers.len == 1) {
@@ -1745,17 +1654,17 @@ pub const CommandBuffer = struct {
                 var img_i: usize = 0;
                 while (mem_i < mem_n or buf_i < buf_n or img_i < img_n) {
                     for (0..@min(mem_n -| mem_i, mem_max)) |j| {
-                        const d = &x.global_dependencies[mem_i + j];
+                        const d = &x.global[mem_i + j];
                         // TODO
                         _ = d;
                     }
                     for (0..@min(buf_n -| buf_i, buf_max)) |j| {
-                        const d = &x.buffer_dependencies[buf_i + j];
+                        const d = &x.buffer[buf_i + j];
                         // TODO
                         _ = d;
                     }
                     for (0..@min(img_n -| img_i, img_max)) |j| {
-                        const d = &x.image_dependencies[img_i + j];
+                        const d = &x.image[img_i + j];
                         // TODO
                         _ = d;
                     }
@@ -1765,6 +1674,100 @@ pub const CommandBuffer = struct {
                     buf_i += buf_max;
                     img_i += img_max;
                 }
+            }
+
+            // TODO
+            @panic("Not yet implemented");
+        } else {
+            // XXX: Need synchronization2 to implement this efficiently.
+            for (barriers) |x| {
+                const depend_flags = conv.toVkDependencyFlags(x.dependency_mask);
+
+                for (x.global) |d|
+                    dev.vkCmdPipelineBarrier(
+                        cmd_buf.handle,
+                        conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
+                        conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
+                        depend_flags,
+                        1,
+                        &[1]c.VkMemoryBarrier{.{
+                            .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+                            .pNext = null,
+                            .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
+                            .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
+                        }},
+                        0,
+                        null,
+                        0,
+                        null,
+                    );
+
+                for (x.buffer) |d|
+                    dev.vkCmdPipelineBarrier(
+                        cmd_buf.handle,
+                        conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
+                        conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
+                        depend_flags,
+                        0,
+                        null,
+                        1,
+                        &[1]c.VkBufferMemoryBarrier{.{
+                            .sType = c.VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                            .pNext = null,
+                            .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
+                            .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
+                            .srcQueueFamilyIndex = if (d.queue_transfer) |t|
+                                Queue.cast(t.source.impl).family
+                            else
+                                c.VK_QUEUE_FAMILY_IGNORED,
+                            .dstQueueFamilyIndex = if (d.queue_transfer) |t|
+                                Queue.cast(t.dest.impl).family
+                            else
+                                c.VK_QUEUE_FAMILY_IGNORED,
+                            .buffer = Buffer.cast(d.buffer.impl).handle,
+                            .offset = d.offset,
+                            .size = d.size,
+                        }},
+                        0,
+                        null,
+                    );
+
+                for (x.image) |d|
+                    dev.vkCmdPipelineBarrier(
+                        cmd_buf.handle,
+                        conv.toVkPipelineStageFlags(.source, d.source_stage_mask),
+                        conv.toVkPipelineStageFlags(.dest, d.dest_stage_mask),
+                        depend_flags,
+                        0,
+                        null,
+                        0,
+                        null,
+                        1,
+                        &[1]c.VkImageMemoryBarrier{.{
+                            .sType = c.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                            .pNext = null,
+                            .srcAccessMask = conv.toVkAccessFlags(d.source_access_mask),
+                            .dstAccessMask = conv.toVkAccessFlags(d.dest_access_mask),
+                            .oldLayout = conv.toVkImageLayout(d.old_layout),
+                            .newLayout = conv.toVkImageLayout(d.new_layout),
+                            .srcQueueFamilyIndex = if (d.queue_transfer) |t|
+                                Queue.cast(t.source.impl).family
+                            else
+                                c.VK_QUEUE_FAMILY_IGNORED,
+                            .dstQueueFamilyIndex = if (d.queue_transfer) |t|
+                                Queue.cast(t.dest.impl).family
+                            else
+                                c.VK_QUEUE_FAMILY_IGNORED,
+                            .image = Image.cast(d.image.impl).handle,
+                            .subresourceRange = .{
+                                .aspectMask = conv.toVkImageAspectFlags(d.range.aspect_mask),
+                                .baseMipLevel = d.range.level,
+                                .levelCount = d.range.levels,
+                                .baseArrayLayer = d.range.layer,
+                                .layerCount = d.range.layers,
+                            },
+                        }},
+                    );
             }
         }
     }

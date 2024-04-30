@@ -356,8 +356,8 @@ const T = struct {
             .inheritance = null,
         });
 
-        cmd.pipelineBarrier(&.{.{
-            .image_dependencies = &.{.{
+        cmd.barrier(&.{.{
+            .image = &.{.{
                 .source_stage_mask = .{},
                 .source_access_mask = .{},
                 .dest_stage_mask = .{ .color_attachment_output = true },
@@ -374,7 +374,6 @@ const T = struct {
                     .layers = 1,
                 },
             }},
-            .by_region = false,
         }});
 
         cmd.beginRendering(.{
@@ -452,8 +451,8 @@ const T = struct {
 
         cmd.endRendering();
 
-        cmd.pipelineBarrier(&.{.{
-            .image_dependencies = &.{.{
+        cmd.barrier(&.{.{
+            .image = &.{.{
                 .source_stage_mask = .{ .color_attachment_output = true },
                 .source_access_mask = .{ .color_attachment_write = true },
                 .dest_stage_mask = .{ .copy = true },
@@ -470,7 +469,6 @@ const T = struct {
                     .layers = 1,
                 },
             }},
-            .by_region = false,
         }});
 
         cmd.copyImageToBuffer(&.{.{

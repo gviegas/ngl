@@ -265,8 +265,8 @@ test "timestamp query" {
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
     cmd.resetQueryPool(&query_pool, 0, query_count);
     cmd.writeTimestamp(.all_commands, &query_pool, 0);
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
             .dest_stage_mask = .{ .copy = true },
@@ -283,20 +283,18 @@ test "timestamp query" {
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
     // This should take a while.
     for (0..extent / tile) |x| {
         for (0..extent / tile) |y| {
             cmd.clearBuffer(&copy_buf, 0, null, @intCast((x ^ y) & 255));
-            cmd.pipelineBarrier(&.{.{
-                .global_dependencies = &.{.{
+            cmd.barrier(&.{.{
+                .global = &.{.{
                     .source_stage_mask = .{ .clear = true },
                     .source_access_mask = .{ .transfer_read = true, .transfer_write = true },
                     .dest_stage_mask = .{ .copy = true },
                     .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
                 }},
-                .by_region = false,
             }});
             cmd.copyBufferToImage(&.{.{
                 .buffer = &copy_buf,
@@ -316,14 +314,13 @@ test "timestamp query" {
                     .image_depth_or_layers = 1,
                 }},
             }});
-            cmd.pipelineBarrier(&.{.{
-                .global_dependencies = &.{.{
+            cmd.barrier(&.{.{
+                .global = &.{.{
                     .source_stage_mask = .{ .copy = true },
                     .source_access_mask = .{ .transfer_read = true, .transfer_write = true },
                     .dest_stage_mask = .{ .copy = true },
                     .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
                 }},
-                .by_region = false,
             }});
         }
     }

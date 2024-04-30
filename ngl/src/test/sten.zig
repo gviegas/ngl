@@ -240,8 +240,8 @@ test "stencil test" {
         }},
     }});
 
-    cmd.pipelineBarrier(&.{.{
-        .buffer_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .buffer = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
             .dest_stage_mask = .{ .vertex_attribute_input = true },
@@ -251,7 +251,7 @@ test "stencil test" {
             .offset = 0,
             .size = vert_size,
         }},
-        .image_dependencies = &.{
+        .image = &.{
             .{
                 .source_stage_mask = .{},
                 .source_access_mask = .{},
@@ -290,7 +290,6 @@ test "stencil test" {
                 },
             },
         },
-        .by_region = false,
     }});
 
     cmd.setShaders(
@@ -423,8 +422,8 @@ test "stencil test" {
 
     cmd.endRendering();
 
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{
+    cmd.barrier(&.{.{
+        .image = &.{
             .{
                 .source_stage_mask = .{ .color_attachment_output = true },
                 .source_access_mask = .{ .color_attachment_write = true },
@@ -460,7 +459,6 @@ test "stencil test" {
                 },
             },
         },
-        .by_region = false,
     }});
 
     cmd.copyImageToBuffer(&.{

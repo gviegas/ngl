@@ -304,8 +304,8 @@ test "depth-only rendering" {
         },
     });
 
-    cmd.pipelineBarrier(&.{.{
-        .global_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .global = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
             .dest_stage_mask = .{
@@ -319,7 +319,7 @@ test "depth-only rendering" {
                 .uniform_read = true,
             },
         }},
-        .image_dependencies = &.{.{
+        .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
             .dest_stage_mask = .{
@@ -342,7 +342,6 @@ test "depth-only rendering" {
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
 
     cmd.beginRendering(.{
@@ -412,8 +411,8 @@ test "depth-only rendering" {
 
     cmd.endRendering();
 
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .image = &.{.{
             .source_stage_mask = .{
                 .early_fragment_tests = true,
                 .late_fragment_tests = true,
@@ -436,7 +435,6 @@ test "depth-only rendering" {
                 .layers = 1,
             },
         }},
-        .by_region = false,
     }});
 
     cmd.copyImageToBuffer(&.{.{

@@ -111,8 +111,8 @@ test "linear tiling" {
 
     // Copy from the linear tiling image to the optimal tiling one.
     var cmd = try cmd_buf[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{
+    cmd.barrier(&.{.{
+        .image = &.{
             .{
                 .source_stage_mask = .{},
                 .source_access_mask = .{},
@@ -136,7 +136,6 @@ test "linear tiling" {
                 .range = range,
             },
         },
-        .by_region = false,
     }});
     cmd.copyImage(&.{.{
         .source = &lin_img,
@@ -159,8 +158,8 @@ test "linear tiling" {
             .depth_or_layers = 1,
         }},
     }});
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .image = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_read = true },
             .dest_stage_mask = .{},
@@ -171,7 +170,6 @@ test "linear tiling" {
             .image = &lin_img,
             .range = range,
         }},
-        .by_region = false,
     }});
     try cmd.end();
     {
@@ -206,8 +204,8 @@ test "linear tiling" {
     try ngl.Fence.reset(gpa, dev, &.{&fence});
     try cmd_pool.reset(dev, .keep);
     cmd = try cmd_buf[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{
+    cmd.barrier(&.{.{
+        .image = &.{
             .{
                 .source_stage_mask = .{},
                 .source_access_mask = .{},
@@ -231,7 +229,6 @@ test "linear tiling" {
                 .range = range,
             },
         },
-        .by_region = false,
     }});
     cmd.copyImage(&.{.{
         .source = &opt_img,
@@ -254,8 +251,8 @@ test "linear tiling" {
             .depth_or_layers = 1,
         }},
     }});
-    cmd.pipelineBarrier(&.{.{
-        .image_dependencies = &.{.{
+    cmd.barrier(&.{.{
+        .image = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
             .dest_access_mask = .{},
@@ -266,7 +263,6 @@ test "linear tiling" {
             .image = &lin_img,
             .range = range,
         }},
-        .by_region = false,
     }});
     try cmd.end();
     {

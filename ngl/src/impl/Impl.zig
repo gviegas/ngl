@@ -598,12 +598,12 @@ pub const VTable = struct {
         result: ngl.Cmd.QueryResult,
     ) void,
 
-    pipelineBarrier: *const fn (
+    barrier: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        dependencies: []const ngl.Cmd.Dependency,
+        barriers: []const ngl.Cmd.Barrier,
     ) void,
 
     executeCommands: *const fn (
@@ -1854,14 +1854,14 @@ pub fn copyQueryPoolResults(
     );
 }
 
-pub fn pipelineBarrier(
+pub fn barrier(
     self: *Self,
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    dependencies: []const ngl.Cmd.Dependency,
+    barriers: []const ngl.Cmd.Barrier,
 ) void {
-    self.vtable.pipelineBarrier(self.ptr, allocator, device, command_buffer, dependencies);
+    self.vtable.barrier(self.ptr, allocator, device, command_buffer, barriers);
 }
 
 pub fn executeCommands(

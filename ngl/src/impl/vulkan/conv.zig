@@ -614,6 +614,17 @@ pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
     return flags;
 }
 
+pub fn toVkDependencyFlags(dependency_mask: ngl.Cmd.Dependency.Flags) c.VkDependencyFlags {
+    var flags: c.VkDependencyFlags = 0;
+    if (dependency_mask.by_region)
+        flags |= c.VK_DEPENDENCY_BY_REGION_BIT;
+    if (dependency_mask.view_local)
+        flags |= c.VK_DEPENDENCY_VIEW_LOCAL_BIT;
+    if (dependency_mask.device_group)
+        flags |= c.VK_DEPENDENCY_DEVICE_GROUP_BIT;
+    return flags;
+}
+
 pub fn toVkAttachmentLoadOp(load_op: ngl.Cmd.LoadOp) c.VkAttachmentLoadOp {
     return switch (load_op) {
         .load => c.VK_ATTACHMENT_LOAD_OP_LOAD,
