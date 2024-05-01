@@ -1378,7 +1378,15 @@ pub const Image = struct {
     };
 
     pub const Misc = struct {
-        view_formats: ?[]const Format = null,
+        /// List of compatible formats which may be
+        /// used when creating `ImageView`s.
+        /// It's always valid to create views that
+        /// match the image's format, so this field
+        /// need not be set.
+        view_formats: []const Format = &.{},
+        /// Indicates that images of type `2d` can
+        /// be used to create views of type `cube`
+        /// or `cube_array`.
         cube_compatible: bool = false,
     };
 
@@ -1392,7 +1400,7 @@ pub const Image = struct {
         shader_read_only_optimal,
         transfer_source_optimal,
         transfer_dest_optimal,
-        // `Feature.presentation`.
+        /// `Feature.presentation`.
         present_source,
     };
 
@@ -1515,7 +1523,7 @@ pub const ImageView = struct {
         type: Type,
         format: Format,
         range: Image.Range,
-        // TODO: Swizzle
+        // TODO: Swizzle.
     };
 
     const Self = @This();

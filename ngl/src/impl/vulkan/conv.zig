@@ -336,12 +336,10 @@ pub fn toVkImageUsageFlags(image_usage: ngl.Image.Usage) c.VkImageUsageFlags {
 
 pub fn toVkImageCreateFlags(format: ngl.Format, image_misc: ngl.Image.Misc) c.VkImageCreateFlags {
     var flags: c.VkImageCreateFlags = 0;
-    if (image_misc.view_formats) |fmts| {
-        for (fmts) |f| {
-            if (f == format) continue;
-            flags |= c.VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
-            break;
-        }
+    for (image_misc.view_formats) |fmt| {
+        if (fmt == format) continue;
+        flags |= c.VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+        break;
     }
     if (image_misc.cube_compatible)
         flags |= c.VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
