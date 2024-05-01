@@ -2738,17 +2738,11 @@ pub const Memory = packed struct {
         device: Impl.Device,
         memory: Impl.Memory,
         offset: u64,
-        size: ?u64,
-    ) Error![*]u8 {
+        size: u64,
+    ) Error![]u8 {
         var data: ?*anyopaque = undefined;
-        try check(Device.cast(device).vkMapMemory(
-            cast(memory).handle,
-            offset,
-            size orelse c.VK_WHOLE_SIZE,
-            0,
-            &data,
-        ));
-        return @ptrCast(data);
+        try check(Device.cast(device).vkMapMemory(cast(memory).handle, offset, size, 0, &data));
+        return @as([*]u8, @ptrCast(data))[0..size];
     }
 
     fn unmap(_: *anyopaque, device: Impl.Device, memory: Impl.Memory) void {

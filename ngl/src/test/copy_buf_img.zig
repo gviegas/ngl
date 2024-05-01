@@ -347,9 +347,9 @@ test "copy between resources" {
     try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&fence});
 
     var ps = .{
-        try buf_mems[0].map(dev, 0, null),
-        try buf_mems[1].map(dev, 0, null),
-        try buf_mems[2].map(dev, 0, null),
+        try buf_mems[0].map(dev, 0, size),
+        try buf_mems[1].map(dev, 0, size),
+        try buf_mems[2].map(dev, 0, size),
     };
 
     // The top and bottom halves of the staging buffer were cleared

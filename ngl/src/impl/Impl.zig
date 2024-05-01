@@ -118,8 +118,8 @@ pub const VTable = struct {
         device: Device,
         memory: Memory,
         offset: u64,
-        size: ?u64,
-    ) Error![*]u8,
+        size: u64,
+    ) Error![]u8,
 
     unmapMemory: *const fn (ctx: *anyopaque, device: Device, memory: Memory) void,
 
@@ -1144,7 +1144,7 @@ pub fn waitQueue(self: *Self, device: Device, queue: Queue) Error!void {
     try self.vtable.waitQueue(self.ptr, device, queue);
 }
 
-pub fn mapMemory(self: *Self, device: Device, memory: Memory, offset: u64, size: ?u64) Error![*]u8 {
+pub fn mapMemory(self: *Self, device: Device, memory: Memory, offset: u64, size: u64) Error![]u8 {
     return self.vtable.mapMemory(self.ptr, device, memory, offset, size);
 }
 

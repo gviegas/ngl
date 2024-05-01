@@ -73,11 +73,11 @@ test "copyBuffer command" {
     }});
     try cmd.end();
 
-    var p = try mems[0].map(dev, 0, null);
+    var p = try mems[0].map(dev, 0, sizes[0]);
     @memset(p[0 .. sizes[0] / 2], 0x4e);
     @memset(p[sizes[0] / 2 .. sizes[0]], 0xa7);
     mems[0].unmap(dev);
-    @memset((try mems[1].map(dev, 0, null))[0..sizes[1]], 0xff);
+    @memset(try mems[1].map(dev, 0, sizes[1]), 0xff);
     mems[1].unmap(dev);
 
     {
@@ -93,7 +93,7 @@ test "copyBuffer command" {
 
     try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&fence});
 
-    var ps = .{ try mems[0].map(dev, 0, null), try mems[1].map(dev, 0, null) };
+    var ps = .{ try mems[0].map(dev, 0, sizes[0]), try mems[1].map(dev, 0, sizes[1]) };
     for (0..sizes[0] / 2) |i| try testing.expectEqual(ps[0][i], 0x4e);
     for (sizes[0] / 2..sizes[0]) |i| try testing.expectEqual(ps[0][i], 0xa7);
     try testing.expect(std.mem.eql(

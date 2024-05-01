@@ -49,8 +49,9 @@ test "dispatchIndirect command" {
     };
     defer dev.free(gpa, &stor_mem);
 
+    const stg_size = @max(@sizeOf(ngl.Cmd.DispatchIndirectCommand), 4 * invoc);
     var stg_buf = try ngl.Buffer.init(gpa, dev, .{
-        .size = @max(@sizeOf(ngl.Cmd.DispatchIndirectCommand), 4 * invoc),
+        .size = stg_size,
         .usage = .{ .transfer_source = true, .transfer_dest = true },
     });
     defer stg_buf.deinit(gpa, dev);
@@ -183,14 +184,17 @@ test "dispatchIndirect command" {
 
     try cmd.end();
 
-    const stg_data = try stg_mem.map(dev, 0, null);
+    const stg_data = try stg_mem.map(dev, 0, stg_size);
 
     const indir_cmd = ngl.Cmd.DispatchIndirectCommand{
         .group_count_x = wg_count[0],
         .group_count_y = wg_count[1],
         .group_count_z = wg_count[2],
     };
-    @memcpy(stg_data, @as([*]const u8, @ptrCast(&indir_cmd))[0..@sizeOf(@TypeOf(indir_cmd))]);
+    @memcpy(
+        stg_data[0..@sizeOf(@TypeOf(indir_cmd))],
+        @as([*]const u8, @ptrCast(&indir_cmd))[0..@sizeOf(@TypeOf(indir_cmd))],
+    );
 
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);

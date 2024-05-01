@@ -251,7 +251,7 @@ const T = struct {
             break :blk mem;
         };
         errdefer dev.free(gpa, &stg_mem);
-        const stg_data = (try stg_mem.map(dev, 0, stg_size))[0..stg_size];
+        const stg_data = try stg_mem.map(dev, 0, stg_size);
 
         const push_consts = [1]ngl.PushConstantRange{.{
             .offset = 0,

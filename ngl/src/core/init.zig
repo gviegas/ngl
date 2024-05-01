@@ -341,13 +341,10 @@ pub const Memory = struct {
 
     const Self = @This();
 
-    // TODO: Consider storing the size of the memory allocation
-    // so this method can return a slice
-    pub fn map(self: *Self, device: *Device, offset: u64, size: ?u64) Error![*]u8 {
+    pub fn map(self: *Self, device: *Device, offset: u64, size: u64) Error![]u8 {
         return try Impl.get().mapMemory(device.impl, self.impl, offset, size);
     }
 
-    // TODO: Consider tracking memory state
     pub fn unmap(self: *Self, device: *Device) void {
         Impl.get().unmapMemory(device.impl, self.impl);
     }

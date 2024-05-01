@@ -49,7 +49,7 @@ test "timestamp query on empty command buffer" {
         break :blk mem;
     };
     defer dev.free(gpa, &mem);
-    const data = (try mem.map(dev, 0, null))[0..buf_size];
+    const data = try mem.map(dev, 0, buf_size);
     @memset(data, 255);
 
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[queue_i] });
@@ -176,7 +176,7 @@ test "timestamp query" {
         break :blk mem;
     };
     defer dev.free(gpa, &query_mem);
-    const query_data = (try query_mem.map(dev, 0, null))[0..query_buf_size];
+    const query_data = try query_mem.map(dev, 0, query_buf_size);
     @memset(query_data, 255);
 
     var image: ngl.Image = undefined;

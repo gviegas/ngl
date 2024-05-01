@@ -39,7 +39,7 @@ test "executeCommands command (copying)" {
         try r.buf.bind(dev, &r.mem, 0);
         r.data = @as(
             [*]u32,
-            @ptrCast(@alignCast(try r.mem.map(dev, 0, null))),
+            @ptrCast(@alignCast(try r.mem.map(dev, 0, @TypeOf(t).size))),
         )[0 .. @TypeOf(t).size / 4];
     }
     defer for (&res) |*r| {
@@ -910,7 +910,7 @@ fn T(comptime cmd_buf_sec_n: u32) type {
             });
             errdefer dev.free(gpa, &stg_mem);
             try stg_buf.bind(dev, &stg_mem, 0);
-            const stg_data = (try stg_mem.map(dev, 0, size))[0..size];
+            const stg_data = try stg_mem.map(dev, 0, size);
 
             return .{
                 .queue_i = queue_i,

@@ -225,7 +225,7 @@ test "shader specialization" {
     // (here a row means a contiguous range of length `local[0]`
     // within the storage buffer).
 
-    const p = try stg_mem.map(dev, 0, null);
+    const p = try stg_mem.map(dev, 0, size);
     const s = @as([*]const u32, @ptrCast(@alignCast(p)))[0 .. size / 4];
 
     const spans: [2][local[0]]u32 = .{

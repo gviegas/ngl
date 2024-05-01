@@ -216,7 +216,7 @@ test "dispatch command" {
 
     try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&fence});
 
-    var s = (try buf_mem.map(dev, 0, size))[0..size];
+    var s = try buf_mem.map(dev, 0, size);
 
     const bw = [2]u32{ std.mem.bigToNative(u32, 0x00_00_00_ff), 0xff_ff_ff_ff };
     for (0..h) |y| {

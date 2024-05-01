@@ -40,7 +40,7 @@ test "re-submission of command buffer recording" {
         });
         errdefer dev.free(gpa, &r.mem);
         try r.buf.bind(dev, &r.mem, 0);
-        r.data = if (mappable) (try r.mem.map(dev, 0, size))[0..size] else null;
+        r.data = if (mappable) try r.mem.map(dev, 0, size) else null;
     }
 
     var cmd_pool = try ngl.CommandPool.init(gpa, dev, .{ .queue = queue });

@@ -119,7 +119,7 @@ test "submission of multiple command buffers" {
     });
     defer dev.free(gpa, &buf_mem);
     try buf.bind(dev, &buf_mem, 0);
-    const data = (try buf_mem.map(dev, 0, null))[0 .. width * height];
+    const data = try buf_mem.map(dev, 0, width * height);
 
     var fence = try ngl.Fence.init(gpa, dev, .{});
     defer fence.deinit(gpa, dev);

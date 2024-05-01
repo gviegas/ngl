@@ -228,7 +228,7 @@ test "depth-only rendering" {
     });
 
     // Keep mapped.
-    var p = try stg_buf_mem.map(dev, 0, null);
+    var p = try stg_buf_mem.map(dev, 0, size);
     {
         const len = @sizeOf(@TypeOf(unif_data[0]));
         const source = @as([*]const u8, @ptrCast(&unif_data[0]))[0..len];
@@ -513,7 +513,7 @@ test "depth-only rendering" {
         for (0..h) |y| {
             for (0..w) |x| {
                 const i = (x + w * y) * 2;
-                const data = @as([*]const u16, @ptrCast(@alignCast(p + i)))[0];
+                const data = @as([*]const u16, @ptrCast(@alignCast(p[i..])))[0];
                 try str.appendSlice(switch (data) {
                     clear_dep => "⚫",
                     vert_dep[0] => "🙊",

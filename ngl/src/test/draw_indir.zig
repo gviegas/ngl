@@ -217,8 +217,9 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
     const upld_size = vert_stg_off + idx_stg_off + @sizeOf(@TypeOf(triangle.indices));
     const rdbk_size = width * height * 4;
 
+    const stg_size = @max(upld_size, rdbk_size);
     var stg_buf = try ngl.Buffer.init(gpa, dev, .{
-        .size = @max(upld_size, rdbk_size),
+        .size = stg_size,
         .usage = .{ .transfer_source = true, .transfer_dest = true },
     });
     defer stg_buf.deinit(gpa, dev);
@@ -236,7 +237,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         break :blk mem;
     };
     defer dev.free(gpa, &stg_mem);
-    const stg_data = try stg_mem.map(dev, 0, null);
+    const stg_data = try stg_mem.map(dev, 0, stg_size);
 
     const indir_cmds = if (!indexed) blk: {
         const indir_cmd = ngl.Cmd.DrawIndirectCommand{
@@ -276,15 +277,18 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         };
     };
     comptime if (@sizeOf(@TypeOf(indir_cmds)) != indir_size) unreachable;
-    @memcpy(stg_data, @as([*]const u8, @ptrCast(&indir_cmds))[0..@sizeOf(@TypeOf(indir_cmds))]);
+    @memcpy(
+        stg_data[0..@sizeOf(@TypeOf(indir_cmds))],
+        @as([*]const u8, @ptrCast(&indir_cmds))[0..@sizeOf(@TypeOf(indir_cmds))],
+    );
 
     @memcpy(
-        stg_data[vert_stg_off..],
+        stg_data[vert_stg_off .. vert_stg_off + @sizeOf(@TypeOf(triangle.data))],
         @as([*]const u8, @ptrCast(&triangle.data))[0..@sizeOf(@TypeOf(triangle.data))],
     );
 
     if (indexed) @memcpy(
-        stg_data[idx_stg_off..],
+        stg_data[idx_stg_off .. idx_stg_off + @sizeOf(@TypeOf(triangle.indices))],
         @as([*]const u8, @ptrCast(&triangle.indices))[0..@sizeOf(@TypeOf(triangle.indices))],
     );
 

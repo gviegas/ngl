@@ -49,7 +49,7 @@ test "linear tiling" {
     });
     defer dev.free(gpa, &lin_mem);
     try lin_img.bind(dev, &lin_mem, 0);
-    const data = (try lin_mem.map(dev, 0, null))[0..lin_reqs.size];
+    const data = try lin_mem.map(dev, 0, lin_reqs.size);
 
     const lin_layt = lin_img.getDataLayout(dev, @"type", .color, 0, 0);
     try testing.expect(lin_layt.offset + lin_layt.size <= lin_reqs.size);

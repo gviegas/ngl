@@ -168,7 +168,7 @@ test "stencil test" {
         dev.free(gpa, &vert_mem);
     }
 
-    var p = try stg_mem.map(dev, 0, null);
+    var p = try stg_mem.map(dev, 0, size);
     {
         const off = 0;
         const len = @sizeOf(@TypeOf(col_data));
@@ -577,7 +577,7 @@ test "stencil test" {
         for (0..h) |y| {
             for (0..w) |x| {
                 const i = (x + w * y) * 2;
-                const data = @as(*const u16, @ptrCast(@alignCast(p + i))).*;
+                const data = @as(*const u16, @ptrCast(@alignCast(p[i..]))).*;
                 try str.appendSlice(switch (data) {
                     clear_col => "⚫",
                     vert_col => "🐝",
