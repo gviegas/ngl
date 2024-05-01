@@ -231,7 +231,6 @@ fn testOcclusionQuery(comptime precise: bool) !void {
         .tiling = .optimal,
         .usage = .{ .color_attachment = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     defer color_img.deinit(gpa, dev);
     var color_mem = blk: {
@@ -270,7 +269,6 @@ fn testOcclusionQuery(comptime precise: bool) !void {
         .tiling = .optimal,
         .usage = .{ .depth_stencil_attachment = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     defer depth_img.deinit(gpa, dev);
     var depth_mem = blk: {

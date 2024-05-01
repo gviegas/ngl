@@ -200,7 +200,6 @@ test "timestamp query" {
                     .transfer_dest = true,
                 },
                 .misc = .{},
-                .initial_layout = .unknown,
             }) catch |err| {
                 if (err != ngl.Error.OutOfMemory) return err;
                 continue;

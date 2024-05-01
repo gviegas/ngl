@@ -75,7 +75,6 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         .tiling = .optimal,
         .usage = .{ .color_attachment = true, .transfer_source = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     var img_mem = blk: {
         errdefer image.deinit(gpa, dev);

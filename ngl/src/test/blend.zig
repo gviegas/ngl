@@ -187,7 +187,6 @@ const T = struct {
             .tiling = .optimal,
             .usage = .{ .color_attachment = true, .transfer_source = true },
             .misc = .{},
-            .initial_layout = .unknown,
         });
         errdefer col_img.deinit(gpa, dev);
         var col_mem = blk: {

@@ -149,7 +149,6 @@ test "executeCommands command (dispatching)" {
         .tiling = .optimal,
         .usage = .{ .storage_image = true, .transfer_source = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     defer image.deinit(gpa, dev);
     const mem_reqs = image.getMemoryRequirements(dev);
@@ -421,7 +420,6 @@ test "executeCommands command (drawing)" {
         .tiling = .optimal,
         .usage = .{ .color_attachment = true, .transfer_source = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     defer image.deinit(gpa, dev);
     const img_reqs = image.getMemoryRequirements(dev);

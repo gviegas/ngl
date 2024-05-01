@@ -16,7 +16,7 @@ test "linear tiling" {
 
     const @"type" = .@"2d";
     const fmt = ngl.Format.rgba8_unorm;
-    const tiling = ngl.Image.Tiling.linear;
+    const tiling: ngl.Image.Tiling = .{ .linear = .preinitialized };
     const usage = ngl.Image.Usage{ .transfer_source = true, .transfer_dest = true };
     const misc = ngl.Image.Misc{};
 
@@ -37,7 +37,6 @@ test "linear tiling" {
         .tiling = tiling,
         .usage = usage,
         .misc = misc,
-        .initial_layout = .preinitialized,
     });
     defer lin_img.deinit(gpa, dev);
     const lin_reqs = lin_img.getMemoryRequirements(dev);
@@ -68,7 +67,6 @@ test "linear tiling" {
         .tiling = .optimal,
         .usage = usage,
         .misc = misc,
-        .initial_layout = .unknown,
     });
     defer opt_img.deinit(gpa, dev);
     const opt_reqs = opt_img.getMemoryRequirements(dev);
@@ -88,7 +86,7 @@ test "linear tiling" {
         .layers = 1,
     };
 
-    // This should be preserved due to `.preinitialized` layout.
+    // This should be preserved due to `preinitialized` layout.
     var s = data[lin_layt.offset..];
     for (0..height) |y| {
         for (0..width) |x| {

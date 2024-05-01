@@ -1361,8 +1361,13 @@ pub const Image = struct {
         @"3d",
     };
 
-    pub const Tiling = enum {
-        linear,
+    pub const Tiling = union(enum) {
+        /// Linear tiling images can be created in
+        /// either the `unknown` or `preinitialized`
+        /// layouts.
+        linear: enum { unknown, preinitialized },
+        /// Optimal tiling images will be in the
+        /// `unknown` layout upon creation.
         optimal,
     };
 
@@ -1415,7 +1420,6 @@ pub const Image = struct {
         tiling: Tiling,
         usage: Usage,
         misc: Misc,
-        initial_layout: Layout,
     };
 
     pub const Capabilities = struct {
@@ -1476,6 +1480,7 @@ pub const Image = struct {
         return Impl.get().getImageCapabilities(device.impl, @"type", format, tiling, usage, misc);
     }
 
+    /// Only meaningful on images created with `Tiling.linear`.
     pub fn getDataLayout(
         self: *Self,
         device: *Device,

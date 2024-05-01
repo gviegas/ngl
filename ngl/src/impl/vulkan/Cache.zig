@@ -2034,7 +2034,6 @@ test createFramebuffer {
             .tiling = .optimal,
             .usage = .{ .color_attachment = true },
             .misc = .{},
-            .initial_layout = .unknown,
         });
         errdefer col_img.deinit(testing.allocator, ndev);
         const col_reqs = col_img.getMemoryRequirements(ndev);
@@ -2104,7 +2103,6 @@ test createFramebuffer {
             .tiling = .optimal,
             .usage = .{ .depth_stencil_attachment = true },
             .misc = .{},
-            .initial_layout = .unknown,
         });
         errdefer dep_img.deinit(testing.allocator, ndev);
         const dep_reqs = dep_img.getMemoryRequirements(ndev);

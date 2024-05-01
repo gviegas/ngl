@@ -153,7 +153,6 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
         .tiling = .optimal,
         .usage = .{ .color_attachment = true, .transfer_source = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     defer color_img.deinit(gpa, dev);
     var color_mem = blk: {

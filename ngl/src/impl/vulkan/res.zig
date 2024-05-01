@@ -235,7 +235,16 @@ pub const Image = packed struct {
             .sharingMode = c.VK_SHARING_MODE_EXCLUSIVE,
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices = null,
-            .initialLayout = conv.toVkImageLayout(desc.initial_layout),
+            .initialLayout = blk: {
+                switch (desc.tiling) {
+                    .linear => |x| switch (x) {
+                        .unknown => {},
+                        .preinitialized => break :blk c.VK_IMAGE_LAYOUT_PREINITIALIZED,
+                    },
+                    .optimal => {},
+                }
+                break :blk c.VK_IMAGE_LAYOUT_UNDEFINED;
+            },
         }, null, &image));
 
         return .{ .val = @bitCast(Image{ .handle = image }) };

@@ -67,7 +67,6 @@ test "depth-only rendering" {
         .tiling = .optimal,
         .usage = .{ .depth_stencil_attachment = true, .transfer_source = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     var img_mem = blk: {
         errdefer image.deinit(gpa, dev);

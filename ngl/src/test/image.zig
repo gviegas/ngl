@@ -19,7 +19,6 @@ test "Image.init/deinit" {
         .tiling = .optimal,
         .usage = .{ .sampled_image = true, .transfer_dest = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     @"1d".deinit(gpa, dev);
 
@@ -34,7 +33,6 @@ test "Image.init/deinit" {
         .tiling = .optimal,
         .usage = .{ .sampled_image = true, .transfer_dest = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     defer @"2d".deinit(gpa, dev);
 
@@ -49,7 +47,6 @@ test "Image.init/deinit" {
         .tiling = .optimal,
         .usage = .{ .sampled_image = true, .transfer_dest = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     @"3d".deinit(gpa, dev);
 }
@@ -210,7 +207,6 @@ test "Image allocation" {
         .tiling = .optimal,
         .usage = .{ .sampled_image = true, .storage_image = true },
         .misc = .{},
-        .initial_layout = .unknown,
     };
 
     var image = try ngl.Image.init(gpa, dev, img_desc);
@@ -256,7 +252,6 @@ test "ImageView.init/deinit" {
         .tiling = .optimal,
         .usage = .{ .color_attachment = true },
         .misc = .{},
-        .initial_layout = undefined,
     });
     // It's invalid to create a view with no backing memory.
     var rt_mem = blk: {
@@ -317,7 +312,6 @@ test "ImageView.init/deinit" {
         .misc = .{
             .cube_compatible = true,
         },
-        .initial_layout = undefined,
     });
     var spld_mem = blk: {
         errdefer spld.deinit(gpa, dev);

@@ -2243,7 +2243,6 @@ test CommandBuffer {
         .tiling = .optimal,
         .usage = .{ .color_attachment = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     defer image.deinit(testing.allocator, &ctx.device);
     var mem = blk: {

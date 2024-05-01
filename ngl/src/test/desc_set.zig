@@ -40,7 +40,6 @@ test "DescriptorSet.write" {
         .tiling = .optimal,
         .usage = .{ .sampled_image = true, .transfer_dest = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     var img_mem = blk: {
         errdefer image.deinit(gpa, dev);

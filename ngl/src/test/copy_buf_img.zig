@@ -75,7 +75,6 @@ test "copy between resources" {
                 .transfer_dest = true,
             },
             .misc = .{},
-            .initial_layout = .unknown,
         });
         img_mems[i] = blk: {
             errdefer images[i].deinit(gpa, dev);

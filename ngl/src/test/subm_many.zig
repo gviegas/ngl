@@ -34,7 +34,6 @@ test "submission of multiple command buffers" {
             .transfer_dest = true,
         },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     defer image.deinit(gpa, dev);
     const img_reqs = image.getMemoryRequirements(dev);

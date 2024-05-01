@@ -33,7 +33,6 @@ test "dispatch command" {
         .tiling = .optimal,
         .usage = .{ .storage_image = true, .transfer_source = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     var img_mem = blk: {
         errdefer image.deinit(gpa, dev);

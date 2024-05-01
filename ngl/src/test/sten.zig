@@ -46,7 +46,6 @@ test "stencil test" {
         .tiling = .optimal,
         .usage = .{ .color_attachment = true, .transfer_source = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     var col_mem = blk: {
         errdefer col_img.deinit(gpa, dev);
@@ -96,7 +95,6 @@ test "stencil test" {
         .tiling = .optimal,
         .usage = .{ .depth_stencil_attachment = true, .transfer_source = true },
         .misc = .{},
-        .initial_layout = .unknown,
     });
     var ds_mem = blk: {
         errdefer ds_img.deinit(gpa, dev);
