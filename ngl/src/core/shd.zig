@@ -7,7 +7,6 @@ const BufferView = ngl.BufferView;
 const Image = ngl.Image;
 const ImageView = ngl.ImageView;
 const Sampler = ngl.Sampler;
-const ShaderStage = ngl.ShaderStage;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
@@ -178,7 +177,7 @@ pub const DescriptorPool = struct {
         std.debug.assert(desc.layouts.len > 0);
         const desc_sets = try allocator.alloc(DescriptorSet, desc.layouts.len);
         errdefer allocator.free(desc_sets);
-        // TODO: Update this when adding more fields to `DescriptorSet`
+        // TODO: Update this when adding more fields to `DescriptorSet`.
         if (@typeInfo(DescriptorSet).Struct.fields.len > 1) @compileError("Uninitialized field(s)");
         try Impl.get().allocDescriptorSets(allocator, device.impl, self.impl, desc, desc_sets);
         return desc_sets;
