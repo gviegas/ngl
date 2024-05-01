@@ -244,27 +244,27 @@ pub fn toVkFormat(format: ngl.Format) Error!c.VkFormat {
     };
 }
 
-pub fn toVkBufferUsageFlags(buffer_usage: ngl.Buffer.Usage) c.VkBufferUsageFlags {
-    var usage: c.VkBufferUsageFlags = 0;
-    if (buffer_usage.uniform_texel_buffer)
-        usage |= c.VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
-    if (buffer_usage.storage_texel_buffer)
-        usage |= c.VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
-    if (buffer_usage.uniform_buffer)
-        usage |= c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    if (buffer_usage.storage_buffer)
-        usage |= c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    if (buffer_usage.index_buffer)
-        usage |= c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-    if (buffer_usage.vertex_buffer)
-        usage |= c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    if (buffer_usage.indirect_buffer)
-        usage |= c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
-    if (buffer_usage.transfer_source)
-        usage |= c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    if (buffer_usage.transfer_dest)
-        usage |= c.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    return usage;
+pub fn toVkBufferUsageFlags(usage: ngl.Buffer.Usage) c.VkBufferUsageFlags {
+    var flags: c.VkBufferUsageFlags = 0;
+    if (usage.uniform_texel_buffer)
+        flags |= c.VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+    if (usage.storage_texel_buffer)
+        flags |= c.VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+    if (usage.uniform_buffer)
+        flags |= c.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    if (usage.storage_buffer)
+        flags |= c.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    if (usage.index_buffer)
+        flags |= c.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+    if (usage.vertex_buffer)
+        flags |= c.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    if (usage.indirect_buffer)
+        flags |= c.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    if (usage.transfer_source)
+        flags |= c.VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    if (usage.transfer_dest)
+        flags |= c.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    return flags;
 }
 
 pub fn toVkSampleCount(sample_count: ngl.SampleCount) c.VkSampleCountFlagBits {
@@ -279,75 +279,75 @@ pub fn toVkSampleCount(sample_count: ngl.SampleCount) c.VkSampleCountFlagBits {
     };
 }
 
-pub fn toVkSampleCountFlags(sample_count_flags: ngl.SampleCount.Flags) c.VkSampleCountFlags {
+pub fn toVkSampleCountFlags(sample_counts: ngl.SampleCount.Flags) c.VkSampleCountFlags {
     var flags: c.VkSampleCountFlags = 0;
-    if (sample_count_flags.@"1")
+    if (sample_counts.@"1")
         flags |= c.VK_SAMPLE_COUNT_1_BIT;
-    if (sample_count_flags.@"2")
+    if (sample_counts.@"2")
         flags |= c.VK_SAMPLE_COUNT_2_BIT;
-    if (sample_count_flags.@"4")
+    if (sample_counts.@"4")
         flags |= c.VK_SAMPLE_COUNT_4_BIT;
-    if (sample_count_flags.@"8")
+    if (sample_counts.@"8")
         flags |= c.VK_SAMPLE_COUNT_8_BIT;
-    if (sample_count_flags.@"16")
+    if (sample_counts.@"16")
         flags |= c.VK_SAMPLE_COUNT_16_BIT;
-    if (sample_count_flags.@"32")
+    if (sample_counts.@"32")
         flags |= c.VK_SAMPLE_COUNT_32_BIT;
-    if (sample_count_flags.@"64")
+    if (sample_counts.@"64")
         flags |= c.VK_SAMPLE_COUNT_64_BIT;
     return flags;
 }
 
-pub fn toVkImageType(image_type: ngl.Image.Type) c.VkImageType {
-    return switch (image_type) {
+pub fn toVkImageType(@"type": ngl.Image.Type) c.VkImageType {
+    return switch (@"type") {
         .@"1d" => c.VK_IMAGE_TYPE_1D,
         .@"2d" => c.VK_IMAGE_TYPE_2D,
         .@"3d" => c.VK_IMAGE_TYPE_3D,
     };
 }
 
-pub fn toVkImageTiling(image_tiling: ngl.Image.Tiling) c.VkImageTiling {
-    return switch (image_tiling) {
+pub fn toVkImageTiling(tiling: ngl.Image.Tiling) c.VkImageTiling {
+    return switch (tiling) {
         .linear => c.VK_IMAGE_TILING_LINEAR,
         .optimal => c.VK_IMAGE_TILING_OPTIMAL,
     };
 }
 
-pub fn toVkImageUsageFlags(image_usage: ngl.Image.Usage) c.VkImageUsageFlags {
-    var usage: c.VkImageUsageFlags = 0;
-    if (image_usage.sampled_image)
-        usage |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
-    if (image_usage.storage_image)
-        usage |= c.VK_IMAGE_USAGE_STORAGE_BIT;
-    if (image_usage.color_attachment)
-        usage |= c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    if (image_usage.depth_stencil_attachment)
-        usage |= c.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    if (image_usage.transient_attachment)
-        usage |= c.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
-    if (image_usage.input_attachment)
-        usage |= c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
-    if (image_usage.transfer_source)
-        usage |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    if (image_usage.transfer_dest)
-        usage |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    return usage;
+pub fn toVkImageUsageFlags(usage: ngl.Image.Usage) c.VkImageUsageFlags {
+    var flags: c.VkImageUsageFlags = 0;
+    if (usage.sampled_image)
+        flags |= c.VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (usage.storage_image)
+        flags |= c.VK_IMAGE_USAGE_STORAGE_BIT;
+    if (usage.color_attachment)
+        flags |= c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (usage.depth_stencil_attachment)
+        flags |= c.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (usage.transient_attachment)
+        flags |= c.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+    if (usage.input_attachment)
+        flags |= c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    if (usage.transfer_source)
+        flags |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if (usage.transfer_dest)
+        flags |= c.VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    return flags;
 }
 
-pub fn toVkImageCreateFlags(format: ngl.Format, image_misc: ngl.Image.Misc) c.VkImageCreateFlags {
+pub fn toVkImageCreateFlags(format: ngl.Format, misc: ngl.Image.Misc) c.VkImageCreateFlags {
     var flags: c.VkImageCreateFlags = 0;
-    for (image_misc.view_formats) |fmt| {
+    for (misc.view_formats) |fmt| {
         if (fmt == format) continue;
         flags |= c.VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
         break;
     }
-    if (image_misc.cube_compatible)
+    if (misc.cube_compatible)
         flags |= c.VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     return flags;
 }
 
-pub fn toVkImageLayout(image_layout: ngl.Image.Layout) c.VkImageLayout {
-    return switch (image_layout) {
+pub fn toVkImageLayout(layout: ngl.Image.Layout) c.VkImageLayout {
+    return switch (layout) {
         .unknown => c.VK_IMAGE_LAYOUT_UNDEFINED,
         .preinitialized => c.VK_IMAGE_LAYOUT_PREINITIALIZED,
         .general => c.VK_IMAGE_LAYOUT_GENERAL,
@@ -361,21 +361,21 @@ pub fn toVkImageLayout(image_layout: ngl.Image.Layout) c.VkImageLayout {
     };
 }
 
-pub fn toVkImageAspect(image_aspect: ngl.Image.Aspect) c.VkImageAspectFlagBits {
-    return switch (image_aspect) {
+pub fn toVkImageAspect(aspect: ngl.Image.Aspect) c.VkImageAspectFlagBits {
+    return switch (aspect) {
         .color => c.VK_IMAGE_ASPECT_COLOR_BIT,
         .depth => c.VK_IMAGE_ASPECT_DEPTH_BIT,
         .stencil => c.VK_IMAGE_ASPECT_STENCIL_BIT,
     };
 }
 
-pub fn toVkImageAspectFlags(image_aspect_flags: ngl.Image.Aspect.Flags) c.VkImageAspectFlags {
+pub fn toVkImageAspectFlags(aspect_mask: ngl.Image.Aspect.Flags) c.VkImageAspectFlags {
     var flags: c.VkImageAspectFlags = 0;
-    if (image_aspect_flags.color)
+    if (aspect_mask.color)
         flags |= c.VK_IMAGE_ASPECT_COLOR_BIT;
-    if (image_aspect_flags.depth)
+    if (aspect_mask.depth)
         flags |= c.VK_IMAGE_ASPECT_DEPTH_BIT;
-    if (image_aspect_flags.stencil)
+    if (aspect_mask.stencil)
         flags |= c.VK_IMAGE_ASPECT_STENCIL_BIT;
     return flags;
 }
@@ -393,10 +393,8 @@ pub fn toVkCompareOp(compare_op: ngl.CompareOp) c.VkCompareOp {
     };
 }
 
-pub fn toVkSamplerAddressMode(
-    sampler_address_mode: ngl.Sampler.AddressMode,
-) c.VkSamplerAddressMode {
-    return switch (sampler_address_mode) {
+pub fn toVkSamplerAddressMode(address_mode: ngl.Sampler.AddressMode) c.VkSamplerAddressMode {
+    return switch (address_mode) {
         .clamp_to_edge => c.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
         .clamp_to_border => c.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
         .repeat => c.VK_SAMPLER_ADDRESS_MODE_REPEAT,
@@ -405,8 +403,8 @@ pub fn toVkSamplerAddressMode(
     };
 }
 
-pub fn toVkBorderColor(sampler_border_color: ngl.Sampler.BorderColor) c.VkBorderColor {
-    return switch (sampler_border_color) {
+pub fn toVkBorderColor(border_color: ngl.Sampler.BorderColor) c.VkBorderColor {
+    return switch (border_color) {
         .transparent_black_float => c.VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
         .transparent_black_int => c.VK_BORDER_COLOR_INT_TRANSPARENT_BLACK,
         .opaque_black_float => c.VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
@@ -416,15 +414,15 @@ pub fn toVkBorderColor(sampler_border_color: ngl.Sampler.BorderColor) c.VkBorder
     };
 }
 
-pub fn toVkFilter(sampler_filter: ngl.Sampler.Filter) c.VkFilter {
-    return switch (sampler_filter) {
+pub fn toVkFilter(filter: ngl.Sampler.Filter) c.VkFilter {
+    return switch (filter) {
         .nearest => c.VK_FILTER_NEAREST,
         .linear => c.VK_FILTER_LINEAR,
     };
 }
 
-pub fn toVkSamplerMipmapMode(sampler_mipmap_mode: ngl.Sampler.MipmapMode) c.VkSamplerMipmapMode {
-    return switch (sampler_mipmap_mode) {
+pub fn toVkSamplerMipmapMode(mipmap_mode: ngl.Sampler.MipmapMode) c.VkSamplerMipmapMode {
+    return switch (mipmap_mode) {
         .nearest => c.VK_SAMPLER_MIPMAP_MODE_NEAREST,
         .linear => c.VK_SAMPLER_MIPMAP_MODE_LINEAR,
     };
@@ -470,9 +468,9 @@ pub fn toVkPipelineStage(
 // TODO: `toVkPipelineStageFlags2`.
 pub fn toVkPipelineStageFlags(
     comptime scope: enum { source, dest },
-    stage_flags: ngl.Stage.Flags,
+    stage_mask: ngl.Stage.Flags,
 ) c.VkPipelineStageFlags {
-    if (stage_flags.none or ngl.noFlagsSet(stage_flags))
+    if (stage_mask.none or ngl.noFlagsSet(stage_mask))
         return switch (scope) {
             .source => c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             .dest => c.VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
@@ -480,43 +478,43 @@ pub fn toVkPipelineStageFlags(
 
     var flags: c.VkPipelineStageFlags = 0;
 
-    if (stage_flags.all_commands) {
+    if (stage_mask.all_commands) {
         flags |= c.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-        if (stage_flags.host)
+        if (stage_mask.host)
             flags |= c.VK_PIPELINE_STAGE_HOST_BIT;
         return flags;
     }
 
-    if (stage_flags.all_graphics) {
+    if (stage_mask.all_graphics) {
         flags |= c.VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
-        if (stage_flags.compute_shader)
+        if (stage_mask.compute_shader)
             flags |= c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-        if (stage_flags.clear or stage_flags.copy)
+        if (stage_mask.clear or stage_mask.copy)
             flags |= c.VK_PIPELINE_STAGE_TRANSFER_BIT;
-        if (stage_flags.host)
+        if (stage_mask.host)
             flags |= c.VK_PIPELINE_STAGE_HOST_BIT;
         return flags;
     }
 
-    if (stage_flags.draw_indirect)
+    if (stage_mask.draw_indirect)
         flags |= c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
-    if (stage_flags.index_input or stage_flags.vertex_attribute_input)
+    if (stage_mask.index_input or stage_mask.vertex_attribute_input)
         flags |= c.VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
-    if (stage_flags.vertex_shader)
+    if (stage_mask.vertex_shader)
         flags |= c.VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
-    if (stage_flags.early_fragment_tests)
+    if (stage_mask.early_fragment_tests)
         flags |= c.VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    if (stage_flags.fragment_shader)
+    if (stage_mask.fragment_shader)
         flags |= c.VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    if (stage_flags.late_fragment_tests)
+    if (stage_mask.late_fragment_tests)
         flags |= c.VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    if (stage_flags.color_attachment_output)
+    if (stage_mask.color_attachment_output)
         flags |= c.VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    if (stage_flags.compute_shader)
+    if (stage_mask.compute_shader)
         flags |= c.VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
-    if (stage_flags.clear or stage_flags.copy)
+    if (stage_mask.clear or stage_mask.copy)
         flags |= c.VK_PIPELINE_STAGE_TRANSFER_BIT;
-    if (stage_flags.host)
+    if (stage_mask.host)
         flags |= c.VK_PIPELINE_STAGE_HOST_BIT;
     return flags;
 }
@@ -529,85 +527,85 @@ pub fn toVkAccess(_: ngl.Access) c.VkAccessFlagBits {
 }
 
 // TODO: toVkAccessFlags2.
-pub fn toVkAccessFlags(access_flags: ngl.Access.Flags) c.VkAccessFlags {
-    if (access_flags.none or ngl.noFlagsSet(access_flags))
+pub fn toVkAccessFlags(access_mask: ngl.Access.Flags) c.VkAccessFlags {
+    if (access_mask.none or ngl.noFlagsSet(access_mask))
         return 0; // c.VK_ACCESS_NONE.
 
     var flags: c.VkAccessFlags = 0;
 
-    if (access_flags.memory_read) {
+    if (access_mask.memory_read) {
         flags |= c.VK_ACCESS_MEMORY_READ_BIT;
-        if (access_flags.memory_write) {
+        if (access_mask.memory_write) {
             flags |= c.VK_ACCESS_MEMORY_WRITE_BIT;
         } else {
-            if (access_flags.shader_storage_write)
+            if (access_mask.shader_storage_write)
                 flags |= c.VK_ACCESS_SHADER_WRITE_BIT;
-            if (access_flags.color_attachment_write)
+            if (access_mask.color_attachment_write)
                 flags |= c.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            if (access_flags.depth_stencil_attachment_write)
+            if (access_mask.depth_stencil_attachment_write)
                 flags |= c.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            if (access_flags.transfer_write)
+            if (access_mask.transfer_write)
                 flags |= c.VK_ACCESS_TRANSFER_WRITE_BIT;
-            if (access_flags.host_write)
+            if (access_mask.host_write)
                 flags |= c.VK_ACCESS_HOST_WRITE_BIT;
         }
         return flags;
     }
 
-    if (access_flags.memory_write) {
+    if (access_mask.memory_write) {
         flags |= c.VK_ACCESS_MEMORY_WRITE_BIT;
-        if (access_flags.indirect_command_read)
+        if (access_mask.indirect_command_read)
             flags |= c.VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
-        if (access_flags.index_read)
+        if (access_mask.index_read)
             flags |= c.VK_ACCESS_INDEX_READ_BIT;
-        if (access_flags.vertex_attribute_read)
+        if (access_mask.vertex_attribute_read)
             flags |= c.VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-        if (access_flags.uniform_read)
+        if (access_mask.uniform_read)
             flags |= c.VK_ACCESS_UNIFORM_READ_BIT;
-        if (access_flags.input_attachment_read)
+        if (access_mask.input_attachment_read)
             flags |= c.VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-        if (access_flags.shader_sampled_read or access_flags.shader_storage_read)
+        if (access_mask.shader_sampled_read or access_mask.shader_storage_read)
             flags |= c.VK_ACCESS_SHADER_READ_BIT;
-        if (access_flags.color_attachment_read)
+        if (access_mask.color_attachment_read)
             flags |= c.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-        if (access_flags.depth_stencil_attachment_read)
+        if (access_mask.depth_stencil_attachment_read)
             flags |= c.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-        if (access_flags.transfer_read)
+        if (access_mask.transfer_read)
             flags |= c.VK_ACCESS_TRANSFER_READ_BIT;
-        if (access_flags.host_read)
+        if (access_mask.host_read)
             flags |= c.VK_ACCESS_HOST_READ_BIT;
         return flags;
     }
 
-    if (access_flags.indirect_command_read)
+    if (access_mask.indirect_command_read)
         flags |= c.VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
-    if (access_flags.index_read)
+    if (access_mask.index_read)
         flags |= c.VK_ACCESS_INDEX_READ_BIT;
-    if (access_flags.vertex_attribute_read)
+    if (access_mask.vertex_attribute_read)
         flags |= c.VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-    if (access_flags.uniform_read)
+    if (access_mask.uniform_read)
         flags |= c.VK_ACCESS_UNIFORM_READ_BIT;
-    if (access_flags.input_attachment_read)
+    if (access_mask.input_attachment_read)
         flags |= c.VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
-    if (access_flags.shader_sampled_read or access_flags.shader_storage_read)
+    if (access_mask.shader_sampled_read or access_mask.shader_storage_read)
         flags |= c.VK_ACCESS_SHADER_READ_BIT;
-    if (access_flags.shader_storage_write)
+    if (access_mask.shader_storage_write)
         flags |= c.VK_ACCESS_SHADER_WRITE_BIT;
-    if (access_flags.color_attachment_read)
+    if (access_mask.color_attachment_read)
         flags |= c.VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
-    if (access_flags.color_attachment_write)
+    if (access_mask.color_attachment_write)
         flags |= c.VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    if (access_flags.depth_stencil_attachment_read)
+    if (access_mask.depth_stencil_attachment_read)
         flags |= c.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
-    if (access_flags.depth_stencil_attachment_write)
+    if (access_mask.depth_stencil_attachment_write)
         flags |= c.VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    if (access_flags.transfer_read)
+    if (access_mask.transfer_read)
         flags |= c.VK_ACCESS_TRANSFER_READ_BIT;
-    if (access_flags.transfer_write)
+    if (access_mask.transfer_write)
         flags |= c.VK_ACCESS_TRANSFER_WRITE_BIT;
-    if (access_flags.host_read)
+    if (access_mask.host_read)
         flags |= c.VK_ACCESS_HOST_READ_BIT;
-    if (access_flags.host_write)
+    if (access_mask.host_write)
         flags |= c.VK_ACCESS_HOST_WRITE_BIT;
     return flags;
 }
@@ -649,21 +647,21 @@ pub fn toVkResolveMode(resolve_mode: ngl.Cmd.ResolveMode) c.VkResolveModeFlagBit
 }
 
 /// v1.2.
-pub fn toVkResolveModeFlags(resolve_mode_flags: ngl.ResolveMode.Flags) c.VkResolveModeFlags {
+pub fn toVkResolveModeFlags(resolve_modes: ngl.ResolveMode.Flags) c.VkResolveModeFlags {
     var flags: c.VkResolveModeFlags = 0;
-    if (resolve_mode_flags.average)
+    if (resolve_modes.average)
         flags |= c.VK_RESOLVE_MODE_AVERAGE_BIT;
-    if (resolve_mode_flags.sample_zero)
+    if (resolve_modes.sample_zero)
         flags |= c.VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
-    if (resolve_mode_flags.min)
+    if (resolve_modes.min)
         flags |= c.VK_RESOLVE_MODE_MIN_BIT;
-    if (resolve_mode_flags.max)
+    if (resolve_modes.max)
         flags |= c.VK_RESOLVE_MODE_MAX_BIT;
     return flags;
 }
 
-pub fn toVkDescriptorType(descriptor_type: ngl.DescriptorType) c.VkDescriptorType {
-    return switch (descriptor_type) {
+pub fn toVkDescriptorType(@"type": ngl.DescriptorType) c.VkDescriptorType {
+    return switch (@"type") {
         .sampler => c.VK_DESCRIPTOR_TYPE_SAMPLER,
         .combined_image_sampler => c.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         .sampled_image => c.VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
@@ -683,8 +681,8 @@ pub fn toVkPipelineBindPoint(bind_point: ngl.Cmd.BindPoint) c.VkPipelineBindPoin
     };
 }
 
-pub fn toVkShaderStage(shader_type: ngl.Shader.Type) c.VkShaderStageFlagBits {
-    return switch (shader_type) {
+pub fn toVkShaderStage(@"type": ngl.Shader.Type) c.VkShaderStageFlagBits {
+    return switch (@"type") {
         .vertex => c.VK_SHADER_STAGE_VERTEX_BIT,
         .fragment => c.VK_SHADER_STAGE_FRAGMENT_BIT,
         .compute => c.VK_SHADER_STAGE_COMPUTE_BIT,
@@ -758,8 +756,8 @@ pub fn toVkStencilOp(stencil_op: ngl.Cmd.StencilOp) c.VkStencilOp {
     };
 }
 
-pub fn toVkBlendFactor(blend_factor: ngl.Cmd.Blend.Factor) c.VkBlendFactor {
-    return switch (blend_factor) {
+pub fn toVkBlendFactor(factor: ngl.Cmd.Blend.Factor) c.VkBlendFactor {
+    return switch (factor) {
         .zero => c.VK_BLEND_FACTOR_ZERO,
         .one => c.VK_BLEND_FACTOR_ONE,
         .source_color => c.VK_BLEND_FACTOR_SRC_COLOR,
@@ -778,8 +776,8 @@ pub fn toVkBlendFactor(blend_factor: ngl.Cmd.Blend.Factor) c.VkBlendFactor {
     };
 }
 
-pub fn toVkBlendOp(blend_op: ngl.Cmd.Blend.Op) c.VkBlendOp {
-    return switch (blend_op) {
+pub fn toVkBlendOp(op: ngl.Cmd.Blend.Op) c.VkBlendOp {
+    return switch (op) {
         .add => c.VK_BLEND_OP_ADD,
         .subtract => c.VK_BLEND_OP_SUBTRACT,
         .reverse_subtract => c.VK_BLEND_OP_REVERSE_SUBTRACT,
@@ -805,8 +803,8 @@ pub fn toVkColorComponentFlags(color_mask: ngl.Cmd.ColorMask) c.VkColorComponent
     };
 }
 
-pub fn toVkIndexType(index_type: ngl.Cmd.IndexType) c.VkIndexType {
-    return switch (index_type) {
+pub fn toVkIndexType(@"type": ngl.Cmd.IndexType) c.VkIndexType {
+    return switch (@"type") {
         .u16 => c.VK_INDEX_TYPE_UINT16,
         .u32 => c.VK_INDEX_TYPE_UINT32,
     };
@@ -873,8 +871,8 @@ pub fn toVkSurfaceTransform(transform: ngl.Surface.Transform) c.VkSurfaceTransfo
 
 /// `Error.NotSupported` indicates that the API doens't expose the given
 /// Vulkan format.
-pub fn fromVkFormat(vk_format: c.VkFormat) Error!ngl.Format {
-    return switch (vk_format) {
+pub fn fromVkFormat(format: c.VkFormat) Error!ngl.Format {
+    return switch (format) {
         c.VK_FORMAT_UNDEFINED => .unknown,
 
         c.VK_FORMAT_R8_UNORM => .r8_unorm,
@@ -1048,74 +1046,74 @@ pub fn fromVkFormat(vk_format: c.VkFormat) Error!ngl.Format {
     };
 }
 
-pub fn fromVkSampleCountFlags(vk_flags: c.VkSampleCountFlags) ngl.SampleCount.Flags {
-    var flags = ngl.SampleCount.Flags{};
-    if (vk_flags & c.VK_SAMPLE_COUNT_1_BIT != 0)
-        flags.@"1" = true;
-    if (vk_flags & c.VK_SAMPLE_COUNT_2_BIT != 0)
-        flags.@"2" = true;
-    if (vk_flags & c.VK_SAMPLE_COUNT_4_BIT != 0)
-        flags.@"4" = true;
-    if (vk_flags & c.VK_SAMPLE_COUNT_8_BIT != 0)
-        flags.@"8" = true;
-    if (vk_flags & c.VK_SAMPLE_COUNT_16_BIT != 0)
-        flags.@"16" = true;
-    if (vk_flags & c.VK_SAMPLE_COUNT_32_BIT != 0)
-        flags.@"32" = true;
-    if (vk_flags & c.VK_SAMPLE_COUNT_64_BIT != 0)
-        flags.@"64" = true;
-    return flags;
+pub fn fromVkSampleCountFlags(flags: c.VkSampleCountFlags) ngl.SampleCount.Flags {
+    var counts = ngl.SampleCount.Flags{};
+    if (flags & c.VK_SAMPLE_COUNT_1_BIT != 0)
+        counts.@"1" = true;
+    if (flags & c.VK_SAMPLE_COUNT_2_BIT != 0)
+        counts.@"2" = true;
+    if (flags & c.VK_SAMPLE_COUNT_4_BIT != 0)
+        counts.@"4" = true;
+    if (flags & c.VK_SAMPLE_COUNT_8_BIT != 0)
+        counts.@"8" = true;
+    if (flags & c.VK_SAMPLE_COUNT_16_BIT != 0)
+        counts.@"16" = true;
+    if (flags & c.VK_SAMPLE_COUNT_32_BIT != 0)
+        counts.@"32" = true;
+    if (flags & c.VK_SAMPLE_COUNT_64_BIT != 0)
+        counts.@"64" = true;
+    return counts;
 }
 
-pub fn fromVkImageUsageFlags(vk_flags: c.VkImageUsageFlags) ngl.Image.Usage {
+pub fn fromVkImageUsageFlags(flags: c.VkImageUsageFlags) ngl.Image.Usage {
     var usage = ngl.Image.Usage{};
-    if (vk_flags & c.VK_IMAGE_USAGE_SAMPLED_BIT != 0)
+    if (flags & c.VK_IMAGE_USAGE_SAMPLED_BIT != 0)
         usage.sampled_image = true;
-    if (vk_flags & c.VK_IMAGE_USAGE_STORAGE_BIT != 0)
+    if (flags & c.VK_IMAGE_USAGE_STORAGE_BIT != 0)
         usage.storage_image = true;
-    if (vk_flags & c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT != 0)
+    if (flags & c.VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT != 0)
         usage.color_attachment = true;
-    if (vk_flags & c.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT != 0)
+    if (flags & c.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT != 0)
         usage.depth_stencil_attachment = true;
-    if (vk_flags & c.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT != 0)
+    if (flags & c.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT != 0)
         usage.transient_attachment = true;
-    if (vk_flags & c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT != 0)
+    if (flags & c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT != 0)
         usage.input_attachment = true;
-    if (vk_flags & c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT != 0)
+    if (flags & c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT != 0)
         usage.transfer_source = true;
-    if (vk_flags & c.VK_IMAGE_USAGE_TRANSFER_DST_BIT != 0)
+    if (flags & c.VK_IMAGE_USAGE_TRANSFER_DST_BIT != 0)
         usage.transfer_dest = true;
     return usage;
 }
 
 pub fn fromVkCompositeAlphaFlags(
-    vk_flags: c.VkCompositeAlphaFlagsKHR,
+    flags: c.VkCompositeAlphaFlagsKHR,
 ) ngl.Surface.CompositeAlpha.Flags {
-    var flags = ngl.Surface.CompositeAlpha.Flags{};
-    if (vk_flags & c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR != 0)
-        flags.@"opaque" = true;
-    if (vk_flags & c.VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR != 0)
-        flags.pre_multiplied = true;
-    if (vk_flags & c.VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR != 0)
-        flags.post_multiplied = true;
-    if (vk_flags & c.VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR != 0)
-        flags.inherit = true;
-    return flags;
+    var alphas = ngl.Surface.CompositeAlpha.Flags{};
+    if (flags & c.VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR != 0)
+        alphas.@"opaque" = true;
+    if (flags & c.VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR != 0)
+        alphas.pre_multiplied = true;
+    if (flags & c.VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR != 0)
+        alphas.post_multiplied = true;
+    if (flags & c.VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR != 0)
+        alphas.inherit = true;
+    return alphas;
 }
 
 /// `Error.NotSupported` indicates that the API doesn't expose the given
 /// Vulkan color space.
-pub fn fromVkColorSpace(vk_color_space: c.VkColorSpaceKHR) Error!ngl.Surface.ColorSpace {
+pub fn fromVkColorSpace(color_space: c.VkColorSpaceKHR) Error!ngl.Surface.ColorSpace {
     if (@typeInfo(ngl.Surface.ColorSpace).Enum.fields.len > 1)
         @compileError("Update Vulkan conversion");
-    return switch (vk_color_space) {
+    return switch (color_space) {
         c.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR => .srgb_non_linear,
         else => return Error.NotSupported,
     };
 }
 
-pub fn fromVkSurfaceTransform(vk_transform: c.VkSurfaceTransformFlagBitsKHR) ngl.Surface.Transform {
-    return switch (vk_transform) {
+pub fn fromVkSurfaceTransform(transform: c.VkSurfaceTransformFlagBitsKHR) ngl.Surface.Transform {
+    return switch (transform) {
         c.VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR => .identity,
         c.VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR => .rotate_90,
         c.VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR => .rotate_180,
@@ -1130,26 +1128,26 @@ pub fn fromVkSurfaceTransform(vk_transform: c.VkSurfaceTransformFlagBitsKHR) ngl
 }
 
 pub fn fromVkSurfaceTransformFlags(
-    vk_flags: c.VkSurfaceTransformFlagsKHR,
+    flags: c.VkSurfaceTransformFlagsKHR,
 ) ngl.Surface.Transform.Flags {
-    var flags = ngl.Surface.Transform.Flags{};
-    if (vk_flags & c.VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR != 0)
-        flags.identity = true;
-    if (vk_flags & c.VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR != 0)
-        flags.rotate_90 = true;
-    if (vk_flags & c.VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR != 0)
-        flags.rotate_180 = true;
-    if (vk_flags & c.VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR != 0)
-        flags.rotate_270 = true;
-    if (vk_flags & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR != 0)
-        flags.horizontal_mirror = true;
-    if (vk_flags & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR != 0)
-        flags.horizontal_mirror_rotate_90 = true;
-    if (vk_flags & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR != 0)
-        flags.horizontal_mirror_rotate_180 = true;
-    if (vk_flags & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR != 0)
-        flags.horizontal_mirror_rotate_270 = true;
-    if (vk_flags & c.VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR != 0)
-        flags.inherit = true;
-    return flags;
+    var xforms = ngl.Surface.Transform.Flags{};
+    if (flags & c.VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR != 0)
+        xforms.identity = true;
+    if (flags & c.VK_SURFACE_TRANSFORM_ROTATE_90_BIT_KHR != 0)
+        xforms.rotate_90 = true;
+    if (flags & c.VK_SURFACE_TRANSFORM_ROTATE_180_BIT_KHR != 0)
+        xforms.rotate_180 = true;
+    if (flags & c.VK_SURFACE_TRANSFORM_ROTATE_270_BIT_KHR != 0)
+        xforms.rotate_270 = true;
+    if (flags & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_BIT_KHR != 0)
+        xforms.horizontal_mirror = true;
+    if (flags & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_90_BIT_KHR != 0)
+        xforms.horizontal_mirror_rotate_90 = true;
+    if (flags & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_180_BIT_KHR != 0)
+        xforms.horizontal_mirror_rotate_180 = true;
+    if (flags & c.VK_SURFACE_TRANSFORM_HORIZONTAL_MIRROR_ROTATE_270_BIT_KHR != 0)
+        xforms.horizontal_mirror_rotate_270 = true;
+    if (flags & c.VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR != 0)
+        xforms.inherit = true;
+    return xforms;
 }
