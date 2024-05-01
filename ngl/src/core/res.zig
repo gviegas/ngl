@@ -471,9 +471,10 @@ pub const Format = enum {
             .vertex_buffer = true,
         },
         // Depth/stencil -----------------------------------
-        // NOTE: Which formats are allowed as stencil attachment can't be
-        // known in advance - one must use `getFeatures` to query support
-        // at runtime (at least one format will support it)
+        // NOTE: Which formats are allowed as stencil attachment
+        // can't be known in advance - one must use `getFeatures`
+        // to query support at runtime (at least one format will
+        // support it).
         .d16_unorm = .{ .sampled_image = true, .depth_stencil_attachment = true },
     };
 
@@ -1322,7 +1323,7 @@ pub const BufferView = struct {
         buffer: *Buffer,
         format: Format,
         offset: u64,
-        range: ?u64,
+        range: u64,
     };
 
     const Self = @This();
