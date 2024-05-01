@@ -129,7 +129,7 @@ pub const VTable = struct {
         device: Device,
         memory: Memory,
         offsets: []const u64,
-        sizes: ?[]const u64,
+        sizes: []const u64,
     ) Error!void,
 
     invalidateMappedMemory: *const fn (
@@ -138,7 +138,7 @@ pub const VTable = struct {
         device: Device,
         memory: Memory,
         offsets: []const u64,
-        sizes: ?[]const u64,
+        sizes: []const u64,
     ) Error!void,
 
     // Feature ---------------------------------------------
@@ -1158,7 +1158,7 @@ pub fn flushMappedMemory(
     device: Device,
     memory: Memory,
     offsets: []const u64,
-    sizes: ?[]const u64,
+    sizes: []const u64,
 ) Error!void {
     try self.vtable.flushMappedMemory(self.ptr, allocator, device, memory, offsets, sizes);
 }
@@ -1169,7 +1169,7 @@ pub fn invalidateMappedMemory(
     device: Device,
     memory: Memory,
     offsets: []const u64,
-    sizes: ?[]const u64,
+    sizes: []const u64,
 ) Error!void {
     try self.vtable.invalidateMappedMemory(self.ptr, allocator, device, memory, offsets, sizes);
 }

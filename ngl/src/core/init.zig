@@ -349,22 +349,24 @@ pub const Memory = struct {
         Impl.get().unmapMemory(device.impl, self.impl);
     }
 
+    /// The slices must have the same length.
     pub fn flushMapped(
         self: *Self,
         allocator: std.mem.Allocator,
         device: *Device,
         offsets: []const u64,
-        sizes: ?[]const u64,
+        sizes: []const u64,
     ) Error!void {
         try Impl.get().flushMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
     }
 
+    /// The slices must have the same length.
     pub fn invalidateMapped(
         self: *Self,
         allocator: std.mem.Allocator,
         device: *Device,
         offsets: []const u64,
-        sizes: ?[]const u64,
+        sizes: []const u64,
     ) Error!void {
         try Impl.get().invalidateMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
     }

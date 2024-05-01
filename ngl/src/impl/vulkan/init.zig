@@ -2756,34 +2756,26 @@ pub const Memory = packed struct {
         device: Impl.Device,
         memory: Impl.Memory,
         offsets: []const u64,
-        sizes: ?[]const u64,
+        sizes: []const u64,
     ) Error!void {
         const dev = Device.cast(device);
         const mem = cast(memory);
 
         var mapped_range: [1]c.VkMappedMemoryRange = undefined;
-        var mapped_ranges = if (offsets.len > 1) try allocator.alloc(
+        const mapped_ranges = if (offsets.len > 1) try allocator.alloc(
             c.VkMappedMemoryRange,
             offsets.len,
         ) else &mapped_range;
         defer if (mapped_ranges.len > 1) allocator.free(mapped_ranges);
 
-        if (sizes) |szs| {
-            for (mapped_ranges, offsets, szs) |*range, offset, size|
-                range.* = .{
-                    .sType = c.VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-                    .pNext = null,
-                    .memory = mem.handle,
-                    .offset = offset,
-                    .size = size,
-                };
-        } else mapped_ranges[0] = .{
-            .sType = c.VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-            .pNext = null,
-            .memory = mem.handle,
-            .offset = offsets[0],
-            .size = c.VK_WHOLE_SIZE,
-        };
+        for (mapped_ranges, offsets, sizes) |*range, offset, size|
+            range.* = .{
+                .sType = c.VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+                .pNext = null,
+                .memory = mem.handle,
+                .offset = offset,
+                .size = size,
+            };
 
         const callable = switch (call) {
             .flush => Device.vkFlushMappedMemoryRanges,
@@ -2798,7 +2790,7 @@ pub const Memory = packed struct {
         device: Impl.Device,
         memory: Impl.Memory,
         offsets: []const u64,
-        sizes: ?[]const u64,
+        sizes: []const u64,
     ) Error!void {
         try flushOrInvalidateMapped(.flush, allocator, device, memory, offsets, sizes);
     }
@@ -2809,7 +2801,7 @@ pub const Memory = packed struct {
         device: Impl.Device,
         memory: Impl.Memory,
         offsets: []const u64,
-        sizes: ?[]const u64,
+        sizes: []const u64,
     ) Error!void {
         try flushOrInvalidateMapped(.invalidate, allocator, device, memory, offsets, sizes);
     }
