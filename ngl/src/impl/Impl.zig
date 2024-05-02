@@ -71,6 +71,12 @@ pub const VTable = struct {
         device: Device,
     ) []ngl.Memory.Type,
 
+    getMemoryHeaps: *const fn (
+        ctx: *anyopaque,
+        allocation: *[ngl.Memory.max_heap]ngl.Memory.Heap,
+        device: Device,
+    ) []ngl.Memory.Heap,
+
     allocMemory: *const fn (
         ctx: *anyopaque,
         allocator: std.mem.Allocator,
@@ -1090,6 +1096,14 @@ pub fn getMemoryTypes(
     device: Device,
 ) []ngl.Memory.Type {
     return self.vtable.getMemoryTypes(self.ptr, allocation, device);
+}
+
+pub fn getMemoryHeaps(
+    self: *Self,
+    allocation: *[ngl.Memory.max_heap]ngl.Memory.Heap,
+    device: Device,
+) []ngl.Memory.Heap {
+    return self.vtable.getMemoryHeaps(self.ptr, allocation, device);
 }
 
 pub fn allocMemory(

@@ -47,6 +47,8 @@ pub const Device = struct {
     queue_n: u8,
     mem_types: [Memory.max_type]Memory.Type,
     mem_type_n: u8,
+    mem_heaps: [Memory.max_heap]Memory.Heap,
+    mem_heap_n: u8,
 
     const Self = @This();
 
@@ -60,6 +62,8 @@ pub const Device = struct {
             .queue_n = 0,
             .mem_types = undefined,
             .mem_type_n = 0,
+            .mem_heaps = undefined,
+            .mem_heap_n = 0,
         };
         // Track the current element in `gpu.queues` since it
         // might be interspersed with `null`s.
@@ -80,6 +84,7 @@ pub const Device = struct {
         }
         self.queue_n = @intCast(queues.len);
         self.mem_type_n = @intCast(Impl.get().getMemoryTypes(&self.mem_types, self.impl).len);
+        self.mem_heap_n = @intCast(Impl.get().getMemoryHeaps(&self.mem_heaps, self.impl).len);
         return self;
     }
 
@@ -273,6 +278,11 @@ pub const Memory = struct {
     pub const Type = struct {
         properties: Properties,
         heap_index: HeapIndex,
+    };
+
+    pub const Heap = struct {
+        size: ?u64,
+        device_local: bool,
     };
 
     pub const Requirements = struct {

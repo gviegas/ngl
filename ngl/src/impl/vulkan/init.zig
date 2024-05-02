@@ -1479,6 +1479,25 @@ pub const Device = struct {
         return allocation[0..props.memoryTypeCount];
     }
 
+    fn getMemoryHeaps(
+        _: *anyopaque,
+        allocation: *[ngl.Memory.max_heap]ngl.Memory.Heap,
+        device: Impl.Device,
+    ) []ngl.Memory.Heap {
+        const dev = cast(device);
+
+        var props: c.VkPhysicalDeviceMemoryProperties = undefined;
+        Instance.get().vkGetPhysicalDeviceMemoryProperties(dev.gpu.handle, &props);
+
+        for (0..props.memoryHeapCount) |i|
+            allocation[i] = .{
+                .size = props.memoryHeaps[i].size,
+                .device_local = props.memoryHeaps[i].flags & c.VK_MEMORY_HEAP_DEVICE_LOCAL_BIT != 0,
+            };
+
+        return allocation[0..props.memoryHeapCount];
+    }
+
     fn alloc(
         _: *anyopaque,
         _: std.mem.Allocator,
@@ -3026,6 +3045,7 @@ const vtable = Impl.VTable{
     .initDevice = Device.init,
     .getQueues = Device.getQueues,
     .getMemoryTypes = Device.getMemoryTypes,
+    .getMemoryHeaps = Device.getMemoryHeaps,
     .allocMemory = Device.alloc,
     .freeMemory = Device.free,
     .waitDevice = Device.wait,
