@@ -4,8 +4,9 @@ const testing = std.testing;
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
+const log = @import("test.zig").log;
 
-test "Memory.map/unmap (coherent)" {
+test "Memory.map/unmap" {
     const dev = &context().device;
 
     const type_idx = for (0..dev.mem_type_n) |i| {
@@ -112,8 +113,48 @@ test "Memory.map/unmap (coherent)" {
     _ = try mem.map(dev, 0, size);
 }
 
-test "Memory.flushMapped/invalidateMapped (non-coherent)" {
-    // TODO: Need a device that exposes such memory.
+test "Memory.flushMapped/invalidateMapped" {
+    const dev = &context().device;
+
+    const size = 1 << 22;
+    const type_idx = blk: {
+        var type_idx: ngl.Memory.TypeIndex = 0;
+        for (dev.mem_types[0..dev.mem_type_n], 0..) |x, i| {
+            if (x.properties.host_visible) {
+                type_idx = @intCast(i);
+                if (!x.properties.host_coherent)
+                    break;
+            }
+        } else log.warn(
+            \\In {s}:
+            \\  Device doesn't expose host visible, non-coherent memory.
+            \\  Chose {} instead.
+        ,
+            .{ @src().fn_name, dev.mem_types[type_idx].properties },
+        );
+        break :blk type_idx;
+    };
+
+    var mem = try dev.alloc(gpa, .{ .size = size, .type_index = type_idx });
+    defer dev.free(gpa, &mem);
+
+    const data = try mem.map(dev, 0, size);
+    defer mem.unmap(dev);
+    @memset(data, 0xdf);
+
+    // TODO: `Stage.host`, `Access.host_read` and `Access.host_write`.
+
+    try mem.flushMapped(gpa, dev, &.{0}, &.{size});
+
+    try testing.expect(for (data) |x| {
+        if (x != 0xdf) break false;
+    } else true);
+
+    try mem.invalidateMapped(gpa, dev, &.{0}, &.{size});
+
+    try testing.expect(for (data) |x| {
+        if (x != 0xdf) break false;
+    } else true);
 }
 
 test "Memory.Requirements.findType/findTypeExact" {

@@ -6,9 +6,9 @@ const c = @import("c");
 const ngl = @import("../ngl.zig");
 
 pub const gpa = std.testing.allocator;
-
-// This can be set to `null` to suppress test output.
+// Set `writer` to `null` to suppress test output.
 pub const writer: ?std.fs.File.Writer = std.io.getStdErr().writer();
+pub const log = std.log.scoped(.@"ngl|test");
 
 // TODO: Test `Gpu`.
 test {
