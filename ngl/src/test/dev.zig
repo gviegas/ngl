@@ -5,6 +5,73 @@ const builtin = @import("builtin");
 const ngl = @import("../ngl.zig");
 const gpa = @import("test.zig").gpa;
 
+fn testInitializedDevice(device: ngl.Device, gpu: ngl.Gpu) !void {
+    // Queues must be created verbatim.
+    try testing.expectEqual(device.queue_n, blk: {
+        var n: u8 = 0;
+        for (gpu.queues) |q|
+            if (q) |d| {
+                if (@typeInfo(ngl.Queue).Struct.fields.len != 4) @compileError("Update me");
+                try testing.expectEqual(device.queues[n].capabilities, d.capabilities);
+                try testing.expectEqual(device.queues[n].priority, d.priority);
+                try testing.expectEqual(
+                    device.queues[n].image_transfer_granularity,
+                    d.image_transfer_granularity,
+                );
+                n += 1;
+            };
+        break :blk n;
+    });
+
+    for (device.queues[0..device.queue_n]) |q| {
+        // Queues must be capable of something.
+        try testing.expect(@as(
+            @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?,
+            @bitCast(q.capabilities),
+        ) != 0);
+
+        // Queues supporting graphics and/or compute
+        // must also support transfer operations
+        // (and must indicate such by setting the
+        // `transfer` capability - it's not implicit).
+        if (q.capabilities.graphics or q.capabilities.compute)
+            try testing.expect(q.capabilities.transfer);
+
+        // Queues supporting graphics and/or compute
+        // must not impose any granularity restriction
+        // on image transfers.
+        if (q.capabilities.graphics or q.capabilities.compute)
+            try testing.expectEqual(q.image_transfer_granularity, .one);
+    }
+
+    var visible_coherent = false;
+    var device_local = false;
+
+    for (device.mem_types[0..device.mem_type_n]) |m| {
+        // Visible coherent memory type is required.
+        visible_coherent = visible_coherent or
+            m.properties.host_visible and m.properties.host_coherent;
+
+        // Device local memory type is required.
+        device_local = device_local or m.properties.device_local;
+
+        try testing.expect(m.heap_index < device.mem_heap_n);
+    }
+
+    try testing.expect(visible_coherent);
+    try testing.expect(device_local);
+
+    device_local = false;
+
+    for (device.mem_heaps[0..device.mem_heap_n]) |h| {
+        if (h.size) |x|
+            try testing.expect(x > 0);
+
+        // Device local memory heap is required.
+        device_local = device_local or h.device_local;
+    }
+}
+
 // TODO: Test w/ subset of `Gpu`'s queues/features.
 test "Device.init/deinit" {
     const gpus = try ngl.getGpus(gpa);
@@ -19,47 +86,7 @@ test "Device.init/deinit" {
         var dev = try ngl.Device.init(gpa, gpu);
         defer dev.deinit(gpa);
 
-        // Queues must be created verbatim.
-        try testing.expectEqual(dev.queue_n, blk: {
-            var n: u8 = 0;
-            for (gpu.queues) |q| {
-                if (q) |_| n += 1;
-            }
-            break :blk n;
-        });
-
-        // Queues must be capable of something.
-        for (dev.queues[0..dev.queue_n]) |q| {
-            const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
-            try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
-        }
-
-        // Queues supporting graphics and/or compute
-        // must also support transfer operations
-        // (and must indicate such by setting the
-        // `transfer` capability - it's not implicit).
-        for (dev.queues[0..dev.queue_n]) |q| {
-            if (q.capabilities.graphics or q.capabilities.compute)
-                try testing.expect(q.capabilities.transfer);
-        }
-
-        // Queues supporting graphics and/or compute
-        // must not impose any granularity restriction
-        // on image transfers.
-        for (dev.queues[0..dev.queue_n]) |q| {
-            if (q.capabilities.graphics or q.capabilities.compute)
-                try testing.expectEqual(q.image_transfer_granularity, .one);
-        }
-
-        // Visible coherent memory is required.
-        for (dev.mem_types[0..dev.mem_type_n]) |m| {
-            if (m.properties.host_visible and m.properties.host_coherent) break;
-        } else try testing.expect(false);
-
-        // Device-local memory is required.
-        for (dev.mem_types[0..dev.mem_type_n]) |m| {
-            if (m.properties.device_local) break;
-        } else try testing.expect(false);
+        try testInitializedDevice(dev, gpu);
     }
 }
 
@@ -79,33 +106,8 @@ test "multiple Device instances" {
         };
     defer for (devs) |*dev| dev.deinit(gpa);
 
-    for (devs, gpus) |dev, gpu| {
-        try testing.expectEqual(dev.queue_n, blk: {
-            var n: u8 = 0;
-            for (gpu.queues) |q| {
-                if (q) |_| n += 1;
-            }
-            break :blk n;
-        });
-
-        for (dev.queues[0..dev.queue_n]) |q| {
-            const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
-            try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
-        }
-
-        for (dev.queues[0..dev.queue_n]) |q| {
-            if (q.capabilities.graphics or q.capabilities.compute)
-                try testing.expect(q.capabilities.transfer);
-        }
-
-        for (dev.mem_types[0..dev.mem_type_n]) |m| {
-            if (m.properties.host_visible and m.properties.host_coherent) break;
-        } else try testing.expect(false);
-
-        for (dev.mem_types[0..dev.mem_type_n]) |m| {
-            if (m.properties.device_local) break;
-        } else try testing.expect(false);
-    }
+    for (devs, gpus) |dev, gpu|
+        try testInitializedDevice(dev, gpu);
 }
 
 test "aliasing Device instances" {
@@ -125,44 +127,39 @@ test "aliasing Device instances" {
         };
     defer for (devs) |*dev| dev.deinit(gpa);
 
-    try testing.expectEqual(devs[0].queue_n, blk: {
-        var n: u8 = 0;
-        for (gpu.queues) |q| {
-            if (q) |_| n += 1;
-        }
-        break :blk n;
-    });
-
-    for (devs[0].queues[0..devs[0].queue_n]) |q| {
-        const U = @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?;
-        try testing.expect(@as(U, @bitCast(q.capabilities)) != 0);
-    }
-
-    for (devs[0].queues[0..devs[0].queue_n]) |q| {
-        if (q.capabilities.graphics or q.capabilities.compute)
-            try testing.expect(q.capabilities.transfer);
-    }
-
-    for (devs[0].mem_types[0..devs[0].mem_type_n]) |m| {
-        if (m.properties.host_visible and m.properties.host_coherent) break;
-    } else try testing.expect(false);
-
-    for (devs[0].mem_types[0..devs[0].mem_type_n]) |m| {
-        if (m.properties.device_local) break;
-    } else try testing.expect(false);
+    try testInitializedDevice(devs[0], gpu);
 
     for (devs[1..devs.len]) |dev| {
         try testing.expectEqual(devs[0].queue_n, dev.queue_n);
         try testing.expectEqual(devs[0].mem_type_n, dev.mem_type_n);
-        // Don't rely on the order being consistent.
-        var seem = [_]bool{false} ** ngl.Memory.max_type;
-        for (devs[0].mem_types[0..devs[0].mem_type_n]) |x| {
-            for (dev.mem_types[0..dev.mem_type_n], 0..) |y, i| {
-                if (!seem[i] and std.meta.eql(x, y)) {
-                    seem[i] = true;
-                    break;
-                }
-            } else try testing.expect(false);
+        try testing.expectEqual(devs[0].mem_heap_n, dev.mem_heap_n);
+        for (devs[0].queues[0..devs[0].queue_n], dev.queues[0..dev.queue_n]) |x, y| {
+            // Note that `impl` can differ.
+            if (@typeInfo(ngl.Queue).Struct.fields.len != 4) @compileError("Update me");
+            try testing.expectEqual(x.capabilities, y.capabilities);
+            try testing.expectEqual(x.priority, y.priority);
+            try testing.expectEqual(x.image_transfer_granularity, y.image_transfer_granularity);
+        }
+        // Don't rely on the order being consistent for memory types/heaps.
+        {
+            var seem = [_]bool{false} ** ngl.Memory.max_type;
+            for (devs[0].mem_types[0..devs[0].mem_type_n]) |x|
+                for (dev.mem_types[0..dev.mem_type_n], 0..) |y, i| {
+                    if (!seem[i] and std.meta.eql(x, y)) {
+                        seem[i] = true;
+                        break;
+                    }
+                } else return error.MemoryTypeMismatch;
+        }
+        {
+            var seem = [_]bool{false} ** ngl.Memory.max_heap;
+            for (devs[0].mem_heaps[0..devs[0].mem_heap_n]) |x|
+                for (dev.mem_heaps[0..dev.mem_heap_n], 0..) |y, i| {
+                    if (!seem[i] and std.meta.eql(x, y)) {
+                        seem[i] = true;
+                        break;
+                    }
+                } else return error.MemoryHeapMismatch;
         }
     }
 }
