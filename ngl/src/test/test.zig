@@ -10,9 +10,9 @@ pub const gpa = std.testing.allocator;
 pub const writer: ?std.fs.File.Writer = std.io.getStdErr().writer();
 pub const log = std.log.scoped(.@"ngl|test");
 
-// TODO: Test `Gpu`.
 test {
     _ = @import("flags.zig");
+    _ = @import("gpu.zig");
     _ = @import("dev.zig");
     _ = @import("fence.zig");
     _ = @import("sema.zig");

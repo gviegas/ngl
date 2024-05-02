@@ -126,10 +126,7 @@ test "Memory.flushMapped/invalidateMapped" {
                     break;
             }
         } else log.warn(
-            \\In {s}:
-            \\  Device doesn't expose host visible, non-coherent memory.
-            \\  Chose {} instead.
-        ,
+            "In {s}: Device doesn't expose host visible, non-coherent memory - chose {} instead",
             .{ @src().fn_name, dev.mem_types[type_idx].properties },
         );
         break :blk type_idx;
