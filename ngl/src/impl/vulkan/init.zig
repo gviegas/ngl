@@ -1059,7 +1059,7 @@ pub const Device = struct {
     handle: c.VkDevice,
     version: u32,
     queues: [ngl.Queue.max]Queue,
-    queue_n: u8,
+    queue_n: ngl.Queue.Count,
     timestamp_period: f32,
     cache: Cache,
     gpa: std.mem.Allocator,
@@ -1437,17 +1437,17 @@ pub const Device = struct {
         _: *anyopaque,
         allocation: *[ngl.Queue.max]Impl.Queue,
         device: Impl.Device,
-    ) []Impl.Queue {
+    ) ngl.Queue.Count {
         const dev = cast(device);
         for (0..dev.queue_n) |i| allocation[i] = .{ .val = @intFromPtr(&dev.queues[i]) };
-        return allocation[0..dev.queue_n];
+        return dev.queue_n;
     }
 
     fn getMemoryTypes(
         _: *anyopaque,
         allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
         device: Impl.Device,
-    ) []ngl.Memory.Type {
+    ) ngl.Memory.TypeCount {
         const dev = cast(device);
 
         var props: c.VkPhysicalDeviceMemoryProperties = undefined;
@@ -1476,14 +1476,14 @@ pub const Device = struct {
             };
         }
 
-        return allocation[0..props.memoryTypeCount];
+        return @intCast(props.memoryTypeCount);
     }
 
     fn getMemoryHeaps(
         _: *anyopaque,
         allocation: *[ngl.Memory.max_heap]ngl.Memory.Heap,
         device: Impl.Device,
-    ) []ngl.Memory.Heap {
+    ) ngl.Memory.HeapCount {
         const dev = cast(device);
 
         var props: c.VkPhysicalDeviceMemoryProperties = undefined;
@@ -1495,7 +1495,7 @@ pub const Device = struct {
                 .device_local = props.memoryHeaps[i].flags & c.VK_MEMORY_HEAP_DEVICE_LOCAL_BIT != 0,
             };
 
-        return allocation[0..props.memoryHeapCount];
+        return @intCast(props.memoryHeapCount);
     }
 
     fn alloc(

@@ -63,19 +63,19 @@ pub const VTable = struct {
         ctx: *anyopaque,
         allocation: *[ngl.Queue.max]Queue,
         device: Device,
-    ) []Queue,
+    ) ngl.Queue.Count,
 
     getMemoryTypes: *const fn (
         ctx: *anyopaque,
         allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
         device: Device,
-    ) []ngl.Memory.Type,
+    ) ngl.Memory.TypeCount,
 
     getMemoryHeaps: *const fn (
         ctx: *anyopaque,
         allocation: *[ngl.Memory.max_heap]ngl.Memory.Heap,
         device: Device,
-    ) []ngl.Memory.Heap,
+    ) ngl.Memory.HeapCount,
 
     allocMemory: *const fn (
         ctx: *anyopaque,
@@ -1086,7 +1086,7 @@ pub fn initDevice(self: *Self, allocator: std.mem.Allocator, gpu: ngl.Gpu) Error
     return self.vtable.initDevice(self.ptr, allocator, gpu);
 }
 
-pub fn getQueues(self: *Self, allocation: *[ngl.Queue.max]Queue, device: Device) []Queue {
+pub fn getQueues(self: *Self, allocation: *[ngl.Queue.max]Queue, device: Device) ngl.Queue.Count {
     return self.vtable.getQueues(self.ptr, allocation, device);
 }
 
@@ -1094,7 +1094,7 @@ pub fn getMemoryTypes(
     self: *Self,
     allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
     device: Device,
-) []ngl.Memory.Type {
+) ngl.Memory.TypeCount {
     return self.vtable.getMemoryTypes(self.ptr, allocation, device);
 }
 
@@ -1102,7 +1102,7 @@ pub fn getMemoryHeaps(
     self: *Self,
     allocation: *[ngl.Memory.max_heap]ngl.Memory.Heap,
     device: Device,
-) []ngl.Memory.Heap {
+) ngl.Memory.HeapCount {
     return self.vtable.getMemoryHeaps(self.ptr, allocation, device);
 }
 

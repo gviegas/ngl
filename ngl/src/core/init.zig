@@ -44,11 +44,11 @@ pub const Gpu = struct {
 pub const Device = struct {
     impl: Impl.Device,
     queues: [Queue.max]Queue,
-    queue_n: u8,
+    queue_n: Queue.Count,
     mem_types: [Memory.max_type]Memory.Type,
-    mem_type_n: u8,
+    mem_type_n: Memory.TypeCount,
     mem_heaps: [Memory.max_heap]Memory.Heap,
-    mem_heap_n: u8,
+    mem_heap_n: Memory.HeapCount,
 
     const Self = @This();
 
@@ -65,12 +65,13 @@ pub const Device = struct {
             .mem_heaps = undefined,
             .mem_heap_n = 0,
         };
+
         // Track the current element in `gpu.queues` since it
         // might be interspersed with `null`s.
         var queue_i: usize = 0;
         var queue_alloc: [Queue.max]Impl.Queue = undefined;
-        const queues = Impl.get().getQueues(&queue_alloc, self.impl);
-        for (self.queues[0..queues.len], queues) |*queue, impl| {
+        self.queue_n = Impl.get().getQueues(&queue_alloc, self.impl);
+        for (self.queues[0..self.queue_n], queue_alloc[0..self.queue_n]) |*queue, impl| {
             // This assumes that implementations won't reorder
             // the queues.
             while (gpu.queues[queue_i] == null) : (queue_i += 1) {}
@@ -82,9 +83,10 @@ pub const Device = struct {
             };
             queue_i += 1;
         }
-        self.queue_n = @intCast(queues.len);
-        self.mem_type_n = @intCast(Impl.get().getMemoryTypes(&self.mem_types, self.impl).len);
-        self.mem_heap_n = @intCast(Impl.get().getMemoryHeaps(&self.mem_heaps, self.impl).len);
+
+        self.mem_type_n = Impl.get().getMemoryTypes(&self.mem_types, self.impl);
+        self.mem_heap_n = Impl.get().getMemoryHeaps(&self.mem_heaps, self.impl);
+
         return self;
     }
 
@@ -166,6 +168,7 @@ pub const Queue = struct {
     image_transfer_granularity: ImageTransferGranularity,
 
     pub const Index = u2;
+    pub const Count = u3;
     pub const max = 4;
 
     pub const Capabilities = packed struct {
@@ -262,9 +265,11 @@ pub const Memory = struct {
     impl: Impl.Memory,
 
     pub const TypeIndex = u5;
+    pub const TypeCount = u6;
     pub const max_type = 32;
 
     pub const HeapIndex = u4;
+    pub const HeapCount = u5;
     pub const max_heap = 16;
 
     pub const Properties = packed struct {

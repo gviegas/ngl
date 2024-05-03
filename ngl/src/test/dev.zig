@@ -8,7 +8,7 @@ const gpa = @import("test.zig").gpa;
 fn testInitializedDevice(device: ngl.Device, gpu: ngl.Gpu) !void {
     // Queues must be created verbatim.
     try testing.expectEqual(device.queue_n, blk: {
-        var n: u8 = 0;
+        var n: ngl.Queue.Count = 0;
         for (gpu.queues) |q|
             if (q) |d| {
                 if (@typeInfo(ngl.Queue).Struct.fields.len != 4) @compileError("Update me");
