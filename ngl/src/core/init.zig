@@ -52,9 +52,9 @@ pub const Device = struct {
 
     const Self = @This();
 
-    // It is allowed to edit `gpu.queues` and `gpu.feature_set` such
-    // that they define only a subset of what was originally exposed
-    // in a call to `getGpus`.
+    /// It is allowed to edit `gpu.queues` and `gpu.feature_set` such
+    /// that they define only a subset of what was originally exposed
+    /// in a call to `getGpus`.
     pub fn init(allocator: std.mem.Allocator, gpu: Gpu) Error!Self {
         var self = Self{
             .impl = try Impl.get().initDevice(allocator, gpu),
@@ -108,8 +108,8 @@ pub const Device = struct {
         self.* = undefined;
     }
 
-    /// It'll select the first queue whose capabilities are a superset
-    /// of what is being requested.
+    /// It will select the first queue whose capabilities are
+    /// a superset of what is being requested.
     pub fn findQueue(
         self: Self,
         capabilities: Queue.Capabilities,
@@ -118,8 +118,8 @@ pub const Device = struct {
         return self.findQueueOp(.mask, capabilities, priority);
     }
 
-    /// It'll select the first queue whose capabilities are identical
-    /// to what is being requested.
+    /// It will select the first queue whose capabilities are
+    /// identical to what is being requested.
     pub fn findQueueExact(
         self: Self,
         capabilities: Queue.Capabilities,
@@ -159,6 +159,30 @@ pub const Device = struct {
         }
         return idx;
     }
+
+    /// There will be at least one queue whose capabilities include
+    /// both `compute` and `transfer`.
+    /// Note that the slice refers to data that is cached in the
+    /// `Device` itself.
+    pub fn queuesRef(self: *const Self) []const Queue {
+        return self.queues[0..self.queue_n];
+    }
+
+    /// There will be at least one memory type whose properties
+    /// include `device_local`, and at least one whose properties
+    /// include both `host_visible` and `host_coherent`.
+    /// Note that the slice refers to data that is cached in the
+    /// `Device` itself.
+    pub fn memTypesRef(self: *const Self) []const Memory.Type {
+        return self.mem_types[0..self.mem_type_n];
+    }
+
+    /// There will be at least one `device_local` memory heap.
+    /// Note that the slice refers to data that is cached in the
+    /// `Device` itself.
+    pub fn memHeapsRef(self: *const Self) []const Memory.Heap {
+        return self.mem_heaps[0..self.mem_heap_n];
+    }
 };
 
 pub const Queue = struct {
@@ -174,8 +198,8 @@ pub const Queue = struct {
     pub const Capabilities = packed struct {
         graphics: bool = false,
         compute: bool = false,
-        // This is guaranteed to be set on queues that support
-        // graphics and/or compute.
+        /// This is guaranteed to be set on queues that support
+        /// graphics and/or compute.
         transfer: bool = false,
     };
 
@@ -226,7 +250,7 @@ pub const Queue = struct {
 
     /// Every submitted command buffer must have been ended,
     /// and must not be pending execution.
-    /// Only allowed for command buffers whose level is `.primary`.
+    /// Only allowed for command buffers whose level is `primary`.
     pub fn submit(
         self: *Self,
         allocator: std.mem.Allocator,
@@ -299,8 +323,8 @@ pub const Memory = struct {
             return self.type_bits & (@as(u32, 1) << type_index) != 0;
         }
 
-        /// It'll select the first memory type whose properties are a
-        /// superset of what is being requested.
+        /// It will select the first memory type whose properties are
+        /// a superset of what is being requested.
         pub fn findType(
             self: Requirements,
             device: Device,
@@ -310,7 +334,7 @@ pub const Memory = struct {
             return self.findTypeOp(.mask, device, properties, heap_index);
         }
 
-        /// It'll select the first memory type whose properties are
+        /// It will select the first memory type whose properties are
         /// identical to what is being requested.
         pub fn findTypeExact(
             self: Requirements,
@@ -546,8 +570,8 @@ pub const Feature = union(enum) {
         .is_tuple = false,
     } });
 
-    /// It returns `null` if the requested feature isn't supported
-    /// by the gpu (note that `core` is always supported).
+    /// It will return `null` if the GPU doesn't support the feature
+    /// (note that `core` is always supported).
     pub fn get(
         allocator: std.mem.Allocator,
         gpu: Gpu,

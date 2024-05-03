@@ -70,6 +70,22 @@ fn testInitializedDevice(device: ngl.Device, gpu: ngl.Gpu) !void {
         // Device local memory heap is required.
         device_local = device_local or h.device_local;
     }
+
+    try testing.expectEqualSlices(
+        ngl.Queue,
+        device.queuesRef(),
+        device.queues[0..device.queue_n],
+    );
+    try testing.expectEqualSlices(
+        ngl.Memory.Type,
+        device.memTypesRef(),
+        device.mem_types[0..device.mem_type_n],
+    );
+    try testing.expectEqualSlices(
+        ngl.Memory.Heap,
+        device.memHeapsRef(),
+        device.mem_heaps[0..device.mem_heap_n],
+    );
 }
 
 // TODO: Test w/ subset of `Gpu`'s queues/features.
