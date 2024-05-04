@@ -618,9 +618,9 @@ pub const Instance = struct {
                 .sType = c.VK_STRUCTURE_TYPE_APPLICATION_INFO,
                 .pNext = null,
                 .pApplicationName = ngl.options.app_name,
-                .applicationVersion = ngl.options.app_version orelse 0,
+                .applicationVersion = ngl.options.app_version,
                 .pEngineName = ngl.options.engine_name,
-                .engineVersion = ngl.options.engine_version orelse 0,
+                .engineVersion = ngl.options.engine_version,
                 .apiVersion = if (ver >= c.VK_API_VERSION_1_1)
                     preferred_version
                 else

@@ -1,5 +1,7 @@
 const std = @import("std");
 
+const root = @import("root");
+
 pub const DriverApi = @import("impl/Impl.zig").DriverApi;
 pub const getGpus = @import("core/init.zig").getGpus;
 pub const Gpu = @import("core/init.zig").Gpu;
@@ -113,30 +115,15 @@ pub fn notFlags(flags: anytype) @TypeOf(flags) {
     return @bitCast(~@as(U, @bitCast(flags)));
 }
 
-/// This can be overriden by defining `ngl_options` in the root file.
-pub const options = struct {
-    const root = @import("root");
-    const override = if (@hasDecl(root, "ngl_options")) root.ngl_options else struct {};
+/// One can define `ngl_options` in the root file to provide their
+/// own `Options`.
+pub const options: Options = if (@hasDecl(root, "ngl_options")) root.ngl_options else .{};
 
-    pub const app_name: ?[*:0]const u8 = if (@hasDecl(override, "app_name"))
-        override.app_name
-    else
-        null;
-
-    pub const app_version: ?u32 = if (@hasDecl(override, "app_version"))
-        override.app_version
-    else
-        null;
-
-    pub const engine_name: ?[*:0]const u8 = if (@hasDecl(override, "engine_name"))
-        override.engine_name
-    else
-        null;
-
-    pub const engine_version: ?u32 = if (@hasDecl(override, "engine_version"))
-        override.engine_version
-    else
-        null;
+pub const Options = struct {
+    app_name: [:0]const u8 = "",
+    app_version: u32 = 0,
+    engine_name: [:0]const u8 = "",
+    engine_version: u32 = 0,
 };
 
 test {
