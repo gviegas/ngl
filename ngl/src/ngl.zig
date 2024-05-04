@@ -1,3 +1,14 @@
+//! Low-level graphics/compute API wrapper.
+//!
+//! Note on (CPU) memory allocation:
+//!
+//! Many types have an `init` function that takes an allocator as
+//! parameter. This allocator must be used consistently in all
+//! methods called on a given instance of such types. For types
+//! that can create instances of another type (usually through an
+//! `alloc` method), this requirement extents to the child type
+//! as well - it must use the parent's allocator exclusively.
+
 const std = @import("std");
 
 const root = @import("root");

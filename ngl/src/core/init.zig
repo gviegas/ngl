@@ -11,7 +11,10 @@ const Swapchain = ngl.Swapchain;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
-/// The caller is responsible for freeing the returned slice.
+/// Caller is responsible for freeing the returned slice.
+/// It may be necessary to allocate memory when initializing the
+/// underlying implementation, so `allocator` may be retained
+/// until the process terminates.
 pub fn getGpus(allocator: std.mem.Allocator) Error![]Gpu {
     try Impl.init(allocator);
     return Impl.get().getGpus(allocator);
@@ -55,6 +58,10 @@ pub const Device = struct {
     /// It is allowed to edit `gpu.queues` and `gpu.feature_set` such
     /// that they define only a subset of what was originally exposed
     /// in a call to `getGpus`.
+    /// Implementations may retain `allocator`, usually to perform
+    /// context-wide allocations that are not tied to any particular
+    /// instance of a type. It is thus advisable to provide a robust
+    /// allocator when initializing the device.
     pub fn init(allocator: std.mem.Allocator, gpu: Gpu) Error!Self {
         var self = Self{
             .impl = try Impl.get().initDevice(allocator, gpu),

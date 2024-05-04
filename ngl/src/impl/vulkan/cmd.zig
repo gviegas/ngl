@@ -200,11 +200,8 @@ pub const CommandPool = struct {
         dev.vkDestroyCommandPool(cmd_pool.handle, null);
         for (cmd_pool.allocs.items) |ptr| {
             if (need_dyn) {
-                // BUG: This assumes that the same allocator is
-                // used by both `CommandPool` and `CommandBuffer`
-                // (need to enforce this in the client API).
+                // BUG: Note `dev.gpa`. See `CommandBuffer.setVertexInput`.
                 //ptr.dyn.?.clear(allocator, dev);
-                // BUG #2: See `CommandBuffer.setVertexInput`.
                 ptr.dyn.?.clear(dev.gpa, dev);
                 allocator.destroy(ptr.dyn.?);
             }
@@ -464,7 +461,7 @@ pub const CommandBuffer = struct {
         const cmd_buf = cast(command_buffer);
 
         if (cmd_buf.dyn) |d| {
-            // BUG: Note `dev.gpa`.
+            // BUG: Note `dev.gpa`. See `CommandPool.deinit`.
             d.state.vertex_input.set(dev.gpa, bindings, attributes) catch |err| {
                 d.err = err;
             };
