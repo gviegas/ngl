@@ -43,7 +43,7 @@ pub const Error = error{
     InvalidArgument,
     TooManyObjects,
     Fragmentation,
-    OutOfMemory,
+    OutOfMemory, // Repeated here for clarity.
     NotSupported,
     InitializationFailed,
     DeviceLost,
@@ -51,7 +51,7 @@ pub const Error = error{
     WindowInUse,
     OutOfDate,
     Other,
-};
+} || std.mem.Allocator.Error;
 
 pub fn Flags(comptime E: type) type {
     const StructField = std.builtin.Type.StructField;
