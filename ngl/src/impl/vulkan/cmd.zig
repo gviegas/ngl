@@ -200,9 +200,7 @@ pub const CommandPool = struct {
         dev.vkDestroyCommandPool(cmd_pool.handle, null);
         for (cmd_pool.allocs.items) |ptr| {
             if (need_dyn) {
-                // BUG: Note `dev.gpa`. See `CommandBuffer.setVertexInput`.
-                //ptr.dyn.?.clear(allocator, dev);
-                ptr.dyn.?.clear(dev.gpa, dev);
+                ptr.dyn.?.clear(allocator, dev);
                 allocator.destroy(ptr.dyn.?);
             }
             allocator.destroy(ptr);
@@ -451,22 +449,23 @@ pub const CommandBuffer = struct {
 
     pub fn setVertexInput(
         _: *anyopaque,
-        _: std.mem.Allocator,
+        allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
         bindings: []const ngl.Cmd.VertexInputBinding,
         attributes: []const ngl.Cmd.VertexInputAttribute,
     ) void {
-        const dev = Device.cast(device);
         const cmd_buf = cast(command_buffer);
 
         if (cmd_buf.dyn) |d| {
-            // BUG: Note `dev.gpa`. See `CommandPool.deinit`.
-            d.state.vertex_input.set(dev.gpa, bindings, attributes) catch |err| {
+            d.state.vertex_input.set(allocator, bindings, attributes) catch |err| {
                 d.err = err;
             };
             d.changed = true;
-        } else @panic("Not yet implemented");
+        } else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
     }
 
     pub fn setPrimitiveTopology(
@@ -970,7 +969,7 @@ pub const CommandBuffer = struct {
 
     pub fn beginRendering(
         _: *anyopaque,
-        _: std.mem.Allocator,
+        allocator: std.mem.Allocator,
         device: Impl.Device,
         command_buffer: Impl.CommandBuffer,
         rendering: ngl.Cmd.Rendering,
@@ -993,11 +992,11 @@ pub const CommandBuffer = struct {
                 d.err = err;
                 return;
             };
-            const fbo = Cache.createFramebuffer(dev.gpa, dev, d.rendering, rp) catch |err| {
+            const fbo = Cache.createFramebuffer(allocator, dev, d.rendering, rp) catch |err| {
                 d.err = err;
                 return;
             };
-            d.fbo.append(dev.gpa, fbo) catch |err| {
+            d.fbo.append(allocator, fbo) catch |err| {
                 dev.vkDestroyFramebuffer(fbo, null);
                 d.err = err;
                 return;
@@ -1096,7 +1095,7 @@ pub const CommandBuffer = struct {
 
     /// Called by `draw*` commands to (re)bind the
     /// graphics pipeline as needed.
-    /// It'll set `Dynamic`'s `changed` and `err`
+    /// It will set `Dynamic`'s `changed` and `err`
     /// fields, so the caller doesn't need to.
     fn canDraw(device: Impl.Device, command_buffer: Impl.CommandBuffer) bool {
         const dev = Device.cast(device);
