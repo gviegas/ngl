@@ -35,7 +35,7 @@ fn getClearFn(comptime K: type) (fn (*K, ?std.mem.Allocator) void) {
 }
 
 /// Every field of `K` that cannot be shallow-copied must have
-/// both `clone` and `clear` methods.
+/// both `clone` and `clear` methods that accept any allocator.
 fn getCloneFn(comptime K: type) (fn (K, std.mem.Allocator) Error!K) {
     return struct {
         fn clone(self: K, allocator: std.mem.Allocator) Error!K {
@@ -554,11 +554,16 @@ const VertexInput = struct {
     }
 
     pub fn clone(self: @This(), allocator: std.mem.Allocator) Error!@This() {
-        var bindings = try self.bindings.clone(allocator);
-        errdefer bindings.deinit(allocator);
+        // We do this ourselves because `ArrayListUnmanaged` says
+        // to use the same allocator.
+        var binds = try @TypeOf(self.bindings).initCapacity(allocator, self.bindings.items.len);
+        errdefer binds.deinit(allocator);
+        var attrs = try @TypeOf(self.attributes).initCapacity(allocator, self.attributes.items.len);
+        binds.appendSliceAssumeCapacity(self.bindings.items);
+        attrs.appendSliceAssumeCapacity(self.attributes.items);
         return .{
-            .bindings = bindings,
-            .attributes = try self.attributes.clone(allocator),
+            .bindings = binds,
+            .attributes = attrs,
         };
     }
 };
