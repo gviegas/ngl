@@ -96,7 +96,7 @@ pub const CommandPool = struct {
                 };
                 cmd_pool.allocs.items[i] = try allocator.create(CommandBuffer);
                 cmd_pool.allocs.items[i].* = .{
-                    .handle = null_handle,
+                    .handle = null,
                     .dyn = blk: {
                         if (!need_dyn) break :blk null;
                         const dyn_ptr = allocator.create(Dynamic) catch |err| {
@@ -158,7 +158,7 @@ pub const CommandPool = struct {
         if (allocator.alloc(c.VkCommandBuffer, n)) |handles| {
             for (handles, command_buffers) |*handle, cmd_buf| {
                 handle.* = CommandBuffer.cast(cmd_buf.impl).handle;
-                CommandBuffer.cast(cmd_buf.impl).handle = null_handle;
+                CommandBuffer.cast(cmd_buf.impl).handle = null;
             }
             dev.vkFreeCommandBuffers(cmd_pool.handle, n, handles.ptr);
             allocator.free(handles);
@@ -166,7 +166,7 @@ pub const CommandPool = struct {
             for (command_buffers) |cmd_buf| {
                 const handle = [1]c.VkCommandBuffer{CommandBuffer.cast(cmd_buf.impl).handle};
                 dev.vkFreeCommandBuffers(cmd_pool.handle, 1, &handle);
-                CommandBuffer.cast(cmd_buf.impl).handle = null_handle;
+                CommandBuffer.cast(cmd_buf.impl).handle = null;
             }
         }
 
@@ -177,7 +177,7 @@ pub const CommandPool = struct {
         // this case.
         for (cmd_pool.allocs.items, 0..) |ptr, i| {
             if (cmd_pool.unused.isSet(i)) continue;
-            if (ptr.handle == null_handle) {
+            if (ptr.handle == null) {
                 cmd_pool.unused.set(i);
                 n -= 1;
                 if (n == 0)
