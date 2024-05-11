@@ -88,43 +88,45 @@ pub fn Flags(comptime E: type) type {
     } });
 }
 
-pub fn noFlagsSet(flags: anytype) bool {
-    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
-    return @as(U, @bitCast(flags)) == 0;
-}
+pub const flag = struct {
+    pub fn empty(flags: anytype) bool {
+        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        return @as(U, @bitCast(flags)) == 0;
+    }
 
-pub fn allFlagsSet(flags: anytype) bool {
-    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
-    return @as(U, @bitCast(flags)) == ~@as(U, 0);
-}
+    pub fn full(flags: anytype) bool {
+        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        return @as(U, @bitCast(flags)) == ~@as(U, 0);
+    }
 
-pub fn eqlFlags(flags: anytype, other: anytype) bool {
-    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
-    return @as(U, @bitCast(flags)) == @as(U, @bitCast(other));
-}
+    pub fn eql(flags: anytype, other: anytype) bool {
+        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        return @as(U, @bitCast(flags)) == @as(U, @bitCast(other));
+    }
 
-pub fn andFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
-    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
-    const masked = @as(U, @bitCast(flags)) & @as(U, @bitCast(mask));
-    return @bitCast(masked);
-}
+    pub fn @"and"(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
+        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        const masked = @as(U, @bitCast(flags)) & @as(U, @bitCast(mask));
+        return @bitCast(masked);
+    }
 
-pub fn orFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
-    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
-    const masked = @as(U, @bitCast(flags)) | @as(U, @bitCast(mask));
-    return @bitCast(masked);
-}
+    pub fn @"or"(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
+        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        const masked = @as(U, @bitCast(flags)) | @as(U, @bitCast(mask));
+        return @bitCast(masked);
+    }
 
-pub fn xorFlags(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
-    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
-    const masked = @as(U, @bitCast(flags)) ^ @as(U, @bitCast(mask));
-    return @bitCast(masked);
-}
+    pub fn xor(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
+        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        const masked = @as(U, @bitCast(flags)) ^ @as(U, @bitCast(mask));
+        return @bitCast(masked);
+    }
 
-pub fn notFlags(flags: anytype) @TypeOf(flags) {
-    const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
-    return @bitCast(~@as(U, @bitCast(flags)));
-}
+    pub fn not(flags: anytype) @TypeOf(flags) {
+        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        return @bitCast(~@as(U, @bitCast(flags)));
+    }
+};
 
 /// One can define `ngl_options` in the root file to provide their
 /// own `Options`.

@@ -69,7 +69,7 @@ test "Surface queries" {
     try testing.expect(capab.min_width <= capab.max_width);
     try testing.expect(capab.min_height <= capab.max_height);
     try testing.expect(capab.max_layers > 0);
-    try testing.expect(!ngl.noFlagsSet(capab.supported_transforms));
-    try testing.expect(!ngl.noFlagsSet(capab.supported_composite_alpha));
+    try testing.expect(!ngl.flag.empty(capab.supported_transforms));
+    try testing.expect(!ngl.flag.empty(capab.supported_composite_alpha));
     try testing.expect(capab.supported_usage.color_attachment);
 }

@@ -324,7 +324,7 @@ test "Format.getAspectMask" {
     for (formats) |fmt| {
         const asp_mask = fmt.getAspectMask();
         switch (fmt) {
-            .unknown => try testing.expect(ngl.noFlagsSet(asp_mask)),
+            .unknown => try testing.expect(ngl.flag.empty(asp_mask)),
 
             .r8_unorm,
             .r8_srgb,

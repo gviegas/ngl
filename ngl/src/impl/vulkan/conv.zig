@@ -470,7 +470,7 @@ pub fn toVkPipelineStageFlags(
     comptime scope: enum { source, dest },
     stage_mask: ngl.Stage.Flags,
 ) c.VkPipelineStageFlags {
-    if (stage_mask.none or ngl.noFlagsSet(stage_mask))
+    if (stage_mask.none or ngl.flag.empty(stage_mask))
         return switch (scope) {
             .source => c.VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             .dest => c.VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
@@ -528,7 +528,7 @@ pub fn toVkAccess(_: ngl.Access) c.VkAccessFlagBits {
 
 // TODO: toVkAccessFlags2.
 pub fn toVkAccessFlags(access_mask: ngl.Access.Flags) c.VkAccessFlags {
-    if (access_mask.none or ngl.noFlagsSet(access_mask))
+    if (access_mask.none or ngl.flag.empty(access_mask))
         return 0; // c.VK_ACCESS_NONE.
 
     var flags: c.VkAccessFlags = 0;
