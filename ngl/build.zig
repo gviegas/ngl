@@ -26,6 +26,8 @@ pub fn build(b: *std.Build) void {
 
     ngl.addImport("c", c);
     tests.root_module.addImport("c", c);
+
+    _ = addDocs(b, target, optimize);
 }
 
 fn addTests(
@@ -63,4 +65,25 @@ fn addTranslateC(
 fn linkPlatformSpecific(c_module: *std.Build.Module) void {
     if (builtin.os.tag == .linux and !builtin.target.isAndroid())
         c_module.linkSystemLibrary("xcb", .{});
+}
+
+fn addDocs(
+    b: *std.Build,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+) *std.Build.Step.Compile {
+    const docs = b.addObject(.{
+        .name = "ngl",
+        .root_source_file = .{ .path = "src/ngl.zig" },
+        .target = target,
+        .optimize = optimize,
+    });
+    const install_docs = b.addInstallDirectory(.{
+        .source_dir = docs.getEmittedDocs(),
+        .install_dir = .prefix,
+        .install_subdir = "doc/ngl",
+    });
+    const docs_step = b.step("docs", "Build and install ngl documentation");
+    docs_step.dependOn(&install_docs.step);
+    return docs;
 }
