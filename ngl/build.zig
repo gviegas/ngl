@@ -5,18 +5,18 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    var ngl = b.addModule("ngl", .{
+    const ngl = b.addModule("ngl", .{
         .root_source_file = .{ .path = "src/ngl.zig" },
         .target = target,
         .optimize = optimize,
     });
 
-    var tests = addTests(b, target, optimize);
+    const tests = addTests(b, target, optimize);
 
-    // TODO: This module should be private to this package, but if
-    // another package depends on this one and translates the same
-    // C headers, there's a conflict because identical definitions
-    // are found in the global cache
+    // TODO: This module should be private to this package,
+    // but if another package that has a dependency on `ngl`
+    // translates the same C headers, it will find duplicate
+    // definitions in the global cache.
     const c = b.addModule("c", .{
         .root_source_file = addTranslateC(b, target, optimize).getOutput(),
         .target = target,
@@ -38,6 +38,8 @@ fn addTests(
         .target = target,
         .optimize = optimize,
         .link_libc = true,
+        //.use_llvm = false,
+        //.use_lld = false,
     });
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run tests");
