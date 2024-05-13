@@ -76,7 +76,7 @@ test "re-submission of command buffer recording" {
         try cmd.end();
     }
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
 
     for (0..5) |i| {

@@ -510,7 +510,7 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
 
     try cmd.end();
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
 
     {

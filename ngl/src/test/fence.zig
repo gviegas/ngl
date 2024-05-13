@@ -8,30 +8,25 @@ const context = @import("test.zig").context;
 test "Fence.init/deinit" {
     const dev = &context().device;
 
-    var unsig = try ngl.Fence.init(gpa, dev, .{ .initial_status = .unsignaled });
+    var unsig = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer unsig.deinit(gpa, dev);
     try testing.expectEqual(unsig.getStatus(dev), .unsignaled);
 
-    var sig = try ngl.Fence.init(gpa, dev, .{ .initial_status = .signaled });
+    var sig = try ngl.Fence.init(gpa, dev, .{ .status = .signaled });
     defer sig.deinit(gpa, dev);
     try testing.expectEqual(sig.getStatus(dev), .signaled);
-
-    // Unsignaled is the default.
-    var unsig_2 = try ngl.Fence.init(gpa, dev, .{});
-    defer unsig_2.deinit(gpa, dev);
-    try testing.expectEqual(unsig.getStatus(dev), .unsignaled);
 }
 
 test "Fence.reset" {
     const dev = &context().device;
 
-    var a = try ngl.Fence.init(gpa, dev, .{ .initial_status = .unsignaled });
+    var a = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer a.deinit(gpa, dev);
-    var b = try ngl.Fence.init(gpa, dev, .{ .initial_status = .signaled });
+    var b = try ngl.Fence.init(gpa, dev, .{ .status = .signaled });
     defer b.deinit(gpa, dev);
-    var c = try ngl.Fence.init(gpa, dev, .{ .initial_status = .signaled });
+    var c = try ngl.Fence.init(gpa, dev, .{ .status = .signaled });
     defer c.deinit(gpa, dev);
-    var d = try ngl.Fence.init(gpa, dev, .{});
+    var d = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer d.deinit(gpa, dev);
 
     try ngl.Fence.reset(gpa, dev, &.{ &a, &b });
@@ -50,13 +45,13 @@ test "Fence.reset" {
 test "Fence.wait" {
     const dev = &context().device;
 
-    var unsig = try ngl.Fence.init(gpa, dev, .{});
+    var unsig = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer unsig.deinit(gpa, dev);
-    var sig = try ngl.Fence.init(gpa, dev, .{ .initial_status = .signaled });
+    var sig = try ngl.Fence.init(gpa, dev, .{ .status = .signaled });
     defer sig.deinit(gpa, dev);
-    var sig_2 = try ngl.Fence.init(gpa, dev, .{ .initial_status = .signaled });
+    var sig_2 = try ngl.Fence.init(gpa, dev, .{ .status = .signaled });
     defer sig_2.deinit(gpa, dev);
-    var unsig_2 = try ngl.Fence.init(gpa, dev, .{});
+    var unsig_2 = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer unsig_2.deinit(gpa, dev);
 
     const timeout = std.time.ns_per_ms * 5;

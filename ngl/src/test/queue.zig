@@ -10,18 +10,18 @@ test "Queue.submit" {
     const dev = &ctx.device;
     const queue = &dev.queues[0];
 
-    var semas: [3]ngl.Semaphore = undefined;
-    for (&semas, 0..) |*sema, i| {
-        sema.* = ngl.Semaphore.init(gpa, dev, .{}) catch |err| {
-            for (0..i) |j| semas[j].deinit(gpa, dev);
+    var sems: [3]ngl.Semaphore = undefined;
+    for (&sems, 0..) |*sem, i| {
+        sem.* = ngl.Semaphore.init(gpa, dev, .{}) catch |err| {
+            for (0..i) |j| sems[j].deinit(gpa, dev);
             return err;
         };
     }
-    defer for (&semas) |*sema| sema.deinit(gpa, dev);
+    defer for (&sems) |*sem| sem.deinit(gpa, dev);
 
     var fences: [2]ngl.Fence = undefined;
     for (&fences, 0..) |*fence, i| {
-        fence.* = ngl.Fence.init(gpa, dev, .{}) catch |err| {
+        fence.* = ngl.Fence.init(gpa, dev, .{ .status = .unsignaled }) catch |err| {
             for (0..i) |j| fences[j].deinit(gpa, dev);
             return err;
         };
@@ -80,21 +80,21 @@ test "Queue.submit" {
                 .commands = &.{.{ .command_buffer = &cmd_bufs[0] }},
                 .wait = &.{},
                 .signal = &.{
-                    .{ .semaphore = &semas[0], .stage_mask = .{ .all_commands = true } },
-                    .{ .semaphore = &semas[1], .stage_mask = .{ .all_commands = true } },
+                    .{ .semaphore = &sems[0], .stage_mask = .{ .all_commands = true } },
+                    .{ .semaphore = &sems[1], .stage_mask = .{ .all_commands = true } },
                 },
             },
             .{
                 .commands = &.{.{ .command_buffer = &cmd_bufs[1] }},
                 .wait = &.{
-                    .{ .semaphore = &semas[1], .stage_mask = .{ .all_commands = true } },
-                    .{ .semaphore = &semas[0], .stage_mask = .{ .all_commands = true } },
+                    .{ .semaphore = &sems[1], .stage_mask = .{ .all_commands = true } },
+                    .{ .semaphore = &sems[0], .stage_mask = .{ .all_commands = true } },
                 },
-                .signal = &.{.{ .semaphore = &semas[2], .stage_mask = .{ .all_commands = true } }},
+                .signal = &.{.{ .semaphore = &sems[2], .stage_mask = .{ .all_commands = true } }},
             },
             .{
                 .commands = &.{.{ .command_buffer = &cmd_bufs[2] }},
-                .wait = &.{.{ .semaphore = &semas[2], .stage_mask = .{ .all_commands = true } }},
+                .wait = &.{.{ .semaphore = &sems[2], .stage_mask = .{ .all_commands = true } }},
                 .signal = &.{},
             },
         });
@@ -122,18 +122,18 @@ test "Queue.submit" {
             },
             .wait = &.{},
             .signal = &.{
-                .{ .semaphore = &semas[0], .stage_mask = .{ .clear = true } },
-                .{ .semaphore = &semas[1], .stage_mask = .{ .copy = true } },
-                .{ .semaphore = &semas[2], .stage_mask = .{ .host = true } },
+                .{ .semaphore = &sems[0], .stage_mask = .{ .clear = true } },
+                .{ .semaphore = &sems[1], .stage_mask = .{ .copy = true } },
+                .{ .semaphore = &sems[2], .stage_mask = .{ .host = true } },
             },
         };
 
         const subm_2 = ngl.Queue.Submit{
             .commands = &.{.{ .command_buffer = &cmd_bufs[1] }},
             .wait = &.{
-                .{ .semaphore = &semas[1], .stage_mask = .{ .copy = true } },
-                .{ .semaphore = &semas[2], .stage_mask = .{ .copy = true } },
-                .{ .semaphore = &semas[0], .stage_mask = .{ .all_commands = true } },
+                .{ .semaphore = &sems[1], .stage_mask = .{ .copy = true } },
+                .{ .semaphore = &sems[2], .stage_mask = .{ .copy = true } },
+                .{ .semaphore = &sems[0], .stage_mask = .{ .all_commands = true } },
             },
             .signal = &.{},
         };
@@ -176,7 +176,7 @@ test "Queue.submit" {
         try queue.submit(gpa, dev, null, &.{.{
             .commands = &.{},
             .wait = &.{},
-            .signal = &.{.{ .semaphore = &semas[0], .stage_mask = .{ .copy = true } }},
+            .signal = &.{.{ .semaphore = &sems[0], .stage_mask = .{ .copy = true } }},
         }});
 
         // We don't have to submit anything at all.
@@ -190,18 +190,18 @@ test "Queue.present" {
     const dev = &ctx.device;
     const plat = try platform();
 
-    var semas = try gpa.alloc(ngl.Semaphore, plat.images.len);
-    defer gpa.free(semas);
-    for (semas, 0..) |*sema, i| {
-        sema.* = ngl.Semaphore.init(gpa, dev, .{}) catch |err| {
-            for (0..i) |j| semas[j].deinit(gpa, dev);
+    var sems = try gpa.alloc(ngl.Semaphore, plat.images.len);
+    defer gpa.free(sems);
+    for (sems, 0..) |*sem, i| {
+        sem.* = ngl.Semaphore.init(gpa, dev, .{}) catch |err| {
+            for (0..i) |j| sems[j].deinit(gpa, dev);
             return err;
         };
     }
     var fences = try gpa.alloc(ngl.Fence, plat.images.len);
     defer gpa.free(fences);
     for (fences, 0..) |*fence, i| {
-        fence.* = ngl.Fence.init(gpa, dev, .{}) catch |err| {
+        fence.* = ngl.Fence.init(gpa, dev, .{ .status = .unsignaled }) catch |err| {
             for (0..i) |j| fences[j].deinit(gpa, dev);
             return err;
         };
@@ -259,13 +259,13 @@ test "Queue.present" {
         try dev.queues[plat.queue_index].submit(gpa, dev, null, &.{.{
             .commands = &.{.{ .command_buffer = &cmd_bufs[i] }},
             .wait = &.{},
-            .signal = &.{.{ .semaphore = &semas[i], .stage_mask = .{} }},
+            .signal = &.{.{ .semaphore = &sems[i], .stage_mask = .{} }},
         }});
 
         try dev.queues[plat.queue_index].present(
             gpa,
             dev,
-            &.{&semas[i]},
+            &.{&sems[i]},
             &.{.{ .swapchain = &plat.swapchain, .image_index = next }},
         );
     }

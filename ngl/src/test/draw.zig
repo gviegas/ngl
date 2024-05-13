@@ -18,7 +18,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     const dev = &ctx.device;
     const queue_i = dev.findQueue(.{ .graphics = true }, null) orelse return error.SkipZigTest;
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
 
     const clear_col = [4]f32{ 1, 1, 1, 1 };

@@ -16,7 +16,7 @@ pub fn getQueryLayout(
     query_count: u32,
     with_availability: bool,
 ) ngl.QueryType.Layout {
-    // We always set VK_QUERY_RESULT_64_BIT when copying results
+    // We always set VK_QUERY_RESULT_64_BIT when copying results.
     const result_size: u64 = switch (query_type) {
         .occlusion, .timestamp => @sizeOf(u64),
     };

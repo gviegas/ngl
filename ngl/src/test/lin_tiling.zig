@@ -104,7 +104,7 @@ test "linear tiling" {
     defer cmd_pool.deinit(gpa, dev);
     const cmd_buf = try cmd_pool.alloc(gpa, dev, .{ .level = .primary, .count = 1 });
     defer gpa.free(cmd_buf);
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
 
     // Copy from the linear tiling image to the optimal tiling one.

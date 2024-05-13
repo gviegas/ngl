@@ -10,7 +10,7 @@ test "dispatch command" {
     const dev = &ctx.device;
     const queue_i = dev.findQueue(.{ .compute = true }, null) orelse return error.SkipZigTest;
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
 
     // Dimensions for the `dispatch` call.

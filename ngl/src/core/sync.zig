@@ -58,7 +58,7 @@ pub const Fence = struct {
     };
 
     pub const Desc = struct {
-        initial_status: Status = .unsignaled,
+        status: Status,
     };
 
     const Self = @This();

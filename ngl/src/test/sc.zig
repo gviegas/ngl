@@ -10,14 +10,14 @@ test "Swapchain.init/deinit" {
     const ctx = context();
     const plat = try platform();
 
-    var fence = try ngl.Fence.init(gpa, &ctx.device, .{});
+    var fence = try ngl.Fence.init(gpa, &ctx.device, .{ .status = .unsignaled });
     defer fence.deinit(gpa, &ctx.device);
-    var fence_2 = try ngl.Fence.init(gpa, &ctx.device, .{});
+    var fence_2 = try ngl.Fence.init(gpa, &ctx.device, .{ .status = .unsignaled });
     defer fence_2.deinit(gpa, &ctx.device);
-    var sema = try ngl.Semaphore.init(gpa, &ctx.device, .{});
-    defer sema.deinit(gpa, &ctx.device);
-    var sema_2 = try ngl.Semaphore.init(gpa, &ctx.device, .{});
-    defer sema_2.deinit(gpa, &ctx.device);
+    var sem = try ngl.Semaphore.init(gpa, &ctx.device, .{});
+    defer sem.deinit(gpa, &ctx.device);
+    var sem_2 = try ngl.Semaphore.init(gpa, &ctx.device, .{});
+    defer sem_2.deinit(gpa, &ctx.device);
 
     const pres_modes: ngl.Surface.PresentMode.Flags =
         plat.surface.getPresentModes(ctx.gpu) catch .{};
@@ -67,15 +67,15 @@ test "Swapchain.init/deinit" {
 
     if (imgs.len > capab.min_count) {
         const idx = try sc.nextImage(&ctx.device, std.time.ns_per_ms, null, &fence);
-        const idx_2 = try sc.nextImage(&ctx.device, std.time.ns_per_ms, &sema, null);
+        const idx_2 = try sc.nextImage(&ctx.device, std.time.ns_per_ms, &sem, null);
         try testing.expect(idx != idx_2);
         try testing.expect(idx < imgs.len);
         try testing.expect(idx_2 < imgs.len);
     } else if (imgs.len == 1) {
-        const idx = try sc.nextImage(&ctx.device, std.time.ns_per_ms, &sema, &fence);
+        const idx = try sc.nextImage(&ctx.device, std.time.ns_per_ms, &sem, &fence);
         try testing.expectEqual(idx, 0);
     } else {
-        const idx = try sc.nextImage(&ctx.device, std.time.ns_per_ms, &sema, &fence);
+        const idx = try sc.nextImage(&ctx.device, std.time.ns_per_ms, &sem, &fence);
         try testing.expect(idx < imgs.len);
     }
 
@@ -108,16 +108,16 @@ test "Swapchain.init/deinit" {
     try testing.expect(imgs_2.len >= imgs.len);
 
     if (imgs_2.len > capab.min_count) {
-        const idx = try sc_2.nextImage(&ctx.device, std.time.ns_per_ms, &sema_2, null);
+        const idx = try sc_2.nextImage(&ctx.device, std.time.ns_per_ms, &sem_2, null);
         const idx_2 = try sc_2.nextImage(&ctx.device, std.time.ns_per_ms, null, &fence_2);
         try testing.expect(idx != idx_2);
         try testing.expect(idx < imgs_2.len);
         try testing.expect(idx_2 < imgs_2.len);
     } else if (imgs_2.len == 1) {
-        const idx = try sc_2.nextImage(&ctx.device, std.time.ns_per_ms, &sema_2, &fence_2);
+        const idx = try sc_2.nextImage(&ctx.device, std.time.ns_per_ms, &sem_2, &fence_2);
         try testing.expectEqual(idx, 0);
     } else {
-        const idx = try sc_2.nextImage(&ctx.device, std.time.ns_per_ms, &sema_2, &fence_2);
+        const idx = try sc_2.nextImage(&ctx.device, std.time.ns_per_ms, &sem_2, &fence_2);
         try testing.expect(idx < imgs_2.len);
     }
 

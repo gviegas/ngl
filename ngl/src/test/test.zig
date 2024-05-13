@@ -15,7 +15,7 @@ test {
     _ = @import("gpu.zig");
     _ = @import("dev.zig");
     _ = @import("fence.zig");
-    _ = @import("sema.zig");
+    _ = @import("sem.zig");
     _ = @import("splr.zig");
     _ = @import("image.zig");
     _ = @import("buf.zig");

@@ -86,7 +86,7 @@ test "timestamp query on empty command buffer" {
     );
     try cmd.end();
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
     {
         context().lockQueue(queue_i);
@@ -327,7 +327,7 @@ test "timestamp query" {
     cmd.copyQueryPoolResults(&query_pool, 0, 2, &query_buf, 0, .{});
     try cmd.end();
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
     {
         context().lockQueue(queue_i);

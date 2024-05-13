@@ -13,7 +13,7 @@ test "copy between resources" {
             break @as(ngl.Queue.Index, @intCast(i));
     } else return error.SkipZigTest;
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
 
     const w = 32;

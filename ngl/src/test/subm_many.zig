@@ -121,7 +121,7 @@ test "submission of multiple command buffers" {
     try buf.bind(dev, &buf_mem, 0);
     const data = try buf_mem.map(dev, 0, width * height);
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
 
     const blends = [2]ngl.Cmd.Blend{

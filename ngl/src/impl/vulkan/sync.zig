@@ -26,7 +26,7 @@ pub const Fence = packed struct {
         try check(Device.cast(device).vkCreateFence(&.{
             .sType = c.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .pNext = null,
-            .flags = switch (desc.initial_status) {
+            .flags = switch (desc.status) {
                 .unsignaled => 0,
                 .signaled => @as(c.VkFlags, c.VK_FENCE_CREATE_SIGNALED_BIT),
             },
@@ -108,14 +108,14 @@ pub const Semaphore = packed struct {
         device: Impl.Device,
         _: ngl.Semaphore.Desc,
     ) Error!Impl.Semaphore {
-        var sema: c.VkSemaphore = undefined;
+        var sem: c.VkSemaphore = undefined;
         try check(Device.cast(device).vkCreateSemaphore(&.{
             .sType = c.VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
             .pNext = null,
             .flags = 0,
-        }, null, &sema));
+        }, null, &sem));
 
-        return .{ .val = @bitCast(Semaphore{ .handle = sema }) };
+        return .{ .val = @bitCast(Semaphore{ .handle = sem }) };
     }
 
     pub fn deinit(

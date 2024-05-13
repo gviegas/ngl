@@ -10,7 +10,7 @@ test "copyBuffer command" {
     const dev = &ctx.device;
     const queue_i = dev.findQueue(.{ .transfer = true }, null) orelse unreachable;
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
 
     const sizes = [2]u64{ 2048, 8192 };

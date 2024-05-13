@@ -255,7 +255,7 @@ pub const Swapchain = packed struct {
         desc: ngl.Swapchain.Desc,
     ) Error!Impl.Swapchain {
         const usage = conv.toVkImageUsageFlags(desc.usage);
-        // Usage must not be zero
+        // Usage must not be zero.
         if (usage == 0) return Error.InvalidArgument;
 
         var swapchain: c.VkSwapchainKHR = undefined;
@@ -330,10 +330,10 @@ pub const Swapchain = packed struct {
 
         return switch (result) {
             // We can't treat suboptimal as out of date error in this
-            // case due to the semaphore/fence operations
+            // case due to the semaphore/fence operations.
             // However, we can do such in `Queue.present`, so pretend
             // that we succeeded here and let that method fail with
-            // `Error.OutOfDate` (most likely)
+            // `Error.OutOfDate` (most likely).
             c.VK_SUCCESS,
             c.VK_SUBOPTIMAL_KHR,
             => idx,

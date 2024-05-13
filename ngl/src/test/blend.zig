@@ -173,7 +173,7 @@ const T = struct {
         errdefer cmd_pool.deinit(gpa, dev);
         const cmd_buf = try cmd_pool.alloc(gpa, dev, .{ .level = .primary, .count = 1 });
         defer gpa.free(cmd_buf);
-        var fence = try ngl.Fence.init(gpa, dev, .{});
+        var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
         errdefer fence.deinit(gpa, dev);
 
         var col_img = try ngl.Image.init(gpa, dev, .{

@@ -2575,7 +2575,7 @@ pub const Queue = struct {
         return impl.ptr(Queue);
     }
 
-    // TODO: Don't allocate on every call
+    // TODO: Don't allocate on every call.
     fn submit(
         _: *anyopaque,
         allocator: std.mem.Allocator,
@@ -2593,17 +2593,17 @@ pub const Queue = struct {
 
         var cmd_buf: [1]c.VkCommandBuffer = undefined;
         var cmd_bufs: []c.VkCommandBuffer = undefined;
-        var sema: [1]c.VkSemaphore = undefined;
-        var semas: []c.VkSemaphore = undefined;
+        var sem: [1]c.VkSemaphore = undefined;
+        var sems: []c.VkSemaphore = undefined;
         var stage: [1]c.VkPipelineStageFlags = undefined;
         var stages: []c.VkPipelineStageFlags = undefined;
         {
             var cmd_buf_n: usize = 0;
-            var sema_n: usize = 0;
+            var sem_n: usize = 0;
             var stage_n: usize = 0;
             for (submits) |subms| {
                 cmd_buf_n += subms.commands.len;
-                sema_n += subms.wait.len + subms.signal.len;
+                sem_n += subms.wait.len + subms.signal.len;
                 stage_n += subms.wait.len;
             }
 
@@ -2613,11 +2613,11 @@ pub const Queue = struct {
             ) else &cmd_buf;
             errdefer if (cmd_buf_n > 1) allocator.free(cmd_bufs);
 
-            semas = if (sema_n > 1) try allocator.alloc(
+            sems = if (sem_n > 1) try allocator.alloc(
                 c.VkSemaphore,
-                sema_n,
-            ) else &sema;
-            errdefer if (sema_n > 1) allocator.free(semas);
+                sem_n,
+            ) else &sem;
+            errdefer if (sem_n > 1) allocator.free(sems);
 
             stages = if (stage_n > 1) try allocator.alloc(
                 c.VkPipelineStageFlags,
@@ -2625,11 +2625,11 @@ pub const Queue = struct {
             ) else &stage;
         }
         defer if (cmd_bufs.len > 1) allocator.free(cmd_bufs);
-        defer if (semas.len > 1) allocator.free(semas);
+        defer if (sems.len > 1) allocator.free(sems);
         defer if (stages.len > 1) allocator.free(stages);
 
         var cmd_bufs_ptr = cmd_bufs.ptr;
-        var semas_ptr = semas.ptr;
+        var sems_ptr = sems.ptr;
         var stages_ptr = stages.ptr;
 
         for (subm_infos[0..submits.len], submits) |*info, subm| {
@@ -2637,12 +2637,12 @@ pub const Queue = struct {
                 .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
                 .pNext = null,
                 .waitSemaphoreCount = @intCast(subm.wait.len),
-                .pWaitSemaphores = undefined, // Set below
-                .pWaitDstStageMask = undefined, // Set below
+                .pWaitSemaphores = undefined, // Set below.
+                .pWaitDstStageMask = undefined, // Set below.
                 .commandBufferCount = @intCast(subm.commands.len),
-                .pCommandBuffers = undefined, // Set below
+                .pCommandBuffers = undefined, // Set below.
                 .signalSemaphoreCount = @intCast(subm.signal.len),
-                .pSignalSemaphores = undefined, // Set below
+                .pSignalSemaphores = undefined, // Set below.
             };
 
             if (subm.commands.len > 0) {
@@ -2653,13 +2653,13 @@ pub const Queue = struct {
             } else info.pCommandBuffers = null;
 
             if (subm.wait.len > 0) {
-                info.pWaitSemaphores = semas_ptr;
+                info.pWaitSemaphores = sems_ptr;
                 info.pWaitDstStageMask = stages_ptr;
-                for (semas_ptr, stages_ptr, subm.wait) |*handle, *mask, wsema| {
-                    handle.* = Semaphore.cast(wsema.semaphore.impl).handle;
-                    mask.* = conv.toVkPipelineStageFlags(.dest, wsema.stage_mask);
+                for (sems_ptr, stages_ptr, subm.wait) |*handle, *mask, wsem| {
+                    handle.* = Semaphore.cast(wsem.semaphore.impl).handle;
+                    mask.* = conv.toVkPipelineStageFlags(.dest, wsem.stage_mask);
                 }
-                semas_ptr += subm.wait.len;
+                sems_ptr += subm.wait.len;
                 stages_ptr += subm.wait.len;
             } else {
                 info.pWaitSemaphores = null;
@@ -2667,23 +2667,23 @@ pub const Queue = struct {
             }
 
             if (subm.signal.len > 0) {
-                info.pSignalSemaphores = semas_ptr;
-                for (semas_ptr, subm.signal) |*handle, ssema|
+                info.pSignalSemaphores = sems_ptr;
+                for (sems_ptr, subm.signal) |*handle, ssem|
                     // No signal stage mask on vanilla submission.
-                    handle.* = Semaphore.cast(ssema.semaphore.impl).handle;
-                semas_ptr += subm.signal.len;
+                    handle.* = Semaphore.cast(ssem.semaphore.impl).handle;
+                sems_ptr += subm.signal.len;
             } else info.pSignalSemaphores = null;
         }
 
         try check(Device.cast(device).vkQueueSubmit(
             cast(queue).handle,
-            @intCast(submits.len), // Note `submits`
+            @intCast(submits.len), // Note `submits`.
             if (submits.len > 0) subm_infos.ptr else null,
             if (fence) |x| Fence.cast(x).handle else null_handle,
         ));
     }
 
-    // TODO: Don't allocate on every call
+    // TODO: Don't allocate on every call.
     fn present(
         _: *anyopaque,
         allocator: std.mem.Allocator,
@@ -2695,17 +2695,17 @@ pub const Queue = struct {
         std.debug.assert(presents.len > 0);
 
         const n = 8;
-        var stk_semas: [n]c.VkSemaphore = undefined;
+        var stk_sems: [n]c.VkSemaphore = undefined;
         var stk_scs: [n]c.VkSwapchainKHR = undefined;
         var stk_inds: [n]u32 = undefined;
 
-        const semas = if (wait_semaphores.len > n)
+        const sems = if (wait_semaphores.len > n)
             try allocator.alloc(c.VkSemaphore, wait_semaphores.len)
         else
-            stk_semas[0..wait_semaphores.len];
-        defer if (wait_semaphores.len > n) allocator.free(semas);
-        for (semas, wait_semaphores) |*handle, sema|
-            handle.* = Semaphore.cast(sema.impl).handle;
+            stk_sems[0..wait_semaphores.len];
+        defer if (wait_semaphores.len > n) allocator.free(sems);
+        for (sems, wait_semaphores) |*handle, sem|
+            handle.* = Semaphore.cast(sem.impl).handle;
 
         var scs: []c.VkSwapchainKHR = undefined;
         var inds: []u32 = undefined;
@@ -2732,7 +2732,7 @@ pub const Queue = struct {
             .sType = c.VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .pNext = null,
             .waitSemaphoreCount = @intCast(wait_semaphores.len),
-            .pWaitSemaphores = if (wait_semaphores.len > 0) semas.ptr else null,
+            .pWaitSemaphores = if (wait_semaphores.len > 0) sems.ptr else null,
             .swapchainCount = @intCast(presents.len),
             .pSwapchains = scs.ptr,
             .pImageIndices = inds.ptr,
@@ -2768,7 +2768,7 @@ pub const Memory = packed struct {
         Device.cast(device).vkUnmapMemory(cast(memory).handle);
     }
 
-    // TODO: Don't allocate on every call
+    // TODO: Don't allocate on every call.
     fn flushOrInvalidateMapped(
         comptime call: enum { flush, invalidate },
         allocator: std.mem.Allocator,

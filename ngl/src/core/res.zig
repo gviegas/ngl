@@ -1467,7 +1467,7 @@ pub const Image = struct {
         };
     }
 
-    /// It'll return `Error.NotSupported` to indicate that creating
+    /// It may return `Error.NotSupported` to indicate that creating
     /// an image with the given parameters isn't possible.
     pub fn getCapabilities(
         device: *Device,

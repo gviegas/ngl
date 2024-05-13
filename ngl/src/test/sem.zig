@@ -8,6 +8,6 @@ test "Semaphore.init/deinit" {
     const dev = &context().device;
 
     // Only vanilla (binary) semaphore is supported currently.
-    var sema = try ngl.Semaphore.init(gpa, dev, .{});
-    sema.deinit(gpa, dev);
+    var sem = try ngl.Semaphore.init(gpa, dev, .{});
+    sem.deinit(gpa, dev);
 }

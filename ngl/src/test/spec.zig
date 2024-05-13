@@ -10,7 +10,7 @@ test "shader specialization" {
     const dev = &ctx.device;
     const queue_i = dev.findQueue(.{ .compute = true }, null) orelse return error.SkipZigTest;
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
 
     const groups = .{ 6, 1, 1 };

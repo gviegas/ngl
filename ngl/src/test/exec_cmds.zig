@@ -892,7 +892,7 @@ fn T(comptime cmd_buf_sec_n: u32) type {
                 break :blk cmd_bufs;
             };
 
-            var fence = try ngl.Fence.init(gpa, dev, .{});
+            var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
             errdefer fence.deinit(gpa, dev);
 
             var stg_buf = try ngl.Buffer.init(gpa, dev, .{

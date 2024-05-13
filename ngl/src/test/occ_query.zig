@@ -73,7 +73,7 @@ test "occlusion query without draws" {
     });
     try cmd.end();
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
     {
         context().lockQueue(queue_i);
@@ -491,7 +491,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     cmd.copyQueryPoolResults(&query_pool, 0, query_count, &query_buf, 0, .{});
     try cmd.end();
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
     {
         context().lockQueue(queue_i);

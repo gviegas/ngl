@@ -196,7 +196,7 @@ test "dispatchIndirect command" {
         @as([*]const u8, @ptrCast(&indir_cmd))[0..@sizeOf(@TypeOf(indir_cmd))],
     );
 
-    var fence = try ngl.Fence.init(gpa, dev, .{});
+    var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
 
     {
