@@ -4,7 +4,7 @@ const builtin = @import("builtin");
 const ngl = @import("ngl");
 const c = @import("c");
 
-const context = @import("ctx.zig").context;
+const context = @import("ctx").context;
 
 pub const Platform = struct {
     impl: switch (builtin.os.tag) {
@@ -33,8 +33,9 @@ pub const Platform = struct {
         option_2: bool = false,
     };
 
-    // TODO: Return type should be `ngl.Error!Platform`.
-    fn init(allocator: std.mem.Allocator) !Platform {
+    const Error = ngl.Error || @typeInfo(Platform).Struct.fields[0].type.Error;
+
+    fn init(allocator: std.mem.Allocator) Error!Platform {
         const ctx = context();
         if (!ctx.gpu.feature_set.presentation)
             return error.NotSupported;
@@ -116,7 +117,7 @@ pub const Platform = struct {
             const queue_i = @as(ngl.Queue.Index, @intCast(i));
             const is = sf.isCompatible(ctx.gpu, queue_i) catch continue;
             if (is) break queue_i;
-        } else return error.SkipZigTest;
+        } else return Error.NotSupported;
 
         return .{
             .impl = impl,
@@ -161,10 +162,7 @@ pub fn platform() !*Platform {
         fn init() void {
             // Let it leak.
             const allocator = std.heap.c_allocator;
-            plat = Platform.init(allocator);
-            if (plat) |_| {} else |err| {
-                if (err != error.SkipZigTest) @panic(@errorName(err));
-            }
+            plat = Platform.init(allocator) catch |err| @panic(@errorName(err));
         }
     };
 
@@ -208,12 +206,18 @@ const PlatformXcb = struct {
     screen: c.xcb_screen_t,
     window: c.xcb_window_t,
 
-    fn init() !PlatformXcb {
+    const Error = error{
+        Connection,
+        WindowCreation,
+        WindowMapping,
+    };
+
+    fn init() Error!PlatformXcb {
         var self: PlatformXcb = undefined;
 
         self.connection = c.xcb_connect(null, null).?;
         if (c.xcb_connection_has_error(self.connection) != 0)
-            return error.Connection;
+            return Error.Connection;
         errdefer c.xcb_disconnect(self.connection);
         self.setup = c.xcb_get_setup(self.connection);
         self.screen = c.xcb_setup_roots_iterator(self.setup).data.*;
@@ -224,7 +228,7 @@ const PlatformXcb = struct {
         return self;
     }
 
-    fn createWindow(self: PlatformXcb, width: u16, height: u16) !c.xcb_window_t {
+    fn createWindow(self: PlatformXcb, width: u16, height: u16) Error!c.xcb_window_t {
         const id = c.xcb_generate_id(self.connection);
         const class = c.XCB_WINDOW_CLASS_INPUT_OUTPUT;
         const value_mask = c.XCB_CW_BACK_PIXEL | c.XCB_CW_EVENT_MASK;
@@ -259,16 +263,16 @@ const PlatformXcb = struct {
         );
         if (c.xcb_request_check(self.connection, cookie)) |err| {
             std.c.free(err);
-            return error.WindowCreation;
+            return Error.WindowCreation;
         }
         return id;
     }
 
-    fn mapWindow(self: PlatformXcb, window: c.xcb_window_t) !void {
+    fn mapWindow(self: PlatformXcb, window: c.xcb_window_t) Error!void {
         const cookie = c.xcb_map_window_checked(self.connection, window);
         if (c.xcb_request_check(self.connection, cookie)) |err| {
             std.c.free(err);
-            return error.WindowMap;
+            return Error.WindowMapping;
         }
     }
 
