@@ -4,8 +4,8 @@ const ngl = @import("ngl");
 
 pub const cube = struct {
     pub const index_type = ngl.Cmd.IndexType.u16;
-    pub const topology = ngl.Primitive.Topology.triangle_list;
-    pub const clockwise = true;
+    pub const topology = ngl.Cmd.PrimitiveTopology.triangle_list;
+    pub const front_face = ngl.Cmd.FrontFace.clockwise;
 
     pub const indices: [36]u16 = .{
         0,  1,  2,
@@ -62,7 +62,7 @@ pub const cube = struct {
             [_]f32{ 0, 1, 0 } ** 4 ++
             [_]f32{ 0, 0, -1 } ** 4 ++
             [_]f32{ 0, 0, 1 } ** 4,
-        tex_coord: [n * 2]f32 = [_]f32{
+        uv: [n * 2]f32 = [_]f32{
             0, 0,
             1, 0,
             1, 1,
@@ -73,8 +73,8 @@ pub const cube = struct {
 
 pub const plane = struct {
     pub const vertex_count = 4;
-    pub const topology = ngl.Primitive.Topology.triangle_strip;
-    pub const clockwise = true;
+    pub const topology = ngl.Cmd.PrimitiveTopology.triangle_strip;
+    pub const front_face = ngl.Cmd.FrontFace.clockwise;
 
     pub const data: struct {
         const n = vertex_count;
@@ -85,7 +85,7 @@ pub const plane = struct {
             1,  0, 1,
         },
         normal: [n * 3]f32 = [_]f32{ 0, -1, 0 } ** n,
-        tex_coord: [n * 2]f32 = .{
+        uv: [n * 2]f32 = .{
             0, 1,
             0, 0,
             1, 1,
@@ -95,7 +95,7 @@ pub const plane = struct {
 };
 
 /// -y up; z forward; ccw.
-/// Must have normals and texture coordinates.
+/// Must have normals and uvs.
 pub fn loadObj(gpa: std.mem.Allocator, file_name: []const u8) !Model {
     const dir = std.fs.cwd();
     const file = try dir.openFile(file_name, .{});
@@ -136,9 +136,9 @@ pub fn loadObj(gpa: std.mem.Allocator, file_name: []const u8) !Model {
 
 const DataObj = struct {
     positions: std.ArrayListUnmanaged([3]f32) = .{},
-    tex_coords: std.ArrayListUnmanaged([2]f32) = .{},
+    uvs: std.ArrayListUnmanaged([2]f32) = .{},
     normals: std.ArrayListUnmanaged([3]f32) = .{},
-    // pos/tc/norm.
+    // pos/uv/norm.
     faces: std.ArrayListUnmanaged([9]u32) = .{},
     gpa: std.mem.Allocator,
 
@@ -180,7 +180,7 @@ const DataObj = struct {
             }
             break :blk v;
         };
-        try self.tex_coords.append(self.gpa, .{ u, v });
+        try self.uvs.append(self.gpa, .{ u, v });
     }
 
     fn parseVn(self: *Self, str: []const u8) !void {
@@ -237,7 +237,7 @@ const DataObj = struct {
 
     fn deinit(self: *Self) void {
         self.positions.deinit(self.gpa);
-        self.tex_coords.deinit(self.gpa);
+        self.uvs.deinit(self.gpa);
         self.normals.deinit(self.gpa);
         self.faces.deinit(self.gpa);
     }
@@ -245,7 +245,7 @@ const DataObj = struct {
 
 pub const Model = struct {
     positions: std.ArrayListUnmanaged([3]f32) = .{},
-    tex_coords: std.ArrayListUnmanaged([2]f32) = .{},
+    uvs: std.ArrayListUnmanaged([2]f32) = .{},
     normals: std.ArrayListUnmanaged([3]f32) = .{},
     indices: ?std.ArrayListUnmanaged(u32) = .{},
     gpa: std.mem.Allocator,
@@ -263,7 +263,7 @@ pub const Model = struct {
                 const c = face[6..9].*;
                 inline for (.{ a, b, c }) |vert| {
                     try mdl.positions.append(gpa, data.positions.items[vert[0]]);
-                    try mdl.tex_coords.append(gpa, data.tex_coords.items[vert[1]]);
+                    try mdl.uvs.append(gpa, data.uvs.items[vert[1]]);
                     try mdl.normals.append(gpa, data.normals.items[vert[2]]);
                 }
             }
@@ -280,7 +280,7 @@ pub const Model = struct {
                     if (!x.found_existing) {
                         x.value_ptr.* = @intCast(mdl.positions.items.len);
                         try mdl.positions.append(gpa, data.positions.items[vert[0]]);
-                        try mdl.tex_coords.append(gpa, data.tex_coords.items[vert[1]]);
+                        try mdl.uvs.append(gpa, data.uvs.items[vert[1]]);
                         try mdl.normals.append(gpa, data.normals.items[vert[2]]);
                     }
                     try mdl.indices.?.append(gpa, x.value_ptr.*);
@@ -303,7 +303,7 @@ pub const Model = struct {
     }
 
     pub fn vertexSize(self: Self) u64 {
-        return self.positionSize() + self.texCoordSize() + self.normalSize();
+        return self.positionSize() + self.uvSize() + self.normalSize();
     }
 
     pub fn positionSize(self: Self) u64 {
@@ -311,9 +311,9 @@ pub const Model = struct {
         return self.positions.items.len * 12;
     }
 
-    pub fn texCoordSize(self: Self) u64 {
-        if (@sizeOf(@TypeOf(self.tex_coords.items[0])) != 8) @compileError("???");
-        return self.tex_coords.items.len * 8;
+    pub fn uvSize(self: Self) u64 {
+        if (@sizeOf(@TypeOf(self.uvs.items[0])) != 8) @compileError("???");
+        return self.uvs.items.len * 8;
     }
 
     pub fn normalSize(self: Self) u64 {
@@ -323,7 +323,7 @@ pub const Model = struct {
 
     pub fn deinit(self: *Self) void {
         self.positions.deinit(self.gpa);
-        self.tex_coords.deinit(self.gpa);
+        self.uvs.deinit(self.gpa);
         self.normals.deinit(self.gpa);
         if (self.indices) |*x| x.deinit(self.gpa);
     }
@@ -358,9 +358,9 @@ pub const Model = struct {
         for (value.normals.items) |norm|
             try writer.print("        {}, {}, {},\n", .{ norm[0], norm[1], norm[2] });
         try writer.print("    }},\n", .{});
-        try writer.print("    tex_coord: [n * 2]f32 = .{{\n", .{});
-        for (value.tex_coords.items) |tc|
-            try writer.print("        {}, {},\n", .{ tc[0], tc[1] });
+        try writer.print("    uv: [n * 2]f32 = .{{\n", .{});
+        for (value.uvs.items) |uv|
+            try writer.print("        {}, {},\n", .{ uv[0], uv[1] });
         try writer.print("    }},\n}};\n", .{});
     }
 };
