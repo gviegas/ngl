@@ -43,8 +43,8 @@ pub fn build(b: *std.Build) void {
     });
 
     inline for (.{
+        .{ "ads.zig", b.step("ads", "Run ADS sample") },
         // TODO
-        //.{ "ads.zig", b.step("ads", "Run ADS sample") },
         //.{ "pbr.zig", b.step("pbr", "Run PBR sample") },
         //.{ "pcf.zig", b.step("pcf", "Run PCF sample") },
         //.{ "vsm.zig", b.step("vsm", "Run VSM sample") },
