@@ -18,9 +18,10 @@ pub fn build(b: *std.Build) void {
     // translates the same C headers, it will find duplicate
     // definitions in the global cache.
     const c = b.addModule("c", .{
-        .root_source_file = addTranslateC(b, target, optimize).getOutput(),
+        .root_source_file = .{ .path = "src/inc.zig" },
         .target = target,
         .optimize = optimize,
+        .link_libc = true,
     });
     linkPlatformSpecific(c);
 
@@ -39,7 +40,6 @@ fn addTests(
         .root_source_file = .{ .path = "src/ngl.zig" },
         .target = target,
         .optimize = optimize,
-        .link_libc = true,
         //.use_llvm = false,
         //.use_lld = false,
     });
@@ -47,18 +47,6 @@ fn addTests(
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_tests.step);
     return tests;
-}
-
-fn addTranslateC(
-    b: *std.Build,
-    target: std.Build.ResolvedTarget,
-    optimize: std.builtin.OptimizeMode,
-) *std.Build.Step.TranslateC {
-    return b.addTranslateC(.{
-        .root_source_file = .{ .path = "src/inc.h" },
-        .target = target,
-        .optimize = optimize,
-    });
 }
 
 // TODO
