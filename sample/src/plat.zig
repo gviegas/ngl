@@ -40,8 +40,8 @@ pub const Platform = struct {
         if (!ctx.gpu.feature_set.presentation)
             return error.NotSupported;
 
-        var impl = try @typeInfo(Platform).Struct.fields[0].type.init();
-        errdefer impl.deinit();
+        var impl = try @typeInfo(Platform).Struct.fields[0].type.init(allocator);
+        errdefer impl.deinit(allocator);
 
         var sf = try switch (builtin.os.tag) {
             .linux => if (builtin.target.isAndroid())
@@ -151,7 +151,7 @@ pub const Platform = struct {
         allocator.free(self.images);
         self.swapchain.deinit(allocator, &ctx.device);
         self.surface.deinit(allocator);
-        self.impl.deinit();
+        self.impl.deinit(allocator);
         self.* = undefined;
     }
 };
@@ -176,7 +176,7 @@ pub fn platform() !*Platform {
 const PlatformAndroid = struct {
     const Error = error{};
 
-    fn init() Error!PlatformAndroid {
+    fn init(_: std.mem.Allocator) Error!PlatformAndroid {
         @compileError("TODO");
     }
 
@@ -184,7 +184,7 @@ const PlatformAndroid = struct {
         @compileError("TODO");
     }
 
-    fn deinit(_: *PlatformAndroid) void {
+    fn deinit(_: *PlatformAndroid, _: std.mem.Allocator) void {
         @compileError("TODO");
     }
 };
@@ -222,13 +222,13 @@ const PlatformWayland = struct {
         XdgToplevel,
     } || std.mem.Allocator.Error;
 
-    fn init() Error!PlatformWayland {
+    fn init(allocator: std.mem.Allocator) Error!PlatformWayland {
         try setVars();
 
         const display = displayConnect(null) orelse return Error.Connection;
 
-        const pinned = try std.heap.c_allocator.create(Pinned);
-        errdefer std.heap.c_allocator.destroy(pinned);
+        const pinned = try allocator.create(Pinned);
+        errdefer allocator.destroy(pinned);
         pinned.* = .{
             .compositor = null,
             .xdg_wm_base = null,
@@ -309,9 +309,9 @@ const PlatformWayland = struct {
         return self.pinned.input;
     }
 
-    fn deinit(self: *PlatformWayland) void {
+    fn deinit(self: *PlatformWayland, allocator: std.mem.Allocator) void {
         // TODO: Destroy objects.
-        std.heap.c_allocator.destroy(self.pinned);
+        allocator.destroy(self.pinned);
         displayDisconnect(self.display);
         _ = std.c.dlclose(lib);
     }
@@ -1815,7 +1815,7 @@ const PlatformWayland = struct {
 const PlatformWin32 = struct {
     const Error = error{};
 
-    fn init() Error!PlatformWin32 {
+    fn init(_: std.mem.Allocator) Error!PlatformWin32 {
         @compileError("TODO");
     }
 
@@ -1823,7 +1823,7 @@ const PlatformWin32 = struct {
         @compileError("TODO");
     }
 
-    fn deinit(_: *PlatformWin32) void {
+    fn deinit(_: *PlatformWin32, _: std.mem.Allocator) void {
         @compileError("TODO");
     }
 };
@@ -1840,7 +1840,7 @@ const PlatformXcb = struct {
         WindowMapping,
     };
 
-    fn init() Error!PlatformXcb {
+    fn init(_: std.mem.Allocator) Error!PlatformXcb {
         var self: PlatformXcb = undefined;
 
         self.connection = c.xcb_connect(null, null).?;
@@ -1940,7 +1940,7 @@ const PlatformXcb = struct {
         return input;
     }
 
-    fn deinit(self: *PlatformXcb) void {
+    fn deinit(self: *PlatformXcb, _: std.mem.Allocator) void {
         _ = c.xcb_destroy_window(self.connection, self.window);
         c.xcb_disconnect(self.connection);
         self.* = undefined;
