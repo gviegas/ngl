@@ -20,24 +20,22 @@ pub const Surface = struct {
     const Android = struct {
         window: *c.struct_ANativeWindow,
     };
+
     const Wayland = struct {
         display: *c.struct_wl_display,
         surface: *c.struct_wl_surface,
     };
+
     const Win32 = struct {
         hinstance: c.HINSTANCE,
         hwnd: c.HWND,
-    };
-    const Xcb = struct {
-        connection: *c.xcb_connection_t,
-        window: c.xcb_window_t,
     };
 
     // TODO: OS-agnostic platform.
     pub const Platform = @Type(.{ .Union = .{
         .layout = .auto,
         .tag_type = switch (builtin.os.tag) {
-            .linux => if (builtin.target.isAndroid()) enum { android } else enum { wayland, xcb },
+            .linux => if (builtin.target.isAndroid()) enum { android } else enum { wayland },
             .windows => enum { win32 },
             else => enum {},
         },
@@ -48,18 +46,11 @@ pub const Surface = struct {
                     .name = "android",
                     .type = Android,
                     .alignment = @alignOf(Android),
-                }} else &[_]UnionField{
-                    .{
-                        .name = "wayland",
-                        .type = Wayland,
-                        .alignment = @alignOf(Wayland),
-                    },
-                    .{
-                        .name = "xcb",
-                        .type = Xcb,
-                        .alignment = @alignOf(Xcb),
-                    },
-                },
+                }} else &[_]UnionField{.{
+                    .name = "wayland",
+                    .type = Wayland,
+                    .alignment = @alignOf(Wayland),
+                }},
                 .windows => &[_]UnionField{.{
                     .name = "win32",
                     .type = Win32,
@@ -140,7 +131,7 @@ pub const Surface = struct {
         return .{ .impl = try Impl.get().initSurface(allocator, desc) };
     }
 
-    /// Returns whether the given queue of the given gpu can present
+    /// Returns whether the given queue of the given GPU can present
     /// to the surface.
     pub fn isCompatible(self: *Self, gpu: Gpu, queue: Queue.Index) Error!bool {
         return Impl.get().isSurfaceCompatible(self.impl, gpu, queue);
@@ -173,7 +164,7 @@ pub const Swapchain = struct {
     impl: Impl.Swapchain,
 
     // TODO: Should use a smaller integer for this type
-    // (need to update `Surface.Capabilities`)
+    // (need to update `Surface.Capabilities`).
     pub const Index = u32;
 
     pub const Desc = struct {
@@ -194,16 +185,18 @@ pub const Swapchain = struct {
 
     const Self = @This();
 
-    /// It's only valid to call this function if the device was created
-    /// with `Device.Desc.feature_set.presentation` set to `true`.
+    /// It is only valid to call this function if the device was
+    /// created with `Device.Desc.feature_set.presentation` set
+    /// to `true`.
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
         return .{ .impl = try Impl.get().initSwapchain(allocator, device.impl, desc) };
     }
 
     /// Caller is responsible for freeing the returned slice.
-    /// The images are owned by the swapchain and will be implicitly
-    /// freed when `self.deinit` is called. Calling `Image.deinit` on
-    /// these images is not allowed.
+    ///
+    /// The images are owned by the swapchain and will be freed
+    /// by `self.deinit`. Calling `Image.deinit` on these images
+    /// is not allowed.
     pub fn getImages(self: *Self, allocator: std.mem.Allocator, device: *Device) Error![]Image {
         return Impl.get().getSwapchainImages(allocator, device.impl, self.impl);
     }

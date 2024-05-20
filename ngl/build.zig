@@ -23,7 +23,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .link_libc = true,
     });
-    linkPlatformSpecific(c);
 
     ngl.addImport("c", c);
     tests.root_module.addImport("c", c);
@@ -47,12 +46,6 @@ fn addTests(
     const test_step = b.step("test", "Run tests");
     test_step.dependOn(&run_tests.step);
     return tests;
-}
-
-// TODO
-fn linkPlatformSpecific(c_module: *std.Build.Module) void {
-    if (builtin.os.tag == .linux and !builtin.target.isAndroid())
-        c_module.linkSystemLibrary("xcb", .{});
 }
 
 fn addDocs(

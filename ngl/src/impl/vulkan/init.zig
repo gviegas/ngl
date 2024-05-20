@@ -554,11 +554,6 @@ pub const Instance = struct {
         c.PFN_vkCreateWin32SurfaceKHR
     else
         void,
-    // VK_KHR_xcb_surface.
-    createXcbSurface: if (builtin.os.tag == .linux and !builtin.target.isAndroid())
-        c.PFN_vkCreateXcbSurfaceKHR
-    else
-        void,
 
     /// Only valid after global `init` succeeds.
     pub fn get() *Instance {
@@ -589,7 +584,7 @@ pub const Instance = struct {
                 .linux => if (builtin.target.isAndroid())
                     [1][:0]const u8{"VK_KHR_android_surface"}
                 else
-                    [2][:0]const u8{ "VK_KHR_wayland_surface", "VK_KHR_xcb_surface" },
+                    [1][:0]const u8{"VK_KHR_wayland_surface"},
                 .windows => [1][:0]const u8{"VK_KHR_win32_surface"},
                 else => @compileError("OS not supported"),
             };
@@ -699,13 +694,6 @@ pub const Instance = struct {
             .createWin32Surface = if (builtin.os.tag == .windows)
                 if (presentation)
                     @ptrCast(try Instance.getProc(inst, "vkCreateWin32SurfaceKHR"))
-                else
-                    null
-            else {},
-
-            .createXcbSurface = if (builtin.os.tag == .linux and !builtin.target.isAndroid())
-                if (presentation)
-                    @ptrCast(try Instance.getProc(inst, "vkCreateXcbSurfaceKHR"))
                 else
                     null
             else {},
@@ -913,15 +901,6 @@ pub const Instance = struct {
         surface: *c.VkSurfaceKHR,
     ) c.VkResult {
         return self.createWin32Surface.?(self.handle, create_info, vk_allocator, surface);
-    }
-
-    pub fn vkCreateXcbSurfaceKHR(
-        self: *Instance,
-        create_info: *const c.VkXcbSurfaceCreateInfoKHR,
-        vk_allocator: ?*const c.VkAllocationCallbacks,
-        surface: *c.VkSurfaceKHR,
-    ) c.VkResult {
-        return self.createXcbSurface.?(self.handle, create_info, vk_allocator, surface);
     }
 };
 

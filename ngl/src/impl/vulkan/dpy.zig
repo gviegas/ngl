@@ -30,32 +30,21 @@ pub const Surface = packed struct {
         var surface: c.VkSurfaceKHR = undefined;
 
         switch (builtin.os.tag) {
-            .linux => if (builtin.target.isAndroid()) {
-                switch (desc.platform) {
-                    .android => |x| try check(inst.vkCreateAndroidSurfaceKHR(&.{
-                        .sType = c.VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
-                        .pNext = null,
-                        .flags = 0,
-                        .window = x.window,
-                    }, null, &surface)),
-                }
-            } else {
-                switch (desc.platform) {
-                    .wayland => |x| try check(inst.vkCreateWaylandSurfaceKHR(&.{
-                        .sType = c.VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR,
-                        .pNext = null,
-                        .flags = 0,
-                        .display = x.display,
-                        .surface = x.surface,
-                    }, null, &surface)),
-                    .xcb => |x| try check(inst.vkCreateXcbSurfaceKHR(&.{
-                        .sType = c.VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR,
-                        .pNext = null,
-                        .flags = 0,
-                        .connection = x.connection,
-                        .window = x.window,
-                    }, null, &surface)),
-                }
+            .linux => if (builtin.target.isAndroid()) switch (desc.platform) {
+                .android => |x| try check(inst.vkCreateAndroidSurfaceKHR(&.{
+                    .sType = c.VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
+                    .pNext = null,
+                    .flags = 0,
+                    .window = x.window,
+                }, null, &surface)),
+            } else switch (desc.platform) {
+                .wayland => |x| try check(inst.vkCreateWaylandSurfaceKHR(&.{
+                    .sType = c.VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR,
+                    .pNext = null,
+                    .flags = 0,
+                    .display = x.display,
+                    .surface = x.surface,
+                }, null, &surface)),
             },
             .windows => switch (desc.platform) {
                 .win32 => |x| try check(inst.vkCreateWin32SurfaceKHR(&.{
@@ -207,7 +196,7 @@ pub const Surface = packed struct {
 
         // TODO: Use get_surface_capabilities2/surface_maintenance1.
 
-        // TODO: Should check whether `present_mode` is supported at all.
+        // TODO: Check whether `present_mode` is supported at all.
         _ = present_mode;
 
         var capab: c.VkSurfaceCapabilitiesKHR = undefined;
