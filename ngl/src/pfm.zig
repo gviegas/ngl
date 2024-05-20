@@ -34,7 +34,7 @@ pub const Platform = struct {
         option_2: bool = false,
     };
 
-    const Error = ngl.Error || @typeInfo(Platform).Struct.fields[0].type.Error;
+    pub const Error = ngl.Error || @typeInfo(Platform).Struct.fields[0].type.Error;
 
     /// Call this once.
     // TODO: Detect misuse.
