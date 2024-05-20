@@ -13,15 +13,6 @@ pub fn build(b: *std.Build) void {
     });
     ctx.addImport("ngl", ngl.module("ngl"));
 
-    const plat = b.createModule(.{
-        .root_source_file = .{ .path = "src/plat.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-    plat.addImport("ngl", ngl.module("ngl"));
-    plat.addImport("c", ngl.module("c"));
-    plat.addImport("ctx", ctx);
-
     const model = b.createModule(.{
         .root_source_file = .{ .path = "src/model.zig" },
         .target = target,
@@ -58,7 +49,6 @@ pub fn build(b: *std.Build) void {
         exe.root_module.addImport("ngl", ngl.module("ngl"));
         exe.root_module.addImport("c", ngl.module("c"));
         exe.root_module.addImport("ctx", ctx);
-        exe.root_module.addImport("plat", plat);
         exe.root_module.addImport("model", model);
         exe.root_module.addImport("idata", idata);
         exe.root_module.addImport("util", util);

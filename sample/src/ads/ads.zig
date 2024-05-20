@@ -2,11 +2,10 @@ const std = @import("std");
 const assert = std.debug.assert;
 
 const ngl = @import("ngl");
+const pfm = ngl.pfm;
 
 const Context = @import("ctx").Context;
 const context = @import("ctx").context;
-const Platform = @import("plat").Platform;
-const platform = @import("plat").platform;
 const cube = &@import("model").cube;
 const util = @import("util");
 
@@ -22,17 +21,17 @@ pub const ngl_options = ngl.Options{
 };
 
 const frame_n = 2;
-const width = Platform.width;
-const height = Platform.height;
+const width = pfm.Platform.width;
+const height = pfm.Platform.height;
 
 var ctx: *Context = undefined;
 var dev: *ngl.Device = undefined;
-var plat: *Platform = undefined;
+var plat: *pfm.Platform = undefined;
 
 fn do() !void {
     ctx = context();
     dev = &ctx.device;
-    plat = try platform();
+    plat = &ctx.platform;
 
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
