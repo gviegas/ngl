@@ -20,9 +20,14 @@ pub const ngl_options = ngl.Options{
     .engine_version = 2,
 };
 
+pub const platform_desc = pfm.Platform.Desc{
+    .width = width,
+    .height = height,
+};
+
 const frame_n = 2;
-const width = pfm.Platform.width;
-const height = pfm.Platform.height;
+const width = 1280;
+const height = 720;
 
 var ctx: *Context = undefined;
 var dev: *ngl.Device = undefined;

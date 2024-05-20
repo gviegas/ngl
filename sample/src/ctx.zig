@@ -1,6 +1,8 @@
 const std = @import("std");
 const assert = std.debug.assert;
 
+const root = @import("root");
+
 const ngl = @import("ngl");
 const pfm = ngl.pfm;
 
@@ -37,7 +39,7 @@ pub const Context = struct {
             break :blk locks;
         };
 
-        const plat = try pfm.Platform.init(allocator, gpus[gpu_i], &dev);
+        const plat = try pfm.Platform.init(allocator, gpus[gpu_i], &dev, root.platform_desc);
 
         return .{
             .gpu = gpus[gpu_i],

@@ -18,11 +18,16 @@ pub const Platform = struct {
     swapchain: ngl.Swapchain,
     images: []ngl.Image,
     image_views: []ngl.ImageView,
+    width: u32,
+    height: u32,
     queue_index: ngl.Queue.Index,
     mutex: std.Thread.Mutex = .{},
 
-    pub const width = 1280;
-    pub const height = 720;
+    pub const Desc = struct {
+        width: u32,
+        height: u32,
+        // TODO...
+    };
 
     pub const Input = packed struct {
         done: bool = false,
@@ -38,7 +43,12 @@ pub const Platform = struct {
 
     /// Call this once.
     // TODO: Detect misuse.
-    pub fn init(allocator: std.mem.Allocator, gpu: ngl.Gpu, device: *ngl.Device) Error!Platform {
+    pub fn init(
+        allocator: std.mem.Allocator,
+        gpu: ngl.Gpu,
+        device: *ngl.Device,
+        desc: Desc,
+    ) Error!Platform {
         if (!gpu.feature_set.presentation)
             return error.NotSupported;
 
@@ -76,8 +86,8 @@ pub const Platform = struct {
             .min_count = capab.min_count,
             .format = fmts[fmt_i].format,
             .color_space = fmts[fmt_i].color_space,
-            .width = width,
-            .height = height,
+            .width = desc.width,
+            .height = desc.height,
             .layers = 1,
             .usage = .{ .color_attachment = true },
             .pre_transform = capab.current_transform,
@@ -130,6 +140,8 @@ pub const Platform = struct {
             .swapchain = sc,
             .images = imgs,
             .image_views = views,
+            .width = desc.width,
+            .height = desc.height,
             .queue_index = queue_i,
         };
     }

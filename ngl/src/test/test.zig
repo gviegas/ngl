@@ -124,9 +124,10 @@ pub fn platform() !*Platform {
             const ctx = context();
             const gpu = ctx.gpu;
             const dev = &ctx.device;
+            const desc = Platform.Desc{ .width = 720, .height = 432 };
             // Let it leak.
             const ca = std.heap.c_allocator;
-            plat = Platform.init(ca, gpu, dev) catch |err| @panic(@errorName(err));
+            plat = Platform.init(ca, gpu, dev, desc) catch |err| @panic(@errorName(err));
         }
     };
 
