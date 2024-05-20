@@ -180,7 +180,7 @@ const PlatformAndroid = struct {
         @compileError("TODO");
     }
 
-    fn poll(_: PlatformAndroid) Platform.Input {
+    fn poll(_: *PlatformAndroid) Platform.Input {
         @compileError("TODO");
     }
 
@@ -302,7 +302,7 @@ const PlatformWayland = struct {
         };
     }
 
-    fn poll(self: PlatformWayland) Platform.Input {
+    fn poll(self: *PlatformWayland) Platform.Input {
         // TODO: Should poll in case of error.
         _ = displayFlush(self.display);
         _ = displayDispatchPending(self.display);
@@ -1819,7 +1819,7 @@ const PlatformWin32 = struct {
         @compileError("TODO");
     }
 
-    fn poll(_: PlatformWin32) Platform.Input {
+    fn poll(_: *PlatformWin32) Platform.Input {
         @compileError("TODO");
     }
 
@@ -1904,7 +1904,7 @@ const PlatformXcb = struct {
         }
     }
 
-    fn poll(self: PlatformXcb) Platform.Input {
+    fn poll(self: *PlatformXcb) Platform.Input {
         var input = Platform.Input{};
         while (c.xcb_poll_for_event(self.connection)) |event| {
             defer std.c.free(event);
