@@ -6,6 +6,7 @@ const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 const platform = @import("test.zig").platform;
 
+// TODO: This trashes `platform()`'s swapchain!
 test "Swapchain.init/deinit" {
     const ctx = context();
     const plat = try platform();
@@ -49,7 +50,7 @@ test "Swapchain.init/deinit" {
         .composite_alpha = comp_alpha,
         .present_mode = .fifo,
         .clipped = true,
-        .old_swapchain = null,
+        .old_swapchain = &plat.swapchain, // TODO
     });
     errdefer sc.deinit(gpa, &ctx.device);
 

@@ -3,6 +3,9 @@ const builtin = @import("builtin");
 
 const ngl = @import("../ngl.zig");
 
+const pfm = @import("../pfm.zig");
+pub const Platform = pfm.Platform;
+
 pub const gpa = std.testing.allocator;
 // Set `writer` to `null` to suppress test output.
 pub const writer: ?std.fs.File.Writer = std.io.getStdErr().writer();
@@ -25,8 +28,7 @@ test {
     _ = @import("fmt.zig");
     _ = @import("cmd_pool.zig");
     _ = @import("cmd_buf.zig");
-    // TODO: Share platform code w/ sample.
-    //_ = @import("queue.zig");
+    _ = @import("queue.zig");
     _ = @import("clear_buf.zig");
     _ = @import("copy_buf.zig");
     _ = @import("copy_buf_img.zig");
@@ -44,9 +46,8 @@ test {
     _ = @import("exec_cmds.zig");
     _ = @import("subm_again.zig");
     _ = @import("subm_many.zig");
-    // TODO: Share platform code w/ sample.
-    //_ = @import("sf.zig");
-    //_ = @import("sc.zig");
+    _ = @import("sf.zig");
+    _ = @import("sc.zig");
 }
 
 pub const Context = struct {
@@ -105,11 +106,30 @@ pub fn context() *Context {
 
         fn init() void {
             // Let it leak.
-            const allocator = std.heap.c_allocator;
-            ctx = Context.initDefault(allocator) catch |err| @panic(@errorName(err));
+            const ca = std.heap.c_allocator;
+            ctx = Context.initDefault(ca) catch |err| @panic(@errorName(err));
         }
     };
 
     Static.once.call();
     return &Static.ctx;
+}
+
+pub fn platform() !*Platform {
+    const Static = struct {
+        var plat: anyerror!Platform = undefined;
+        var once = std.once(init);
+
+        fn init() void {
+            const ctx = context();
+            const gpu = ctx.gpu;
+            const dev = &ctx.device;
+            // Let it leak.
+            const ca = std.heap.c_allocator;
+            plat = Platform.init(ca, gpu, dev) catch |err| @panic(@errorName(err));
+        }
+    };
+
+    Static.once.call();
+    return &(try Static.plat);
 }

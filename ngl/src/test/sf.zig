@@ -9,28 +9,6 @@ const gpa = @import("test.zig").gpa;
 const context = @import("test.zig").context;
 const platform = @import("test.zig").platform;
 
-test "Surface.init/deinit" {
-    // TODO: Skip if presentation is not supported.
-
-    switch (builtin.os.tag) {
-        .linux => if (builtin.target.isAndroid()) {
-            @compileError("TODO");
-        } else {
-            var plat = try @import("test.zig").PlatformXcb.init();
-            defer plat.deinit();
-            var sf = try ngl.Surface.init(gpa, .{
-                .platform = .{ .xcb = .{
-                    .connection = plat.connection,
-                    .window = plat.window,
-                } },
-            });
-            sf.deinit(gpa);
-        },
-        .windows => @compileError("TODO"),
-        else => @compileError("OS not supported"),
-    }
-}
-
 test "Surface queries" {
     const ctx = context();
     const sf = &(try platform()).surface;
