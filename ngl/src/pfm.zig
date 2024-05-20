@@ -5,7 +5,7 @@ const std = @import("std");
 const builtin = @import("builtin");
 
 const ngl = @import("ngl.zig");
-const c = @import("c");
+const c = @import("inc.zig");
 
 pub const Platform = struct {
     impl: switch (builtin.os.tag) {

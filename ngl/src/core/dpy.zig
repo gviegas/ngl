@@ -1,8 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const c = @import("c");
-
 const ngl = @import("../ngl.zig");
 const Gpu = ngl.Gpu;
 const Device = ngl.Device;
@@ -13,6 +11,7 @@ const Semaphore = ngl.Semaphore;
 const Fence = ngl.Fence;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
+const c = @import("../inc.zig");
 
 pub const Surface = struct {
     impl: Impl.Surface,

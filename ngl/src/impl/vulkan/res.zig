@@ -1,10 +1,9 @@
 const std = @import("std");
 
-const c = @import("c");
-
 const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
+const c = @import("../../inc.zig");
 const conv = @import("conv.zig");
 const check = conv.check;
 const Instance = @import("init.zig").Instance;

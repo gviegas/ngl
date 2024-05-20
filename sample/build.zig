@@ -47,7 +47,6 @@ pub fn build(b: *std.Build) void {
     }) |e| {
         var exe = addExecutable(b, target, optimize, e[0], e[1]);
         exe.root_module.addImport("ngl", ngl.module("ngl"));
-        exe.root_module.addImport("c", ngl.module("c"));
         exe.root_module.addImport("ctx", ctx);
         exe.root_module.addImport("model", model);
         exe.root_module.addImport("idata", idata);

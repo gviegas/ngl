@@ -1,12 +1,11 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const c = @import("c");
-
 const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
 const Impl = @import("../Impl.zig");
 const dyn = @import("../common/dyn.zig");
+const c = @import("../../inc.zig");
 const conv = @import("conv.zig");
 const null_handle = conv.null_handle;
 const check = conv.check;

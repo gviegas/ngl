@@ -1,7 +1,6 @@
-const c = @import("c");
-
 const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
+const c = @import("../../inc.zig");
 
 /// Non-dispatchable handles should check against this constant.
 pub const null_handle = switch (@typeInfo(@TypeOf(c.VK_NULL_HANDLE))) {
