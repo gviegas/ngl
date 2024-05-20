@@ -1,7 +1,7 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const log = std.log.scoped(.@"ngl/impl");
+const log = std.log.scoped(.@"ngl|impl");
 
 const ngl = @import("../ngl.zig");
 const Error = ngl.Error;
