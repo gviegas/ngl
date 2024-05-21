@@ -46,6 +46,7 @@ pub const Shader = struct {
 
     const Self = @This();
 
+    /// Caller is responsible for freeing the returned slice.
     pub fn init(
         allocator: std.mem.Allocator,
         device: *Device,

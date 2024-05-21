@@ -814,6 +814,7 @@ const Shader = struct {
                 .link = true,
             },
         });
+        defer arena.free(shaders);
         errdefer for (shaders) |*shd|
             if (shd.*) |*s| s.deinit(arena, dev) else |_| {};
 
