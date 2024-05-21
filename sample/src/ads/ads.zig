@@ -127,9 +127,9 @@ fn do() !void {
         const strd = frame * unif_strd;
         const data = stg_buf.data[unif_cpy_off + strd ..];
 
-        try desc.writeGlobal(aa, frame, ub, strd + globl_off);
-        try desc.writeLight(aa, frame, ub, strd + light_off);
-        try desc.writeMaterial(aa, frame, ub, strd + matl_off);
+        try desc.write(Global, aa, frame, ub, strd + globl_off);
+        try desc.write(Light, aa, frame, ub, strd + light_off);
+        try desc.write(Material, aa, frame, ub, strd + matl_off);
 
         globl.copy(data[globl_off .. globl_off + Global.size]);
         light.copy(data[light_off .. light_off + Light.size]);
@@ -742,59 +742,22 @@ const Descriptor = struct {
         };
     }
 
-    fn writeGlobal(
+    fn write(
         self: *Descriptor,
+        comptime T: type,
         arena: std.mem.Allocator,
         frame: usize,
         buffer: *ngl.Buffer,
         offset: u64,
     ) ngl.Error!void {
         try ngl.DescriptorSet.write(arena, dev, &.{.{
-            .descriptor_set = &self.sets[Global.set_index][frame],
-            .binding = Global.binding,
+            .descriptor_set = &self.sets[T.set_index][frame],
+            .binding = T.binding,
             .element = 0,
             .contents = .{ .uniform_buffer = &.{.{
                 .buffer = buffer,
                 .offset = offset,
-                .range = Global.size,
-            }} },
-        }});
-    }
-
-    fn writeLight(
-        self: *Descriptor,
-        arena: std.mem.Allocator,
-        frame: usize,
-        buffer: *ngl.Buffer,
-        offset: u64,
-    ) ngl.Error!void {
-        try ngl.DescriptorSet.write(arena, dev, &.{.{
-            .descriptor_set = &self.sets[Light.set_index][frame],
-            .binding = Light.binding,
-            .element = 0,
-            .contents = .{ .uniform_buffer = &.{.{
-                .buffer = buffer,
-                .offset = offset,
-                .range = Light.size,
-            }} },
-        }});
-    }
-
-    fn writeMaterial(
-        self: *Descriptor,
-        arena: std.mem.Allocator,
-        frame: usize,
-        buffer: *ngl.Buffer,
-        offset: u64,
-    ) ngl.Error!void {
-        try ngl.DescriptorSet.write(arena, dev, &.{.{
-            .descriptor_set = &self.sets[Material.set_index][frame],
-            .binding = Material.binding,
-            .element = 0,
-            .contents = .{ .uniform_buffer = &.{.{
-                .buffer = buffer,
-                .offset = offset,
-                .range = Material.size,
+                .range = T.size,
             }} },
         }});
     }
