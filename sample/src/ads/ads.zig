@@ -77,9 +77,7 @@ fn do() !void {
     const vert_cpy_off = (idx_cpy_off + idx_buf_size + 255) & ~@as(u64, 255);
     const unif_cpy_off = (vert_cpy_off + vert_buf_size + 255) & ~@as(u64, 255);
     const stg_buf_size = unif_cpy_off + unif_buf_size;
-    var stg_buf = try Buffer(.host).init(aa, stg_buf_size, .{
-        .transfer_source = true,
-    });
+    var stg_buf = try Buffer(.host).init(aa, stg_buf_size, .{ .transfer_source = true });
     defer stg_buf.deinit(aa);
 
     var desc = try Descriptor.init(aa);
@@ -201,10 +199,10 @@ fn do() !void {
         const cmd_pool = &cq.pools[frame];
         const cmd_buf = &cq.buffers[frame];
         const sems = .{ &cq.semaphores[2 * frame], &cq.semaphores[2 * frame + 1] };
-        const fence = &cq.fences[frame];
+        const fnc = &cq.fences[frame];
 
-        try ngl.Fence.wait(aa, dev, std.time.ns_per_s, &.{fence});
-        try ngl.Fence.reset(aa, dev, &.{fence});
+        try ngl.Fence.wait(aa, dev, std.time.ns_per_s, &.{fnc});
+        try ngl.Fence.reset(aa, dev, &.{fnc});
         const next = try plat.swapchain.nextImage(dev, std.time.ns_per_s, sems[0], null);
 
         try cmd_pool.reset(dev, .keep);
@@ -412,7 +410,7 @@ fn do() !void {
             ctx.lockQueue(cq.queue_index);
             defer ctx.unlockQueue(cq.queue_index);
 
-            try dev.queues[cq.queue_index].submit(aa, dev, fence, &.{.{
+            try dev.queues[cq.queue_index].submit(aa, dev, fnc, &.{.{
                 .commands = &.{.{ .command_buffer = cmd_buf }},
                 .wait = &.{.{
                     .semaphore = sems[0],
@@ -511,7 +509,7 @@ const Color = struct {
     const samples = ngl.SampleCount.@"4";
 
     fn init(arena: std.mem.Allocator) ngl.Error!Color {
-        var image = try ngl.Image.init(arena, dev, .{
+        var img = try ngl.Image.init(arena, dev, .{
             .type = .@"2d",
             .format = plat.format.format,
             .width = width,
@@ -526,10 +524,10 @@ const Color = struct {
             },
             .misc = .{},
         });
-        errdefer image.deinit(arena, dev);
+        errdefer img.deinit(arena, dev);
 
         var mem = blk: {
-            const reqs = image.getMemoryRequirements(dev);
+            const reqs = img.getMemoryRequirements(dev);
             var mem = try dev.alloc(arena, .{
                 .size = reqs.size,
                 .type_index = reqs.findType(dev.*, .{
@@ -538,13 +536,13 @@ const Color = struct {
                 }, null) orelse reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
             errdefer dev.free(arena, &mem);
-            try image.bind(dev, &mem, 0);
+            try img.bind(dev, &mem, 0);
             break :blk mem;
         };
         errdefer dev.free(arena, &mem);
 
         const view = try ngl.ImageView.init(arena, dev, .{
-            .image = &image,
+            .image = &img,
             .type = .@"2d",
             .format = plat.format.format,
             .range = .{
@@ -557,7 +555,7 @@ const Color = struct {
         });
 
         return .{
-            .image = image,
+            .image = img,
             .memory = mem,
             .view = view,
         };
@@ -579,7 +577,7 @@ const Depth = struct {
     const samples = Color.samples;
 
     fn init(arena: std.mem.Allocator) ngl.Error!Depth {
-        var image = try ngl.Image.init(arena, dev, .{
+        var img = try ngl.Image.init(arena, dev, .{
             .type = .@"2d",
             .format = format,
             .width = width,
@@ -594,10 +592,10 @@ const Depth = struct {
             },
             .misc = .{},
         });
-        errdefer image.deinit(arena, dev);
+        errdefer img.deinit(arena, dev);
 
         var mem = blk: {
-            const reqs = image.getMemoryRequirements(dev);
+            const reqs = img.getMemoryRequirements(dev);
             var mem = try dev.alloc(arena, .{
                 .size = reqs.size,
                 .type_index = reqs.findType(dev.*, .{
@@ -606,13 +604,13 @@ const Depth = struct {
                 }, null) orelse reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
             errdefer dev.free(arena, &mem);
-            try image.bind(dev, &mem, 0);
+            try img.bind(dev, &mem, 0);
             break :blk mem;
         };
         errdefer dev.free(arena, &mem);
 
         const view = try ngl.ImageView.init(arena, dev, .{
-            .image = &image,
+            .image = &img,
             .type = .@"2d",
             .format = format,
             .range = .{
@@ -625,7 +623,7 @@ const Depth = struct {
         });
 
         return .{
-            .image = image,
+            .image = img,
             .memory = mem,
             .view = view,
         };
