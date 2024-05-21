@@ -776,14 +776,16 @@ const Shader = struct {
 
     fn init(arena: std.mem.Allocator, descriptor: *Descriptor) ngl.Error!Shader {
         const dapi = ctx.gpu.getDriverApi();
-        const vert_code align(4) = if (dapi == .vulkan)
-            @embedFile("shader/vert.spv").*
-        else
-            @panic("TODO");
-        const frag_code align(4) = if (dapi == .vulkan)
-            @embedFile("shader/frag.spv").*
-        else
-            @panic("TODO");
+
+        const vert_code_spv align(4) = @embedFile("shader/vert.spv").*;
+        const vert_code = switch (dapi) {
+            .vulkan => &vert_code_spv,
+        };
+
+        const frag_code_spv align(4) = @embedFile("shader/frag.spv").*;
+        const frag_code = switch (dapi) {
+            .vulkan => &frag_code_spv,
+        };
 
         const set_layts = &.{
             &descriptor.set_layouts[0],
@@ -794,7 +796,7 @@ const Shader = struct {
             .{
                 .type = .vertex,
                 .next = .{ .fragment = true },
-                .code = &vert_code,
+                .code = vert_code,
                 .name = "main",
                 .set_layouts = set_layts,
                 .push_constants = &.{},
@@ -804,7 +806,7 @@ const Shader = struct {
             .{
                 .type = .fragment,
                 .next = .{},
-                .code = &frag_code,
+                .code = frag_code,
                 .name = "main",
                 .set_layouts = set_layts,
                 .push_constants = &.{},
