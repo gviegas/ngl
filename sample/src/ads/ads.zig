@@ -985,7 +985,7 @@ const Command = struct {
 const Global = struct {
     mvp_mv_n: [16 + 16 + 12]f32,
 
-    const size = @sizeOf(@TypeOf(init(undefined, undefined, undefined).mvp_mv_n));
+    const size = @sizeOf(@typeInfo(Global).Struct.fields[0].type);
     const set_index = 0;
     const binding = 0;
 
