@@ -289,7 +289,7 @@ const T = struct {
         });
         defer gpa.free(shaders);
         errdefer for (shaders) |*shd|
-            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+            (shd.* catch continue).deinit(gpa, dev);
 
         // Vertices won't change so copy them upfront.
         @memcpy(
@@ -333,8 +333,8 @@ const T = struct {
             .stg_mem = stg_mem,
             .stg_data = stg_data,
             .shd_layt = shd_layt,
-            .vert_shd = if (shaders[0]) |shd| shd else |err| return err,
-            .frag_shd = if (shaders[1]) |shd| shd else |err| return err,
+            .vert_shd = try shaders[0],
+            .frag_shd = try shaders[1],
             .clear_col = null,
         };
     }

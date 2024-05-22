@@ -192,7 +192,7 @@ test "depth-only rendering" {
             .link = false,
         }});
         defer gpa.free(s);
-        break :blk if (s[0]) |shd| shd else |err| return err;
+        break :blk try s[0];
     };
     defer vert_shd.deinit(gpa, dev);
 

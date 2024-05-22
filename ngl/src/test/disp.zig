@@ -168,7 +168,7 @@ test "dispatch command" {
         }},
     }});
 
-    cmd.setShaders(&.{.compute}, &.{if (shader[0]) |*shd| shd else |err| return err});
+    cmd.setShaders(&.{.compute}, &.{&(try shader[0])});
     cmd.setDescriptors(.compute, &shd_layt, 0, &.{&desc_set});
     cmd.dispatch(groups[0], groups[1], groups[2]);
 

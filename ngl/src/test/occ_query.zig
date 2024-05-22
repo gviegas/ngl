@@ -296,7 +296,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     });
     defer depth_view.deinit(gpa, dev);
 
-    var shaders = try ngl.Shader.init(gpa, dev, &.{
+    const shaders = try ngl.Shader.init(gpa, dev, &.{
         .{
             .type = .vertex,
             .next = .{ .fragment = true },
@@ -320,7 +320,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     });
     defer {
         for (shaders) |*shd|
-            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+            (shd.* catch continue).deinit(gpa, dev);
         gpa.free(shaders);
     }
 
@@ -334,7 +334,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
     cmd.resetQueryPool(&query_pool, 0, query_count);
-    cmd.setShaders(&.{.fragment}, &.{if (shaders[1]) |*shd| shd else |err| return err});
+    cmd.setShaders(&.{.fragment}, &.{&(try shaders[1])});
     cmd.setViewports(&.{.{
         .x = 0,
         .y = 0,
@@ -428,7 +428,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
         .layers = 1,
         .contents = .@"inline",
     });
-    cmd.setShaders(&.{.vertex}, &.{if (shaders[0]) |*shd| shd else |err| return err});
+    cmd.setShaders(&.{.vertex}, &.{&(try shaders[0])});
     cmd.setVertexInput(&.{.{
         .binding = 0,
         .stride = 12,

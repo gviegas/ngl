@@ -155,7 +155,7 @@ test "dispatchIndirect command" {
         }},
     }});
 
-    cmd.setShaders(&.{.compute}, &.{if (shader[0]) |*shd| shd else |err| return err});
+    cmd.setShaders(&.{.compute}, &.{&(try shader[0])});
     cmd.setDescriptors(.compute, &shd_layt, 0, &.{&desc_set});
     cmd.dispatchIndirect(&indir_buf, 0);
 

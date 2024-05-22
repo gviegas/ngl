@@ -100,7 +100,7 @@ test "submission of multiple command buffers" {
     });
     defer {
         for (shaders) |*shd|
-            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+            (shd.* catch continue).deinit(gpa, dev);
         gpa.free(shaders);
     }
 
@@ -188,8 +188,8 @@ test "submission of multiple command buffers" {
                         .fragment,
                     },
                     &.{
-                        if (shaders[0]) |*shd| shd else |err| return err,
-                        if (frag_shd.*) |*shd| shd else |err| return err,
+                        &(try shaders[0]),
+                        &(try frag_shd.*),
                     },
                 );
                 cmd.setVertexInput(&.{}, &.{});

@@ -147,7 +147,7 @@ test "shader specialization" {
     });
     defer {
         for (shaders) |*shd|
-            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+            (shd.* catch continue).deinit(gpa, dev);
         gpa.free(shaders);
     }
 
@@ -182,9 +182,9 @@ test "shader specialization" {
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
     cmd.setDescriptors(.compute, &shd_layt, 0, &.{&desc_set});
-    cmd.setShaders(&.{.compute}, &.{if (shaders[0]) |*shd| shd else |err| return err});
+    cmd.setShaders(&.{.compute}, &.{&(try shaders[0])});
     cmd.dispatch(groups[0], groups[1], groups[2]);
-    cmd.setShaders(&.{.compute}, &.{if (shaders[1]) |*shd| shd else |err| return err});
+    cmd.setShaders(&.{.compute}, &.{&(try shaders[1])});
     cmd.dispatch(groups[0], groups[1], groups[2]);
     cmd.barrier(&.{.{
         .global = &.{.{

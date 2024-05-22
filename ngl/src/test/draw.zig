@@ -233,7 +233,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     });
     defer {
         for (shaders) |*shd|
-            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+            (shd.* catch continue).deinit(gpa, dev);
         gpa.free(shaders);
     }
 
@@ -380,8 +380,8 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
             .vertex,
         },
         &.{
-            if (shaders[1]) |*shd| shd else |err| return err,
-            if (shaders[0]) |*shd| shd else |err| return err,
+            &(try shaders[1]),
+            &(try shaders[0]),
         },
     );
 

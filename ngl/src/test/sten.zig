@@ -208,7 +208,7 @@ test "stencil test" {
     });
     defer {
         for (shaders) |*shd|
-            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+            (shd.* catch continue).deinit(gpa, dev);
         gpa.free(shaders);
     }
 
@@ -296,8 +296,8 @@ test "stencil test" {
             .fragment,
         },
         &.{
-            if (shaders[0]) |*shd| shd else |err| return err,
-            if (shaders[1]) |*shd| shd else |err| return err,
+            &(try shaders[0]),
+            &(try shaders[1]),
         },
     );
 

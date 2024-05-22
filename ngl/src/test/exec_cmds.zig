@@ -245,7 +245,7 @@ test "executeCommands command (dispatching)" {
     };
     defer {
         for (shaders) |*shd|
-            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+            (shd.* catch continue).deinit(gpa, dev);
         gpa.free(shaders);
     }
 
@@ -278,7 +278,7 @@ test "executeCommands command (dispatching)" {
             .dev = dev,
             .shd_layt = &shd_layt,
             .desc_set = &desc_set[0],
-            .shd = if (shaders[0]) |*shd| shd else |err| return err,
+            .shd = &(try shaders[0]),
             .cmd_buf = &t.cmd_bufs[1],
             .wg_count = .{ lwidth, height, 1 },
             .rem = &rem,
@@ -288,7 +288,7 @@ test "executeCommands command (dispatching)" {
             .dev = dev,
             .shd_layt = &shd_layt,
             .desc_set = &desc_set[0],
-            .shd = if (shaders[1]) |*shd| shd else |err| return err,
+            .shd = &(try shaders[1]),
             .cmd_buf = &t.cmd_bufs[2],
             .wg_count = .{ rwidth, height, 1 },
             .rem = &rem,
@@ -298,7 +298,7 @@ test "executeCommands command (dispatching)" {
             .dev = dev,
             .shd_layt = &shd_layt,
             .desc_set = &desc_set[0],
-            .shd = if (shaders[2]) |*shd| shd else |err| return err,
+            .shd = &(try shaders[2]),
             .cmd_buf = &t.cmd_bufs[3],
             .wg_count = .{ rwidth, height, 1 },
             .rem = &rem,
@@ -308,7 +308,7 @@ test "executeCommands command (dispatching)" {
             .dev = dev,
             .shd_layt = &shd_layt,
             .desc_set = &desc_set[0],
-            .shd = if (shaders[3]) |*shd| shd else |err| return err,
+            .shd = &(try shaders[3]),
             .cmd_buf = &t.cmd_bufs[4],
             .wg_count = .{ lwidth, height, 1 },
             .rem = &rem,
@@ -529,7 +529,7 @@ test "executeCommands command (drawing)" {
     };
     defer {
         for (shaders) |*shd|
-            if (shd.*) |*s| s.deinit(gpa, dev) else |_| {};
+            (shd.* catch continue).deinit(gpa, dev);
         gpa.free(shaders);
     }
 
@@ -691,24 +691,24 @@ test "executeCommands command (drawing)" {
         .{
             .dev = dev,
             .buf = &buf,
-            .vert_shd = if (shaders[0]) |*shd| shd else |err| return err,
-            .frag_shd = if (shaders[2]) |*shd| shd else |err| return err,
+            .vert_shd = &(try shaders[0]),
+            .frag_shd = &(try shaders[2]),
             .cmd_buf = &t.cmd_bufs[1],
             .done = &done,
         },
         .{
             .dev = dev,
             .buf = &buf,
-            .vert_shd = if (shaders[0]) |*shd| shd else |err| return err,
-            .frag_shd = if (shaders[1]) |*shd| shd else |err| return err,
+            .vert_shd = &(try shaders[0]),
+            .frag_shd = &(try shaders[1]),
             .cmd_buf = &t.cmd_bufs[2],
             .done = &done,
         },
         .{
             .dev = dev,
             .buf = &buf,
-            .vert_shd = if (shaders[0]) |*shd| shd else |err| return err,
-            .frag_shd = if (shaders[1]) |*shd| shd else |err| return err,
+            .vert_shd = &(try shaders[0]),
+            .frag_shd = &(try shaders[1]),
             .cmd_buf = &t.cmd_bufs[3],
             .done = &done,
         },
