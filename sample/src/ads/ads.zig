@@ -920,9 +920,7 @@ const Command = struct {
 
         var pools: [frame_n]ngl.CommandPool = undefined;
         for (&pools, 0..) |*pool, i|
-            pool.* = ngl.CommandPool.init(arena, dev, .{
-                .queue = &dev.queues[pres],
-            }) catch |err| {
+            pool.* = ngl.CommandPool.init(arena, dev, .{ .queue = &dev.queues[rend] }) catch |err| {
                 for (0..i) |j|
                     pools[j].deinit(arena, dev);
                 return err;
