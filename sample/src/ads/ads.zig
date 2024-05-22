@@ -816,16 +816,17 @@ const Shader = struct {
         });
         defer arena.free(shaders);
         errdefer for (shaders) |*shd|
-            if (shd.*) |*s| s.deinit(arena, dev) else |_| {};
+            (shd.* catch continue).deinit(arena, dev);
 
-        const layt = try ngl.ShaderLayout.init(arena, dev, .{
+        var layt = try ngl.ShaderLayout.init(arena, dev, .{
             .set_layouts = set_layts,
             .push_constants = &.{},
         });
+        errdefer layt.deinit(arena, dev);
 
         return .{
-            .vertex = if (shaders[0]) |shd| shd else |err| return err,
-            .fragment = if (shaders[1]) |shd| shd else |err| return err,
+            .vertex = try shaders[0],
+            .fragment = try shaders[1],
             .layout = layt,
         };
     }
