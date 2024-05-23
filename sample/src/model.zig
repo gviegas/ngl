@@ -114,7 +114,8 @@ pub fn loadObj(gpa: std.mem.Allocator, file_name: []const u8) !Model {
     var pos: u64 = 0;
     while (true) {
         rd.streamUntilDelimiter(wr, '\n', buf.len) catch |err| {
-            if (err != error.EndOfStream) return err;
+            if (err != error.EndOfStream)
+                return err;
             break;
         };
 
@@ -124,11 +125,18 @@ pub fn loadObj(gpa: std.mem.Allocator, file_name: []const u8) !Model {
             fwr.reset();
         }
 
-        if (n < 3) continue;
-        if (std.mem.eql(u8, buf[0..2], "v ")) try data.parseV(buf[0..n]);
-        if (std.mem.eql(u8, buf[0..2], "vt")) try data.parseVt(buf[0..n]);
-        if (std.mem.eql(u8, buf[0..2], "vn")) try data.parseVn(buf[0..n]);
-        if (std.mem.eql(u8, buf[0..2], "f ")) try data.parseF(buf[0..n]);
+        var it = std.mem.tokenizeScalar(u8, buf[0..n], ' ');
+        const str = it.next() orelse continue;
+
+        if (std.mem.eql(u8, str, "v")) {
+            try data.parseV(&it);
+        } else if (std.mem.eql(u8, str, "vt")) {
+            try data.parseVt(&it);
+        } else if (std.mem.eql(u8, str, "vn")) {
+            try data.parseVn(&it);
+        } else if (std.mem.eql(u8, str, "f")) {
+            try data.parseF(&it);
+        }
     }
 
     return Model.generate(gpa, data, true);
@@ -148,52 +156,46 @@ const DataObj = struct {
         return .{ .gpa = gpa };
     }
 
-    fn parseV(self: *Self, str: []const u8) !void {
-        var it = std.mem.tokenizeScalar(u8, str[2..], ' ');
+    fn parseV(self: *Self, it: *std.mem.TokenIterator(u8, .scalar)) !void {
         const x = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVXCoord);
         const y = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVYCoord);
         const z = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVZCoord);
-        if (it.next()) |n| {
+        if (it.next()) |n|
             if (n[0] != '#') {
                 const w = try std.fmt.parseFloat(f32, n);
-                if (w != 1) return error.ParseVWCoord;
-            }
-        }
+                if (w != 1)
+                    return error.ParseVWCoord;
+            };
         try self.positions.append(self.gpa, .{ x, y, z });
     }
 
-    fn parseVt(self: *Self, str: []const u8) !void {
-        var it = std.mem.tokenizeScalar(u8, str[3..], ' ');
+    fn parseVt(self: *Self, it: *std.mem.TokenIterator(u8, .scalar)) !void {
         const u = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVtUCoord);
         const v = blk: {
             var v: f32 = 0;
-            if (it.next()) |n| {
+            if (it.next()) |n|
                 if (n[0] != '#') {
                     v = try std.fmt.parseFloat(f32, n);
-                    if (it.next()) |m| {
+                    if (it.next()) |m|
                         if (m[0] != '#') {
                             const w = try std.fmt.parseFloat(f32, m);
-                            if (w != 0) return error.ParseVtWCoord;
-                        }
-                    }
-                }
-            }
+                            if (w != 0)
+                                return error.ParseVtWCoord;
+                        };
+                };
             break :blk v;
         };
         try self.uvs.append(self.gpa, .{ u, v });
     }
 
-    fn parseVn(self: *Self, str: []const u8) !void {
-        var it = std.mem.tokenizeScalar(u8, str[3..], ' ');
+    fn parseVn(self: *Self, it: *std.mem.TokenIterator(u8, .scalar)) !void {
         const x = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVn);
         const y = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVn);
         const z = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVn);
         try self.normals.append(self.gpa, .{ x, y, z });
     }
 
-    fn parseF(self: *Self, str: []const u8) !void {
-        var it = std.mem.tokenizeScalar(u8, str[2..], ' ');
-
+    fn parseF(self: *Self, it: *std.mem.TokenIterator(u8, .scalar)) !void {
         var it_2 = std.mem.tokenizeScalar(u8, it.next() orelse return error.ParseF, '/');
         const pa = (try std.fmt.parseInt(u32, it_2.next() orelse return error.ParseFP, 10));
         const ta = (try std.fmt.parseInt(u32, it_2.next() orelse return error.ParseFPt, 10));
@@ -216,7 +218,8 @@ const DataObj = struct {
         });
 
         while (it.next()) |n| {
-            if (n[0] == '#') break;
+            if (n[0] == '#')
+                break;
 
             var it_5 = std.mem.tokenizeScalar(u8, n, '/');
             const pd = (try std.fmt.parseInt(u32, it_5.next() orelse return error.ParseFP, 10));
