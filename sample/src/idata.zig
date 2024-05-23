@@ -204,7 +204,10 @@ pub const DataPng = struct {
                     continue;
                 }
 
-                return .{ .length = chk_len, .type = chk_type };
+                return .{
+                    .length = chk_len,
+                    .type = chk_type,
+                };
             }
         }
 
@@ -385,7 +388,8 @@ pub const DataPng = struct {
         while (true) {
             const chk_len = try rd.readInt(u32, .big);
             try buf.resize(gpa, 4);
-            if (try rd.read(buf.items[0..4]) != 4) return error.BadPng;
+            if (try rd.read(buf.items[0..4]) != 4)
+                return error.BadPng;
             const chk_type = ChunkType.make(buf.items[0..4]);
 
             if (chk_type.eql(ChunkType.idat)) {

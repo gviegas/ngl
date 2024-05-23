@@ -305,17 +305,23 @@ pub const Model = struct {
     }
 
     pub fn positionSize(self: Self) u64 {
-        if (@sizeOf(@TypeOf(self.positions.items[0])) != 12) @compileError("???");
+        comptime if (@sizeOf(@TypeOf(self.positions.items[0])) != 12)
+            unreachable;
+
         return self.positions.items.len * 12;
     }
 
     pub fn uvSize(self: Self) u64 {
-        if (@sizeOf(@TypeOf(self.uvs.items[0])) != 8) @compileError("???");
+        comptime if (@sizeOf(@TypeOf(self.uvs.items[0])) != 8)
+            unreachable;
+
         return self.uvs.items.len * 8;
     }
 
     pub fn normalSize(self: Self) u64 {
-        if (@sizeOf(@TypeOf(self.normals.items[0])) != 12) @compileError("???");
+        comptime if (@sizeOf(@TypeOf(self.normals.items[0])) != 12)
+            unreachable;
+
         return self.normals.items.len * 12;
     }
 

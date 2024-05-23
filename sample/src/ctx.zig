@@ -27,7 +27,8 @@ pub const Context = struct {
                 gpu_i = i;
                 break;
             }
-            if (gpus[i].type == .integrated) gpu_i = i;
+            if (gpus[i].type == .integrated)
+                gpu_i = i;
         }
 
         var dev = try ngl.Device.init(allocator, gpus[gpu_i]);
@@ -35,7 +36,8 @@ pub const Context = struct {
 
         const locks = blk: {
             var locks: [ngl.Queue.max]std.Thread.Mutex = undefined;
-            for (0..dev.queue_n) |i| locks[i] = .{};
+            for (0..dev.queue_n) |i|
+                locks[i] = .{};
             break :blk locks;
         };
 

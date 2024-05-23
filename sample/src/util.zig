@@ -46,48 +46,45 @@ pub fn cross(lh: [3]f32, rh: [3]f32) [3]f32 {
 
 pub fn identity(comptime n: comptime_int) [n * n]f32 {
     var m: @Vector(n * n, f32) = @splat(0);
-    for (0..n) |i| m[i * n + i] = 1;
+    for (0..n) |i|
+        m[i * n + i] = 1;
     return m;
 }
 
 pub fn mulM(comptime n: comptime_int, lh: [n * n]f32, rh: [n * n]f32) [n * n]f32 {
     const row_mask = comptime blk: {
         var m: [n]@Vector(n, i32) = undefined;
-        for (0..n) |i| {
+        for (0..n) |i|
             for (0..n) |j| {
                 m[i][j] = i + n * j;
-            }
-        }
+            };
         break :blk m;
     };
     const col_mask = comptime blk: {
         var m: [n]@Vector(n, i32) = undefined;
-        for (0..n) |i| {
+        for (0..n) |i|
             for (0..n) |j| {
                 m[i][j] = i * n + j;
-            }
-        }
+            };
         break :blk m;
     };
     var m: @Vector(n * n, f32) = undefined;
-    inline for (0..n) |i| {
+    inline for (0..n) |i|
         inline for (0..n) |j| {
             const row = @shuffle(f32, lh, undefined, row_mask[j]);
             const col = @shuffle(f32, rh, undefined, col_mask[i]);
             m[i * n + j] = @reduce(.Add, row * col);
-        }
-    }
+        };
     return m;
 }
 
 pub fn mulMV(comptime n: comptime_int, matrix: [n * n]f32, vector: [n]f32) [n]f32 {
     const row_mask = comptime blk: {
         var m: [n]@Vector(n, i32) = undefined;
-        for (0..n) |i| {
+        for (0..n) |i|
             for (0..n) |j| {
                 m[i][j] = i + n * j;
-            }
-        }
+            };
         break :blk m;
     };
     const m: @Vector(n * n, f32) = matrix;
@@ -243,11 +240,10 @@ pub fn invert4(matrix: [4 * 4]f32) [4 * 4]f32 {
 pub fn transpose(comptime n: comptime_int, matrix: [n * n]f32) [n * n]f32 {
     const mask = comptime blk: {
         var m: @Vector(n * n, f32) = undefined;
-        for (0..n) |i| {
+        for (0..n) |i|
             for (0..n) |j| {
                 m[i * n + j] = i + n * j;
-            }
-        }
+            };
         break :blk m;
     };
     const m: @Vector(n * n, f32) = matrix;
@@ -256,9 +252,10 @@ pub fn transpose(comptime n: comptime_int, matrix: [n * n]f32) [n * n]f32 {
 
 pub fn upperLeft(comptime n: comptime_int, matrix: [n * n]f32) [(n - 1) * (n - 1)]f32 {
     var m: [(n - 1) * (n - 1)]f32 = undefined;
-    for (0..n - 1) |i| @memcpy(
-        m[i * (n - 1) .. i * (n - 1) + n - 1],
-        matrix[i * n .. i * n + n - 1],
-    );
+    for (0..n - 1) |i|
+        @memcpy(
+            m[i * (n - 1) .. i * (n - 1) + n - 1],
+            matrix[i * n .. i * n + n - 1],
+        );
     return m;
 }
