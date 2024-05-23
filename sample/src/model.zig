@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = std.log.scoped(.@"sample|model");
 
 const ngl = @import("ngl");
 
@@ -136,6 +137,10 @@ pub fn loadObj(gpa: std.mem.Allocator, file_name: []const u8) !Model {
             try data.parseVn(gpa, &it);
         } else if (std.mem.eql(u8, str, "f")) {
             try data.parseF(gpa, &it);
+        } else if (str[0] != '#') {
+            log.warn(
+                \\{s}: Ignoring "{s}"
+            , .{ @src().fn_name, buf[0..n] });
         }
     }
 
@@ -349,7 +354,7 @@ pub const Model = struct {
                     x.items[i * 3 + 2],
                 });
             try writer.print("}};\n\n", .{});
-        } else std.log.warn("(no indices)", .{});
+        } else log.info("{s}: No indices", .{@src().fn_name()});
 
         try writer.print("pub const data = Data{{}};\n\n", .{});
 
