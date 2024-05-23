@@ -18,8 +18,6 @@ pub usingnamespace @cImport({
             @cInclude("wayland-client.h");
             @cInclude("xdg-shell-client.h");
             @cInclude("vulkan/vulkan_wayland.h");
-            @cInclude("xcb/xcb.h");
-            @cInclude("vulkan/vulkan_xcb.h");
         },
         .windows => {
             @cInclude("windows.h");
