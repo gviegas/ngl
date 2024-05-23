@@ -1023,7 +1023,7 @@ pub const CommandBuffer = struct {
         /// ✔ Graphics queue
         /// ✔ Compute queue
         /// ⚠ Transfer queue
-        pub fn clearBuffer(self: *Cmd, buffer: *Buffer, offset: u64, size: ?u64, value: u8) void {
+        pub fn clearBuffer(self: *Cmd, buffer: *Buffer, offset: u64, size: u64, value: u8) void {
             Impl.get().clearBuffer(
                 self.device.impl,
                 self.command_buffer.impl,

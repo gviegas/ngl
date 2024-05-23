@@ -519,7 +519,7 @@ pub const VTable = struct {
         command_buffer: CommandBuffer,
         buffer: Buffer,
         offset: u64,
-        size: ?u64,
+        size: u64,
         value: u8,
     ) void,
 
@@ -1738,7 +1738,7 @@ pub fn clearBuffer(
     command_buffer: CommandBuffer,
     buffer: Buffer,
     offset: u64,
-    size: ?u64,
+    size: u64,
     value: u8,
 ) void {
     self.vtable.clearBuffer(self.ptr, device, command_buffer, buffer, offset, size, value);

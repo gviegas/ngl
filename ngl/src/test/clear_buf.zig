@@ -52,7 +52,7 @@ test "clearBuffer command" {
 
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
     cmd.clearBuffer(&buf, 0, off, 0x89);
-    cmd.clearBuffer(&buf, off, null, 0xc1);
+    cmd.clearBuffer(&buf, off, size - off, 0xc1);
     try cmd.end();
 
     {

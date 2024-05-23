@@ -1246,7 +1246,7 @@ pub const CommandBuffer = struct {
         command_buffer: Impl.CommandBuffer,
         buffer: Impl.Buffer,
         offset: u64,
-        size: ?u64,
+        size: u64,
         value: u8,
     ) void {
         const val32 =
@@ -1259,7 +1259,7 @@ pub const CommandBuffer = struct {
             cast(command_buffer).handle,
             Buffer.cast(buffer).handle,
             offset,
-            size orelse c.VK_WHOLE_SIZE,
+            size,
             val32,
         );
     }
