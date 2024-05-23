@@ -72,32 +72,35 @@ pub const Platform = struct {
         };
         errdefer sf.deinit(allocator);
 
-        const fmts = try sf.getFormats(allocator, gpu);
-        defer allocator.free(fmts);
-        const fmt_i = for (fmts, 0..) |fmt, i| {
-            // TODO
-            _ = fmt;
-            break i;
-        } else unreachable;
+        const fmt = blk: {
+            const fmts = try sf.getFormats(allocator, gpu);
+            defer allocator.free(fmts);
+            for (fmts) |fmt| {
+                // TODO
+                break :blk fmt;
+            } else unreachable;
+        };
         const capab = try sf.getCapabilities(gpu, .fifo);
 
         var sc = try ngl.Swapchain.init(allocator, device, .{
             .surface = &sf,
             .min_count = capab.min_count,
-            .format = fmts[fmt_i].format,
-            .color_space = fmts[fmt_i].color_space,
+            .format = fmt.format,
+            .color_space = fmt.color_space,
             .width = desc.width,
             .height = desc.height,
             .layers = 1,
             .usage = .{ .color_attachment = true },
             .pre_transform = capab.current_transform,
-            .composite_alpha = inline for (
-                @typeInfo(ngl.Surface.CompositeAlpha.Flags).Struct.fields,
-            ) |f| {
-                if (@field(capab.supported_composite_alpha, f.name))
-                    break @field(ngl.Surface.CompositeAlpha, f.name);
-            } else unreachable,
-            .present_mode = .fifo,
+            .composite_alpha = blk: {
+                const CAlpha = ngl.Surface.CompositeAlpha;
+                const fields = @typeInfo(CAlpha).Enum.fields;
+                break :blk inline for (fields) |f| {
+                    if (@field(capab.supported_composite_alpha, f.name))
+                        break @field(CAlpha, f.name);
+                } else unreachable;
+            },
+            .present_mode = .fifo, // TODO: Not the best choice for Wayland.
             .clipped = true,
             .old_swapchain = null,
         });
@@ -108,11 +111,11 @@ pub const Platform = struct {
 
         var views = try allocator.alloc(ngl.ImageView, imgs.len);
         errdefer allocator.free(views);
-        for (views, imgs, 0..) |*view, *image, i| {
+        for (views, imgs, 0..) |*view, *img, i|
             view.* = ngl.ImageView.init(allocator, device, .{
-                .image = image,
+                .image = img,
                 .type = .@"2d",
-                .format = fmts[fmt_i].format,
+                .format = fmt.format,
                 .range = .{
                     .aspect_mask = .{ .color = true },
                     .level = 0,
@@ -121,28 +124,30 @@ pub const Platform = struct {
                     .layers = 1,
                 },
             }) catch |err| {
-                for (0..i) |j| views[j].deinit(allocator, device);
+                for (0..i) |j|
+                    views[j].deinit(allocator, device);
                 return err;
             };
-        }
 
-        const queue_i = for (gpu.queues, 0..) |queue_desc, i| {
-            if (queue_desc == null) continue;
-            const queue_i = @as(ngl.Queue.Index, @intCast(i));
-            const is = sf.isCompatible(gpu, queue_i) catch continue;
-            if (is) break queue_i;
+        const que_idx = for (gpu.queues, 0..) |que_desc, i| {
+            if (que_desc == null)
+                continue;
+            const que_idx = @as(ngl.Queue.Index, @intCast(i));
+            const is = sf.isCompatible(gpu, que_idx) catch continue;
+            if (is)
+                break que_idx;
         } else return Error.NotSupported;
 
         return .{
             .impl = impl,
             .surface = sf,
-            .format = fmts[fmt_i],
+            .format = fmt,
             .swapchain = sc,
             .images = imgs,
             .image_views = views,
             .width = desc.width,
             .height = desc.height,
-            .queue_index = queue_i,
+            .queue_index = que_idx,
         };
     }
 
@@ -159,7 +164,8 @@ pub const Platform = struct {
     }
 
     pub fn deinit(self: *Platform, allocator: std.mem.Allocator, device: *ngl.Device) void {
-        for (self.image_views) |*view| view.deinit(allocator, device);
+        for (self.image_views) |*view|
+            view.deinit(allocator, device);
         allocator.free(self.image_views);
         allocator.free(self.images);
         self.swapchain.deinit(allocator, device);
