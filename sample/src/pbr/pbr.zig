@@ -43,7 +43,7 @@ fn do() !void {
     defer depth.deinit(aa);
 
     var sphr = try model.loadObj(aa, "data/geometry/sphere.obj");
-    defer sphr.deinit();
+    defer sphr.deinit(aa);
     assert(sphr.indices == null);
 
     const vert_buf_size = sphr.positionSize() + sphr.normalSize();

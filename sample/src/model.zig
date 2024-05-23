@@ -246,12 +246,11 @@ pub const Model = struct {
     uvs: std.ArrayListUnmanaged([2]f32) = .{},
     normals: std.ArrayListUnmanaged([3]f32) = .{},
     indices: ?std.ArrayListUnmanaged(u32) = .{},
-    gpa: std.mem.Allocator,
 
     const Self = @This();
 
     fn generate(gpa: std.mem.Allocator, data: DataObj, no_indices: bool) !Self {
-        var mdl = Self{ .gpa = gpa };
+        var mdl = Self{};
 
         if (no_indices) {
             mdl.indices = null;
@@ -285,7 +284,8 @@ pub const Model = struct {
                 }
             }
 
-            if (mdl.indices.?.items.len % 3 != 0) return error.Generate;
+            if (mdl.indices.?.items.len % 3 != 0)
+                return error.Generate;
 
             //if (mdl.indices.?.items.len == mdl.positions.items.len) {
             //    mdl.indices.?.deinit(gpa);
@@ -319,11 +319,12 @@ pub const Model = struct {
         return self.normals.items.len * 12;
     }
 
-    pub fn deinit(self: *Self) void {
-        self.positions.deinit(self.gpa);
-        self.uvs.deinit(self.gpa);
-        self.normals.deinit(self.gpa);
-        if (self.indices) |*x| x.deinit(self.gpa);
+    pub fn deinit(self: *Self, gpa: std.mem.Allocator) void {
+        self.positions.deinit(gpa);
+        self.uvs.deinit(gpa);
+        self.normals.deinit(gpa);
+        if (self.indices) |*x|
+            x.deinit(gpa);
     }
 
     pub fn format(
