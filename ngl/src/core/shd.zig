@@ -1,4 +1,5 @@
 const std = @import("std");
+const assert = std.debug.assert;
 
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
@@ -52,7 +53,8 @@ pub const Shader = struct {
         device: *Device,
         descs: []const Desc,
     ) Error![]Error!Self {
-        if (descs.len == 0) return &.{};
+        if (descs.len == 0)
+            return &.{};
         const shaders = try allocator.alloc(Error!Self, descs.len);
         errdefer allocator.free(shaders);
         for (shaders) |*shader|
@@ -175,11 +177,12 @@ pub const DescriptorPool = struct {
         device: *Device,
         desc: DescriptorSet.Desc,
     ) Error![]DescriptorSet {
-        std.debug.assert(desc.layouts.len > 0);
+        assert(desc.layouts.len > 0);
+        if (@typeInfo(DescriptorSet).Struct.fields.len > 1)
+            @compileError("Uninitialized field(s)");
+
         const desc_sets = try allocator.alloc(DescriptorSet, desc.layouts.len);
         errdefer allocator.free(desc_sets);
-        // TODO: Update this when adding more fields to `DescriptorSet`.
-        if (@typeInfo(DescriptorSet).Struct.fields.len > 1) @compileError("Uninitialized field(s)");
         try Impl.get().allocDescriptorSets(allocator, device.impl, self.impl, desc, desc_sets);
         return desc_sets;
     }

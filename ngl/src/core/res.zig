@@ -227,7 +227,6 @@ pub const Format = enum {
         .decls = &.{},
         .is_tuple = false,
     } }){
-        // Color 8 bpp -------------------------------------
         .r8_unorm = .{
             .sampled_image = true,
             .sampled_image_filter_linear = true,
@@ -254,7 +253,7 @@ pub const Format = enum {
             .uniform_texel_buffer = true,
             .vertex_buffer = true,
         },
-        // Color 16 bpp ------------------------------------
+
         .r16_unorm = .{ .vertex_buffer = true },
         .r16_snorm = .{ .vertex_buffer = true },
         .r16_uint = .{
@@ -303,7 +302,7 @@ pub const Format = enum {
             .uniform_texel_buffer = true,
             .vertex_buffer = true,
         },
-        // Color 32 bpp ------------------------------------
+
         .r32_uint = .{
             .sampled_image = true,
             .storage_image = true,
@@ -388,7 +387,7 @@ pub const Format = enum {
             .storage_texel_buffer = true,
             .vertex_buffer = true,
         },
-        // Color 64 bpp ------------------------------------
+
         .rg32_uint = .{
             .sampled_image = true,
             .storage_image = true,
@@ -441,11 +440,11 @@ pub const Format = enum {
             .storage_texel_buffer = true,
             .vertex_buffer = true,
         },
-        // Color 96 bpp ------------------------------------
+
         .rgb32_uint = .{ .vertex_buffer = true },
         .rgb32_sint = .{ .vertex_buffer = true },
         .rgb32_sfloat = .{ .vertex_buffer = true },
-        // Color 128 bpp -----------------------------------
+
         .rgba32_uint = .{
             .sampled_image = true,
             .storage_image = true,
@@ -470,12 +469,15 @@ pub const Format = enum {
             .storage_texel_buffer = true,
             .vertex_buffer = true,
         },
-        // Depth/stencil -----------------------------------
+
         // NOTE: Which formats are allowed as stencil attachment
         // can't be known in advance - one must use `getFeatures`
         // to query support at runtime (at least one format will
         // support it).
-        .d16_unorm = .{ .sampled_image = true, .depth_stencil_attachment = true },
+        .d16_unorm = .{
+            .sampled_image = true,
+            .depth_stencil_attachment = true,
+        },
     };
 
     const Info = union(enum) {
@@ -489,8 +491,14 @@ pub const Format = enum {
         },
         depth: struct { bits: u7 },
         stencil: struct { bits: u7 },
-        combined: struct { depth_bits: u7, stencil_bits: u7 },
-        compressed: struct { srgb: bool = false, bits: u8 },
+        combined: struct {
+            depth_bits: u7,
+            stencil_bits: u7,
+        },
+        compressed: struct {
+            srgb: bool = false,
+            bits: u8,
+        },
     };
 
     fn getInfo(self: Self) Info {
@@ -1566,7 +1574,7 @@ pub const Sampler = struct {
         clamp_to_border,
         repeat,
         mirror_repeat,
-        /// `Feature.core.sampler.address_mode_clamp_to_edge`.
+        /// `Feature.core.sampler.address_mode_mirror_clamp_to_edge`.
         mirror_clamp_to_edge,
     };
 

@@ -336,7 +336,8 @@ pub fn toVkImageUsageFlags(usage: ngl.Image.Usage) c.VkImageUsageFlags {
 pub fn toVkImageCreateFlags(format: ngl.Format, misc: ngl.Image.Misc) c.VkImageCreateFlags {
     var flags: c.VkImageCreateFlags = 0;
     for (misc.view_formats) |fmt| {
-        if (fmt == format) continue;
+        if (fmt == format)
+            continue;
         flags |= c.VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
         break;
     }
@@ -703,7 +704,8 @@ pub fn toVkVertexInputRate(step_rate: anytype) c.VkVertexInputRate {
     return switch (step_rate) {
         .vertex => c.VK_VERTEX_INPUT_RATE_VERTEX,
         .instance => |x| blk: {
-            if (@TypeOf(x) != u1) @compileError("Update me");
+            if (@TypeOf(x) != u1)
+                @compileError("Update conversion");
             break :blk c.VK_VERTEX_INPUT_RATE_INSTANCE;
         },
     };
@@ -793,10 +795,14 @@ pub fn toVkColorComponentFlags(color_mask: ngl.Cmd.ColorMask) c.VkColorComponent
             c.VK_COLOR_COMPONENT_A_BIT,
         .mask => |mask| blk: {
             var flags: c.VkColorComponentFlags = 0;
-            if (mask.r) flags |= c.VK_COLOR_COMPONENT_R_BIT;
-            if (mask.g) flags |= c.VK_COLOR_COMPONENT_G_BIT;
-            if (mask.b) flags |= c.VK_COLOR_COMPONENT_B_BIT;
-            if (mask.a) flags |= c.VK_COLOR_COMPONENT_A_BIT;
+            if (mask.r)
+                flags |= c.VK_COLOR_COMPONENT_R_BIT;
+            if (mask.g)
+                flags |= c.VK_COLOR_COMPONENT_G_BIT;
+            if (mask.b)
+                flags |= c.VK_COLOR_COMPONENT_B_BIT;
+            if (mask.a)
+                flags |= c.VK_COLOR_COMPONENT_A_BIT;
             break :blk flags;
         },
     };
@@ -1104,7 +1110,7 @@ pub fn fromVkCompositeAlphaFlags(
 /// Vulkan color space.
 pub fn fromVkColorSpace(color_space: c.VkColorSpaceKHR) Error!ngl.Surface.ColorSpace {
     if (@typeInfo(ngl.Surface.ColorSpace).Enum.fields.len > 1)
-        @compileError("Update Vulkan conversion");
+        @compileError("Update conversion");
     return switch (color_space) {
         c.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR => .srgb_non_linear,
         else => return Error.NotSupported,

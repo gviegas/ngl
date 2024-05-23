@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const assert = std.debug.assert;
 
 const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
@@ -90,14 +91,16 @@ pub const CommandPool = struct {
             try cmd_pool.unused.resize(allocator, needed_n, true);
             for (prev_n..needed_n) |i| {
                 errdefer for (prev_n..i) |j| {
-                    if (need_dyn) allocator.destroy(cmd_pool.allocs.items[j].dyn.?);
+                    if (need_dyn)
+                        allocator.destroy(cmd_pool.allocs.items[j].dyn.?);
                     allocator.destroy(cmd_pool.allocs.items[j]);
                 };
                 cmd_pool.allocs.items[i] = try allocator.create(CommandBuffer);
                 cmd_pool.allocs.items[i].* = .{
                     .handle = null,
                     .dyn = blk: {
-                        if (!need_dyn) break :blk null;
+                        if (!need_dyn)
+                            break :blk null;
                         const dyn_ptr = allocator.create(Dynamic) catch |err| {
                             allocator.destroy(cmd_pool.allocs.items[i]);
                             return err;
@@ -114,7 +117,8 @@ pub const CommandPool = struct {
             cmd_pool.unused.unset(idx);
             const ptr = cmd_pool.allocs.items[idx];
             ptr.handle = handle;
-            if (need_dyn) ptr.dyn.?.clear(null, dev);
+            if (need_dyn)
+                ptr.dyn.?.clear(null, dev);
             cmd_buf.impl = .{ .val = @intFromPtr(ptr) };
         }
     }
@@ -135,7 +139,8 @@ pub const CommandPool = struct {
             .release => c.VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT,
         }));
 
-        if (!need_dyn) return;
+        if (!need_dyn)
+            return;
 
         var iter = cmd_pool.unused.iterator(.{ .kind = .unset });
         while (iter.next()) |idx|
@@ -175,7 +180,8 @@ pub const CommandPool = struct {
         // Should also move the whole data to the command pool in
         // this case.
         for (cmd_pool.allocs.items, 0..) |ptr, i| {
-            if (cmd_pool.unused.isSet(i)) continue;
+            if (cmd_pool.unused.isSet(i))
+                continue;
             if (ptr.handle == null) {
                 cmd_pool.unused.set(i);
                 n -= 1;
@@ -183,7 +189,7 @@ pub const CommandPool = struct {
                     break;
             }
         }
-        std.debug.assert(n == 0);
+        assert(n == 0);
     }
 
     pub fn deinit(
@@ -393,24 +399,25 @@ pub const CommandBuffer = struct {
         descriptor_sets: []const *ngl.DescriptorSet,
     ) void {
         var desc_set: [1]c.VkDescriptorSet = undefined;
-        const desc_sets = if (descriptor_sets.len > 1) allocator.alloc(
-            c.VkDescriptorSet,
-            descriptor_sets.len,
-        ) catch {
-            for (0..descriptor_sets.len) |i|
-                setDescriptors(
-                    undefined,
-                    allocator,
-                    device,
-                    command_buffer,
-                    bind_point,
-                    shader_layout,
-                    @intCast(first_set + i),
-                    descriptor_sets[i .. i + 1],
-                );
-            return;
-        } else &desc_set;
-        defer if (desc_sets.len > 1) allocator.free(desc_sets);
+        const desc_sets = if (descriptor_sets.len > 1)
+            allocator.alloc(c.VkDescriptorSet, descriptor_sets.len) catch {
+                for (0..descriptor_sets.len) |i|
+                    setDescriptors(
+                        undefined,
+                        allocator,
+                        device,
+                        command_buffer,
+                        bind_point,
+                        shader_layout,
+                        @intCast(first_set + i),
+                        descriptor_sets[i .. i + 1],
+                    );
+                return;
+            }
+        else
+            &desc_set;
+        defer if (desc_sets.len > 1)
+            allocator.free(desc_sets);
 
         for (desc_sets, descriptor_sets) |*handle, set|
             handle.* = DescriptorSet.cast(set.impl).handle;
@@ -513,24 +520,28 @@ pub const CommandBuffer = struct {
     ) void {
         const n = 16;
         var stk_bufs: [n]c.VkBuffer = undefined;
-        const bufs = if (buffers.len > n) allocator.alloc(c.VkBuffer, buffers.len) catch {
-            var i: usize = 0;
-            while (i < buffers.len) : (i += n) {
-                const j = @min(i + n, buffers.len);
-                setVertexBuffers(
-                    undefined,
-                    allocator,
-                    device,
-                    command_buffer,
-                    @intCast(first_binding + i),
-                    buffers[i..j],
-                    offsets[i..j],
-                    undefined,
-                );
+        const bufs = if (buffers.len > n)
+            allocator.alloc(c.VkBuffer, buffers.len) catch {
+                var i: usize = 0;
+                while (i < buffers.len) : (i += n) {
+                    const j = @min(i + n, buffers.len);
+                    setVertexBuffers(
+                        undefined,
+                        allocator,
+                        device,
+                        command_buffer,
+                        @intCast(first_binding + i),
+                        buffers[i..j],
+                        offsets[i..j],
+                        undefined,
+                    );
+                }
+                return;
             }
-            return;
-        } else stk_bufs[0..buffers.len];
-        defer if (bufs.len > n) allocator.free(bufs);
+        else
+            stk_bufs[0..buffers.len];
+        defer if (bufs.len > n)
+            allocator.free(bufs);
 
         for (bufs, buffers) |*handle, buf|
             handle.* = Buffer.cast(buf.impl).handle;
@@ -574,19 +585,20 @@ pub const CommandBuffer = struct {
 
         const n = 1;
         var stk_vports: [n]c.VkViewport = undefined;
-        const vports = if (viewports.len > n) allocator.alloc(
-            c.VkViewport,
-            viewports.len,
-        ) catch {
-            // Vulkan allows setting the viewports
-            // in separate calls.
-            for (viewports, 0..) |vport, i| {
-                convViewport(&stk_vports[0], vport);
-                dev.vkCmdSetViewport(cmd_buf.handle, @intCast(i), 1, &stk_vports);
+        const vports = if (viewports.len > n)
+            allocator.alloc(c.VkViewport, viewports.len) catch {
+                // Vulkan allows setting the viewports
+                // in separate calls.
+                for (viewports, 0..) |vport, i| {
+                    convViewport(&stk_vports[0], vport);
+                    dev.vkCmdSetViewport(cmd_buf.handle, @intCast(i), 1, &stk_vports);
+                }
+                return;
             }
-            return;
-        } else stk_vports[0..viewports.len];
-        defer if (vports.len > n) allocator.free(vports);
+        else
+            stk_vports[0..viewports.len];
+        defer if (vports.len > n)
+            allocator.free(vports);
 
         for (vports, viewports) |*dest, source|
             convViewport(dest, source);
@@ -620,19 +632,20 @@ pub const CommandBuffer = struct {
 
         const n = 1;
         var stk_rects: [n]c.VkRect2D = undefined;
-        const rects = if (scissor_rects.len > n) allocator.alloc(
-            c.VkRect2D,
-            scissor_rects.len,
-        ) catch {
-            // Vulkan allows setting the scissor rects
-            // in separate calls.
-            for (scissor_rects, 0..) |rect, i| {
-                convScissorRect(&stk_rects[0], rect);
-                dev.vkCmdSetScissor(cmd_buf.handle, @intCast(i), 1, &stk_rects);
+        const rects = if (scissor_rects.len > n)
+            allocator.alloc(c.VkRect2D, scissor_rects.len) catch {
+                // Vulkan allows setting the scissor rects
+                // in separate calls.
+                for (scissor_rects, 0..) |rect, i| {
+                    convScissorRect(&stk_rects[0], rect);
+                    dev.vkCmdSetScissor(cmd_buf.handle, @intCast(i), 1, &stk_rects);
+                }
+                return;
             }
-            return;
-        } else stk_rects[0..scissor_rects.len];
-        defer if (rects.len > n) allocator.free(rects);
+        else
+            stk_rects[0..scissor_rects.len];
+        defer if (rects.len > n)
+            allocator.free(rects);
 
         for (rects, scissor_rects) |*dest, source|
             convScissorRect(dest, source);
@@ -1082,7 +1095,8 @@ pub const CommandBuffer = struct {
         // Should be unnecessary to set `Dynamic.changed` here.
 
         if (dev.hasDynamicRendering()) {
-            if (cmd_buf.dyn) |d| d.rendering.clear(null);
+            if (cmd_buf.dyn) |d|
+                d.rendering.clear(null);
             // TODO...
             @panic("Not yet implemented");
         } else {
@@ -1101,8 +1115,10 @@ pub const CommandBuffer = struct {
         const cmd_buf = cast(command_buffer);
 
         const d = cmd_buf.dyn orelse return true;
-        if (d.err) |_| return false;
-        if (!d.changed) return true;
+        if (d.err) |_|
+            return false;
+        if (!d.changed)
+            return true;
 
         dev.vkCmdBindPipeline(
             cmd_buf.handle,
@@ -1257,7 +1273,8 @@ pub const CommandBuffer = struct {
     ) void {
         var region: [1]c.VkBufferCopy = undefined;
         var regions: []c.VkBufferCopy = &region;
-        defer if (regions.len > 1) allocator.free(regions);
+        defer if (regions.len > 1)
+            allocator.free(regions);
 
         for (copies) |x| {
             // We need to copy this many regions.
@@ -1306,7 +1323,8 @@ pub const CommandBuffer = struct {
     ) void {
         var region: [1]c.VkImageCopy = undefined;
         var regions: []c.VkImageCopy = &region;
-        defer if (regions.len > 1) allocator.free(regions);
+        defer if (regions.len > 1)
+            allocator.free(regions);
 
         for (copies) |x| {
             // We need to copy this many regions.
@@ -1394,7 +1412,8 @@ pub const CommandBuffer = struct {
     ) void {
         var region: [1]c.VkBufferImageCopy = undefined;
         var regions: []c.VkBufferImageCopy = &region;
-        defer if (regions.len > 1) allocator.free(regions);
+        defer if (regions.len > 1)
+            allocator.free(regions);
 
         for (copies) |x| {
             // We need to copy this many regions.
@@ -1794,24 +1813,25 @@ pub const CommandBuffer = struct {
         // but such value isn't known at compile time.
         const n = if (builtin.single_threaded) 1 else 16;
         var stk_cmd_bufs: [n]c.VkCommandBuffer = undefined;
-        const cmd_bufs = if (secondary_command_buffers.len > n) allocator.alloc(
-            c.VkCommandBuffer,
-            secondary_command_buffers.len,
-        ) catch {
-            var i: usize = 0;
-            while (i < secondary_command_buffers.len) : (i += n) {
-                const j = @min(i + n, secondary_command_buffers.len);
-                executeCommands(
-                    undefined,
-                    allocator,
-                    device,
-                    command_buffer,
-                    secondary_command_buffers[i..j],
-                );
+        const cmd_bufs = if (secondary_command_buffers.len > n)
+            allocator.alloc(c.VkCommandBuffer, secondary_command_buffers.len) catch {
+                var i: usize = 0;
+                while (i < secondary_command_buffers.len) : (i += n) {
+                    const j = @min(i + n, secondary_command_buffers.len);
+                    executeCommands(
+                        undefined,
+                        allocator,
+                        device,
+                        command_buffer,
+                        secondary_command_buffers[i..j],
+                    );
+                }
+                return;
             }
-            return;
-        } else stk_cmd_bufs[0..secondary_command_buffers.len];
-        defer if (cmd_bufs.len > n) allocator.free(cmd_bufs);
+        else
+            stk_cmd_bufs[0..secondary_command_buffers.len];
+        defer if (cmd_bufs.len > n)
+            allocator.free(cmd_bufs);
 
         for (cmd_bufs, secondary_command_buffers) |*handle, cmd_buf|
             handle.* = cast(cmd_buf.impl).handle;
@@ -1837,7 +1857,8 @@ pub const CommandBuffer = struct {
         // caller is required to reset it before
         // beginning again.
         if (cmd_buf.dyn) |d|
-            if (d.err) |err| return err;
+            if (d.err) |err|
+                return err;
 
         return check(dev.vkEndCommandBuffer(cmd_buf.handle));
     }
@@ -2227,7 +2248,7 @@ test CommandBuffer {
     );
     try testing.expect(!prev_col_write.eql(d.state.color_write));
 
-    var image = try ngl.Image.init(testing.allocator, &ctx.device, .{
+    var img = try ngl.Image.init(testing.allocator, &ctx.device, .{
         .type = .@"2d",
         .format = .rgba8_unorm,
         .width = 1,
@@ -2239,20 +2260,20 @@ test CommandBuffer {
         .usage = .{ .color_attachment = true },
         .misc = .{},
     });
-    defer image.deinit(testing.allocator, &ctx.device);
+    defer img.deinit(testing.allocator, &ctx.device);
     var mem = blk: {
-        const mem_reqs = image.getMemoryRequirements(&ctx.device);
+        const reqs = img.getMemoryRequirements(&ctx.device);
         var mem = try (&ctx.device).alloc(testing.allocator, .{
-            .size = mem_reqs.size,
-            .type_index = mem_reqs.findType(ctx.device, .{ .device_local = true }, null).?,
+            .size = reqs.size,
+            .type_index = reqs.findType(ctx.device, .{ .device_local = true }, null).?,
         });
         errdefer (&ctx.device).free(testing.allocator, &mem);
-        try image.bind(&ctx.device, &mem, 0);
+        try img.bind(&ctx.device, &mem, 0);
         break :blk mem;
     };
     defer (&ctx.device).free(testing.allocator, &mem);
     var view = try ngl.ImageView.init(testing.allocator, &ctx.device, .{
-        .image = &image,
+        .image = &img,
         .type = .@"2d",
         .format = .rgba8_unorm,
         .range = .{

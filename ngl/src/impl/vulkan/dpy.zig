@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const assert = std.debug.assert;
 
 const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
@@ -105,7 +106,7 @@ pub const Surface = packed struct {
             // Will have to increase the length of `modes` in this case
             // (currently it matches the number of valid present modes
             // that are defined in the C enum).
-            std.debug.assert(false);
+            assert(false);
             log.warn(
                 "Too many supported present modes for Surface - ignoring {}",
                 .{mode_n - modes.len},
@@ -124,14 +125,13 @@ pub const Surface = packed struct {
         }
 
         var flags: ngl.Surface.PresentMode.Flags = .{ .fifo = true };
-        for (modes[0..mode_n]) |mode| {
+        for (modes[0..mode_n]) |mode|
             switch (mode) {
                 c.VK_PRESENT_MODE_IMMEDIATE_KHR => flags.immediate = true,
                 c.VK_PRESENT_MODE_MAILBOX_KHR => flags.mailbox = true,
                 c.VK_PRESENT_MODE_FIFO_RELAXED_KHR => flags.fifo_relaxed = true,
                 else => continue,
-            }
-        }
+            };
         return flags;
     }
 
@@ -154,7 +154,8 @@ pub const Surface = packed struct {
             try allocator.alloc(c.VkSurfaceFormatKHR, fmts_n)
         else
             stk_fmts[0..fmts_n];
-        defer if (fmts_n > n) allocator.free(fmts);
+        defer if (fmts_n > n)
+            allocator.free(fmts);
         try check(inst.vkGetPhysicalDeviceSurfaceFormatsKHR(
             phys_dev,
             sf.handle,
@@ -244,7 +245,8 @@ pub const Swapchain = packed struct {
     ) Error!Impl.Swapchain {
         const usage = conv.toVkImageUsageFlags(desc.usage);
         // Usage must not be zero.
-        if (usage == 0) return Error.InvalidArgument;
+        if (usage == 0)
+            return Error.InvalidArgument;
 
         var swapchain: c.VkSwapchainKHR = undefined;
         try check(Device.cast(device).vkCreateSwapchainKHR(&.{
@@ -286,7 +288,8 @@ pub const Swapchain = packed struct {
         var img_n: u32 = undefined;
         try check(dev.vkGetSwapchainImagesKHR(sc.handle, &img_n, null));
         const imgs = if (img_n > n) try allocator.alloc(c.VkImage, img_n) else stk_imgs[0..img_n];
-        defer if (img_n > n) allocator.free(imgs);
+        defer if (img_n > n)
+            allocator.free(imgs);
         try check(dev.vkGetSwapchainImagesKHR(sc.handle, &img_n, imgs.ptr));
 
         const s = try allocator.alloc(ngl.Image, img_n);

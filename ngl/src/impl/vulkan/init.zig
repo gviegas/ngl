@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const assert = std.debug.assert;
 
 pub const log = std.log.scoped(.@"ngl|vulkan");
 
@@ -55,7 +56,8 @@ fn vkEnumerateInstanceExtensionProperties(
 var enumerateInstanceVersion: c.PFN_vkEnumerateInstanceVersion = null;
 /// This wrapper can be called regardless of API version.
 fn vkEnumerateInstanceVersion(version: *u32) c.VkResult {
-    if (enumerateInstanceVersion) |fp| return fp(version);
+    if (enumerateInstanceVersion) |fp|
+        return fp(version);
     version.* = c.VK_API_VERSION_1_0;
     return c.VK_SUCCESS;
 }
@@ -63,7 +65,7 @@ fn vkEnumerateInstanceVersion(version: *u32) c.VkResult {
 /// The returned proc is guaranteed to be non-null.
 /// Use for global procs only.
 fn getProc(name: [:0]const u8) Error!c.PFN_vkVoidFunction {
-    std.debug.assert(getInstanceProcAddr != null);
+    assert(getInstanceProcAddr != null);
     return if (getInstanceProcAddr.?(null, name)) |fp| fp else Error.InitializationFailed;
 }
 
@@ -100,9 +102,11 @@ pub fn init(allocator: std.mem.Allocator) Error!Impl {
         }
         const name = if (builtin.target.isAndroid()) "libvulkan.so" else "libvulkan.so.1";
         libvulkan = std.c.dlopen(name, c.RTLD_LAZY | c.RTLD_LOCAL);
-        if (libvulkan == null) return Error.InitializationFailed;
+        if (libvulkan == null)
+            return Error.InitializationFailed;
         getInstanceProcAddr = @ptrCast(std.c.dlsym(libvulkan.?, sym));
-        if (getInstanceProcAddr == null) return Error.InitializationFailed;
+        if (getInstanceProcAddr == null)
+            return Error.InitializationFailed;
         try setCommon(allocator);
     }
 
@@ -162,7 +166,8 @@ const Extension = struct {
     fn putAllInstance(self: *Extension, layer: [:0]const u8) !void {
         var n: u32 = undefined;
         try check(vkEnumerateInstanceExtensionProperties(layer, &n, null));
-        if (n == 0) return;
+        if (n == 0)
+            return;
         const props = try self.allocator.alloc(c.VkExtensionProperties, n);
         defer self.allocator.free(props);
         try check(vkEnumerateInstanceExtensionProperties(layer, &n, props.ptr));
@@ -178,7 +183,8 @@ const Extension = struct {
 
         var n: u32 = undefined;
         try check(inst.vkEnumerateDeviceExtensionProperties(device, null, &n, null));
-        if (n == 0) return;
+        if (n == 0)
+            return;
         const props = try self.allocator.alloc(c.VkExtensionProperties, n);
         defer self.allocator.free(props);
         try check(inst.vkEnumerateDeviceExtensionProperties(device, null, &n, props.ptr));
@@ -193,7 +199,8 @@ const Extension = struct {
     // TODO: Consider using a custom context to speed up comparisons.
     fn contains(self: Extension, name: []const u8) bool {
         var nm: Name = undefined;
-        if (name.len > nm.len) return false;
+        if (name.len > nm.len)
+            return false;
         @memcpy(nm[0..name.len], name);
         @memset(nm[name.len..nm.len], 0);
         return self.names.contains(nm);
@@ -262,7 +269,8 @@ const Feature = struct {
         }
 
         if (self.features_2.pNext != null) {
-            if (inst.getPhysicalDeviceFeatures2 == null) @panic("Invalid call to Feature.get");
+            if (inst.getPhysicalDeviceFeatures2 == null)
+                @panic("Invalid call to Feature.get");
             inst.vkGetPhysicalDeviceFeatures2(device, &self.features_2);
         } else inst.vkGetPhysicalDeviceFeatures(device, &self.features_2.features);
 
@@ -488,7 +496,8 @@ const Property = struct {
         }
 
         if (self.properties_2.pNext != null) {
-            if (inst.getPhysicalDeviceProperties2 == null) @panic("Invalid call to Property.get");
+            if (inst.getPhysicalDeviceProperties2 == null)
+                @panic("Invalid call to Property.get");
             inst.vkGetPhysicalDeviceProperties2(device, &self.properties_2);
         } else inst.vkGetPhysicalDeviceProperties(device, &self.properties_2.properties);
 
@@ -561,12 +570,13 @@ pub const Instance = struct {
 
     /// The returned proc is guaranteed to be non-null.
     pub fn getProc(instance: c.VkInstance, name: [:0]const u8) Error!c.PFN_vkVoidFunction {
-        std.debug.assert(getInstanceProcAddr != null);
+        assert(getInstanceProcAddr != null);
         return if (getInstanceProcAddr.?(instance, name)) |fp| fp else Error.InitializationFailed;
     }
 
     fn init(allocator: std.mem.Allocator) Error!Instance {
-        if (global_instance) |_| @panic("Instance exists");
+        if (global_instance != null)
+            @panic("Instance exists");
 
         var ext = Extension.init(allocator);
         defer ext.deinit();
@@ -628,7 +638,8 @@ pub const Instance = struct {
         var inst: c.VkInstance = undefined;
         try check(vkCreateInstance(&create_info, null, &inst));
         errdefer if (Instance.getProc(inst, "vkDestroyInstance")) |x| {
-            if (@as(c.PFN_vkDestroyInstance, @ptrCast(x))) |f| f(inst, null);
+            if (@as(c.PFN_vkDestroyInstance, @ptrCast(x))) |f|
+                f(inst, null);
         } else |_| {};
 
         return .{
@@ -1163,7 +1174,7 @@ pub const Device = struct {
         device: c.VkDevice,
         name: [:0]const u8,
     ) Error!c.PFN_vkVoidFunction {
-        std.debug.assert(get != null);
+        assert(get != null);
         return if (get.?(device, name)) |fp| fp else Error.InitializationFailed;
     }
 
@@ -1190,7 +1201,8 @@ pub const Device = struct {
                 };
                 n += 1;
             }
-            if (n == 0) return Error.InvalidArgument;
+            if (n == 0)
+                return Error.InvalidArgument;
             break :blk n;
         };
 
@@ -1213,7 +1225,8 @@ pub const Device = struct {
         defer ext_names.deinit();
 
         if (gpu.feature_set.presentation) {
-            if (inst.destroySurface == null) return Error.InvalidArgument;
+            if (inst.destroySurface == null)
+                return Error.InvalidArgument;
             const swapchain_ext = "VK_KHR_swapchain";
             if (ext.contains(swapchain_ext)) {
                 try ext_names.append(swapchain_ext);
@@ -1239,7 +1252,8 @@ pub const Device = struct {
         var dev: c.VkDevice = undefined;
         try check(inst.vkCreateDevice(phys_dev, &create_info, null, &dev));
         errdefer if (Instance.getProc(inst.handle, "vkDestroyDevice")) |x| {
-            if (@as(c.PFN_vkDestroyDevice, @ptrCast(x))) |f| f(dev, null);
+            if (@as(c.PFN_vkDestroyDevice, @ptrCast(x))) |f|
+                f(dev, null);
         } else |_| {};
 
         var dev_props: c.VkPhysicalDeviceProperties = undefined;
@@ -1395,7 +1409,7 @@ pub const Device = struct {
                 null,
         };
 
-        for (queue_infos[0..queue_n]) |info| {
+        for (queue_infos[0..queue_n]) |info|
             for (0..info.queueCount) |i| {
                 var queue: c.VkQueue = undefined;
                 ptr.vkGetDeviceQueue(info.queueFamilyIndex, @intCast(i), &queue);
@@ -1405,8 +1419,7 @@ pub const Device = struct {
                     .index = @intCast(i),
                 };
                 ptr.queue_n += 1;
-            }
-        }
+            };
 
         return .{ .val = @intFromPtr(ptr) };
     }
@@ -1417,7 +1430,8 @@ pub const Device = struct {
         device: Impl.Device,
     ) ngl.Queue.Count {
         const dev = cast(device);
-        for (0..dev.queue_n) |i| allocation[i] = .{ .val = @intFromPtr(&dev.queues[i]) };
+        for (0..dev.queue_n) |i|
+            allocation[i] = .{ .val = @intFromPtr(&dev.queues[i]) };
         return dev.queue_n;
     }
 
@@ -1441,7 +1455,8 @@ pub const Device = struct {
             const flags = props.memoryTypes[i].propertyFlags;
             const heap: u4 = @intCast(props.memoryTypes[i].heapIndex);
             // TODO: Handle this somehow.
-            if (~mask & flags != 0) log.warn("Memory type {} has unexposed flag(s)", .{i});
+            if (~mask & flags != 0)
+                log.warn("Memory type {} has unexposed flag(s)", .{i});
             allocation[i] = .{
                 .properties = .{
                     .device_local = flags & c.VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT != 0,
@@ -2563,11 +2578,12 @@ pub const Queue = struct {
         submits: []const ngl.Queue.Submit,
     ) Error!void {
         var subm_info: [1]c.VkSubmitInfo = undefined;
-        var subm_infos = if (submits.len > 1) try allocator.alloc(
-            c.VkSubmitInfo,
-            submits.len,
-        ) else &subm_info;
-        defer if (subm_infos.len > 1) allocator.free(subm_infos);
+        var subm_infos = if (submits.len > 1)
+            try allocator.alloc(c.VkSubmitInfo, submits.len)
+        else
+            &subm_info;
+        defer if (subm_infos.len > 1)
+            allocator.free(subm_infos);
 
         var cmd_buf: [1]c.VkCommandBuffer = undefined;
         var cmd_bufs: []c.VkCommandBuffer = undefined;
@@ -2585,26 +2601,33 @@ pub const Queue = struct {
                 stage_n += subms.wait.len;
             }
 
-            cmd_bufs = if (cmd_buf_n > 1) try allocator.alloc(
-                c.VkCommandBuffer,
-                cmd_buf_n,
-            ) else &cmd_buf;
-            errdefer if (cmd_buf_n > 1) allocator.free(cmd_bufs);
+            cmd_bufs = if (cmd_buf_n > 1)
+                try allocator.alloc(c.VkCommandBuffer, cmd_buf_n)
+            else
+                &cmd_buf;
+            errdefer if (cmd_buf_n > 1)
+                allocator.free(cmd_bufs);
 
-            sems = if (sem_n > 1) try allocator.alloc(
-                c.VkSemaphore,
-                sem_n,
-            ) else &sem;
-            errdefer if (sem_n > 1) allocator.free(sems);
+            sems = if (sem_n > 1)
+                try allocator.alloc(c.VkSemaphore, sem_n)
+            else
+                &sem;
+            errdefer if (sem_n > 1)
+                allocator.free(sems);
 
-            stages = if (stage_n > 1) try allocator.alloc(
-                c.VkPipelineStageFlags,
-                stage_n,
-            ) else &stage;
+            stages = if (stage_n > 1)
+                try allocator.alloc(c.VkPipelineStageFlags, stage_n)
+            else
+                &stage;
         }
-        defer if (cmd_bufs.len > 1) allocator.free(cmd_bufs);
-        defer if (sems.len > 1) allocator.free(sems);
-        defer if (stages.len > 1) allocator.free(stages);
+        defer {
+            if (cmd_bufs.len > 1)
+                allocator.free(cmd_bufs);
+            if (sems.len > 1)
+                allocator.free(sems);
+            if (stages.len > 1)
+                allocator.free(stages);
+        }
 
         var cmd_bufs_ptr = cmd_bufs.ptr;
         var sems_ptr = sems.ptr;
@@ -2670,7 +2693,7 @@ pub const Queue = struct {
         wait_semaphores: []const *ngl.Semaphore,
         presents: []const ngl.Queue.Present,
     ) Error!void {
-        std.debug.assert(presents.len > 0);
+        assert(presents.len > 0);
 
         const n = 8;
         var stk_sems: [n]c.VkSemaphore = undefined;
@@ -2681,7 +2704,8 @@ pub const Queue = struct {
             try allocator.alloc(c.VkSemaphore, wait_semaphores.len)
         else
             stk_sems[0..wait_semaphores.len];
-        defer if (wait_semaphores.len > n) allocator.free(sems);
+        defer if (wait_semaphores.len > n)
+            allocator.free(sems);
         for (sems, wait_semaphores) |*handle, sem|
             handle.* = Semaphore.cast(sem.impl).handle;
 
@@ -2759,11 +2783,12 @@ pub const Memory = packed struct {
         const mem = cast(memory);
 
         var mapped_range: [1]c.VkMappedMemoryRange = undefined;
-        const mapped_ranges = if (offsets.len > 1) try allocator.alloc(
-            c.VkMappedMemoryRange,
-            offsets.len,
-        ) else &mapped_range;
-        defer if (mapped_ranges.len > 1) allocator.free(mapped_ranges);
+        const mapped_ranges = if (offsets.len > 1)
+            try allocator.alloc(c.VkMappedMemoryRange, offsets.len)
+        else
+            &mapped_range;
+        defer if (mapped_ranges.len > 1)
+            allocator.free(mapped_ranges);
 
         for (mapped_ranges, offsets, sizes) |*range, offset, size|
             range.* = .{

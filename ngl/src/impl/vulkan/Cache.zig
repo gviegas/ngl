@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const assert = std.debug.assert;
 
 const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
@@ -144,7 +145,8 @@ pub fn getPrimitivePipeline(
     self.state.mutex.lock();
     defer self.state.mutex.unlock();
 
-    if (self.state.hash_map.get(key)) |val| return val[0];
+    if (self.state.hash_map.get(key)) |val|
+        return val[0];
 
     const pl = try createPrimitivePipeline(
         allocator,
@@ -169,7 +171,8 @@ pub fn getRenderPass(
     self.rendering.mutex.lock();
     defer self.rendering.mutex.unlock();
 
-    if (self.rendering.hash_map.get(key)) |val| return val[0];
+    if (self.rendering.hash_map.get(key)) |val|
+        return val[0];
 
     const rp = try createRenderPass(allocator, device, key);
     errdefer device.vkDestroyRenderPass(rp, null);
@@ -183,7 +186,7 @@ pub fn createPrimitivePipeline(
     key: State.Key,
     render_pass: c.VkRenderPass,
 ) Error!c.VkPipeline {
-    if (!builtin.is_test and device.isFullyDynamic()) unreachable;
+    assert(builtin.is_test or !device.isFullyDynamic());
 
     const state = &key.state;
 
@@ -295,7 +298,7 @@ pub fn createPrimitivePipeline(
         .lineWidth = 1,
     };
 
-    if (@TypeOf(state.sample_mask.sample_mask) != u64) unreachable;
+    assert(@TypeOf(state.sample_mask.sample_mask) == u64);
     const spl_mask = [2]c.VkSampleMask{
         @truncate(state.sample_mask.sample_mask),
         @truncate(state.sample_mask.sample_mask >> 32),
@@ -355,7 +358,8 @@ pub fn createPrimitivePipeline(
     const col_n = blk: {
         var n: u32 = 0;
         for (rendering.color_format.formats) |fmt| {
-            if (fmt == .unknown) break;
+            if (fmt == .unknown)
+                break;
             n += 1;
         }
         break :blk n;
@@ -481,7 +485,7 @@ pub fn createRenderPass(
     device: *Device,
     key: Rendering.Key,
 ) Error!c.VkRenderPass {
-    if (!builtin.is_test and device.hasDynamicRendering()) unreachable;
+    assert(builtin.is_test or !device.hasDynamicRendering());
 
     const max_attach = ngl.Cmd.max_color_attachment * 2 + 2;
     var attachs = [_]c.VkAttachmentDescription{undefined} ** max_attach;
@@ -633,7 +637,7 @@ pub fn createFramebuffer(
     key: Fbo.Key,
     render_pass: c.VkRenderPass,
 ) Error!c.VkFramebuffer {
-    if (!builtin.is_test and device.hasDynamicRendering()) unreachable;
+    assert(builtin.is_test or !device.hasDynamicRendering());
 
     const max_attach = ngl.Cmd.max_color_attachment * 2 + 2;
     var attachs = [_]c.VkImageView{undefined} ** max_attach;
@@ -800,7 +804,8 @@ test "Cache" {
     };
 
     inline for (@typeInfo(@TypeOf(Dynamic.rendering_mask)).Struct.fields) |field| {
-        if (!@field(Dynamic.rendering_mask, field.name)) continue;
+        if (!@field(Dynamic.rendering_mask, field.name))
+            continue;
 
         @field(d.rendering, field.name).set(rend);
 
@@ -875,13 +880,13 @@ test getPrimitivePipeline {
             .link = true,
         },
     });
-    defer testing.allocator.free(shaders);
-    defer for (shaders) |*shd|
-        if (shd.*) |*x|
-            x.deinit(testing.allocator, &context().device)
-        else |_| {};
-    var vert_shd = if (shaders[0]) |vs| vs else |err| return err;
-    var frag_shd = if (shaders[1]) |fs| fs else |err| return err;
+    defer {
+        for (shaders) |*shd|
+            (shd.* catch continue).deinit(testing.allocator, &context().device);
+        testing.allocator.free(shaders);
+    }
+    var vert_shd = try shaders[0];
+    var frag_shd = try shaders[1];
     key.state.shaders.set(&.{ .vertex, .fragment }, &.{ &vert_shd, &frag_shd });
 
     try key.state.vertex_input.set(
@@ -965,14 +970,15 @@ test getPrimitivePipeline {
     try testing.expect(cache.state.hash_map.get(key).?[0] == pl);
     try expectRenderPassCount(dev, cache.rendering, 1);
 
-    if (!key.state.depth_test_enable.enable) unreachable;
+    assert(key.state.depth_test_enable.enable);
     key.state.depth_test_enable.set(false);
     const pl2 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 2);
     try expectRenderPassCount(dev, cache.rendering, 1);
-    if (pl2 == pl) log.warn("Identical handles for different pipelines", .{});
+    if (pl2 == pl)
+        log.warn("Identical handles for different pipelines", .{});
 
-    if (key.state.depth_test_enable.enable) unreachable;
+    assert(!key.state.depth_test_enable.enable);
     key.state.depth_test_enable.set(true);
     const pl3 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 2);
@@ -992,13 +998,14 @@ test getPrimitivePipeline {
         .format = .rgba16_sfloat,
         .samples = view.samples,
     };
-    if (view3.format == view.format) unreachable;
+    assert(view3.format != view.format);
     col_attach[0].view = &view3;
     key.rendering.set(rend);
     const pl5 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 3);
     try expectRenderPassCount(dev, cache.rendering, 2);
-    if (pl5 == pl4) log.warn("Identical handles for different pipelines", .{});
+    if (pl5 == pl4)
+        log.warn("Identical handles for different pipelines", .{});
 
     var view4 = ngl.ImageView{
         .impl = .{ .val = view2.impl.val + 1 },
@@ -1011,12 +1018,9 @@ test getPrimitivePipeline {
     try expectRenderPassCount(dev, cache.rendering, 2);
     try testing.expect(pl6 == pl5);
 
-    if (key.state.sample_count.sample_count != .@"1" or
-        view.samples != .@"1" or
-        view2.samples != .@"1")
-    {
-        unreachable;
-    }
+    assert(key.state.sample_count.sample_count == .@"1" and
+        view.samples == .@"1" and
+        view2.samples == .@"1");
     var view5 = ngl.ImageView{
         .impl = view.impl,
         .format = view.format,
@@ -1034,20 +1038,23 @@ test getPrimitivePipeline {
     const pl7 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 4);
     try expectRenderPassCount(dev, cache.rendering, 3);
-    if (pl7 == pl) log.warn("Identical handles for different pipelines", .{});
+    if (pl7 == pl)
+        log.warn("Identical handles for different pipelines", .{});
 
     key.state.sample_mask.set(~key.state.sample_mask.sample_mask);
     const pl8 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 5);
     try expectRenderPassCount(dev, cache.rendering, 3);
-    if (pl8 == pl7) log.warn("Identical handles for different pipelines", .{});
+    if (pl8 == pl7)
+        log.warn("Identical handles for different pipelines", .{});
 
     rend.depth = null;
     key.rendering.set(rend);
     const pl9 = try cache.getPrimitivePipeline(testing.allocator, dev, key);
     try testing.expect(cache.state.hash_map.count() == 6);
     try expectRenderPassCount(dev, cache.rendering, 4);
-    if (pl9 == pl8) log.warn("Identical handles for different pipelines", .{});
+    if (pl9 == pl8)
+        log.warn("Identical handles for different pipelines", .{});
 
     col_attach[0].view = &view;
     rend.depth = dep_attach;
@@ -1086,7 +1093,7 @@ test getRenderPass {
     try testing.expect(cache.rendering.hash_map.count() == 1);
     try testing.expect(rp2 == rp);
 
-    if (Rendering.subset_mask.render_area_size) unreachable;
+    assert(!Rendering.subset_mask.render_area_size);
     key.set(.{
         .colors = &.{},
         .depth = null,
@@ -1121,9 +1128,10 @@ test getRenderPass {
     });
     const rp4 = try cache.getRenderPass(testing.allocator, dev, key.*);
     try testing.expect(cache.rendering.hash_map.count() == 2);
-    if (rp4 == rp) log.warn("Identical handles for different render passes", .{});
+    if (rp4 == rp)
+        log.warn("Identical handles for different render passes", .{});
 
-    if (Rendering.subset_mask.color_view) unreachable;
+    assert(!Rendering.subset_mask.color_view);
     var view2 = ngl.ImageView{
         .impl = .{ .val = view.impl.val + 1 },
         .format = view.format,
@@ -1153,7 +1161,7 @@ test getRenderPass {
         .format = .a2bgr10_unorm,
         .samples = view.samples,
     };
-    if (view3.format == view.format) unreachable;
+    assert(view3.format != view.format);
     key.set(.{
         .colors = &.{.{
             .view = &view3,
@@ -1171,7 +1179,8 @@ test getRenderPass {
     });
     const rp6 = try cache.getRenderPass(testing.allocator, dev, key.*);
     try testing.expect(cache.rendering.hash_map.count() == 3);
-    if (rp6 == rp4) log.warn("Identical handles for different render passes", .{});
+    if (rp6 == rp4)
+        log.warn("Identical handles for different render passes", .{});
 }
 
 fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCreateInfo) !void {
@@ -1242,7 +1251,8 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
         conv.toVkPrimitiveTopology(state.primitive_topology.topology) == ia.*.topology,
     );
 
-    if (create_info.pTessellationState != null) return error.NonnullPtr;
+    if (create_info.pTessellationState != null)
+        return error.NonnullPtr;
 
     const vport = create_info.pViewportState orelse return error.NullPtr;
     try testing.expect(state.viewport_count.count == vport.*.viewportCount);
@@ -1267,7 +1277,7 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
         conv.toVkSampleCount(state.sample_count.sample_count) == ms.*.rasterizationSamples,
     );
     try testing.expect(ms.*.sampleShadingEnable == c.VK_FALSE);
-    if (@TypeOf(state.sample_mask.sample_mask) != u64) unreachable;
+    assert(@TypeOf(state.sample_mask.sample_mask) == u64);
     try testing.expect(
         @as(c.VkSampleMask, @truncate(state.sample_mask.sample_mask)) == ms.*.pSampleMask[0],
     );
@@ -1438,11 +1448,13 @@ test createPrimitivePipeline {
             .link = true,
         },
     });
-    defer testing.allocator.free(shaders);
-    var vert_shd = if (shaders[0]) |x| x else |err| return err;
-    defer vert_shd.deinit(testing.allocator, &context().device);
-    var frag_shd = if (shaders[1]) |x| x else |err| return err;
-    defer frag_shd.deinit(testing.allocator, &context().device);
+    defer {
+        for (shaders) |*shd|
+            (shd.* catch continue).deinit(testing.allocator, &context().device);
+        testing.allocator.free(shaders);
+    }
+    var vert_shd = try shaders[0];
+    var frag_shd = try shaders[1];
     key.state.shaders.set(&.{ .vertex, .fragment }, &.{ &vert_shd, &frag_shd });
 
     try key.state.vertex_input.set(
@@ -1592,7 +1604,8 @@ test createPrimitivePipeline {
 }
 
 fn validateRenderPass(key: Rendering.Key, create_info: c.VkRenderPassCreateInfo) !void {
-    if (!builtin.is_test) @compileError("For testing only");
+    comptime if (!builtin.is_test)
+        @compileError("For testing only");
 
     try testing.expect(create_info.subpassCount == 1);
     try testing.expect(create_info.pSubpasses != null);
@@ -1934,7 +1947,8 @@ test createRenderPass {
 }
 
 fn validateFramebuffer(key: Fbo.Key, create_info: c.VkFramebufferCreateInfo) !void {
-    if (!builtin.is_test) @compileError("For testing only");
+    comptime if (!builtin.is_test)
+        @compileError("For testing only");
 
     try testing.expect(create_info.renderPass != null_handle);
 

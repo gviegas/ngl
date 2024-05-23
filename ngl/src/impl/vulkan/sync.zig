@@ -21,7 +21,7 @@ pub const Fence = packed struct {
         device: Impl.Device,
         desc: ngl.Fence.Desc,
     ) Error!Impl.Fence {
-        var fence: c.VkFence = undefined;
+        var fnc: c.VkFence = undefined;
         try check(Device.cast(device).vkCreateFence(&.{
             .sType = c.VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .pNext = null,
@@ -29,9 +29,9 @@ pub const Fence = packed struct {
                 .unsignaled => 0,
                 .signaled => @as(c.VkFlags, c.VK_FENCE_CREATE_SIGNALED_BIT),
             },
-        }, null, &fence));
+        }, null, &fnc));
 
-        return .{ .val = @bitCast(Fence{ .handle = fence }) };
+        return .{ .val = @bitCast(Fence{ .handle = fnc }) };
     }
 
     pub fn reset(
@@ -42,7 +42,8 @@ pub const Fence = packed struct {
     ) Error!void {
         var fnc: [1]c.VkFence = undefined;
         const fncs = if (fences.len > 1) try allocator.alloc(c.VkFence, fences.len) else &fnc;
-        defer if (fncs.len > 1) allocator.free(fncs);
+        defer if (fncs.len > 1)
+            allocator.free(fncs);
 
         for (fncs, fences) |*handle, fence|
             handle.* = cast(fence.impl).handle;
@@ -59,7 +60,8 @@ pub const Fence = packed struct {
     ) Error!void {
         var fnc: [1]c.VkFence = undefined;
         const fncs = if (fences.len > 1) try allocator.alloc(c.VkFence, fences.len) else &fnc;
-        defer if (fncs.len > 1) allocator.free(fncs);
+        defer if (fncs.len > 1)
+            allocator.free(fncs);
 
         for (fncs, fences) |*handle, fence|
             handle.* = cast(fence.impl).handle;
@@ -78,7 +80,8 @@ pub const Fence = packed struct {
         fence: Impl.Fence,
     ) Error!ngl.Fence.Status {
         check(Device.cast(device).vkGetFenceStatus(cast(fence).handle)) catch |err| {
-            if (err == Error.NotReady) return .unsignaled;
+            if (err == Error.NotReady)
+                return .unsignaled;
             return err;
         };
         return .signaled;

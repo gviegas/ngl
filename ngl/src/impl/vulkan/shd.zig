@@ -95,7 +95,8 @@ pub const Shader = packed union {
 
                 self.set_layouts = blk: {
                     const n = desc.set_layouts.len;
-                    if (n == 0) break :blk &.{};
+                    if (n == 0)
+                        break :blk &.{};
                     const set_layts = allocator.alloc(c.VkDescriptorSetLayout, n) catch |err| {
                         self.deinit(allocator, device);
                         shader.* = err;
@@ -108,7 +109,8 @@ pub const Shader = packed union {
 
                 self.push_constants = blk: {
                     const n = desc.push_constants.len;
-                    if (n == 0) break :blk &.{};
+                    if (n == 0)
+                        break :blk &.{};
                     const push_consts = allocator.alloc(c.VkPushConstantRange, n) catch |err| {
                         self.deinit(allocator, device);
                         shader.* = err;
@@ -124,7 +126,8 @@ pub const Shader = packed union {
                 };
 
                 self.pipeline_layout = blk: {
-                    if (desc.type == .fragment) break :blk null_handle;
+                    if (desc.type == .fragment)
+                        break :blk null_handle;
                     var pl_layt: c.VkPipelineLayout = undefined;
                     check(device.vkCreatePipelineLayout(&.{
                         .sType = c.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -153,7 +156,8 @@ pub const Shader = packed union {
                     const const_n = spec.constants.len;
                     const data_n = spec.data.len;
                     // TODO: Validate this elsewhere.
-                    if (const_n == 0 or data_n == 0) break :blk null;
+                    if (const_n == 0 or data_n == 0)
+                        break :blk null;
                     const entries = allocator.alloc(
                         c.VkSpecializationMapEntry,
                         const_n,
@@ -184,7 +188,8 @@ pub const Shader = packed union {
                 };
 
                 self.pipeline = blk: {
-                    if (desc.type != .compute) break :blk null_handle;
+                    if (desc.type != .compute)
+                        break :blk null_handle;
                     var pl: [1]c.VkPipeline = undefined;
                     // TODO: Use `VkPipelineCache`.
                     check(device.vkCreateComputePipelines(null_handle, 1, &.{.{
@@ -224,8 +229,10 @@ pub const Shader = packed union {
                 .array => {},
                 .slice => |s| allocator.free(s),
             }
-            if (self.set_layouts.len > 0) allocator.free(self.set_layouts);
-            if (self.push_constants.len > 0) allocator.free(self.push_constants);
+            if (self.set_layouts.len > 0)
+                allocator.free(self.set_layouts);
+            if (self.push_constants.len > 0)
+                allocator.free(self.push_constants);
             device.vkDestroyPipelineLayout(self.pipeline_layout, null);
             if (self.specialization) |x| {
                 allocator.free(x.pMapEntries[0..x.mapEntryCount]);
@@ -268,7 +275,10 @@ pub const Shader = packed union {
         const dev = Device.cast(device);
         const shd = cast(shader);
 
-        if (compat(dev)) shd.compat.deinit(allocator, dev) else @panic("Not yet implemented");
+        if (compat(dev))
+            shd.compat.deinit(allocator, dev)
+        else
+            @panic("Not yet implemented");
     }
 };
 
@@ -287,17 +297,20 @@ pub const ShaderLayout = packed struct {
     ) Error!Impl.ShaderLayout {
         const set_layt_n: u32 = @intCast(desc.set_layouts.len);
         const set_layts: []c.VkDescriptorSetLayout = blk: {
-            if (set_layt_n == 0) break :blk &.{};
+            if (set_layt_n == 0)
+                break :blk &.{};
             const s = try allocator.alloc(c.VkDescriptorSetLayout, set_layt_n);
             for (s, desc.set_layouts) |*handle, set_layt|
                 handle.* = DescriptorSetLayout.cast(set_layt.impl).handle;
             break :blk s;
         };
-        defer if (set_layt_n > 0) allocator.free(set_layts);
+        defer if (set_layt_n > 0)
+            allocator.free(set_layts);
 
         const push_const_n: u32 = @intCast(desc.push_constants.len);
         const push_consts: []c.VkPushConstantRange = blk: {
-            if (push_const_n == 0) break :blk &.{};
+            if (push_const_n == 0)
+                break :blk &.{};
             const s = try allocator.alloc(c.VkPushConstantRange, push_const_n);
             for (s, desc.push_constants) |*vk_push_const, push_const|
                 vk_push_const.* = .{
@@ -307,7 +320,8 @@ pub const ShaderLayout = packed struct {
                 };
             break :blk s;
         };
-        defer if (push_const_n > 0) allocator.free(push_consts);
+        defer if (push_const_n > 0)
+            allocator.free(push_consts);
 
         var pl_layt: c.VkPipelineLayout = undefined;
         try check(Device.cast(device).vkCreatePipelineLayout(&.{
@@ -368,7 +382,8 @@ pub const DescriptorSetLayout = packed struct {
                     .stageFlags = conv.toVkShaderStageFlags(bind.shader_mask),
                     .pImmutableSamplers = blk: {
                         const n = bind.immutable_samplers.len;
-                        if (n == 0) break :blk null;
+                        if (n == 0)
+                            break :blk null;
                         for (splrs_ptr[0..n], bind.immutable_samplers) |*vk_splr, splr|
                             vk_splr.* = Sampler.cast(splr.impl).handle;
                         splrs_ptr += n;
@@ -376,8 +391,12 @@ pub const DescriptorSetLayout = packed struct {
                     },
                 };
         }
-        defer if (binds.len > 0) allocator.free(binds);
-        defer if (splrs.len > 0) allocator.free(splrs);
+        defer {
+            if (binds.len > 0)
+                allocator.free(binds);
+            if (splrs.len > 0)
+                allocator.free(splrs);
+        }
 
         var set_layt: c.VkDescriptorSetLayout = undefined;
         try check(Device.cast(device).vkCreateDescriptorSetLayout(&.{
@@ -517,7 +536,7 @@ pub const DescriptorSet = packed struct {
             var img_info_n: usize = 0;
             var buf_info_n: usize = 0;
             var buf_view_n: usize = 0;
-            for (writes) |w| {
+            for (writes) |w|
                 switch (w.contents) {
                     .sampler => |x| img_info_n += x.len,
                     .combined_image_sampler => |x| img_info_n += x.len,
@@ -533,29 +552,35 @@ pub const DescriptorSet = packed struct {
                     .uniform_buffer,
                     .storage_buffer,
                     => |x| buf_info_n += x.len,
-                }
-            }
+                };
 
-            img_infos = if (img_info_n > 0) try allocator.alloc(
-                c.VkDescriptorImageInfo,
-                img_info_n,
-            ) else &.{};
-            errdefer if (img_infos.len > 0) allocator.free(img_infos);
+            img_infos = if (img_info_n > 0)
+                try allocator.alloc(c.VkDescriptorImageInfo, img_info_n)
+            else
+                &.{};
+            errdefer if (img_infos.len > 0)
+                allocator.free(img_infos);
 
-            buf_infos = if (buf_info_n > 0) try allocator.alloc(
-                c.VkDescriptorBufferInfo,
-                buf_info_n,
-            ) else &.{};
-            errdefer if (buf_infos.len > 0) allocator.free(buf_infos);
+            buf_infos = if (buf_info_n > 0)
+                try allocator.alloc(c.VkDescriptorBufferInfo, buf_info_n)
+            else
+                &.{};
+            errdefer if (buf_infos.len > 0)
+                allocator.free(buf_infos);
 
-            buf_views = if (buf_view_n > 0) try allocator.alloc(
-                c.VkBufferView,
-                buf_view_n,
-            ) else &.{};
+            buf_views = if (buf_view_n > 0)
+                try allocator.alloc(c.VkBufferView, buf_view_n)
+            else
+                &.{};
         }
-        defer if (img_infos.len > 0) allocator.free(img_infos);
-        defer if (buf_infos.len > 0) allocator.free(buf_infos);
-        defer if (buf_views.len > 0) allocator.free(buf_views);
+        defer {
+            if (img_infos.len > 0)
+                allocator.free(img_infos);
+            if (buf_infos.len > 0)
+                allocator.free(buf_infos);
+            if (buf_views.len > 0)
+                allocator.free(buf_views);
+        }
 
         var img_infos_ptr = img_infos.ptr;
         var buf_infos_ptr = buf_infos.ptr;

@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const assert = std.debug.assert;
 
 const log = std.log.scoped(.@"ngl|impl");
 
@@ -1039,13 +1040,13 @@ pub const DriverApi = enum {
 /// It's only valid to call this after `init()` succeeds.
 /// `deinit()` invalidates the `Impl`. Don't store it.
 pub fn get() *Self {
-    std.debug.assert(impl != null);
+    assert(impl != null);
     return &impl.?;
 }
 
 /// Same restrictions as `get`.
 pub fn getDriverApi() DriverApi {
-    std.debug.assert(dapi != null);
+    assert(dapi != null);
     return dapi.?;
 }
 
@@ -1055,7 +1056,8 @@ pub fn getDriverApi() DriverApi {
 pub fn init(allocator: std.mem.Allocator) Error!void {
     lock.lock();
     defer lock.unlock();
-    if (impl) |_| return;
+    if (impl != null)
+        return;
     switch (builtin.os.tag) {
         .linux, .windows => {
             impl = try @import("vulkan/init.zig").init(allocator);

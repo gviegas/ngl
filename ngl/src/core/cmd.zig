@@ -1,4 +1,5 @@
 const std = @import("std");
+const assert = std.debug.assert;
 
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
@@ -45,11 +46,12 @@ pub const CommandPool = struct {
         device: *Device,
         desc: CommandBuffer.Desc,
     ) Error![]CommandBuffer {
-        std.debug.assert(desc.count > 0);
+        assert(desc.count > 0);
+        if (@typeInfo(CommandBuffer).Struct.fields.len > 1)
+            @compileError("Uninitialized field(s)");
+
         const cmd_bufs = try allocator.alloc(CommandBuffer, desc.count);
         errdefer allocator.free(cmd_bufs);
-        // TODO: Update this when adding more fields to `CommandBuffer`.
-        if (@typeInfo(CommandBuffer).Struct.fields.len > 1) @compileError("Uninitialized field(s)");
         try Impl.get().allocCommandBuffers(allocator, device.impl, self.impl, desc, cmd_bufs);
         return cmd_bufs;
     }
@@ -67,7 +69,8 @@ pub const CommandPool = struct {
         command_buffers: []const *CommandBuffer,
     ) void {
         Impl.get().freeCommandBuffers(allocator, device.impl, self.impl, command_buffers);
-        for (command_buffers) |cmd_buf| cmd_buf.* = undefined;
+        for (command_buffers) |cmd_buf|
+            cmd_buf.* = undefined;
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator, device: *Device) void {

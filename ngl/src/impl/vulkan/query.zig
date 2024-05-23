@@ -73,7 +73,8 @@ pub fn resolveQueryOcclusion(
     source: []const u8,
     dest: @TypeOf((ngl.QueryResolve(.occlusion){}).resolved_results),
 ) Error!void {
-    if (@intFromPtr(source.ptr) & 7 != 0) return Error.InvalidArgument;
+    if (@intFromPtr(source.ptr) & 7 != 0)
+        return Error.InvalidArgument;
 
     var source_64 = @as([*]const u64, @ptrCast(@alignCast(source)))[0 .. source.len / 8];
 
@@ -98,7 +99,8 @@ pub fn resolveQueryTimestamp(
     source: []const u8,
     dest: @TypeOf((ngl.QueryResolve(.timestamp){}).resolved_results),
 ) Error!void {
-    if (@intFromPtr(source.ptr) & 7 != 0) return Error.InvalidArgument;
+    if (@intFromPtr(source.ptr) & 7 != 0)
+        return Error.InvalidArgument;
 
     var source_64 = @as([*]const u64, @ptrCast(@alignCast(source)))[0 .. source.len / 8];
     const period: f64 = Device.cast(device).timestamp_period;

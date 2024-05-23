@@ -75,20 +75,20 @@ pub const Device = struct {
 
         // Track the current element in `gpu.queues` since it
         // might be interspersed with `null`s.
-        var queue_i: usize = 0;
-        var queue_alloc: [Queue.max]Impl.Queue = undefined;
-        self.queue_n = Impl.get().getQueues(&queue_alloc, self.impl);
-        for (self.queues[0..self.queue_n], queue_alloc[0..self.queue_n]) |*queue, impl| {
+        var que_idx: usize = 0;
+        var que_alloc: [Queue.max]Impl.Queue = undefined;
+        self.queue_n = Impl.get().getQueues(&que_alloc, self.impl);
+        for (self.queues[0..self.queue_n], que_alloc[0..self.queue_n]) |*queue, impl| {
             // This assumes that implementations won't reorder
             // the queues.
-            while (gpu.queues[queue_i] == null) : (queue_i += 1) {}
+            while (gpu.queues[que_idx] == null) : (que_idx += 1) {}
             queue.* = .{
                 .impl = impl,
-                .capabilities = gpu.queues[queue_i].?.capabilities,
-                .priority = gpu.queues[queue_i].?.priority,
-                .image_transfer_granularity = gpu.queues[queue_i].?.image_transfer_granularity,
+                .capabilities = gpu.queues[que_idx].?.capabilities,
+                .priority = gpu.queues[que_idx].?.priority,
+                .image_transfer_granularity = gpu.queues[que_idx].?.image_transfer_granularity,
             };
-            queue_i += 1;
+            que_idx += 1;
         }
 
         self.mem_type_n = Impl.get().getMemoryTypes(&self.mem_types, self.impl);
@@ -150,8 +150,10 @@ pub const Device = struct {
             const bits: U = @bitCast(capabilities);
 
             switch (op) {
-                .mask => if (bits & mask != bits) continue,
-                .cmp => if (bits != mask) continue,
+                .mask => if (bits & mask != bits)
+                    continue,
+                .cmp => if (bits != mask)
+                    continue,
             }
             if (priority) |x| {
                 if (x == q.priority) {
@@ -364,16 +366,20 @@ pub const Memory = struct {
                 const idx: TypeIndex = @intCast(i);
                 const typ: Type = device.mem_types[idx];
 
-                if (!self.supportsType(idx)) continue;
+                if (!self.supportsType(idx))
+                    continue;
                 if (heap_index) |x|
-                    if (x != typ.heap_index) continue;
+                    if (x != typ.heap_index)
+                        continue;
 
                 const mask: U = @bitCast(typ.properties);
                 const bits: U = @bitCast(properties);
 
                 switch (op) {
-                    .mask => if (bits & mask == bits) return idx,
-                    .cmp => if (bits == mask) return idx,
+                    .mask => if (bits & mask == bits)
+                        return idx,
+                    .cmp => if (bits == mask)
+                        return idx,
                 }
             }
             return null;

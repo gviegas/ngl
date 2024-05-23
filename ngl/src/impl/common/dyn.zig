@@ -88,7 +88,8 @@ fn getEqlSubsetFn(comptime K: type) (fn (K, comptime mask: @TypeOf(K.mask), K) b
                 const U = @typeInfo(@TypeOf(mask)).Struct.backing_integer.?;
                 const m: U = @bitCast(K.mask);
                 const n: U = @bitCast(mask);
-                if (m & n != n) @compileError("Not a subset");
+                if (m & n != n)
+                    @compileError("Not a subset");
             }
             inline for (@typeInfo(K).Struct.fields) |field|
                 if (@field(mask, field.name))
@@ -112,7 +113,8 @@ fn getHashSubsetFn(comptime K: type) (fn (
                 const U = @typeInfo(@TypeOf(mask)).Struct.backing_integer.?;
                 const m: U = @bitCast(K.mask);
                 const n: U = @bitCast(mask);
-                if (m & n != n) @compileError("Not a subset");
+                if (m & n != n)
+                    @compileError("Not a subset");
             }
             inline for (@typeInfo(K).Struct.fields) |field|
                 if (@field(mask, field.name))
@@ -477,15 +479,14 @@ fn Shaders(comptime kind: enum { primitive }) type {
             shaders: []const ?*ngl.Shader,
         ) void {
             const dfl = Impl.Shader{ .val = 0 };
-            for (types, shaders) |@"type", shader| {
+            for (types, shaders) |@"type", shader|
                 switch (kind) {
                     .primitive => switch (@"type") {
                         .vertex => self.shader.vertex = if (shader) |x| x.impl else dfl,
                         .fragment => self.shader.fragment = if (shader) |x| x.impl else dfl,
                         else => {},
                     },
-                }
-            }
+                };
         }
     };
 }

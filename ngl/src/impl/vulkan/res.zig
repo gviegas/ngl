@@ -202,7 +202,8 @@ pub const Image = packed struct {
     ) Error!Impl.Image {
         const usage = conv.toVkImageUsageFlags(desc.usage);
         // Usage must not be zero.
-        if (usage == 0) return Error.InvalidArgument;
+        if (usage == 0)
+            return Error.InvalidArgument;
 
         var depth: u32 = undefined;
         var layers: u32 = undefined;
@@ -214,7 +215,7 @@ pub const Image = packed struct {
             layers = desc.depth_or_layers;
         }
 
-        var image: c.VkImage = undefined;
+        var img: c.VkImage = undefined;
         try check(Device.cast(device).vkCreateImage(&.{
             .sType = c.VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .pNext = null,
@@ -244,9 +245,9 @@ pub const Image = packed struct {
                 }
                 break :blk c.VK_IMAGE_LAYOUT_UNDEFINED;
             },
-        }, null, &image));
+        }, null, &img));
 
-        return .{ .val = @bitCast(Image{ .handle = image }) };
+        return .{ .val = @bitCast(Image{ .handle = img }) };
     }
 
     pub fn getCapabilities(
