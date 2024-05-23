@@ -108,8 +108,8 @@ pub fn loadObj(gpa: std.mem.Allocator, file_name: []const u8) !Model {
     var brd = std.io.bufferedReader(file.reader());
     var rd = brd.reader();
 
-    var data = DataObj.init(gpa);
-    defer data.deinit();
+    var data = DataObj{};
+    defer data.deinit(gpa);
 
     var pos: u64 = 0;
     while (true) {
@@ -129,13 +129,13 @@ pub fn loadObj(gpa: std.mem.Allocator, file_name: []const u8) !Model {
         const str = it.next() orelse continue;
 
         if (std.mem.eql(u8, str, "v")) {
-            try data.parseV(&it);
+            try data.parseV(gpa, &it);
         } else if (std.mem.eql(u8, str, "vt")) {
-            try data.parseVt(&it);
+            try data.parseVt(gpa, &it);
         } else if (std.mem.eql(u8, str, "vn")) {
-            try data.parseVn(&it);
+            try data.parseVn(gpa, &it);
         } else if (std.mem.eql(u8, str, "f")) {
-            try data.parseF(&it);
+            try data.parseF(gpa, &it);
         }
     }
 
@@ -148,15 +148,10 @@ const DataObj = struct {
     normals: std.ArrayListUnmanaged([3]f32) = .{},
     // pos/uv/norm.
     faces: std.ArrayListUnmanaged([9]u32) = .{},
-    gpa: std.mem.Allocator,
 
     const Self = @This();
 
-    fn init(gpa: std.mem.Allocator) Self {
-        return .{ .gpa = gpa };
-    }
-
-    fn parseV(self: *Self, it: *std.mem.TokenIterator(u8, .scalar)) !void {
+    fn parseV(self: *Self, gpa: std.mem.Allocator, it: *std.mem.TokenIterator(u8, .scalar)) !void {
         const x = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVXCoord);
         const y = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVYCoord);
         const z = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVZCoord);
@@ -166,10 +161,10 @@ const DataObj = struct {
                 if (w != 1)
                     return error.ParseVWCoord;
             };
-        try self.positions.append(self.gpa, .{ x, y, z });
+        try self.positions.append(gpa, .{ x, y, z });
     }
 
-    fn parseVt(self: *Self, it: *std.mem.TokenIterator(u8, .scalar)) !void {
+    fn parseVt(self: *Self, gpa: std.mem.Allocator, it: *std.mem.TokenIterator(u8, .scalar)) !void {
         const u = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVtUCoord);
         const v = blk: {
             var v: f32 = 0;
@@ -185,17 +180,17 @@ const DataObj = struct {
                 };
             break :blk v;
         };
-        try self.uvs.append(self.gpa, .{ u, v });
+        try self.uvs.append(gpa, .{ u, v });
     }
 
-    fn parseVn(self: *Self, it: *std.mem.TokenIterator(u8, .scalar)) !void {
+    fn parseVn(self: *Self, gpa: std.mem.Allocator, it: *std.mem.TokenIterator(u8, .scalar)) !void {
         const x = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVn);
         const y = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVn);
         const z = try std.fmt.parseFloat(f32, it.next() orelse return error.ParseVn);
-        try self.normals.append(self.gpa, .{ x, y, z });
+        try self.normals.append(gpa, .{ x, y, z });
     }
 
-    fn parseF(self: *Self, it: *std.mem.TokenIterator(u8, .scalar)) !void {
+    fn parseF(self: *Self, gpa: std.mem.Allocator, it: *std.mem.TokenIterator(u8, .scalar)) !void {
         var it_2 = std.mem.tokenizeScalar(u8, it.next() orelse return error.ParseF, '/');
         const pa = (try std.fmt.parseInt(u32, it_2.next() orelse return error.ParseFP, 10));
         const ta = (try std.fmt.parseInt(u32, it_2.next() orelse return error.ParseFPt, 10));
@@ -211,7 +206,7 @@ const DataObj = struct {
         var tc = (try std.fmt.parseInt(u32, it_4.next() orelse return error.ParseFPt, 10));
         var nc = (try std.fmt.parseInt(u32, it_4.next() orelse return error.ParseFPn, 10));
 
-        try self.faces.append(self.gpa, .{
+        try self.faces.append(gpa, .{
             pa - 1, ta - 1, na - 1,
             pb - 1, tb - 1, nb - 1,
             pc - 1, tc - 1, nc - 1,
@@ -226,7 +221,7 @@ const DataObj = struct {
             const td = (try std.fmt.parseInt(u32, it_5.next() orelse return error.ParseFPt, 10));
             const nd = (try std.fmt.parseInt(u32, it_5.next() orelse return error.ParseFPn, 10));
 
-            try self.faces.append(self.gpa, .{
+            try self.faces.append(gpa, .{
                 pa - 1, ta - 1, na - 1,
                 pc - 1, tc - 1, nc - 1,
                 pd - 1, td - 1, nd - 1,
@@ -238,11 +233,11 @@ const DataObj = struct {
         }
     }
 
-    fn deinit(self: *Self) void {
-        self.positions.deinit(self.gpa);
-        self.uvs.deinit(self.gpa);
-        self.normals.deinit(self.gpa);
-        self.faces.deinit(self.gpa);
+    fn deinit(self: *Self, gpa: std.mem.Allocator) void {
+        self.positions.deinit(gpa);
+        self.uvs.deinit(gpa);
+        self.normals.deinit(gpa);
+        self.faces.deinit(gpa);
     }
 };
 
