@@ -19,17 +19,28 @@ pub fn init(allocator: std.mem.Allocator) Error!Self {
     const gpus = try ngl.getGpus(allocator);
     defer allocator.free(gpus);
 
-    var gpu_i: usize = 0;
-    for (0..gpus.len) |i| {
-        if (!gpus[i].feature_set.presentation)
-            continue;
-        if (gpus[i].type == .discrete) {
-            gpu_i = i;
-            break;
+    const gpu_i: usize = blk: {
+        var gpu_i: ?usize = null;
+        for (0..gpus.len) |i| {
+            if (!gpus[i].feature_set.presentation)
+                continue;
+
+            for (gpus[i].queues) |q| {
+                const has_graph = (q orelse continue).capabilities.graphics;
+                if (has_graph)
+                    break;
+            } else continue;
+
+            if (gpus[i].type == .discrete) {
+                gpu_i = i;
+                break;
+            }
+
+            if (gpus[i].type == .integrated or gpu_i == null)
+                gpu_i = i;
         }
-        if (gpus[i].type == .integrated)
-            gpu_i = i;
-    }
+        break :blk gpu_i orelse return Error.NotSupported;
+    };
 
     var dev = try ngl.Device.init(allocator, gpus[gpu_i]);
     errdefer dev.deinit(allocator);
