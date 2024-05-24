@@ -4,13 +4,16 @@ const assert = std.debug.assert;
 const ngl = @import("ngl");
 const pfm = ngl.pfm;
 
-const Context = @import("ctx").Context;
-const context = @import("ctx").context;
+const Ctx = @import("Ctx");
 const model = @import("model");
 const util = @import("util");
 
 pub fn main() !void {
-    try do();
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer if (gpa.detectLeaks())
+        @panic("Memory leak");
+
+    try do(gpa.allocator());
 }
 
 pub const platform_desc = pfm.Platform.Desc{
@@ -23,35 +26,32 @@ const light_n: i32 = 3;
 const width = 1024;
 const height = 576;
 
-var ctx: *Context = undefined;
+var ctx: Ctx = undefined;
 var dev: *ngl.Device = undefined;
 var plat: *pfm.Platform = undefined;
 
-fn do() !void {
-    ctx = context();
+fn do(gpa: std.mem.Allocator) !void {
+    ctx = try Ctx.init(gpa);
+    defer ctx.deinit(gpa);
     dev = &ctx.device;
     plat = &ctx.platform;
 
-    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena.deinit();
-    const aa = arena.allocator();
+    var color = try Color.init(gpa);
+    defer color.deinit(gpa);
 
-    var color = try Color.init(aa);
-    defer color.deinit(aa);
+    var depth = try Depth.init(gpa);
+    defer depth.deinit(gpa);
 
-    var depth = try Depth.init(aa);
-    defer depth.deinit(aa);
-
-    var sphr = try model.loadObj(aa, "data/geometry/sphere.obj");
-    defer sphr.deinit(aa);
+    var sphr = try model.loadObj(gpa, "data/geometry/sphere.obj");
+    defer sphr.deinit(gpa);
     assert(sphr.indices == null);
 
     const vert_buf_size = sphr.positionSize() + sphr.normalSize();
-    var vert_buf = try Buffer(.device).init(aa, vert_buf_size, .{
+    var vert_buf = try Buffer(.device).init(gpa, vert_buf_size, .{
         .vertex_buffer = true,
         .transfer_dest = true,
     });
-    defer vert_buf.deinit(aa);
+    defer vert_buf.deinit(gpa);
 
     const m = util.identity(4);
     const n = blk: {
@@ -98,26 +98,26 @@ fn do() !void {
     const matl_off = (light_off + @TypeOf(light).size + 255) & ~@as(u64, 255);
     const unif_strd = (matl_off + Material.size + 255) & ~@as(u64, 255);
     const unif_buf_size = frame_n * unif_strd;
-    var unif_buf = try Buffer(.device).init(aa, unif_buf_size, .{
+    var unif_buf = try Buffer(.device).init(gpa, unif_buf_size, .{
         .uniform_buffer = true,
         .transfer_dest = true,
     });
-    defer unif_buf.deinit(aa);
+    defer unif_buf.deinit(gpa);
 
     const vert_cpy_off = 0;
     const unif_cpy_off = (vert_cpy_off + vert_buf_size + 255) & ~@as(u64, 255);
     const stg_buf_size = unif_cpy_off + unif_buf_size;
-    var stg_buf = try Buffer(.host).init(aa, stg_buf_size, .{ .transfer_source = true });
-    defer stg_buf.deinit(aa);
+    var stg_buf = try Buffer(.host).init(gpa, stg_buf_size, .{ .transfer_source = true });
+    defer stg_buf.deinit(gpa);
 
-    var desc = try Descriptor.init(aa);
-    defer desc.deinit(aa);
+    var desc = try Descriptor.init(gpa);
+    defer desc.deinit(gpa);
 
-    var shd = try Shader.init(aa, &desc);
-    defer shd.deinit(aa);
+    var shd = try Shader.init(gpa, &desc);
+    defer shd.deinit(gpa);
 
-    var cq = try Command.init(aa);
-    defer cq.deinit(aa);
+    var cq = try Command.init(gpa);
+    defer cq.deinit(gpa);
     const one_queue = cq.multiqueue == null;
 
     @memcpy(
@@ -134,9 +134,9 @@ fn do() !void {
         const strd = frame * unif_strd;
         const data = stg_buf.data[unif_cpy_off + strd ..];
 
-        try desc.write(Global, aa, frame, ub, strd + globl_off);
-        try desc.write(@TypeOf(light), aa, frame, ub, strd + light_off);
-        try desc.write(Material, aa, frame, ub, strd + matl_off);
+        try desc.write(Global, gpa, frame, ub, strd + globl_off);
+        try desc.write(@TypeOf(light), gpa, frame, ub, strd + light_off);
+        try desc.write(Material, gpa, frame, ub, strd + matl_off);
 
         globl.copy(data[globl_off .. globl_off + Global.size]);
         light.copy(data[light_off .. light_off + @TypeOf(light).size]);
@@ -148,7 +148,7 @@ fn do() !void {
 
     var frame: usize = 0;
 
-    var cmd = try cq.buffers[frame].begin(aa, dev, .{
+    var cmd = try cq.buffers[frame].begin(gpa, dev, .{
         .one_time_submit = true,
         .inheritance = null,
     });
@@ -176,13 +176,13 @@ fn do() !void {
 
     try cmd.end();
 
-    try ngl.Fence.reset(aa, dev, &.{&cq.fences[frame]});
+    try ngl.Fence.reset(gpa, dev, &.{&cq.fences[frame]});
 
     {
         ctx.lockQueue(cq.queue_index);
         defer ctx.unlockQueue(cq.queue_index);
 
-        try dev.queues[cq.queue_index].submit(aa, dev, &cq.fences[frame], &.{.{
+        try dev.queues[cq.queue_index].submit(gpa, dev, &cq.fences[frame], &.{.{
             .commands = &.{.{ .command_buffer = &cq.buffers[frame] }},
             .wait = &.{},
             .signal = &.{},
@@ -199,12 +199,12 @@ fn do() !void {
         const sems = .{ &cq.semaphores[2 * frame], &cq.semaphores[2 * frame + 1] };
         const fnc = &cq.fences[frame];
 
-        try ngl.Fence.wait(aa, dev, std.time.ns_per_s, &.{fnc});
-        try ngl.Fence.reset(aa, dev, &.{fnc});
+        try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{fnc});
+        try ngl.Fence.reset(gpa, dev, &.{fnc});
         const next = try plat.swapchain.nextImage(dev, std.time.ns_per_s, sems[0], null);
 
         try cmd_pool.reset(dev, .keep);
-        cmd = try cmd_buf.begin(aa, dev, .{
+        cmd = try cmd_buf.begin(gpa, dev, .{
             .one_time_submit = true,
             .inheritance = null,
         });
@@ -407,7 +407,7 @@ fn do() !void {
             ctx.lockQueue(cq.queue_index);
             defer ctx.unlockQueue(cq.queue_index);
 
-            try dev.queues[cq.queue_index].submit(aa, dev, fnc, &.{.{
+            try dev.queues[cq.queue_index].submit(gpa, dev, fnc, &.{.{
                 .commands = &.{.{ .command_buffer = cmd_buf }},
                 .wait = &.{.{
                     .semaphore = sems[0],
@@ -432,11 +432,11 @@ fn do() !void {
 
             const mq = &cq.multiqueue.?;
 
-            try ngl.Fence.wait(aa, dev, std.time.ns_per_s, &.{&mq.fences[frame]});
-            try ngl.Fence.reset(aa, dev, &.{&mq.fences[frame]});
+            try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{&mq.fences[frame]});
+            try ngl.Fence.reset(gpa, dev, &.{&mq.fences[frame]});
 
             try mq.pools[frame].reset(dev, .keep);
-            cmd = try mq.buffers[frame].begin(aa, dev, .{
+            cmd = try mq.buffers[frame].begin(gpa, dev, .{
                 .one_time_submit = true,
                 .inheritance = null,
             });
@@ -469,7 +469,7 @@ fn do() !void {
             ctx.lockQueue(plat.queue_index);
             defer ctx.unlockQueue(plat.queue_index);
 
-            try dev.queues[plat.queue_index].submit(aa, dev, &mq.fences[frame], &.{.{
+            try dev.queues[plat.queue_index].submit(gpa, dev, &mq.fences[frame], &.{.{
                 .commands = &.{.{ .command_buffer = &mq.buffers[frame] }},
                 .wait = &.{.{
                     .semaphore = sems[1],
@@ -487,7 +487,7 @@ fn do() !void {
             };
         };
 
-        try pres.queue.present(aa, dev, &.{pres.sem}, &.{.{
+        try pres.queue.present(gpa, dev, &.{pres.sem}, &.{.{
             .swapchain = &plat.swapchain,
             .image_index = next,
         }});
@@ -505,8 +505,8 @@ const Color = struct {
 
     const samples = ngl.SampleCount.@"4";
 
-    fn init(arena: std.mem.Allocator) ngl.Error!Color {
-        var img = try ngl.Image.init(arena, dev, .{
+    fn init(gpa: std.mem.Allocator) ngl.Error!Color {
+        var img = try ngl.Image.init(gpa, dev, .{
             .type = .@"2d",
             .format = plat.format.format,
             .width = width,
@@ -521,24 +521,24 @@ const Color = struct {
             },
             .misc = .{},
         });
-        errdefer img.deinit(arena, dev);
+        errdefer img.deinit(gpa, dev);
 
         var mem = blk: {
             const reqs = img.getMemoryRequirements(dev);
-            var mem = try dev.alloc(arena, .{
+            var mem = try dev.alloc(gpa, .{
                 .size = reqs.size,
                 .type_index = reqs.findType(dev.*, .{
                     .device_local = true,
                     .lazily_allocated = true,
                 }, null) orelse reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
-            errdefer dev.free(arena, &mem);
+            errdefer dev.free(gpa, &mem);
             try img.bind(dev, &mem, 0);
             break :blk mem;
         };
-        errdefer dev.free(arena, &mem);
+        errdefer dev.free(gpa, &mem);
 
-        const view = try ngl.ImageView.init(arena, dev, .{
+        const view = try ngl.ImageView.init(gpa, dev, .{
             .image = &img,
             .type = .@"2d",
             .format = plat.format.format,
@@ -558,10 +558,10 @@ const Color = struct {
         };
     }
 
-    fn deinit(self: *Color, arena: std.mem.Allocator) void {
-        self.view.deinit(arena, dev);
-        self.image.deinit(arena, dev);
-        dev.free(arena, &self.memory);
+    fn deinit(self: *Color, gpa: std.mem.Allocator) void {
+        self.view.deinit(gpa, dev);
+        self.image.deinit(gpa, dev);
+        dev.free(gpa, &self.memory);
     }
 };
 
@@ -573,8 +573,8 @@ const Depth = struct {
     const format = ngl.Format.d16_unorm;
     const samples = Color.samples;
 
-    fn init(arena: std.mem.Allocator) ngl.Error!Depth {
-        var img = try ngl.Image.init(arena, dev, .{
+    fn init(gpa: std.mem.Allocator) ngl.Error!Depth {
+        var img = try ngl.Image.init(gpa, dev, .{
             .type = .@"2d",
             .format = format,
             .width = width,
@@ -589,24 +589,24 @@ const Depth = struct {
             },
             .misc = .{},
         });
-        errdefer img.deinit(arena, dev);
+        errdefer img.deinit(gpa, dev);
 
         var mem = blk: {
             const reqs = img.getMemoryRequirements(dev);
-            var mem = try dev.alloc(arena, .{
+            var mem = try dev.alloc(gpa, .{
                 .size = reqs.size,
                 .type_index = reqs.findType(dev.*, .{
                     .device_local = true,
                     .lazily_allocated = true,
                 }, null) orelse reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
-            errdefer dev.free(arena, &mem);
+            errdefer dev.free(gpa, &mem);
             try img.bind(dev, &mem, 0);
             break :blk mem;
         };
-        errdefer dev.free(arena, &mem);
+        errdefer dev.free(gpa, &mem);
 
-        const view = try ngl.ImageView.init(arena, dev, .{
+        const view = try ngl.ImageView.init(gpa, dev, .{
             .image = &img,
             .type = .@"2d",
             .format = format,
@@ -626,10 +626,10 @@ const Depth = struct {
         };
     }
 
-    fn deinit(self: *Depth, arena: std.mem.Allocator) void {
-        self.image.deinit(arena, dev);
-        self.view.deinit(arena, dev);
-        dev.free(arena, &self.memory);
+    fn deinit(self: *Depth, gpa: std.mem.Allocator) void {
+        self.image.deinit(gpa, dev);
+        self.view.deinit(gpa, dev);
+        dev.free(gpa, &self.memory);
     }
 };
 
@@ -642,12 +642,12 @@ fn Buffer(comptime kind: enum { host, device }) type {
             .device => void,
         },
 
-        fn init(arena: std.mem.Allocator, size: u64, usage: ngl.Buffer.Usage) ngl.Error!@This() {
-            var buf = try ngl.Buffer.init(arena, dev, .{
+        fn init(gpa: std.mem.Allocator, size: u64, usage: ngl.Buffer.Usage) ngl.Error!@This() {
+            var buf = try ngl.Buffer.init(gpa, dev, .{
                 .size = size,
                 .usage = usage,
             });
-            errdefer buf.deinit(arena, dev);
+            errdefer buf.deinit(gpa, dev);
 
             const reqs = buf.getMemoryRequirements(dev);
             const props: ngl.Memory.Properties = switch (kind) {
@@ -657,11 +657,11 @@ fn Buffer(comptime kind: enum { host, device }) type {
                 },
                 .device => .{ .device_local = true },
             };
-            var mem = try dev.alloc(arena, .{
+            var mem = try dev.alloc(gpa, .{
                 .size = reqs.size,
                 .type_index = reqs.findType(dev.*, props, null).?,
             });
-            errdefer dev.free(arena, &mem);
+            errdefer dev.free(gpa, &mem);
 
             try buf.bind(dev, &mem, 0);
             const data = if (kind == .host) try mem.map(dev, 0, size) else {};
@@ -673,9 +673,9 @@ fn Buffer(comptime kind: enum { host, device }) type {
             };
         }
 
-        fn deinit(self: *@This(), arena: std.mem.Allocator) void {
-            self.buffer.deinit(arena, dev);
-            dev.free(arena, &self.memory);
+        fn deinit(self: *@This(), gpa: std.mem.Allocator) void {
+            self.buffer.deinit(gpa, dev);
+            dev.free(gpa, &self.memory);
         }
     };
 }
@@ -685,8 +685,8 @@ const Descriptor = struct {
     pool: ngl.DescriptorPool,
     sets: [2][frame_n]ngl.DescriptorSet,
 
-    fn init(arena: std.mem.Allocator) ngl.Error!Descriptor {
-        var set_layt = try ngl.DescriptorSetLayout.init(arena, dev, .{
+    fn init(gpa: std.mem.Allocator) ngl.Error!Descriptor {
+        var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
                 .{
                     .binding = 0,
@@ -704,9 +704,9 @@ const Descriptor = struct {
                 },
             },
         });
-        errdefer set_layt.deinit(arena, dev);
+        errdefer set_layt.deinit(gpa, dev);
 
-        var set_layt_2 = try ngl.DescriptorSetLayout.init(arena, dev, .{
+        var set_layt_2 = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{.{
                 .binding = 0,
                 .type = .uniform_buffer,
@@ -715,19 +715,19 @@ const Descriptor = struct {
                 .immutable_samplers = &.{},
             }},
         });
-        errdefer set_layt_2.deinit(arena, dev);
+        errdefer set_layt_2.deinit(gpa, dev);
 
-        var pool = try ngl.DescriptorPool.init(arena, dev, .{
+        var pool = try ngl.DescriptorPool.init(gpa, dev, .{
             .max_sets = 2 * frame_n,
             .pool_size = .{ .uniform_buffer = 3 * frame_n },
         });
-        errdefer pool.deinit(arena, dev);
+        errdefer pool.deinit(gpa, dev);
 
-        const sets = try pool.alloc(arena, dev, .{
+        const sets = try pool.alloc(gpa, dev, .{
             .layouts = &[_]*ngl.DescriptorSetLayout{&set_layt} ** frame_n ++
                 &[_]*ngl.DescriptorSetLayout{&set_layt_2} ** frame_n,
         });
-        defer arena.free(sets);
+        defer gpa.free(sets);
 
         return .{
             .set_layouts = .{ set_layt, set_layt_2 },
@@ -742,12 +742,12 @@ const Descriptor = struct {
     fn write(
         self: *Descriptor,
         comptime T: type,
-        arena: std.mem.Allocator,
+        gpa: std.mem.Allocator,
         frame: usize,
         buffer: *ngl.Buffer,
         offset: u64,
     ) ngl.Error!void {
-        try ngl.DescriptorSet.write(arena, dev, &.{.{
+        try ngl.DescriptorSet.write(gpa, dev, &.{.{
             .descriptor_set = &self.sets[T.set_index][frame],
             .binding = T.binding,
             .element = 0,
@@ -759,10 +759,10 @@ const Descriptor = struct {
         }});
     }
 
-    fn deinit(self: *Descriptor, arena: std.mem.Allocator) void {
+    fn deinit(self: *Descriptor, gpa: std.mem.Allocator) void {
         for (&self.set_layouts) |*layt|
-            layt.deinit(arena, dev);
-        self.pool.deinit(arena, dev);
+            layt.deinit(gpa, dev);
+        self.pool.deinit(gpa, dev);
     }
 };
 
@@ -771,7 +771,7 @@ const Shader = struct {
     fragment: ngl.Shader,
     layout: ngl.ShaderLayout,
 
-    fn init(arena: std.mem.Allocator, descriptor: *Descriptor) ngl.Error!Shader {
+    fn init(gpa: std.mem.Allocator, descriptor: *Descriptor) ngl.Error!Shader {
         const dapi = ctx.gpu.getDriverApi();
 
         const vert_code_spv align(4) = @embedFile("shader/vert.spv").*;
@@ -789,7 +789,7 @@ const Shader = struct {
             &descriptor.set_layouts[1],
         };
 
-        const shaders = try ngl.Shader.init(arena, dev, &.{
+        const shaders = try ngl.Shader.init(gpa, dev, &.{
             .{
                 .type = .vertex,
                 .next = .{ .fragment = true },
@@ -818,15 +818,15 @@ const Shader = struct {
                 .link = true,
             },
         });
-        defer arena.free(shaders);
+        defer gpa.free(shaders);
         errdefer for (shaders) |*shd|
-            (shd.* catch continue).deinit(arena, dev);
+            (shd.* catch continue).deinit(gpa, dev);
 
-        var layt = try ngl.ShaderLayout.init(arena, dev, .{
+        var layt = try ngl.ShaderLayout.init(gpa, dev, .{
             .set_layouts = set_layts,
             .push_constants = &.{},
         });
-        errdefer layt.deinit(arena, dev);
+        errdefer layt.deinit(gpa, dev);
 
         return .{
             .vertex = try shaders[0],
@@ -835,10 +835,10 @@ const Shader = struct {
         };
     }
 
-    fn deinit(self: *Shader, arena: std.mem.Allocator) void {
-        self.vertex.deinit(arena, dev);
-        self.fragment.deinit(arena, dev);
-        self.layout.deinit(arena, dev);
+    fn deinit(self: *Shader, gpa: std.mem.Allocator) void {
+        self.vertex.deinit(gpa, dev);
+        self.fragment.deinit(gpa, dev);
+        self.layout.deinit(gpa, dev);
     }
 };
 
@@ -855,54 +855,54 @@ const Command = struct {
         fences: [frame_n]ngl.Fence,
     },
 
-    fn init(arena: std.mem.Allocator) ngl.Error!Command {
+    fn init(gpa: std.mem.Allocator) ngl.Error!Command {
         const pres = plat.queue_index;
         const rend = if (dev.queues[pres].capabilities.graphics)
             pres
         else
             dev.findQueue(.{ .graphics = true }, null) orelse return ngl.Error.NotSupported;
 
-        var mq: @TypeOf((try init(arena)).multiqueue) = blk: {
+        var mq: @TypeOf((try init(gpa)).multiqueue) = blk: {
             if (pres == rend)
                 break :blk null;
 
             var pools: [frame_n]ngl.CommandPool = undefined;
             for (&pools, 0..) |*pool, i|
-                pool.* = ngl.CommandPool.init(arena, dev, .{
+                pool.* = ngl.CommandPool.init(gpa, dev, .{
                     .queue = &dev.queues[pres],
                 }) catch |err| {
                     for (0..i) |j|
-                        pools[j].deinit(arena, dev);
+                        pools[j].deinit(gpa, dev);
                     return err;
                 };
             errdefer for (&pools) |*pool|
-                pool.deinit(arena, dev);
+                pool.deinit(gpa, dev);
 
             var bufs: [frame_n]ngl.CommandBuffer = undefined;
             for (&bufs, &pools) |*buf, *pool| {
-                const s = try pool.alloc(arena, dev, .{
+                const s = try pool.alloc(gpa, dev, .{
                     .level = .primary,
                     .count = 1,
                 });
                 buf.* = s[0];
-                arena.free(s);
+                gpa.free(s);
             }
 
             var sems: [frame_n]ngl.Semaphore = undefined;
             for (&sems, 0..) |*sem, i|
-                sem.* = ngl.Semaphore.init(arena, dev, .{}) catch |err| {
+                sem.* = ngl.Semaphore.init(gpa, dev, .{}) catch |err| {
                     for (0..i) |j|
-                        sems[j].deinit(arena, dev);
+                        sems[j].deinit(gpa, dev);
                     return err;
                 };
             errdefer for (&sems) |*sem|
-                sem.deinit(arena, dev);
+                sem.deinit(gpa, dev);
 
             var fncs: [frame_n]ngl.Fence = undefined;
             for (&fncs, 0..) |*fnc, i|
-                fnc.* = ngl.Fence.init(arena, dev, .{ .status = .signaled }) catch |err| {
+                fnc.* = ngl.Fence.init(gpa, dev, .{ .status = .signaled }) catch |err| {
                     for (0..i) |j|
-                        fncs[j].deinit(arena, dev);
+                        fncs[j].deinit(gpa, dev);
                     return err;
                 };
 
@@ -915,48 +915,48 @@ const Command = struct {
         };
         errdefer if (mq) |*x| {
             for (&x.pools) |*pool|
-                pool.deinit(arena, dev);
+                pool.deinit(gpa, dev);
             for (&x.semaphores) |*sem|
-                sem.deinit(arena, dev);
+                sem.deinit(gpa, dev);
             for (&x.fences) |*fnc|
-                fnc.deinit(arena, dev);
+                fnc.deinit(gpa, dev);
         };
 
         var pools: [frame_n]ngl.CommandPool = undefined;
         for (&pools, 0..) |*pool, i|
-            pool.* = ngl.CommandPool.init(arena, dev, .{ .queue = &dev.queues[rend] }) catch |err| {
+            pool.* = ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[rend] }) catch |err| {
                 for (0..i) |j|
-                    pools[j].deinit(arena, dev);
+                    pools[j].deinit(gpa, dev);
                 return err;
             };
         errdefer for (&pools) |*pool|
-            pool.deinit(arena, dev);
+            pool.deinit(gpa, dev);
 
         var bufs: [frame_n]ngl.CommandBuffer = undefined;
         for (&bufs, &pools) |*buf, *pool| {
-            const s = try pool.alloc(arena, dev, .{
+            const s = try pool.alloc(gpa, dev, .{
                 .level = .primary,
                 .count = 1,
             });
             buf.* = s[0];
-            arena.free(s);
+            gpa.free(s);
         }
 
         var sems: [2 * frame_n]ngl.Semaphore = undefined;
         for (&sems, 0..) |*sem, i|
-            sem.* = ngl.Semaphore.init(arena, dev, .{}) catch |err| {
+            sem.* = ngl.Semaphore.init(gpa, dev, .{}) catch |err| {
                 for (0..i) |j|
-                    sems[j].deinit(arena, dev);
+                    sems[j].deinit(gpa, dev);
                 return err;
             };
         errdefer for (&sems) |*sem|
-            sem.deinit(arena, dev);
+            sem.deinit(gpa, dev);
 
         var fncs: [frame_n]ngl.Fence = undefined;
         for (&fncs, 0..) |*fnc, i|
-            fnc.* = ngl.Fence.init(arena, dev, .{ .status = .signaled }) catch |err| {
+            fnc.* = ngl.Fence.init(gpa, dev, .{ .status = .signaled }) catch |err| {
                 for (0..i) |j|
-                    fncs[j].deinit(arena, dev);
+                    fncs[j].deinit(gpa, dev);
                 return err;
             };
 
@@ -970,20 +970,20 @@ const Command = struct {
         };
     }
 
-    fn deinit(self: *Command, arena: std.mem.Allocator) void {
+    fn deinit(self: *Command, gpa: std.mem.Allocator) void {
         for (&self.pools) |*pool|
-            pool.deinit(arena, dev);
+            pool.deinit(gpa, dev);
         for (&self.semaphores) |*sem|
-            sem.deinit(arena, dev);
+            sem.deinit(gpa, dev);
         for (&self.fences) |*fnc|
-            fnc.deinit(arena, dev);
+            fnc.deinit(gpa, dev);
         if (self.multiqueue) |*x| {
             for (&x.pools) |*pool|
-                pool.deinit(arena, dev);
+                pool.deinit(gpa, dev);
             for (&x.semaphores) |*sem|
-                sem.deinit(arena, dev);
+                sem.deinit(gpa, dev);
             for (&x.fences) |*fnc|
-                fnc.deinit(arena, dev);
+                fnc.deinit(gpa, dev);
         }
     }
 };

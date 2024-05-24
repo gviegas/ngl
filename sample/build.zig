@@ -7,7 +7,7 @@ pub fn build(b: *std.Build) void {
     const ngl = b.dependency("ngl", .{});
 
     const ctx = b.createModule(.{
-        .root_source_file = .{ .path = "src/ctx.zig" },
+        .root_source_file = .{ .path = "src/Ctx.zig" },
         .target = target,
         .optimize = optimize,
     });
@@ -47,7 +47,7 @@ pub fn build(b: *std.Build) void {
     }) |e| {
         var exe = addExecutable(b, target, optimize, e[0], e[1]);
         exe.root_module.addImport("ngl", ngl.module("ngl"));
-        exe.root_module.addImport("ctx", ctx);
+        exe.root_module.addImport("Ctx", ctx);
         exe.root_module.addImport("model", model);
         exe.root_module.addImport("idata", idata);
         exe.root_module.addImport("util", util);
