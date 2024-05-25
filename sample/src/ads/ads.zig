@@ -667,7 +667,10 @@ fn Buffer(comptime kind: enum { host, device }) type {
             errdefer dev.free(gpa, &mem);
 
             try buf.bind(dev, &mem, 0);
-            const data = if (kind == .host) try mem.map(dev, 0, size) else {};
+            const data = switch (kind) {
+                .host => try mem.map(dev, 0, size),
+                .device => {},
+            };
 
             return .{
                 .buffer = buf,
@@ -858,129 +861,85 @@ const Command = struct {
         else
             dev.findQueue(.{ .graphics = true }, null) orelse return ngl.Error.NotSupported;
 
-        var mq: @TypeOf((try init(gpa)).multiqueue) = blk: {
-            if (pres == rend)
-                break :blk null;
+        const doInit = struct {
+            fn doInit(gpa_: std.mem.Allocator, queue: *ngl.Queue, dest: anytype) ngl.Error!void {
+                for (&dest.pools, 0..) |*pool, i|
+                    pool.* = ngl.CommandPool.init(gpa_, dev, .{ .queue = queue }) catch |err| {
+                        for (0..i) |j|
+                            dest.pools[j].deinit(gpa_, dev);
+                        return err;
+                    };
+                errdefer for (&dest.pools) |*pool|
+                    pool.deinit(gpa_, dev);
 
-            var pools: [frame_n]ngl.CommandPool = undefined;
-            for (&pools, 0..) |*pool, i|
-                pool.* = ngl.CommandPool.init(gpa, dev, .{
-                    .queue = &dev.queues[pres],
-                }) catch |err| {
-                    for (0..i) |j|
-                        pools[j].deinit(gpa, dev);
-                    return err;
-                };
-            errdefer for (&pools) |*pool|
-                pool.deinit(gpa, dev);
+                for (&dest.buffers, &dest.pools) |*buf, *pool| {
+                    const s = try pool.alloc(gpa_, dev, .{
+                        .level = .primary,
+                        .count = 1,
+                    });
+                    buf.* = s[0];
+                    gpa_.free(s);
+                }
 
-            var bufs: [frame_n]ngl.CommandBuffer = undefined;
-            for (&bufs, &pools) |*buf, *pool| {
-                const s = try pool.alloc(gpa, dev, .{
-                    .level = .primary,
-                    .count = 1,
-                });
-                buf.* = s[0];
-                gpa.free(s);
+                for (&dest.semaphores, 0..) |*sem, i|
+                    sem.* = ngl.Semaphore.init(gpa_, dev, .{}) catch |err| {
+                        for (0..i) |j|
+                            dest.semaphores[j].deinit(gpa_, dev);
+                        return err;
+                    };
+                errdefer for (&dest.semaphores) |*sem|
+                    sem.deinit(gpa_, dev);
+
+                for (&dest.fences, 0..) |*fnc, i|
+                    fnc.* = ngl.Fence.init(gpa_, dev, .{ .status = .signaled }) catch |err| {
+                        for (0..i) |j|
+                            dest.fences[j].deinit(gpa_, dev);
+                        return err;
+                    };
             }
+        }.doInit;
 
-            var sems: [frame_n]ngl.Semaphore = undefined;
-            for (&sems, 0..) |*sem, i|
-                sem.* = ngl.Semaphore.init(gpa, dev, .{}) catch |err| {
-                    for (0..i) |j|
-                        sems[j].deinit(gpa, dev);
-                    return err;
-                };
-            errdefer for (&sems) |*sem|
-                sem.deinit(gpa, dev);
-
-            var fncs: [frame_n]ngl.Fence = undefined;
-            for (&fncs, 0..) |*fnc, i|
-                fnc.* = ngl.Fence.init(gpa, dev, .{ .status = .signaled }) catch |err| {
-                    for (0..i) |j|
-                        fncs[j].deinit(gpa, dev);
-                    return err;
-                };
-
-            break :blk .{
-                .pools = pools,
-                .buffers = bufs,
-                .semaphores = sems,
-                .fences = fncs,
+        var self: Command = undefined;
+        self.queue_index = rend;
+        try doInit(gpa, &dev.queues[rend], &self);
+        if (pres == rend) {
+            self.multiqueue = null;
+        } else {
+            self.multiqueue = .{
+                .pools = undefined,
+                .buffers = undefined,
+                .semaphores = undefined,
+                .fences = undefined,
             };
-        };
-        errdefer if (mq) |*x| {
-            for (&x.pools) |*pool|
-                pool.deinit(gpa, dev);
-            for (&x.semaphores) |*sem|
-                sem.deinit(gpa, dev);
-            for (&x.fences) |*fnc|
-                fnc.deinit(gpa, dev);
-        };
-
-        var pools: [frame_n]ngl.CommandPool = undefined;
-        for (&pools, 0..) |*pool, i|
-            pool.* = ngl.CommandPool.init(gpa, dev, .{ .queue = &dev.queues[rend] }) catch |err| {
-                for (0..i) |j|
-                    pools[j].deinit(gpa, dev);
+            doInit(gpa, &dev.queues[pres], &self.multiqueue.?) catch |err| {
+                for (&self.pools) |*pool|
+                    pool.deinit(gpa, dev);
+                for (&self.semaphores) |*sem|
+                    sem.deinit(gpa, dev);
+                for (&self.fences) |*fnc|
+                    fnc.deinit(gpa, dev);
                 return err;
             };
-        errdefer for (&pools) |*pool|
-            pool.deinit(gpa, dev);
-
-        var bufs: [frame_n]ngl.CommandBuffer = undefined;
-        for (&bufs, &pools) |*buf, *pool| {
-            const s = try pool.alloc(gpa, dev, .{
-                .level = .primary,
-                .count = 1,
-            });
-            buf.* = s[0];
-            gpa.free(s);
         }
 
-        var sems: [2 * frame_n]ngl.Semaphore = undefined;
-        for (&sems, 0..) |*sem, i|
-            sem.* = ngl.Semaphore.init(gpa, dev, .{}) catch |err| {
-                for (0..i) |j|
-                    sems[j].deinit(gpa, dev);
-                return err;
-            };
-        errdefer for (&sems) |*sem|
-            sem.deinit(gpa, dev);
-
-        var fncs: [frame_n]ngl.Fence = undefined;
-        for (&fncs, 0..) |*fnc, i|
-            fnc.* = ngl.Fence.init(gpa, dev, .{ .status = .signaled }) catch |err| {
-                for (0..i) |j|
-                    fncs[j].deinit(gpa, dev);
-                return err;
-            };
-
-        return .{
-            .queue_index = rend,
-            .pools = pools,
-            .buffers = bufs,
-            .semaphores = sems,
-            .fences = fncs,
-            .multiqueue = mq,
-        };
+        return self;
     }
 
     fn deinit(self: *Command, gpa: std.mem.Allocator) void {
-        for (&self.pools) |*pool|
-            pool.deinit(gpa, dev);
-        for (&self.semaphores) |*sem|
-            sem.deinit(gpa, dev);
-        for (&self.fences) |*fnc|
-            fnc.deinit(gpa, dev);
-        if (self.multiqueue) |*x| {
-            for (&x.pools) |*pool|
-                pool.deinit(gpa, dev);
-            for (&x.semaphores) |*sem|
-                sem.deinit(gpa, dev);
-            for (&x.fences) |*fnc|
-                fnc.deinit(gpa, dev);
-        }
+        const doDeinit = struct {
+            fn doDeinit(gpa_: std.mem.Allocator, dest: anytype) void {
+                for (&dest.pools) |*pool|
+                    pool.deinit(gpa_, dev);
+                for (&dest.semaphores) |*sem|
+                    sem.deinit(gpa_, dev);
+                for (&dest.fences) |*fnc|
+                    fnc.deinit(gpa_, dev);
+            }
+        }.doDeinit;
+
+        doDeinit(gpa, self);
+        if (self.multiqueue) |*x|
+            doDeinit(gpa, x);
     }
 };
 
