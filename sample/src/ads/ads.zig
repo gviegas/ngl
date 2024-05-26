@@ -695,14 +695,14 @@ const Descriptor = struct {
         var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
                 .{
-                    .binding = 0,
+                    .binding = Global.binding,
                     .type = .uniform_buffer,
                     .count = 1,
                     .shader_mask = .{ .vertex = true },
                     .immutable_samplers = &.{},
                 },
                 .{
-                    .binding = 1,
+                    .binding = Light.binding,
                     .type = .uniform_buffer,
                     .count = 1,
                     .shader_mask = .{ .fragment = true },
@@ -714,7 +714,7 @@ const Descriptor = struct {
 
         var set_layt_2 = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{.{
-                .binding = 0,
+                .binding = Material.binding,
                 .type = .uniform_buffer,
                 .count = 1,
                 .shader_mask = .{ .fragment = true },
