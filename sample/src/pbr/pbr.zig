@@ -492,7 +492,7 @@ fn do(gpa: std.mem.Allocator) !void {
             .image_index = next,
         }});
 
-        frame = (frame + 1) & frame_n;
+        frame = (frame + 1) % frame_n;
     }
 
     try dev.wait();
