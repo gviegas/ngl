@@ -16,6 +16,6 @@ layout(location = 0) out Vertex {
 
 void main() {
     vertex.position = (global.mv * vec4(position, 1.0)).xyz;
-    vertex.normal = normalize(global.n * normal);
+    vertex.normal = global.n * normal;
     gl_Position = global.mvp * vec4(position, 1.0);
 }
