@@ -963,7 +963,7 @@ const Descriptor = struct {
             .max_sets = frame_n + draw_n * frame_n,
             .pool_size = .{
                 .combined_image_sampler = frame_n,
-                .uniform_buffer = 2 * frame_n + 2 * draw_n * frame_n,
+                .uniform_buffer = frame_n + 2 * draw_n * frame_n,
             },
         });
         errdefer pool.deinit(gpa, dev);
@@ -981,10 +981,10 @@ const Descriptor = struct {
                 sets[0..frame_n].*,
                 blk: {
                     var dest: [frame_n][draw_n]ngl.DescriptorSet = undefined;
-                    var src = sets[frame_n..];
+                    var source = sets[frame_n..];
                     for (0..frame_n) |frame| {
-                        src = src[frame * draw_n ..];
-                        dest[frame] = src[0..draw_n].*;
+                        source = source[frame * draw_n ..];
+                        dest[frame] = source[0..draw_n].*;
                     }
                     break :blk dest;
                 },
