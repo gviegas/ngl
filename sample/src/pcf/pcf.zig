@@ -60,6 +60,8 @@ fn do(gpa: std.mem.Allocator) !void {
     var latt = try model.loadObj(gpa, "data/geometry/lattice.obj");
     defer latt.deinit(gpa);
     const plane = &model.plane;
+    assert(latt.indices == null);
+    comptime assert(!@hasDecl(plane.*, "indices"));
 
     const latt_pos_off = 0;
     const latt_norm_off = latt_pos_off + latt.positionSize();
@@ -164,7 +166,7 @@ fn do(gpa: std.mem.Allocator) !void {
     for (0..frame_n) |frame| {
         const ub = &unif_buf.buffer;
         const strd = frame * unif_strd;
-        const data = stg_buf.data[unif_cpy_off + strd ..];
+        const data = stg_buf.data[unif_cpy_off + strd .. unif_cpy_off + strd + unif_strd];
 
         try desc.writeIs(ShadowMap, gpa, frame, &shdw_map.view, .shader_read_only_optimal, null);
 
@@ -666,7 +668,7 @@ const Color = struct {
     memory: ngl.Memory,
     view: ngl.ImageView,
 
-    const samples = .@"4";
+    const samples = ngl.SampleCount.@"4";
 
     fn init(gpa: std.mem.Allocator) ngl.Error!Color {
         var img = try ngl.Image.init(gpa, dev, .{
@@ -1323,38 +1325,38 @@ const Light = packed struct {
 };
 
 const Global = struct {
-    shdw_mvp_s_mvp_mv_n: [16 + 16 + 16 + 16 + 12]f32,
+    shdw_s_mvp_mv_n: [16 + 16 + 16 + 16 + 12]f32,
 
     const size = @sizeOf(@typeInfo(Global).Struct.fields[0].type);
     const set_index = 1;
     const binding = 0;
 
-    fn init(shdw_mvp: [16]f32, s: [16]f32, mvp: [16]f32, mv: [16]f32, n: [12]f32) Global {
+    fn init(shadow_mvp: [16]f32, s: [16]f32, mvp: [16]f32, mv: [16]f32, n: [12]f32) Global {
         var self: Global = undefined;
-        self.set(shdw_mvp, s, mvp, mv, n);
+        self.set(shadow_mvp, s, mvp, mv, n);
         return self;
     }
 
     fn set(
         self: *Global,
-        shdw_mvp: [16]f32,
+        shadow_mvp: [16]f32,
         s: [16]f32,
         mvp: [16]f32,
         mv: [16]f32,
         n: [12]f32,
     ) void {
-        @memcpy(self.shdw_mvp_s_mvp_mv_n[0..16], &shdw_mvp);
-        @memcpy(self.shdw_mvp_s_mvp_mv_n[16..32], &s);
-        @memcpy(self.shdw_mvp_s_mvp_mv_n[32..48], &mvp);
-        @memcpy(self.shdw_mvp_s_mvp_mv_n[48..64], &mv);
-        @memcpy(self.shdw_mvp_s_mvp_mv_n[64..76], &n);
+        @memcpy(self.shdw_s_mvp_mv_n[0..16], &shadow_mvp);
+        @memcpy(self.shdw_s_mvp_mv_n[16..32], &s);
+        @memcpy(self.shdw_s_mvp_mv_n[32..48], &mvp);
+        @memcpy(self.shdw_s_mvp_mv_n[48..64], &mv);
+        @memcpy(self.shdw_s_mvp_mv_n[64..76], &n);
     }
 
     fn copy(self: Global, dest: []u8) void {
         assert(@intFromPtr(dest.ptr) & 3 == 0);
         assert(dest.len >= size);
 
-        @memcpy(dest[0..size], std.mem.asBytes(&self.shdw_mvp_s_mvp_mv_n));
+        @memcpy(dest[0..size], std.mem.asBytes(&self.shdw_s_mvp_mv_n));
     }
 };
 
