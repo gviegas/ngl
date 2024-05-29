@@ -132,7 +132,7 @@ fn do(gpa: std.mem.Allocator) !void {
     for (0..frame_n) |frame| {
         const ub = &unif_buf.buffer;
         const strd = frame * unif_strd;
-        const data = stg_buf.data[unif_cpy_off + strd ..];
+        const data = stg_buf.data[unif_cpy_off + strd .. unif_cpy_off + strd + unif_strd];
 
         try desc.write(Global, gpa, frame, ub, strd + globl_off);
         try desc.write(@TypeOf(light), gpa, frame, ub, strd + light_off);
