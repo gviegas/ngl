@@ -125,7 +125,7 @@ fn do(gpa: std.mem.Allocator) !void {
     for (0..frame_n) |frame| {
         const ub = &unif_buf.buffer;
         const strd = frame * unif_strd;
-        const data = stg_buf.data[unif_cpy_off + strd ..];
+        const data = stg_buf.data[unif_cpy_off + strd .. unif_cpy_off + strd + unif_strd];
 
         try desc.write(Global, gpa, frame, ub, strd + globl_off);
         try desc.write(Light, gpa, frame, ub, strd + light_off);
@@ -959,7 +959,7 @@ const Global = struct {
     fn set(self: *Global, mvp: [16]f32, mv: [16]f32, n: [12]f32) void {
         @memcpy(self.mvp_mv_n[0..16], &mvp);
         @memcpy(self.mvp_mv_n[16..32], &mv);
-        @memcpy(self.mvp_mv_n[32..], &n);
+        @memcpy(self.mvp_mv_n[32..44], &n);
     }
 
     fn copy(self: Global, dest: []u8) void {
@@ -1005,11 +1005,11 @@ const Material = packed struct {
     ka_r: f32,
     ka_g: f32,
     ka_b: f32,
-    _ka_pad: f32,
+    _ka_pad: f32 = 0,
     kd_r: f32,
     kd_g: f32,
     kd_b: f32,
-    _kd_pad: f32,
+    _kd_pad: f32 = 0,
     ks_r: f32,
     ks_g: f32,
     ks_b: f32,
