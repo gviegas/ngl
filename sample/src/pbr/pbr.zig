@@ -1011,7 +1011,7 @@ fn Light(comptime n: u16) type {
         }
 
         fn set(self: *@This(), desc: Desc) void {
-            for (&self.lights, &desc) |*l, d|
+            for (&self.lights, desc) |*l, d|
                 l.* = .{
                     .pos_x = d.position[0],
                     .pos_y = d.position[1],

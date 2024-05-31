@@ -173,7 +173,7 @@ fn do(gpa: std.mem.Allocator) !void {
         try desc.writeUb(Light, gpa, frame, null, ub, strd + light_off);
         light.copy(data[light_off .. light_off + Light.size]);
 
-        for (&draws, 0..) |draw, i| {
+        for (draws, 0..) |draw, i| {
             const goff = globl_off + i * ((Global.size + 255) & ~@as(u64, 255));
             try desc.writeUb(Global, gpa, frame, i, ub, strd + goff);
             draw.global.copy(data[goff .. goff + Global.size]);
@@ -739,7 +739,7 @@ const Depth = struct {
     const samples = Color.samples;
 
     fn init(gpa: std.mem.Allocator) ngl.Error!Depth {
-        const fmt = for (&[_]ngl.Format{
+        const fmt = for ([_]ngl.Format{
             .d32_sfloat,
             .x8_d24_unorm,
             .d16_unorm,
@@ -822,7 +822,7 @@ const ShadowMap = struct {
     const binding = 0;
 
     fn init(gpa: std.mem.Allocator) ngl.Error!ShadowMap {
-        const fmt, const hw_pcf = for (&[_]ngl.Format{
+        const fmt, const hw_pcf = for ([_]ngl.Format{
             .d32_sfloat,
             .x8_d24_unorm,
             .d16_unorm,
