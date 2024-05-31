@@ -37,15 +37,15 @@ pub fn build(b: *std.Build) void {
         .{ "ads.zig", b.step("ads", "Run ADS sample") },
         .{ "pbr.zig", b.step("pbr", "Run PBR sample") },
         .{ "pcf.zig", b.step("pcf", "Run PCF sample") },
+        .{ "vsm.zig", b.step("vsm", "Run VSM sample") },
         // TODO
-        //.{ "vsm.zig", b.step("vsm", "Run VSM sample") },
         //.{ "srgb.zig", b.step("srgb", "Run sRGB sample") },
         //.{ "mag.zig", b.step("mag", "Run alpha test sample") },
         //.{ "cube.zig", b.step("cube", "Run cube map sample") },
         //.{ "ssao.zig", b.step("ssao", "Run SSAO sample") },
         //.{ "hdr.zig", b.step("hdr", "Run HDR sample") },
-    }) |e| {
-        var exe = addExecutable(b, target, optimize, e[0], e[1]);
+    }) |x| {
+        var exe = addExecutable(b, target, optimize, x[0], x[1]);
         exe.root_module.addImport("ngl", ngl.module("ngl"));
         exe.root_module.addImport("Ctx", ctx);
         exe.root_module.addImport("model", model);
