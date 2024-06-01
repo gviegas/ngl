@@ -241,6 +241,8 @@ fn do(gpa: std.mem.Allocator) !void {
 
     try cmd.end();
 
+    try ngl.Fence.reset(gpa, dev, &.{&cq.fences[frame]});
+
     {
         ctx.lockQueue(cq.queue_index);
         defer ctx.unlockQueue(cq.queue_index);
