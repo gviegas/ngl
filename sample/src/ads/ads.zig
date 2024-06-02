@@ -5,7 +5,7 @@ const ngl = @import("ngl");
 const pfm = ngl.pfm;
 
 const Ctx = @import("Ctx");
-const cube = &@import("model").cube;
+const cube = &@import("mdata").cube;
 const util = @import("util");
 
 pub fn main() !void {

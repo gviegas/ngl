@@ -5,7 +5,7 @@ const ngl = @import("ngl");
 const pfm = ngl.pfm;
 
 const Ctx = @import("Ctx");
-const model = @import("model");
+const mdata = @import("mdata");
 const util = @import("util");
 
 pub fn main() !void {
@@ -60,9 +60,9 @@ fn do(gpa: std.mem.Allocator) !void {
     defer cq.deinit(gpa);
     const one_queue = cq.multiqueue == null;
 
-    var latt = try model.loadObj(gpa, "data/geometry/lattice.obj");
+    var latt = try mdata.loadObj(gpa, "data/geometry/lattice.obj");
     defer latt.deinit(gpa);
-    const plane = &model.plane;
+    const plane = &mdata.plane;
     assert(latt.indices == null);
     comptime assert(!@hasDecl(plane.*, "indices"));
 

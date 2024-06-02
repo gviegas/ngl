@@ -5,7 +5,7 @@ const ngl = @import("ngl");
 const pfm = ngl.pfm;
 
 const Ctx = @import("Ctx");
-const model = @import("model");
+const mdata = @import("mdata");
 const util = @import("util");
 
 pub fn main() !void {
@@ -42,7 +42,7 @@ fn do(gpa: std.mem.Allocator) !void {
     var depth = try Depth.init(gpa);
     defer depth.deinit(gpa);
 
-    var sphr = try model.loadObj(gpa, "data/geometry/sphere.obj");
+    var sphr = try mdata.loadObj(gpa, "data/geometry/sphere.obj");
     defer sphr.deinit(gpa);
     assert(sphr.indices == null);
 

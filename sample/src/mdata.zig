@@ -1,5 +1,5 @@
 const std = @import("std");
-const log = std.log.scoped(.@"sample|model");
+const log = std.log.scoped(.@"sample|mdata");
 
 const ngl = @import("ngl");
 
