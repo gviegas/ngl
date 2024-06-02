@@ -27,8 +27,8 @@ pub fn build(b: *std.Build) void {
     });
     idata.addImport("ngl", ngl.module("ngl"));
 
-    const util = b.createModule(.{
-        .root_source_file = .{ .path = "src/util.zig" },
+    const gmath = b.createModule(.{
+        .root_source_file = .{ .path = "src/gmath.zig" },
         .target = target,
         .optimize = optimize,
     });
@@ -50,7 +50,7 @@ pub fn build(b: *std.Build) void {
         exe.root_module.addImport("Ctx", ctx);
         exe.root_module.addImport("mdata", mdata);
         exe.root_module.addImport("idata", idata);
-        exe.root_module.addImport("util", util);
+        exe.root_module.addImport("gmath", gmath);
     }
 }
 

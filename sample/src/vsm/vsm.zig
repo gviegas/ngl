@@ -6,7 +6,7 @@ const pfm = ngl.pfm;
 
 const Ctx = @import("Ctx");
 const mdata = @import("mdata");
-const util = @import("util");
+const gmath = @import("gmath");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -98,19 +98,19 @@ fn do(gpa: std.mem.Allocator) !void {
     defer cq.deinit(gpa);
     const one_queue = cq.multiqueue == null;
 
-    const v = util.lookAt(.{ 0, 0, 0 }, .{ 0, -4, -4 }, .{ 0, -1, 0 });
-    const p = util.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
+    const v = gmath.lookAt(.{ 0, 0, 0 }, .{ 0, -4, -4 }, .{ 0, -1, 0 });
+    const p = gmath.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
 
     const light_world_pos = .{ 13, -10, 2 };
-    const light_view_pos = util.mulMV(4, v, light_world_pos ++ [1]f32{1})[0..3].*;
+    const light_view_pos = gmath.mulMV(4, v, light_world_pos ++ [1]f32{1})[0..3].*;
     const light_col = .{ 1, 1, 1 };
     const intensity = 100;
     const light = Light.init(light_view_pos, light_col, intensity);
 
-    const shdw_v = util.lookAt(.{ 0, 0, 0 }, light_world_pos, .{ 0, -1, 0 });
-    const shdw_p = util.frustum(-0.25, 0.25, -0.25, 0.25, 1, 100);
-    const shdw_vp = util.mulM(4, shdw_p, shdw_v);
-    const vps = util.mulM(4, .{
+    const shdw_v = gmath.lookAt(.{ 0, 0, 0 }, light_world_pos, .{ 0, -1, 0 });
+    const shdw_p = gmath.frustum(-0.25, 0.25, -0.25, 0.25, 1, 100);
+    const shdw_vp = gmath.mulM(4, shdw_p, shdw_v);
+    const vps = gmath.mulM(4, .{
         0.5, 0,   0, 0,
         0,   0.5, 0, 0,
         0,   0,   1, 0,
@@ -118,7 +118,7 @@ fn do(gpa: std.mem.Allocator) !void {
     }, shdw_vp);
     const draws = blk: {
         const xforms = [draw_n][16]f32{
-            util.identity(4),
+            gmath.identity(4),
             .{
                 20, 0, 0,  0,
                 0,  1, 0,  0,
@@ -132,16 +132,16 @@ fn do(gpa: std.mem.Allocator) !void {
         };
         var draws: [draw_n]Draw = undefined;
         for (&draws, xforms, matls) |*draw, m, matl| {
-            const shdw_mvp = util.mulM(4, shdw_vp, m);
-            const s = util.mulM(4, vps, m);
-            const mv = util.mulM(4, v, m);
-            const inv = util.invert3(util.upperLeft(4, mv));
+            const shdw_mvp = gmath.mulM(4, shdw_vp, m);
+            const s = gmath.mulM(4, vps, m);
+            const mv = gmath.mulM(4, v, m);
+            const inv = gmath.invert3(gmath.upperLeft(4, mv));
             const n = .{
                 inv[0], inv[3], inv[6], undefined,
                 inv[1], inv[4], inv[7], undefined,
                 inv[2], inv[5], inv[8], undefined,
             };
-            const mvp = util.mulM(4, p, mv);
+            const mvp = gmath.mulM(4, p, mv);
             draw.* = .{
                 .global = Global.init(shdw_mvp, s, mvp, mv, n),
                 .material = matl,

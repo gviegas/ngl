@@ -6,7 +6,7 @@ const pfm = ngl.pfm;
 
 const Ctx = @import("Ctx");
 const cube = &@import("mdata").cube;
-const util = @import("util");
+const gmath = @import("gmath");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -90,12 +90,12 @@ fn do(gpa: std.mem.Allocator) !void {
     defer cq.deinit(gpa);
     const one_queue = cq.multiqueue == null;
 
-    const m = util.identity(4);
-    const v = util.lookAt(.{ 0, 0, 0 }, .{ -4, -5, -6 }, .{ 0, -1, 0 });
-    const p = util.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
-    const mv = util.mulM(4, v, m);
-    const mvp = util.mulM(4, p, mv);
-    const inv = util.invert3(util.upperLeft(4, mv));
+    const m = gmath.identity(4);
+    const v = gmath.lookAt(.{ 0, 0, 0 }, .{ -4, -5, -6 }, .{ 0, -1, 0 });
+    const p = gmath.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
+    const mv = gmath.mulM(4, v, m);
+    const mvp = gmath.mulM(4, p, mv);
+    const inv = gmath.invert3(gmath.upperLeft(4, mv));
     const n = [12]f32{
         inv[0], inv[3], inv[6], undefined,
         inv[1], inv[4], inv[7], undefined,
@@ -103,7 +103,7 @@ fn do(gpa: std.mem.Allocator) !void {
     };
     const globl = Global.init(mvp, mv, n);
 
-    const light_pos = util.mulMV(4, v, .{ -4, -6, -4, 1 })[0..3].*;
+    const light_pos = gmath.mulMV(4, v, .{ -4, -6, -4, 1 })[0..3].*;
     const intens = 1;
     const light = Light.init(light_pos, intens);
 
