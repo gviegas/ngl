@@ -2,9 +2,12 @@
 
 const float pi = 3.14159265359;
 
-layout(set = 0, binding = 0) uniform sampler2DShadow shadow_map;
+layout(constant_id = 0) const int shadow_sample_count = 1;
 
-layout(set = 0, binding = 1) uniform Light {
+layout(set = 0, binding = 0) uniform sampler2DShadow shadow_map;
+layout(set = 0, binding = 1) uniform sampler3D random_sampling;
+
+layout(set = 0, binding = 2) uniform Light {
     vec3 position;
     vec3 color;
     float intensity;
@@ -60,19 +63,20 @@ void main() {
     const float n_dot_h = clamp(dot(n, h), 0.0, 1.0);
     const float l_dot_h = clamp(dot(l, h), 0.0, 1.0);
 
-    // TODO: Random samples.
     float shdw_fac;
     if (vertex.shadow.w > 1.0) {
-        shdw_fac = textureProj(shadow_map, vertex.shadow);
-        shdw_fac += textureProjOffset(shadow_map, vertex.shadow, ivec2(-1, -1));
-        shdw_fac += textureProjOffset(shadow_map, vertex.shadow, ivec2(0, -1));
-        shdw_fac += textureProjOffset(shadow_map, vertex.shadow, ivec2(1, -1));
-        shdw_fac += textureProjOffset(shadow_map, vertex.shadow, ivec2(1, 0));
-        shdw_fac += textureProjOffset(shadow_map, vertex.shadow, ivec2(1, 1));
-        shdw_fac += textureProjOffset(shadow_map, vertex.shadow, ivec2(0, 1));
-        shdw_fac += textureProjOffset(shadow_map, vertex.shadow, ivec2(-1, 1));
-        shdw_fac += textureProjOffset(shadow_map, vertex.shadow, ivec2(-1, 0));
-        shdw_fac *= 1.0 / 9.0;
+        const vec2 uv = gl_FragCoord.xy / textureSize(random_sampling, 0).xy;
+        const float d = 1.0 / shadow_sample_count;
+        shdw_fac = 0.0;
+
+        for (int i = 0; i < shadow_sample_count; i++) {
+            const vec3 uvw = vec3(uv, d * i);
+            const vec2 rnd = normalize(texture(random_sampling, uvw).rg * 2.0 - 1.0);
+            const vec4 off = vec4(0.075 * rnd, 0.0, 0.0);
+            shdw_fac += textureProj(shadow_map, vertex.shadow + off);
+        }
+
+        shdw_fac *= 1.0 / shadow_sample_count;
     } else {
         shdw_fac = 1.0;
     }
@@ -98,5 +102,5 @@ void main() {
     const float fd = fdLambert();
 
     const vec3 brdf = fr + fd * diff_col;
-    color_0.rgb = mix(brdf, brdf * shdw_fac, 0.75) * light_fac;
+    color_0.rgb = mix(brdf, brdf * shdw_fac, 0.7) * light_fac;
 }

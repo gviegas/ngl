@@ -47,7 +47,10 @@ fn do(gpa: std.mem.Allocator) !void {
     var shdw_map = try ShadowMap.init(gpa);
     defer shdw_map.deinit(gpa);
 
-    var desc = try Descriptor.init(gpa, &shdw_map);
+    var rnd_spl = try RandomSampling.init(gpa);
+    defer rnd_spl.deinit(gpa);
+
+    var desc = try Descriptor.init(gpa, &shdw_map, &rnd_spl);
     defer desc.deinit(gpa);
 
     var shd = try Shader.init(gpa, &desc);
@@ -89,14 +92,15 @@ fn do(gpa: std.mem.Allocator) !void {
 
     const vert_cpy_off = 0;
     const unif_cpy_off = (vert_cpy_off + vert_buf_size + 255) & ~@as(u64, 255);
-    const stg_buf_size = unif_cpy_off + unif_buf_size;
+    const rnd_cpy_off = (unif_cpy_off + unif_buf_size + 255) & ~@as(u64, 255);
+    const stg_buf_size = rnd_cpy_off + RandomSampling.size;
     var stg_buf = try Buffer(.host).init(gpa, stg_buf_size, .{ .transfer_source = true });
     defer stg_buf.deinit(gpa);
 
     const v = util.lookAt(.{ 0, 0, 0 }, .{ 0, -4, -4 }, .{ 0, -1, 0 });
     const p = util.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
 
-    const light_world_pos = .{ -10, -10, -5 };
+    const light_world_pos = .{ -12, -10, 3 };
     const light_view_pos = util.mulMV(4, v, light_world_pos ++ [1]f32{1})[0..3].*;
     const light_col = .{ 1, 1, 1 };
     const intensity = 100;
@@ -123,7 +127,7 @@ fn do(gpa: std.mem.Allocator) !void {
         };
         const matls = [draw_n]Material{
             Material.init(.{ 0.9843137, 0.8470588, 0.7372549, 1 }, 1, 0.6666667, 0),
-            Material.init(.{ 0.7529412, 0.7490196, 0.7333333, 1 }, 0, 0.5, 0.5),
+            Material.init(.{ 0.7529412, 0.7490196, 0.7333333, 1 }, 0, 0.4, 0.5),
         };
         var draws: [draw_n]Draw = undefined;
         for (&draws, xforms, matls) |*draw, m, matl| {
@@ -163,12 +167,31 @@ fn do(gpa: std.mem.Allocator) !void {
         std.mem.asBytes(&plane.data.normal),
     );
 
+    const rnd_data = stg_buf.data[rnd_cpy_off .. rnd_cpy_off + RandomSampling.size];
+    var rnd_source = std.Random.DefaultPrng.init(std.crypto.random.int(u64));
+    const rnd_engine = rnd_source.random();
+    for (0..rnd_data.len / @sizeOf(f16)) |i| {
+        const len = @sizeOf(f16);
+        const off = i * len;
+        const val: f16 = @floatCast(rnd_engine.float(f32));
+        @memcpy(rnd_data[off .. off + len], std.mem.asBytes(&val));
+    }
+
     for (0..frame_n) |frame| {
         const ub = &unif_buf.buffer;
         const strd = frame * unif_strd;
         const data = stg_buf.data[unif_cpy_off + strd .. unif_cpy_off + strd + unif_strd];
 
         try desc.writeIs(ShadowMap, gpa, frame, &shdw_map.view, .shader_read_only_optimal, null);
+
+        try desc.writeIs(
+            RandomSampling,
+            gpa,
+            frame,
+            &rnd_spl.view,
+            .shader_read_only_optimal,
+            null,
+        );
 
         try desc.writeUb(Light, gpa, frame, null, ub, strd + light_off);
         light.copy(data[light_off .. light_off + Light.size]);
@@ -214,6 +237,65 @@ fn do(gpa: std.mem.Allocator) !void {
             }},
         },
     });
+
+    cmd.barrier(&.{.{
+        .image = &.{.{
+            .source_stage_mask = .{},
+            .source_access_mask = .{},
+            .dest_stage_mask = .{ .copy = true },
+            .dest_access_mask = .{ .transfer_write = true },
+            .queue_transfer = null,
+            .old_layout = .unknown,
+            .new_layout = .transfer_dest_optimal,
+            .image = &rnd_spl.image,
+            .range = .{
+                .aspect_mask = .{ .color = true },
+                .level = 0,
+                .levels = 1,
+                .layer = 0,
+                .layers = 1,
+            },
+        }},
+    }});
+
+    cmd.copyBufferToImage(&.{.{
+        .buffer = &stg_buf.buffer,
+        .image = &rnd_spl.image,
+        .image_layout = .transfer_dest_optimal,
+        .regions = &.{.{
+            .buffer_offset = rnd_cpy_off,
+            .buffer_row_length = RandomSampling.extent,
+            .buffer_image_height = RandomSampling.extent,
+            .image_aspect = .color,
+            .image_level = 0,
+            .image_x = 0,
+            .image_y = 0,
+            .image_z_or_layer = 0,
+            .image_width = RandomSampling.extent,
+            .image_height = RandomSampling.extent,
+            .image_depth_or_layers = RandomSampling.count,
+        }},
+    }});
+
+    cmd.barrier(&.{.{
+        .image = &.{.{
+            .source_stage_mask = .{ .copy = true },
+            .source_access_mask = .{ .transfer_write = true },
+            .dest_stage_mask = .{},
+            .dest_access_mask = .{},
+            .queue_transfer = null,
+            .old_layout = .transfer_dest_optimal,
+            .new_layout = .shader_read_only_optimal,
+            .image = &rnd_spl.image,
+            .range = .{
+                .aspect_mask = .{ .color = true },
+                .level = 0,
+                .levels = 1,
+                .layer = 0,
+                .layers = 1,
+            },
+        }},
+    }});
 
     try cmd.end();
 
@@ -330,7 +412,7 @@ fn do(gpa: std.mem.Allocator) !void {
         }});
         cmd.setSampleCount(.@"1");
         cmd.setDepthBiasEnable(true);
-        cmd.setDepthBias(0.01, 2, if (shdw_map.depth_bias_clamp) 1 else 0);
+        cmd.setDepthBias(0.01, 16, if (shdw_map.depth_bias_clamp) 1 else 0);
 
         cmd.setPrimitiveTopology(.triangle_list);
         cmd.setVertexBuffers(
@@ -910,6 +992,94 @@ const ShadowMap = struct {
     }
 };
 
+const RandomSampling = struct {
+    image: ngl.Image,
+    memory: ngl.Memory,
+    view: ngl.ImageView,
+    sampler: ngl.Sampler,
+
+    const format = ngl.Format.rg16_sfloat;
+    const extent = 64;
+    const count: i32 = 6 * 6;
+    const size = @sizeOf(f16) * 2 * count * extent * extent;
+    const set_index = 0;
+    const binding = 1;
+
+    fn init(gpa: std.mem.Allocator) ngl.Error!RandomSampling {
+        var img = try ngl.Image.init(gpa, dev, .{
+            .type = .@"3d",
+            .format = format,
+            .width = extent,
+            .height = extent,
+            .depth_or_layers = count,
+            .levels = 1,
+            .samples = .@"1",
+            .tiling = .optimal,
+            .usage = .{
+                .sampled_image = true,
+                .transfer_dest = true,
+            },
+            .misc = .{},
+        });
+        errdefer img.deinit(gpa, dev);
+
+        var mem = blk: {
+            const reqs = img.getMemoryRequirements(dev);
+            var mem = try dev.alloc(gpa, .{
+                .size = reqs.size,
+                .type_index = reqs.findType(dev.*, .{ .device_local = true }, null).?,
+            });
+            errdefer dev.free(gpa, &mem);
+            try img.bind(dev, &mem, 0);
+            break :blk mem;
+        };
+        errdefer dev.free(gpa, &mem);
+
+        var view = try ngl.ImageView.init(gpa, dev, .{
+            .image = &img,
+            .type = .@"3d",
+            .format = format,
+            .range = .{
+                .aspect_mask = .{ .color = true },
+                .level = 0,
+                .levels = 1,
+                .layer = 0,
+                .layers = 1,
+            },
+        });
+        errdefer view.deinit(gpa, dev);
+
+        const splr = try ngl.Sampler.init(gpa, dev, .{
+            .normalized_coordinates = true,
+            .u_address = .repeat,
+            .v_address = .repeat,
+            .w_address = .repeat,
+            .border_color = null,
+            .mag = .linear,
+            .min = .linear,
+            .mipmap = .nearest,
+            .min_lod = 0,
+            .max_lod = null,
+            .max_anisotropy = null,
+            .compare = null,
+        });
+
+        return .{
+            .image = img,
+            .memory = mem,
+            .view = view,
+            .sampler = splr,
+        };
+    }
+
+    fn deinit(self: *RandomSampling, gpa: std.mem.Allocator) void {
+        self.view.deinit(gpa, dev);
+        self.image.deinit(gpa, dev);
+        dev.free(gpa, &self.memory);
+        self.sampler.deinit(gpa, dev);
+    }
+};
+
 const Descriptor = struct {
     set_layouts: [2]ngl.DescriptorSetLayout,
     pool: ngl.DescriptorPool,
@@ -918,7 +1088,11 @@ const Descriptor = struct {
         [frame_n][draw_n]ngl.DescriptorSet,
     },
 
-    fn init(gpa: std.mem.Allocator, shadow_map: *ShadowMap) ngl.Error!Descriptor {
+    fn init(
+        gpa: std.mem.Allocator,
+        shadow_map: *ShadowMap,
+        random_sampling: *RandomSampling,
+    ) ngl.Error!Descriptor {
         var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
                 .{
@@ -927,6 +1101,13 @@ const Descriptor = struct {
                     .count = 1,
                     .shader_mask = .{ .fragment = true },
                     .immutable_samplers = &.{&shadow_map.sampler},
+                },
+                .{
+                    .binding = RandomSampling.binding,
+                    .type = .combined_image_sampler,
+                    .count = 1,
+                    .shader_mask = .{ .fragment = true },
+                    .immutable_samplers = &.{&random_sampling.sampler},
                 },
                 .{
                     .binding = Light.binding,
@@ -962,7 +1143,7 @@ const Descriptor = struct {
         var pool = try ngl.DescriptorPool.init(gpa, dev, .{
             .max_sets = frame_n + draw_n * frame_n,
             .pool_size = .{
-                .combined_image_sampler = frame_n,
+                .combined_image_sampler = 2 * frame_n,
                 .uniform_buffer = frame_n + 2 * draw_n * frame_n,
             },
         });
@@ -1092,7 +1273,14 @@ const Shader = struct {
                 .name = "main",
                 .set_layouts = set_layts,
                 .push_constants = &.{},
-                .specialization = null,
+                .specialization = .{
+                    .constants = &.{.{
+                        .id = 0,
+                        .offset = 0,
+                        .size = 4,
+                    }},
+                    .data = std.mem.asBytes(&RandomSampling.count),
+                },
                 .link = true,
             },
         });
@@ -1298,7 +1486,7 @@ const Light = packed struct {
 
     const size = @sizeOf(Light);
     const set_index = 0;
-    const binding = 1;
+    const binding = 2;
 
     fn init(position: [3]f32, color: [3]f32, intensity: f32) Light {
         var self: Light = undefined;
