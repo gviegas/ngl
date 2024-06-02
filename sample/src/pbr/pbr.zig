@@ -42,7 +42,7 @@ fn do(gpa: std.mem.Allocator) !void {
     var depth = try Depth.init(gpa);
     defer depth.deinit(gpa);
 
-    var sphr = try mdata.loadObj(gpa, "data/geometry/sphere.obj");
+    var sphr = try mdata.loadObj(gpa, "data/model/sphere.obj");
     defer sphr.deinit(gpa);
     assert(sphr.indices == null);
 

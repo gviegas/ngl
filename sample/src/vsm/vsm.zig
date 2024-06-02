@@ -52,7 +52,7 @@ fn do(gpa: std.mem.Allocator) !void {
 
     const dep_bias_clamp = ngl.Feature.get(gpa, ctx.gpu, .core).?.rasterization.depth_bias_clamp;
 
-    var latt = try mdata.loadObj(gpa, "data/geometry/lattice.obj");
+    var latt = try mdata.loadObj(gpa, "data/model/lattice.obj");
     defer latt.deinit(gpa);
     const plane = &mdata.plane;
     assert(latt.indices == null);

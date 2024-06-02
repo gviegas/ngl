@@ -60,7 +60,7 @@ fn do(gpa: std.mem.Allocator) !void {
     defer cq.deinit(gpa);
     const one_queue = cq.multiqueue == null;
 
-    var latt = try mdata.loadObj(gpa, "data/geometry/lattice.obj");
+    var latt = try mdata.loadObj(gpa, "data/model/lattice.obj");
     defer latt.deinit(gpa);
     const plane = &mdata.plane;
     assert(latt.indices == null);
