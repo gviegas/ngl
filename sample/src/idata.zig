@@ -3,7 +3,25 @@ const native_endian = @import("builtin").cpu.arch.endian();
 
 const ngl = @import("ngl");
 
-pub const DataPng = struct {
+pub const Data = struct {
+    width: u32,
+    height: u32,
+    format: ngl.Format,
+    data: []const u8,
+
+    const Self = @This();
+
+    fn fromPng(data_png: DataPng) Self {
+        return .{
+            .width = data_png.width,
+            .height = data_png.height,
+            .format = data_png.format,
+            .data = data_png.data,
+        };
+    }
+};
+
+const DataPng = struct {
     width: u32,
     height: u32,
     format: ngl.Format,
@@ -351,8 +369,8 @@ pub const DataPng = struct {
         }
     };
 
-    /// The `DataPng.data` field will contain whatever `dest.get` returns.
-    pub fn load(gpa: std.mem.Allocator, reader: anytype, dest: anytype) !DataPng {
+    /// `DataPng.data` will contain whatever `dest.get` returns.
+    fn load(gpa: std.mem.Allocator, reader: anytype, dest: anytype) !DataPng {
         var self: DataPng = undefined;
 
         var brd = std.io.bufferedReader(reader);
@@ -422,15 +440,17 @@ pub const DataPng = struct {
 };
 
 /// `dest` must implement the following function:
-///
-///     `pub fn get(self: @TypeOf(dest) size: u64) ![]u8`
-///
+/// ```
+/// pub fn get(self: @TypeOf(dest) size: u64) ![]u8
+/// ```
 /// to provide the destination for the decoded data.
 /// The `size` parameter will be computed as follows:
-///
-///     `DataPng.width` * `DataPng.height` * <`DataPng.format`'s texel size>
-pub fn loadPng(gpa: std.mem.Allocator, path: []const u8, dest: anytype) !DataPng {
+/// ```
+/// Data.width * Data.height * <Data.format's texel size>
+/// ```
+pub fn loadPng(gpa: std.mem.Allocator, path: []const u8, dest: anytype) !Data {
     var file = try std.fs.cwd().openFile(path, .{});
     defer file.close();
-    return DataPng.load(gpa, file.reader(), dest);
+    const data_png = try DataPng.load(gpa, file.reader(), dest);
+    return Data.fromPng(data_png);
 }
