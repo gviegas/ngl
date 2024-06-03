@@ -1193,9 +1193,9 @@ const Descriptor = struct {
                 blk: {
                     var dest: [frame_n][draw_n]ngl.DescriptorSet = undefined;
                     var source = sets[frame_n..];
-                    for (0..frame_n) |frame| {
-                        source = source[frame * draw_n ..];
-                        dest[frame] = source[0..draw_n].*;
+                    for (&dest) |*d| {
+                        d.* = source[0..draw_n].*;
+                        source = source[draw_n..];
                     }
                     break :blk dest;
                 },
