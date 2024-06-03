@@ -98,7 +98,7 @@ fn do(gpa: std.mem.Allocator) !void {
     defer cq.deinit(gpa);
     const one_queue = cq.multiqueue == null;
 
-    const v = gmath.lookAt(.{ 0, 0, 0 }, .{ 0, -4, -4 }, .{ 0, -1, 0 });
+    const v = gmath.lookAt(.{ 0, -4, -4 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
     const p = gmath.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
 
     const light_world_pos = .{ 13, -10, 2 };
@@ -107,7 +107,7 @@ fn do(gpa: std.mem.Allocator) !void {
     const intensity = 100;
     const light = Light.init(light_view_pos, light_col, intensity);
 
-    const shdw_v = gmath.lookAt(.{ 0, 0, 0 }, light_world_pos, .{ 0, -1, 0 });
+    const shdw_v = gmath.lookAt(light_world_pos, .{ 0, 0, 0 }, .{ 0, -1, 0 });
     const shdw_p = gmath.frustum(-0.25, 0.25, -0.25, 0.25, 1, 100);
     const shdw_vp = gmath.mulM(4, shdw_p, shdw_v);
     const vps = gmath.mulM(4, .{

@@ -63,7 +63,7 @@ fn do(gpa: std.mem.Allocator) !void {
         };
     };
     const eye = [3]f32{ 0, -3, 6 };
-    const v = gmath.lookAt(.{ 0, 0, 0 }, eye, .{ 0, -1, 0 });
+    const v = gmath.lookAt(eye, .{ 0, 0, 0 }, .{ 0, -1, 0 });
     const p = gmath.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
     const vp = gmath.mulM(4, p, v);
     const globl = Global.init(vp, m, n, eye);

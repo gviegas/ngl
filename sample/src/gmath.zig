@@ -95,7 +95,7 @@ pub fn mulMV(comptime n: comptime_int, matrix: [n * n]f32, vector: [n]f32) [n]f3
     return res;
 }
 
-pub fn lookAt(center: [3]f32, eye: [3]f32, up: [3]f32) [16]f32 {
+pub fn lookAt(eye: [3]f32, center: [3]f32, up: [3]f32) [16]f32 {
     const f = norm(3, subV(3, center, eye));
     const s = norm(3, cross(f, up));
     const u = cross(f, s);
