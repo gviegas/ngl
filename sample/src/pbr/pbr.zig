@@ -46,7 +46,7 @@ fn do(gpa: std.mem.Allocator) !void {
     defer sphr.deinit(gpa);
     assert(sphr.indices == null);
 
-    const vert_buf_size = sphr.positionSize() + sphr.normalSize();
+    const vert_buf_size = sphr.sizeOfPositions() + sphr.sizeOfNormals();
     var vert_buf = try Buffer(.device).init(gpa, vert_buf_size, .{
         .vertex_buffer = true,
         .transfer_dest = true,
@@ -121,11 +121,11 @@ fn do(gpa: std.mem.Allocator) !void {
     const one_queue = cq.multiqueue == null;
 
     @memcpy(
-        stg_buf.data[vert_cpy_off .. vert_cpy_off + sphr.positionSize()],
+        stg_buf.data[vert_cpy_off .. vert_cpy_off + sphr.sizeOfPositions()],
         std.mem.sliceAsBytes(sphr.positions.items),
     );
     @memcpy(
-        stg_buf.data[vert_cpy_off + sphr.positionSize() .. vert_cpy_off + vert_buf_size],
+        stg_buf.data[vert_cpy_off + sphr.sizeOfPositions() .. vert_cpy_off + vert_buf_size],
         std.mem.sliceAsBytes(sphr.normals.items),
     );
 
@@ -249,11 +249,11 @@ fn do(gpa: std.mem.Allocator) !void {
             },
             &.{
                 0,
-                sphr.positionSize(),
+                sphr.sizeOfPositions(),
             },
             &.{
-                sphr.vertexSize(),
-                sphr.normalSize(),
+                sphr.sizeOfPositions(),
+                sphr.sizeOfNormals(),
             },
         );
 

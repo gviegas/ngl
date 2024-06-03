@@ -48,14 +48,14 @@ fn do(gpa: std.mem.Allocator) !void {
     var depth = try Depth.init(gpa);
     defer depth.deinit(gpa);
 
-    const idx_buf_size = @sizeOf(@TypeOf(cube.indices));
+    const idx_buf_size = @sizeOf(cube.Indices);
     var idx_buf = try Buffer(.device).init(gpa, idx_buf_size, .{
         .index_buffer = true,
         .transfer_dest = true,
     });
     defer idx_buf.deinit(gpa);
 
-    const vert_buf_size = @sizeOf(@TypeOf(cube.data));
+    const vert_buf_size = @sizeOf(cube.Vertices);
     var vert_buf = try Buffer(.device).init(gpa, vert_buf_size, .{
         .vertex_buffer = true,
         .transfer_dest = true,
@@ -119,7 +119,7 @@ fn do(gpa: std.mem.Allocator) !void {
     );
     @memcpy(
         stg_buf.data[vert_cpy_off .. vert_cpy_off + vert_buf_size],
-        std.mem.asBytes(&cube.data),
+        std.mem.asBytes(&cube.vertices),
     );
 
     for (0..frame_n) |frame| {
@@ -251,12 +251,12 @@ fn do(gpa: std.mem.Allocator) !void {
                 &vert_buf.buffer,
             },
             &.{
-                @offsetOf(@TypeOf(cube.data), "position"),
-                @offsetOf(@TypeOf(cube.data), "normal"),
+                @offsetOf(cube.Vertices, "positions"),
+                @offsetOf(cube.Vertices, "normals"),
             },
             &.{
-                @sizeOf(@TypeOf(cube.data.position)),
-                @sizeOf(@TypeOf(cube.data.normal)),
+                @sizeOf(cube.Positions),
+                @sizeOf(cube.Normals),
             },
         );
 

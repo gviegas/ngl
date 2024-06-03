@@ -1,5 +1,5 @@
 const std = @import("std");
-const log = std.log.scoped(.@"sample|mdata");
+const log = std.log.scoped(.@"sample.mdata");
 
 const ngl = @import("ngl");
 
@@ -8,7 +8,9 @@ pub const cube = struct {
     pub const topology = ngl.Cmd.PrimitiveTopology.triangle_list;
     pub const front_face = ngl.Cmd.FrontFace.clockwise;
 
-    pub const indices: [36]u16 = .{
+    pub const Indices = [36]u16;
+
+    pub const indices: Indices = .{
         0,  1,  2,
         0,  2,  3,
         4,  5,  6,
@@ -23,53 +25,63 @@ pub const cube = struct {
         20, 22, 23,
     };
 
-    pub const data: struct {
-        const n = 24;
-        position: [n * 3]f32 = .{
-            // -x:
+    pub const Positions = [24 * 3]f32;
+    pub const Normals = [24 * 3]f32;
+    pub const Uvs = [24 * 2]f32;
+
+    pub const Vertices = struct {
+        positions: Positions,
+        normals: Normals,
+        uvs: Uvs,
+    };
+
+    pub const vertices = Vertices{
+        .positions = .{
             -1, -1, 1,
             -1, -1, -1,
             -1, 1,  -1,
             -1, 1,  1,
-            // x:
+
             1,  -1, -1,
             1,  -1, 1,
             1,  1,  1,
             1,  1,  -1,
-            // -y:
+
             -1, -1, 1,
             1,  -1, 1,
             1,  -1, -1,
             -1, -1, -1,
-            // y:
+
             -1, 1,  -1,
             1,  1,  -1,
             1,  1,  1,
             -1, 1,  1,
-            // -z:
+
             -1, -1, -1,
             1,  -1, -1,
             1,  1,  -1,
             -1, 1,  -1,
-            // z:
+
             1,  -1, 1,
             -1, -1, 1,
             -1, 1,  1,
             1,  1,  1,
         },
-        normal: [n * 3]f32 = [_]f32{ -1, 0, 0 } ** 4 ++
+
+        .normals = [_]f32{ -1, 0, 0 } ** 4 ++
             [_]f32{ 1, 0, 0 } ** 4 ++
             [_]f32{ 0, -1, 0 } ** 4 ++
             [_]f32{ 0, 1, 0 } ** 4 ++
             [_]f32{ 0, 0, -1 } ** 4 ++
             [_]f32{ 0, 0, 1 } ** 4,
-        uv: [n * 2]f32 = [_]f32{
+
+        .uvs = [_]f32{
             0, 0,
             1, 0,
             1, 1,
             0, 1,
         } ** 6,
-    } = .{};
+    };
 };
 
 pub const plane = struct {
@@ -77,81 +89,148 @@ pub const plane = struct {
     pub const topology = ngl.Cmd.PrimitiveTopology.triangle_strip;
     pub const front_face = ngl.Cmd.FrontFace.clockwise;
 
-    pub const data: struct {
-        const n = vertex_count;
-        position: [n * 3]f32 = .{
+    pub const Positions = [vertex_count * 3]f32;
+    pub const Normals = [vertex_count * 3]f32;
+    pub const Uvs = [vertex_count * 2]f32;
+
+    pub const Vertices = struct {
+        positions: Positions,
+        normals: Normals,
+        uvs: Uvs,
+    };
+
+    pub const vertices = Vertices{
+        .positions = .{
             -1, 0, -1,
             -1, 0, 1,
             1,  0, -1,
             1,  0, 1,
         },
-        normal: [n * 3]f32 = [_]f32{ 0, -1, 0 } ** n,
-        uv: [n * 2]f32 = .{
+
+        .normals = [_]f32{ 0, -1, 0 } ** vertex_count,
+
+        .uvs = .{
             0, 1,
             0, 0,
             1, 1,
             1, 0,
         },
-    } = .{};
+    };
 };
 
-/// -y up; z forward; ccw.
-/// Must have normals and uvs.
-pub fn loadObj(gpa: std.mem.Allocator, file_name: []const u8) !Model {
-    const dir = std.fs.cwd();
-    const file = try dir.openFile(file_name, .{});
-    defer file.close();
+pub const Data = struct {
+    indices: ?std.ArrayListUnmanaged(u32) = .{},
+    positions: std.ArrayListUnmanaged([3]f32) = .{},
+    normals: std.ArrayListUnmanaged([3]f32) = .{},
+    uvs: std.ArrayListUnmanaged([2]f32) = .{},
 
-    var buf: [4096]u8 = undefined;
-    var fwr = std.io.fixedBufferStream(&buf);
-    var cwr = std.io.countingWriter(fwr.writer());
-    const wr = cwr.writer();
-    var brd = std.io.bufferedReader(file.reader());
-    var rd = brd.reader();
+    const Self = @This();
 
-    var data = DataObj{};
-    defer data.deinit(gpa);
+    fn fromObj(gpa: std.mem.Allocator, data_obj: DataObj, no_indices: bool) !Self {
+        var self = Self{};
 
-    var pos: u64 = 0;
-    while (true) {
-        rd.streamUntilDelimiter(wr, '\n', buf.len) catch |err| {
-            if (err != error.EndOfStream)
-                return err;
-            break;
-        };
+        if (no_indices) {
+            self.indices = null;
+            for (data_obj.faces.items) |face| {
+                for ([_][3]u32{
+                    face[0..3].*,
+                    face[3..6].*,
+                    face[6..9].*,
+                }) |vert| {
+                    try self.positions.append(gpa, data_obj.positions.items[vert[0]]);
+                    try self.uvs.append(gpa, data_obj.uvs.items[vert[1]]);
+                    try self.normals.append(gpa, data_obj.normals.items[vert[2]]);
+                }
+            }
+        } else {
+            var vert_map = std.AutoHashMap([3]u32, u32).init(gpa);
+            defer vert_map.deinit();
 
-        const n = cwr.bytes_written - pos;
-        defer {
-            pos = cwr.bytes_written;
-            fwr.reset();
+            for (data_obj.faces.items) |face| {
+                for ([_][3]u32{
+                    face[0..3].*,
+                    face[3..6].*,
+                    face[6..9].*,
+                }) |vert| {
+                    const x = try vert_map.getOrPut(vert);
+                    if (!x.found_existing) {
+                        x.value_ptr.* = @intCast(self.positions.items.len);
+                        try self.positions.append(gpa, data_obj.positions.items[vert[0]]);
+                        try self.uvs.append(gpa, data_obj.uvs.items[vert[1]]);
+                        try self.normals.append(gpa, data_obj.normals.items[vert[2]]);
+                    }
+                    try self.indices.?.append(gpa, x.value_ptr.*);
+                }
+            }
+
+            if (self.indices.?.items.len % 3 != 0)
+                return error.BadObj;
+
+            //if (self.indices.?.items.len == self.positions.items.len) {
+            //    self.indices.?.deinit(gpa);
+            //    self.indices = null;
+            //}
         }
 
-        var it = std.mem.tokenizeScalar(u8, buf[0..n], ' ');
-        const str = it.next() orelse continue;
-
-        if (std.mem.eql(u8, str, "v")) {
-            try data.parseV(gpa, &it);
-        } else if (std.mem.eql(u8, str, "vt")) {
-            try data.parseVt(gpa, &it);
-        } else if (std.mem.eql(u8, str, "vn")) {
-            try data.parseVn(gpa, &it);
-        } else if (std.mem.eql(u8, str, "f")) {
-            try data.parseF(gpa, &it);
-        } else if (str[0] != '#') {
-            log.warn(
-                \\{s}: Ignoring "{s}"
-            , .{ @src().fn_name, buf[0..n] });
-        }
+        return self;
     }
 
-    return Model.generate(gpa, data, true);
-}
+    pub fn indexCount(self: Self) ?u32 {
+        const inds = &(self.indices orelse return null);
+        return @intCast(inds.items.len);
+    }
+
+    pub fn sizeOfIndices(self: Self) ?u64 {
+        comptime if (@sizeOf(@TypeOf(self.indices.?.items[0])) != 4)
+            unreachable;
+
+        const inds = &(self.indices orelse return null);
+        return @intCast(inds.items.len * 4);
+    }
+
+    pub fn vertexCount(self: Self) u32 {
+        return @intCast(self.positions.items.len);
+    }
+
+    pub fn sizeOfVertices(self: Self) u64 {
+        return self.positionSize() + self.uvSize() + self.normalSize();
+    }
+
+    pub fn sizeOfPositions(self: Self) u64 {
+        comptime if (@sizeOf(@TypeOf(self.positions.items[0])) != 12)
+            unreachable;
+
+        return self.positions.items.len * 12;
+    }
+
+    pub fn sizeOfNormals(self: Self) u64 {
+        comptime if (@sizeOf(@TypeOf(self.normals.items[0])) != 12)
+            unreachable;
+
+        return self.normals.items.len * 12;
+    }
+
+    pub fn sizeOfUvs(self: Self) u64 {
+        comptime if (@sizeOf(@TypeOf(self.uvs.items[0])) != 8)
+            unreachable;
+
+        return self.uvs.items.len * 8;
+    }
+
+    pub fn deinit(self: *Self, gpa: std.mem.Allocator) void {
+        if (self.indices) |*x|
+            x.deinit(gpa);
+        self.positions.deinit(gpa);
+        self.normals.deinit(gpa);
+        self.uvs.deinit(gpa);
+    }
+};
 
 const DataObj = struct {
     positions: std.ArrayListUnmanaged([3]f32) = .{},
     uvs: std.ArrayListUnmanaged([2]f32) = .{},
     normals: std.ArrayListUnmanaged([3]f32) = .{},
-    // pos/uv/norm.
+    // Position/UV/Normal * 3.
     faces: std.ArrayListUnmanaged([9]u32) = .{},
 
     const Self = @This();
@@ -246,131 +325,55 @@ const DataObj = struct {
     }
 };
 
-pub const Model = struct {
-    positions: std.ArrayListUnmanaged([3]f32) = .{},
-    uvs: std.ArrayListUnmanaged([2]f32) = .{},
-    normals: std.ArrayListUnmanaged([3]f32) = .{},
-    indices: ?std.ArrayListUnmanaged(u32) = .{},
+/// Counter clockwise, -y up and z forward.
+/// Must have normals and uvs.
+/// Will not have indices.
+pub fn loadObj(gpa: std.mem.Allocator, path: []const u8) !Data {
+    const dir = std.fs.cwd();
+    const file = try dir.openFile(path, .{});
+    defer file.close();
 
-    const Self = @This();
+    var buf: [4096]u8 = undefined;
+    var fwr = std.io.fixedBufferStream(&buf);
+    var cwr = std.io.countingWriter(fwr.writer());
+    const wr = cwr.writer();
+    var brd = std.io.bufferedReader(file.reader());
+    var rd = brd.reader();
 
-    fn generate(gpa: std.mem.Allocator, data: DataObj, no_indices: bool) !Self {
-        var mdl = Self{};
+    var data_obj = DataObj{};
+    defer data_obj.deinit(gpa);
 
-        if (no_indices) {
-            mdl.indices = null;
-            for (data.faces.items) |face| {
-                const a = face[0..3].*;
-                const b = face[3..6].*;
-                const c = face[6..9].*;
-                inline for (.{ a, b, c }) |vert| {
-                    try mdl.positions.append(gpa, data.positions.items[vert[0]]);
-                    try mdl.uvs.append(gpa, data.uvs.items[vert[1]]);
-                    try mdl.normals.append(gpa, data.normals.items[vert[2]]);
-                }
-            }
-        } else {
-            var vert_map = std.AutoHashMap([3]u32, u32).init(gpa);
-            defer vert_map.deinit();
+    var pos: u64 = 0;
+    while (true) {
+        rd.streamUntilDelimiter(wr, '\n', buf.len) catch |err| {
+            if (err != error.EndOfStream)
+                return err;
+            break;
+        };
 
-            for (data.faces.items) |face| {
-                const a = face[0..3].*;
-                const b = face[3..6].*;
-                const c = face[6..9].*;
-                inline for (.{ a, b, c }) |vert| {
-                    const x = try vert_map.getOrPut(vert);
-                    if (!x.found_existing) {
-                        x.value_ptr.* = @intCast(mdl.positions.items.len);
-                        try mdl.positions.append(gpa, data.positions.items[vert[0]]);
-                        try mdl.uvs.append(gpa, data.uvs.items[vert[1]]);
-                        try mdl.normals.append(gpa, data.normals.items[vert[2]]);
-                    }
-                    try mdl.indices.?.append(gpa, x.value_ptr.*);
-                }
-            }
-
-            if (mdl.indices.?.items.len % 3 != 0)
-                return error.Generate;
-
-            //if (mdl.indices.?.items.len == mdl.positions.items.len) {
-            //    mdl.indices.?.deinit(gpa);
-            //    mdl.indices = null;
-            //}
+        const n = cwr.bytes_written - pos;
+        defer {
+            pos = cwr.bytes_written;
+            fwr.reset();
         }
 
-        return mdl;
+        var it = std.mem.tokenizeScalar(u8, buf[0..n], ' ');
+        const str = it.next() orelse continue;
+
+        if (std.mem.eql(u8, str, "v")) {
+            try data_obj.parseV(gpa, &it);
+        } else if (std.mem.eql(u8, str, "vt")) {
+            try data_obj.parseVt(gpa, &it);
+        } else if (std.mem.eql(u8, str, "vn")) {
+            try data_obj.parseVn(gpa, &it);
+        } else if (std.mem.eql(u8, str, "f")) {
+            try data_obj.parseF(gpa, &it);
+        } else if (str[0] != '#') {
+            log.warn(
+                \\{s}: Ignoring "{s}"
+            , .{ @src().fn_name, buf[0..n] });
+        }
     }
 
-    pub fn vertexCount(self: Self) u32 {
-        return @intCast(self.positions.items.len);
-    }
-
-    pub fn vertexSize(self: Self) u64 {
-        return self.positionSize() + self.uvSize() + self.normalSize();
-    }
-
-    pub fn positionSize(self: Self) u64 {
-        comptime if (@sizeOf(@TypeOf(self.positions.items[0])) != 12)
-            unreachable;
-
-        return self.positions.items.len * 12;
-    }
-
-    pub fn uvSize(self: Self) u64 {
-        comptime if (@sizeOf(@TypeOf(self.uvs.items[0])) != 8)
-            unreachable;
-
-        return self.uvs.items.len * 8;
-    }
-
-    pub fn normalSize(self: Self) u64 {
-        comptime if (@sizeOf(@TypeOf(self.normals.items[0])) != 12)
-            unreachable;
-
-        return self.normals.items.len * 12;
-    }
-
-    pub fn deinit(self: *Self, gpa: std.mem.Allocator) void {
-        self.positions.deinit(gpa);
-        self.uvs.deinit(gpa);
-        self.normals.deinit(gpa);
-        if (self.indices) |*x|
-            x.deinit(gpa);
-    }
-
-    pub fn format(
-        value: Self,
-        comptime _: []const u8,
-        _: std.fmt.FormatOptions,
-        writer: anytype,
-    ) !void {
-        if (value.indices) |x| {
-            const idx_type = if (value.positions.items.len < ~@as(u16, 0)) "u16" else "u32";
-            try writer.print("pub const indices: [{}]{s} = .{{\n", .{ x.items.len, idx_type });
-            for (0..x.items.len / 3) |i|
-                try writer.print("    {}, {}, {},\n", .{
-                    x.items[i * 3],
-                    x.items[i * 3 + 1],
-                    x.items[i * 3 + 2],
-                });
-            try writer.print("}};\n\n", .{});
-        } else log.info("{s}: No indices", .{@src().fn_name()});
-
-        try writer.print("pub const data = Data{{}};\n\n", .{});
-
-        try writer.print("pub const Data = struct {{\n", .{});
-        try writer.print("    const n = {};\n", .{value.positions.items.len});
-        try writer.print("    position: [n * 3]f32 = .{{\n", .{});
-        for (value.positions.items) |pos|
-            try writer.print("        {}, {}, {},\n", .{ pos[0], pos[1], pos[2] });
-        try writer.print("    }},\n", .{});
-        try writer.print("    normal: [n * 3]f32 = .{{\n", .{});
-        for (value.normals.items) |norm|
-            try writer.print("        {}, {}, {},\n", .{ norm[0], norm[1], norm[2] });
-        try writer.print("    }},\n", .{});
-        try writer.print("    uv: [n * 2]f32 = .{{\n", .{});
-        for (value.uvs.items) |uv|
-            try writer.print("        {}, {},\n", .{ uv[0], uv[1] });
-        try writer.print("    }},\n}};\n", .{});
-    }
-};
+    return Data.fromObj(gpa, data_obj, true);
+}

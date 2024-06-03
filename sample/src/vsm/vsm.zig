@@ -59,11 +59,11 @@ fn do(gpa: std.mem.Allocator) !void {
     comptime assert(!@hasDecl(plane.*, "indices"));
 
     const latt_pos_off = 0;
-    const latt_norm_off = latt_pos_off + latt.positionSize();
-    const plane_pos_off = latt_norm_off + latt.normalSize();
-    const plane_norm_off = plane_pos_off + @sizeOf(@TypeOf(plane.data.position));
+    const latt_norm_off = latt_pos_off + latt.sizeOfPositions();
+    const plane_pos_off = latt_norm_off + latt.sizeOfNormals();
+    const plane_norm_off = plane_pos_off + @sizeOf(plane.Positions);
     const latt_size = plane_pos_off;
-    const plane_size = plane_norm_off + @sizeOf(@TypeOf(plane.data.normal)) - plane_pos_off;
+    const plane_size = plane_norm_off + @sizeOf(plane.Normals) - plane_pos_off;
     const vert_buf_size = latt_size + plane_size;
     var vert_buf = try Buffer(.device).init(gpa, vert_buf_size, .{
         .vertex_buffer = true,
@@ -152,20 +152,20 @@ fn do(gpa: std.mem.Allocator) !void {
 
     const vert_data = stg_buf.data[vert_cpy_off .. vert_cpy_off + vert_buf_size];
     @memcpy(
-        vert_data[latt_pos_off .. latt_pos_off + latt.positionSize()],
+        vert_data[latt_pos_off .. latt_pos_off + latt.sizeOfPositions()],
         std.mem.sliceAsBytes(latt.positions.items),
     );
     @memcpy(
-        vert_data[latt_norm_off .. latt_norm_off + latt.normalSize()],
+        vert_data[latt_norm_off .. latt_norm_off + latt.sizeOfNormals()],
         std.mem.sliceAsBytes(latt.normals.items),
     );
     @memcpy(
-        vert_data[plane_pos_off .. plane_pos_off + @sizeOf(@TypeOf(plane.data.position))],
-        std.mem.asBytes(&plane.data.position),
+        vert_data[plane_pos_off .. plane_pos_off + @sizeOf(plane.Positions)],
+        std.mem.asBytes(&plane.vertices.positions),
     );
     @memcpy(
-        vert_data[plane_norm_off .. plane_norm_off + @sizeOf(@TypeOf(plane.data.normal))],
-        std.mem.asBytes(&plane.data.normal),
+        vert_data[plane_norm_off .. plane_norm_off + @sizeOf(plane.Normals)],
+        std.mem.asBytes(&plane.vertices.normals),
     );
 
     for (0..frame_n) |frame| {
@@ -384,7 +384,7 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setDepthBias(0.01, 2, if (dep_bias_clamp) 1 else 0);
 
         cmd.setPrimitiveTopology(.triangle_list);
-        cmd.setVertexBuffers(0, &.{&vert_buf.buffer}, &.{latt_pos_off}, &.{latt.positionSize()});
+        cmd.setVertexBuffers(0, &.{&vert_buf.buffer}, &.{latt_pos_off}, &.{latt.sizeOfPositions()});
         cmd.setCullMode(.front);
         cmd.setFrontFace(.counter_clockwise);
         for (0..lattice_n) |i| {
@@ -397,7 +397,7 @@ fn do(gpa: std.mem.Allocator) !void {
             0,
             &.{&vert_buf.buffer},
             &.{plane_pos_off},
-            &.{@sizeOf(@TypeOf(plane.data.position))},
+            &.{@sizeOf(plane.Positions)},
         );
         cmd.setCullMode(.back);
         cmd.setFrontFace(plane.front_face);
@@ -650,7 +650,7 @@ fn do(gpa: std.mem.Allocator) !void {
             0,
             &.{ &vert_buf.buffer, &vert_buf.buffer },
             &.{ latt_pos_off, latt_norm_off },
-            &.{ latt.positionSize(), latt.normalSize() },
+            &.{ latt.sizeOfPositions(), latt.sizeOfNormals() },
         );
         cmd.setFrontFace(.counter_clockwise);
         for (0..lattice_n) |i| {
@@ -663,7 +663,7 @@ fn do(gpa: std.mem.Allocator) !void {
             0,
             &.{ &vert_buf.buffer, &vert_buf.buffer },
             &.{ plane_pos_off, plane_norm_off },
-            &.{ @sizeOf(@TypeOf(plane.data.position)), @sizeOf(@TypeOf(plane.data.normal)) },
+            &.{ @sizeOf(plane.Positions), @sizeOf(plane.Normals) },
         );
         cmd.setFrontFace(plane.front_face);
         for (lattice_n..draw_n) |i| {
