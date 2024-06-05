@@ -25,6 +25,10 @@ const frame_n = 2;
 const lattice_n = 1;
 const plane_n = 1;
 const draw_n = lattice_n + plane_n;
+const material_n = draw_n;
+comptime {
+    assert(material_n == draw_n);
+}
 const width = 1024;
 const height = 576;
 
@@ -72,9 +76,9 @@ fn do(gpa: std.mem.Allocator) !void {
     defer vert_buf.deinit(gpa);
 
     const light_off = 0;
-    const globl_off = (light_off + Light.size + 255) & ~@as(u64, 255);
-    const matl_off = globl_off + draw_n * ((Global.size + 255) & ~@as(u64, 255));
-    const unif_strd = matl_off + draw_n * ((Material.size + 255) & ~@as(u64, 255));
+    const matl_off = (light_off + Light.size + 255) & ~@as(u64, 255);
+    const model_off = matl_off + material_n * ((Material.size + 255) & ~@as(u64, 255));
+    const unif_strd = model_off + draw_n * ((Model.size + 255) & ~@as(u64, 255));
     const unif_buf_size = frame_n * unif_strd;
     var unif_buf = try Buffer(.device).init(gpa, unif_buf_size, .{
         .uniform_buffer = true,
@@ -143,7 +147,7 @@ fn do(gpa: std.mem.Allocator) !void {
             };
             const mvp = gmath.mulM(4, p, mv);
             draw.* = .{
-                .global = Global.init(shdw_mvp, s, mvp, mv, n),
+                .model = Model.init(shdw_mvp, s, mvp, mv, n),
                 .material = matl,
             };
         }
@@ -175,11 +179,11 @@ fn do(gpa: std.mem.Allocator) !void {
         light.copy(data[light_off .. light_off + Light.size]);
 
         for (draws, 0..) |draw, i| {
-            const goff = globl_off + i * ((Global.size + 255) & ~@as(u64, 255));
-            draw.global.copy(data[goff .. goff + Global.size]);
+            const off = matl_off + i * ((Material.size + 255) & ~@as(u64, 255));
+            draw.material.copy(data[off .. off + Material.size]);
 
-            const moff = matl_off + i * ((Material.size + 255) & ~@as(u64, 255));
-            draw.material.copy(data[moff .. moff + Material.size]);
+            const off_2 = model_off + i * ((Model.size + 255) & ~@as(u64, 255));
+            draw.model.copy(data[off_2 .. off_2 + Model.size]);
         }
     }
 
@@ -191,19 +195,21 @@ fn do(gpa: std.mem.Allocator) !void {
     });
 
     try desc.writeSet1(gpa, &unif_buf.buffer, blk: {
-        var offs: [frame_n][draw_n]u64 = undefined;
+        var offs: [frame_n][material_n]u64 = undefined;
         for (&offs, 0..) |*frm_offs, frame|
-            for (frm_offs, 0..) |*off, draw| {
-                off.* = frame * unif_strd + globl_off +
-                    draw * ((Global.size + 255) & ~@as(u64, 255));
+            for (frm_offs, 0..) |*off, matl| {
+                off.* = frame * unif_strd + matl_off +
+                    matl * ((Material.size + 255) & ~@as(u64, 255));
             };
         break :blk offs;
-    }, blk: {
+    });
+
+    try desc.writeSet2(gpa, &unif_buf.buffer, blk: {
         var offs: [frame_n][draw_n]u64 = undefined;
         for (&offs, 0..) |*frm_offs, frame|
             for (frm_offs, 0..) |*off, draw| {
-                off.* = frame * unif_strd + matl_off +
-                    draw * ((Material.size + 255) & ~@as(u64, 255));
+                off.* = frame * unif_strd + model_off +
+                    draw * ((Model.size + 255) & ~@as(u64, 255));
             };
         break :blk offs;
     });
@@ -354,7 +360,10 @@ fn do(gpa: std.mem.Allocator) !void {
             .contents = .@"inline",
         });
 
-        cmd.setShaders(&.{ .vertex, .fragment }, &.{ &shd.shadow_map_vert, &shd.shadow_map_frag });
+        cmd.setShaders(
+            &.{ .vertex, .fragment },
+            &.{ &shd.shadow_map_vertex, &shd.shadow_map_fragment },
+        );
         cmd.setVertexInput(&.{.{
             .binding = 0,
             .stride = 3 * @sizeOf(f32),
@@ -388,7 +397,7 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setCullMode(.front);
         cmd.setFrontFace(.counter_clockwise);
         for (0..lattice_n) |i| {
-            cmd.setDescriptors(.graphics, &shd.layout, 1, &.{&desc.sets[1][frame][i]});
+            cmd.setDescriptors(.graphics, &shd.layout, 2, &.{&desc.sets[2][frame][i]});
             cmd.draw(latt.vertexCount(), 1, 0, 0);
         }
 
@@ -402,7 +411,7 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setCullMode(.back);
         cmd.setFrontFace(plane.front_face);
         for (lattice_n..draw_n) |i| {
-            cmd.setDescriptors(.graphics, &shd.layout, 1, &.{&desc.sets[1][frame][i]});
+            cmd.setDescriptors(.graphics, &shd.layout, 2, &.{&desc.sets[2][frame][i]});
             cmd.draw(plane.vertex_count, 1, 0, 0);
         }
 
@@ -450,7 +459,7 @@ fn do(gpa: std.mem.Allocator) !void {
             },
         }});
 
-        cmd.setShaders(&.{.compute}, &.{&shd.shadow_blur_comp});
+        cmd.setShaders(&.{.compute}, &.{&shd.blur});
         cmd.dispatch(ShadowMap.extent, ShadowMap.extent, 1);
 
         cmd.barrier(&.{.{
@@ -492,7 +501,7 @@ fn do(gpa: std.mem.Allocator) !void {
             },
         }});
 
-        cmd.setShaders(&.{.compute}, &.{&shd.shadow_blur_2_comp});
+        cmd.setShaders(&.{.compute}, &.{&shd.blur_2});
         cmd.dispatch(ShadowMap.extent, ShadowMap.extent, 1);
 
         cmd.barrier(&.{.{
@@ -601,7 +610,7 @@ fn do(gpa: std.mem.Allocator) !void {
             .contents = .@"inline",
         });
 
-        cmd.setShaders(&.{ .vertex, .fragment }, &.{ &shd.light_vert, &shd.light_frag });
+        cmd.setShaders(&.{ .vertex, .fragment }, &.{ &shd.vertex, &shd.fragment });
         cmd.setVertexInput(&.{
             .{
                 .binding = 0,
@@ -654,7 +663,10 @@ fn do(gpa: std.mem.Allocator) !void {
         );
         cmd.setFrontFace(.counter_clockwise);
         for (0..lattice_n) |i| {
-            cmd.setDescriptors(.graphics, &shd.layout, 1, &.{&desc.sets[1][frame][i]});
+            cmd.setDescriptors(.graphics, &shd.layout, 1, &.{
+                &desc.sets[1][frame][i],
+                &desc.sets[2][frame][i],
+            });
             cmd.draw(latt.vertexCount(), 1, 0, 0);
         }
 
@@ -667,7 +679,10 @@ fn do(gpa: std.mem.Allocator) !void {
         );
         cmd.setFrontFace(plane.front_face);
         for (lattice_n..draw_n) |i| {
-            cmd.setDescriptors(.graphics, &shd.layout, 1, &.{&desc.sets[1][frame][i]});
+            cmd.setDescriptors(.graphics, &shd.layout, 1, &.{
+                &desc.sets[1][frame][i],
+                &desc.sets[2][frame][i],
+            });
             cmd.draw(plane.vertex_count, 1, 0, 0);
         }
 
@@ -1100,10 +1115,11 @@ fn Buffer(comptime kind: enum { host, device }) type {
 }
 
 const Descriptor = struct {
-    set_layouts: [2]ngl.DescriptorSetLayout,
+    set_layouts: [3]ngl.DescriptorSetLayout,
     pool: ngl.DescriptorPool,
     sets: struct {
         [frame_n]ngl.DescriptorSet,
+        [frame_n][material_n]ngl.DescriptorSet,
         [frame_n][draw_n]ngl.DescriptorSet,
     },
 
@@ -1150,49 +1166,61 @@ const Descriptor = struct {
         errdefer set_layt.deinit(gpa, dev);
 
         var set_layt_2 = try ngl.DescriptorSetLayout.init(gpa, dev, .{
-            .bindings = &.{
-                .{
-                    .binding = Global.binding,
-                    .type = .uniform_buffer,
-                    .count = 1,
-                    .shader_mask = .{ .vertex = true },
-                    .immutable_samplers = &.{},
-                },
-                .{
-                    .binding = Material.binding,
-                    .type = .uniform_buffer,
-                    .count = 1,
-                    .shader_mask = .{ .fragment = true },
-                    .immutable_samplers = &.{},
-                },
-            },
+            .bindings = &.{.{
+                .binding = Material.binding,
+                .type = .uniform_buffer,
+                .count = 1,
+                .shader_mask = .{ .fragment = true },
+                .immutable_samplers = &.{},
+            }},
         });
         errdefer set_layt_2.deinit(gpa, dev);
 
+        var set_layt_3 = try ngl.DescriptorSetLayout.init(gpa, dev, .{
+            .bindings = &.{.{
+                .binding = Model.binding,
+                .type = .uniform_buffer,
+                .count = 1,
+                .shader_mask = .{ .vertex = true },
+                .immutable_samplers = &.{},
+            }},
+        });
+        errdefer set_layt_3.deinit(gpa, dev);
+
         var pool = try ngl.DescriptorPool.init(gpa, dev, .{
-            .max_sets = frame_n + draw_n * frame_n,
+            .max_sets = frame_n * (1 + material_n + draw_n),
             .pool_size = .{
-                .combined_image_sampler = 2 * frame_n,
-                .storage_image = 2 * frame_n,
-                .uniform_buffer = frame_n + 2 * draw_n * frame_n,
+                .combined_image_sampler = frame_n * 2,
+                .storage_image = frame_n * 2,
+                .uniform_buffer = frame_n * (1 + material_n + draw_n),
             },
         });
         errdefer pool.deinit(gpa, dev);
 
         const sets = try pool.alloc(gpa, dev, .{
             .layouts = &[_]*ngl.DescriptorSetLayout{&set_layt} ** frame_n ++
-                &[_]*ngl.DescriptorSetLayout{&set_layt_2} ** (draw_n * frame_n),
+                &[_]*ngl.DescriptorSetLayout{&set_layt_2} ** (frame_n * material_n) ++
+                &[_]*ngl.DescriptorSetLayout{&set_layt_3} ** (frame_n * draw_n),
         });
         defer gpa.free(sets);
 
         return .{
-            .set_layouts = .{ set_layt, set_layt_2 },
+            .set_layouts = .{ set_layt, set_layt_2, set_layt_3 },
             .pool = pool,
             .sets = .{
                 sets[0..frame_n].*,
                 blk: {
-                    var dest: [frame_n][draw_n]ngl.DescriptorSet = undefined;
+                    var dest: [frame_n][material_n]ngl.DescriptorSet = undefined;
                     var source = sets[frame_n..];
+                    for (&dest) |*d| {
+                        d.* = source[0..material_n].*;
+                        source = source[material_n..];
+                    }
+                    break :blk dest;
+                },
+                blk: {
+                    var dest: [frame_n][draw_n]ngl.DescriptorSet = undefined;
+                    var source = sets[frame_n * (1 + material_n) ..];
                     for (&dest) |*d| {
                         d.* = source[0..draw_n].*;
                         source = source[draw_n..];
@@ -1309,44 +1337,63 @@ const Descriptor = struct {
         self: *Descriptor,
         gpa: std.mem.Allocator,
         uniform_buffer: *ngl.Buffer,
-        global_offsets: [frame_n][draw_n]u64,
-        material_offsets: [frame_n][draw_n]u64,
+        material_offsets: [frame_n][material_n]u64,
     ) ngl.Error!void {
-        var writes: [2 * draw_n * frame_n]ngl.DescriptorSet.Write = undefined;
+        var writes: [frame_n * material_n]ngl.DescriptorSet.Write = undefined;
         var w: []ngl.DescriptorSet.Write = &writes;
 
         const Bw = ngl.DescriptorSet.Write.BufferWrite;
         var bw_arr: [writes.len]Bw = undefined;
         var bw: []Bw = &bw_arr;
 
-        for (&self.sets[1], global_offsets, material_offsets) |*sets, globl_offs, matl_offs|
-            for (sets, globl_offs, matl_offs) |*set, globl_off, matl_off| {
+        for (&self.sets[1], material_offsets) |*sets, matl_offs|
+            for (sets, matl_offs) |*set, matl_off| {
                 bw[0] = .{
-                    .buffer = uniform_buffer,
-                    .offset = globl_off,
-                    .range = Global.size,
-                };
-                w[0] = .{
-                    .descriptor_set = set,
-                    .binding = Global.binding,
-                    .element = 0,
-                    .contents = .{ .uniform_buffer = bw[0..1] },
-                };
-
-                bw[1] = .{
                     .buffer = uniform_buffer,
                     .offset = matl_off,
                     .range = Material.size,
                 };
-                w[1] = .{
+                w[0] = .{
                     .descriptor_set = set,
                     .binding = Material.binding,
                     .element = 0,
-                    .contents = .{ .uniform_buffer = bw[1..2] },
+                    .contents = .{ .uniform_buffer = bw[0..1] },
                 };
+                bw = bw[1..];
+                w = w[1..];
+            };
 
-                bw = bw[2..];
-                w = w[2..];
+        try ngl.DescriptorSet.write(gpa, dev, &writes);
+    }
+
+    fn writeSet2(
+        self: *Descriptor,
+        gpa: std.mem.Allocator,
+        uniform_buffer: *ngl.Buffer,
+        model_offsets: [frame_n][draw_n]u64,
+    ) ngl.Error!void {
+        var writes: [frame_n * draw_n]ngl.DescriptorSet.Write = undefined;
+        var w: []ngl.DescriptorSet.Write = &writes;
+
+        const Bw = ngl.DescriptorSet.Write.BufferWrite;
+        var bw_arr: [writes.len]Bw = undefined;
+        var bw: []Bw = &bw_arr;
+
+        for (&self.sets[2], model_offsets) |*sets, model_offs|
+            for (sets, model_offs) |*set, model_off| {
+                bw[0] = .{
+                    .buffer = uniform_buffer,
+                    .offset = model_off,
+                    .range = Model.size,
+                };
+                w[0] = .{
+                    .descriptor_set = set,
+                    .binding = Model.binding,
+                    .element = 0,
+                    .contents = .{ .uniform_buffer = bw[0..1] },
+                };
+                bw = bw[1..];
+                w = w[1..];
             };
 
         try ngl.DescriptorSet.write(gpa, dev, &writes);
@@ -1360,50 +1407,51 @@ const Descriptor = struct {
 };
 
 const Shader = struct {
-    shadow_map_vert: ngl.Shader,
-    shadow_map_frag: ngl.Shader,
-    shadow_blur_comp: ngl.Shader,
-    shadow_blur_2_comp: ngl.Shader,
-    light_vert: ngl.Shader,
-    light_frag: ngl.Shader,
+    shadow_map_vertex: ngl.Shader,
+    shadow_map_fragment: ngl.Shader,
+    blur: ngl.Shader,
+    blur_2: ngl.Shader,
+    vertex: ngl.Shader,
+    fragment: ngl.Shader,
     layout: ngl.ShaderLayout,
 
     fn init(gpa: std.mem.Allocator, descriptor: *Descriptor) ngl.Error!Shader {
         const dapi = ctx.gpu.getDriverApi();
 
-        const shdw_map_vert_code_spv align(4) = @embedFile("shader/shdw_map_vert.spv").*;
+        const shdw_map_vert_code_spv align(4) = @embedFile("shader/shadow_map.vert.spv").*;
         const shdw_map_vert_code = switch (dapi) {
             .vulkan => &shdw_map_vert_code_spv,
         };
 
-        const shdw_map_frag_code_spv align(4) = @embedFile("shader/shdw_map_frag.spv").*;
+        const shdw_map_frag_code_spv align(4) = @embedFile("shader/shadow_map.frag.spv").*;
         const shdw_map_frag_code = switch (dapi) {
             .vulkan => &shdw_map_frag_code_spv,
         };
 
-        const shdw_blur_comp_code_spv align(4) = @embedFile("shader/shdw_blur_comp.spv").*;
-        const shdw_blur_comp_code = switch (dapi) {
-            .vulkan => &shdw_blur_comp_code_spv,
+        const blur_code_spv align(4) = @embedFile("shader/blur.comp.spv").*;
+        const blur_code = switch (dapi) {
+            .vulkan => &blur_code_spv,
         };
 
-        const shdw_blur_2_comp_code_spv align(4) = @embedFile("shader/shdw_blur_2_comp.spv").*;
-        const shdw_blur_2_comp_code = switch (dapi) {
-            .vulkan => &shdw_blur_2_comp_code_spv,
+        const blur_2_code_spv align(4) = @embedFile("shader/blur_2.comp.spv").*;
+        const blur_2_code = switch (dapi) {
+            .vulkan => &blur_2_code_spv,
         };
 
-        const light_vert_code_spv align(4) = @embedFile("shader/light_vert.spv").*;
-        const light_vert_code = switch (dapi) {
-            .vulkan => &light_vert_code_spv,
+        const vert_code_spv align(4) = @embedFile("shader/vert.spv").*;
+        const vert_code = switch (dapi) {
+            .vulkan => &vert_code_spv,
         };
 
-        const light_frag_code_spv align(4) = @embedFile("shader/light_frag.spv").*;
-        const light_frag_code = switch (dapi) {
-            .vulkan => &light_frag_code_spv,
+        const frag_code_spv align(4) = @embedFile("shader/frag.spv").*;
+        const frag_code = switch (dapi) {
+            .vulkan => &frag_code_spv,
         };
 
         const set_layts = &.{
             &descriptor.set_layouts[0],
             &descriptor.set_layouts[1],
+            &descriptor.set_layouts[2],
         };
 
         const shdw_map_shds = try ngl.Shader.init(gpa, dev, &.{
@@ -1432,11 +1480,11 @@ const Shader = struct {
         errdefer for (shdw_map_shds) |*shd|
             (shd.* catch continue).deinit(gpa, dev);
 
-        const shdw_blur_shds = try ngl.Shader.init(gpa, dev, &.{
+        const blur_shds = try ngl.Shader.init(gpa, dev, &.{
             .{
                 .type = .compute,
                 .next = .{},
-                .code = shdw_blur_comp_code,
+                .code = blur_code,
                 .name = "main",
                 .set_layouts = set_layts,
                 .push_constants = &.{},
@@ -1446,7 +1494,7 @@ const Shader = struct {
             .{
                 .type = .compute,
                 .next = .{},
-                .code = shdw_blur_2_comp_code,
+                .code = blur_2_code,
                 .name = "main",
                 .set_layouts = set_layts,
                 .push_constants = &.{},
@@ -1454,15 +1502,15 @@ const Shader = struct {
                 .link = false,
             },
         });
-        defer gpa.free(shdw_blur_shds);
-        errdefer for (shdw_blur_shds) |*shd|
+        defer gpa.free(blur_shds);
+        errdefer for (blur_shds) |*shd|
             (shd.* catch continue).deinit(gpa, dev);
 
-        const light_shds = try ngl.Shader.init(gpa, dev, &.{
+        const shaders = try ngl.Shader.init(gpa, dev, &.{
             .{
                 .type = .vertex,
                 .next = .{ .fragment = true },
-                .code = light_vert_code,
+                .code = vert_code,
                 .name = "main",
                 .set_layouts = set_layts,
                 .push_constants = &.{},
@@ -1472,7 +1520,7 @@ const Shader = struct {
             .{
                 .type = .fragment,
                 .next = .{},
-                .code = light_frag_code,
+                .code = frag_code,
                 .name = "main",
                 .set_layouts = set_layts,
                 .push_constants = &.{},
@@ -1480,8 +1528,8 @@ const Shader = struct {
                 .link = true,
             },
         });
-        defer gpa.free(light_shds);
-        errdefer for (light_shds) |*shd|
+        defer gpa.free(shaders);
+        errdefer for (shaders) |*shd|
             (shd.* catch continue).deinit(gpa, dev);
 
         var layt = try ngl.ShaderLayout.init(gpa, dev, .{
@@ -1491,24 +1539,24 @@ const Shader = struct {
         errdefer layt.deinit(gpa, dev);
 
         return .{
-            .shadow_map_vert = try shdw_map_shds[0],
-            .shadow_map_frag = try shdw_map_shds[1],
-            .shadow_blur_comp = try shdw_blur_shds[0],
-            .shadow_blur_2_comp = try shdw_blur_shds[1],
-            .light_vert = try light_shds[0],
-            .light_frag = try light_shds[1],
+            .shadow_map_vertex = try shdw_map_shds[0],
+            .shadow_map_fragment = try shdw_map_shds[1],
+            .blur = try blur_shds[0],
+            .blur_2 = try blur_shds[1],
+            .vertex = try shaders[0],
+            .fragment = try shaders[1],
             .layout = layt,
         };
     }
 
     fn deinit(self: *Shader, gpa: std.mem.Allocator) void {
         for ([_]*ngl.Shader{
-            &self.shadow_map_vert,
-            &self.shadow_map_frag,
-            &self.shadow_blur_comp,
-            &self.shadow_blur_2_comp,
-            &self.light_vert,
-            &self.light_frag,
+            &self.shadow_map_vertex,
+            &self.shadow_map_fragment,
+            &self.blur,
+            &self.blur_2,
+            &self.vertex,
+            &self.fragment,
         }) |shd|
             shd.deinit(gpa, dev);
 
@@ -1661,42 +1709,6 @@ const Light = packed struct {
     }
 };
 
-const Global = struct {
-    shdw_s_mvp_mv_n: [16 + 16 + 16 + 16 + 12]f32,
-
-    const size = @sizeOf(@typeInfo(Global).Struct.fields[0].type);
-    const set_index = 1;
-    const binding = 0;
-
-    fn init(shadow_mvp: [16]f32, s: [16]f32, mvp: [16]f32, mv: [16]f32, n: [12]f32) Global {
-        var self: Global = undefined;
-        self.set(shadow_mvp, s, mvp, mv, n);
-        return self;
-    }
-
-    fn set(
-        self: *Global,
-        shadow_mvp: [16]f32,
-        s: [16]f32,
-        mvp: [16]f32,
-        mv: [16]f32,
-        n: [12]f32,
-    ) void {
-        @memcpy(self.shdw_s_mvp_mv_n[0..16], &shadow_mvp);
-        @memcpy(self.shdw_s_mvp_mv_n[16..32], &s);
-        @memcpy(self.shdw_s_mvp_mv_n[32..48], &mvp);
-        @memcpy(self.shdw_s_mvp_mv_n[48..64], &mv);
-        @memcpy(self.shdw_s_mvp_mv_n[64..76], &n);
-    }
-
-    fn copy(self: Global, dest: []u8) void {
-        assert(@intFromPtr(dest.ptr) & 3 == 0);
-        assert(dest.len >= size);
-
-        @memcpy(dest[0..size], std.mem.asBytes(&self.shdw_s_mvp_mv_n));
-    }
-};
-
 const Material = packed struct {
     col_r: f32,
     col_g: f32,
@@ -1708,7 +1720,7 @@ const Material = packed struct {
 
     const size = @sizeOf(Material);
     const set_index = 1;
-    const binding = 1;
+    const binding = 0;
 
     fn init(color: [4]f32, metallic: f32, smoothness: f32, reflectance: f32) Material {
         var self: Material = undefined;
@@ -1734,7 +1746,43 @@ const Material = packed struct {
     }
 };
 
+const Model = struct {
+    shdw_s_mvp_mv_n: [16 + 16 + 16 + 16 + 12]f32,
+
+    const size = @sizeOf(@typeInfo(Model).Struct.fields[0].type);
+    const set_index = 2;
+    const binding = 0;
+
+    fn init(shadow_mvp: [16]f32, s: [16]f32, mvp: [16]f32, mv: [16]f32, n: [12]f32) Model {
+        var self: Model = undefined;
+        self.set(shadow_mvp, s, mvp, mv, n);
+        return self;
+    }
+
+    fn set(
+        self: *Model,
+        shadow_mvp: [16]f32,
+        s: [16]f32,
+        mvp: [16]f32,
+        mv: [16]f32,
+        n: [12]f32,
+    ) void {
+        @memcpy(self.shdw_s_mvp_mv_n[0..16], &shadow_mvp);
+        @memcpy(self.shdw_s_mvp_mv_n[16..32], &s);
+        @memcpy(self.shdw_s_mvp_mv_n[32..48], &mvp);
+        @memcpy(self.shdw_s_mvp_mv_n[48..64], &mv);
+        @memcpy(self.shdw_s_mvp_mv_n[64..76], &n);
+    }
+
+    fn copy(self: Model, dest: []u8) void {
+        assert(@intFromPtr(dest.ptr) & 3 == 0);
+        assert(dest.len >= size);
+
+        @memcpy(dest[0..size], std.mem.asBytes(&self.shdw_s_mvp_mv_n));
+    }
+};
+
 const Draw = struct {
-    global: Global,
+    model: Model,
     material: Material,
 };
