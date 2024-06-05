@@ -1,6 +1,6 @@
 #version 460 core
 
-const float pi = 3.14159265359;
+const float pi = 3.141592653589793;
 
 layout(set = 0, binding = 0) uniform Global {
     mat4 vp;
@@ -65,17 +65,15 @@ void main() {
     const vec3 v = normalize(global.eye - vertex.position);
     const float n_dot_v = abs(dot(n, v)) + 1e-5;
 
-    const vec4 color = material.color;
-    const float metallic = material.metallic;
-    const float smoothness = material.smoothness;
-    const float reflectance = material.reflectance;
-
-    const vec3 diff_col = color.rgb * (1.0 - metallic);
-    const vec3 f0 = color.rgb * metallic + (reflectance * (1.0 - metallic));
-    const float f90 = clamp(dot(f0, vec3(50.0 * (1.0 / 3.0))), 0.0, 1.0);
+    const float metal = material.metallic;
+    const float nonmetal = 1.0 - material.metallic;
+    const float rough = 1.0 - material.smoothness;
+    const vec3 diff_col = material.color.rgb * nonmetal;
+    const vec3 f0 = material.color.rgb * metal + material.reflectance * nonmetal;
+    const float f90 = clamp(50.0 * dot(f0, vec3(0.33)), 0.0, 1.0);
 
     color_0.rgb = vec3(0.0);
-    color_0.a = 1.0;
+    color_0.a = material.color.a;
 
     for (uint i = 0; i < light_n; i++) {
         const LightData lig = light.lights[i];
@@ -91,11 +89,11 @@ void main() {
         const float l_dot_h = clamp(dot(l, h), 0.0, 1.0);
 
         const vec3 fr_f = fSchlick(f0, f90, l_dot_h);
-        const float fr_v = vSmithGgxCorrelated(n_dot_v, n_dot_l, 1.0 - smoothness);
-        const float fr_d = dGgx(n_dot_h, 1.0 - smoothness);
+        const float fr_v = vSmithGgxCorrelated(n_dot_v, n_dot_l, rough);
+        const float fr_d = dGgx(n_dot_h, rough);
         const vec3 fr = fr_f * fr_v * fr_d;
 
-        const float fd = fdDisney(n_dot_v, n_dot_l, l_dot_h, 1.0 - smoothness);
+        const float fd = fdDisney(n_dot_v, n_dot_l, l_dot_h, rough);
 
         const float dist = length(lig.position - vertex.position);
         const float atten = 1.0 / max(dist * dist, 1e-4);

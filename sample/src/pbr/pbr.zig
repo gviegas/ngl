@@ -87,9 +87,9 @@ fn do(gpa: std.mem.Allocator) !void {
     };
     const light = Light(light_n).init(light_desc);
 
-    const matl_col = [4]f32{ 0.94, 0.02, 0.83, 1 };
+    const matl_col = [4]f32{ 0.92, 0.74, 0.02, 1 };
     const metal = 0;
-    const smooth = 0.9;
+    const smooth = 0.85;
     const reflec = 0.5;
     const matl = Material.init(matl_col, metal, smooth, reflec);
 
