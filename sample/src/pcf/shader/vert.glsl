@@ -1,12 +1,12 @@
 #version 460 core
 
-layout(set = 1, binding = 0) uniform Global {
+layout(set = 2, binding = 0) uniform Model {
     mat4 shdw_mvp;
     mat4 s;
     mat4 mvp;
     mat4 mv;
     mat3 n;
-} global;
+} model;
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec3 normal;
@@ -18,8 +18,8 @@ layout(location = 0) out Vertex {
 } vertex;
 
 void main() {
-    vertex.position = (global.mv * vec4(position, 1.0)).xyz;
-    vertex.normal = global.n * normal;
-    vertex.shadow = global.s * vec4(position, 1.0);
-    gl_Position = global.mvp * vec4(position, 1.0);
+    vertex.position = (model.mv * vec4(position, 1.0)).xyz;
+    vertex.normal = model.n * normal;
+    vertex.shadow = model.s * vec4(position, 1.0);
+    gl_Position = model.mvp * vec4(position, 1.0);
 }

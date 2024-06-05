@@ -1,6 +1,6 @@
 #version 460 core
 
-const float pi = 3.14159265359;
+const float pi = 3.141592653589793;
 
 layout(constant_id = 0) const int shadow_sample_count = 1;
 
@@ -13,7 +13,7 @@ layout(set = 0, binding = 2) uniform Light {
     float intensity;
 } light;
 
-layout(set = 1, binding = 1) uniform Material {
+layout(set = 1, binding = 0) uniform Material {
     vec4 color;
     float metallic;
     float smoothness;
@@ -46,9 +46,34 @@ float fdLambert() {
     return 1.0 / pi;
 }
 
+float shadowFactor() {
+    if (vertex.shadow.w <= 1.0)
+        return 1.0;
+
+    const vec2 uv = gl_FragCoord.xy / textureSize(random_sampling, 0).xy;
+    const float d = 1.0 / shadow_sample_count;
+    float shdw_fac = 0.0;
+
+    for (int i = 0; i < shadow_sample_count; i++) {
+        const vec3 uvw = vec3(uv, d * i);
+        const vec2 rnd = normalize(texture(random_sampling, uvw).rg * 2.0 - 1.0);
+        const vec4 off = vec4(0.075 * rnd, 0.0, 0.0);
+        shdw_fac += textureProj(shadow_map, vertex.shadow + off);
+    }
+
+    shdw_fac *= 1.0 / shadow_sample_count;
+    return shdw_fac;
+}
+
+vec3 lightFactor(float n_dot_l) {
+    const float dist = length(light.position - vertex.position);
+    const float atten = 1.0 / max(dist * dist, 1e-4);
+    return light.color * light.intensity * atten * n_dot_l;
+}
+
 void main() {
     color_0.rgb = vec3(0.0);
-    color_0.a = 1.0;
+    color_0.a = material.color.a;
 
     const vec3 n = normalize(vertex.normal);
     const vec3 l = normalize(light.position - vertex.position);
@@ -63,44 +88,23 @@ void main() {
     const float n_dot_h = clamp(dot(n, h), 0.0, 1.0);
     const float l_dot_h = clamp(dot(l, h), 0.0, 1.0);
 
-    float shdw_fac;
-    if (vertex.shadow.w > 1.0) {
-        const vec2 uv = gl_FragCoord.xy / textureSize(random_sampling, 0).xy;
-        const float d = 1.0 / shadow_sample_count;
-        shdw_fac = 0.0;
-
-        for (int i = 0; i < shadow_sample_count; i++) {
-            const vec3 uvw = vec3(uv, d * i);
-            const vec2 rnd = normalize(texture(random_sampling, uvw).rg * 2.0 - 1.0);
-            const vec4 off = vec4(0.075 * rnd, 0.0, 0.0);
-            shdw_fac += textureProj(shadow_map, vertex.shadow + off);
-        }
-
-        shdw_fac *= 1.0 / shadow_sample_count;
-    } else {
-        shdw_fac = 1.0;
-    }
-
-    const float dist = length(light.position - vertex.position);
-    const float atten = 1.0 / max(dist * dist, 1e-4);
-    const vec3 light_fac = light.color * light.intensity * atten * n_dot_l;
-
-    const vec4 color = material.color;
-    const float metallic = material.metallic;
-    const float smoothness = material.smoothness;
-    const float reflectance = material.reflectance;
-
-    const vec3 diff_col = color.rgb * (1.0 - metallic);
-    const vec3 f0 = color.rgb * metallic + (reflectance * (1.0 - metallic));
-    const float f90 = clamp(dot(f0, vec3(50.0 * (1.0 / 3.0))), 0.0, 1.0);
+    const float metal = material.metallic;
+    const float nonmetal = 1.0 - metal;
+    const float rough = 1.0 - material.smoothness;
+    const vec3 diff_col = material.color.rgb * nonmetal;
+    const vec3 f0 = material.color.rgb * metal + material.reflectance * nonmetal;
+    const float f90 = 1.0;
 
     const vec3 fr_f = fSchlick(f0, f90, l_dot_h);
-    const float fr_v = vSmithGgxCorrelated(n_dot_v, n_dot_l, 1.0 - smoothness);
-    const float fr_d = dGgx(n_dot_h, 1.0 - smoothness);
+    const float fr_v = vSmithGgxCorrelated(n_dot_v, n_dot_l, rough);
+    const float fr_d = dGgx(n_dot_h, rough);
     const vec3 fr = fr_f * fr_v * fr_d;
 
     const float fd = fdLambert();
 
     const vec3 brdf = fr + fd * diff_col;
+    const float shdw_fac = shadowFactor();
+    const vec3 light_fac = lightFactor(n_dot_l);
+
     color_0.rgb = mix(brdf, brdf * shdw_fac, 0.7) * light_fac;
 }
