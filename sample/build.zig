@@ -38,11 +38,11 @@ pub fn build(b: *std.Build) void {
         .{ "pbr.zig", b.step("pbr", "Run PBR sample") },
         .{ "pcf.zig", b.step("pcf", "Run PCF sample") },
         .{ "vsm.zig", b.step("vsm", "Run VSM sample") },
+        .{ "ssao.zig", b.step("ssao", "Run SSAO sample") },
         // TODO
         //.{ "srgb.zig", b.step("srgb", "Run sRGB sample") },
         //.{ "mag.zig", b.step("mag", "Run alpha test sample") },
         //.{ "cube.zig", b.step("cube", "Run cube map sample") },
-        //.{ "ssao.zig", b.step("ssao", "Run SSAO sample") },
         //.{ "hdr.zig", b.step("hdr", "Run HDR sample") },
     }) |x| {
         var exe = addExecutable(b, target, optimize, x[0], x[1]);
