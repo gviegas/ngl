@@ -525,7 +525,7 @@ fn do(gpa: std.mem.Allocator) !void {
                 },
                 .{
                     .source_stage_mask = .{ .color_attachment_output = true },
-                    .source_access_mask = .{},
+                    .source_access_mask = .{ .color_attachment_write = true },
                     .dest_stage_mask = .{ .color_attachment_output = true },
                     .dest_access_mask = .{ .color_attachment_write = true },
                     .queue_transfer = null,
