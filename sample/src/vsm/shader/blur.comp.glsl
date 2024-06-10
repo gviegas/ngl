@@ -15,8 +15,8 @@ const float kernel[] = float[9](
     0.0276306);
 
 void main() {
-    const ivec2 gid = ivec2(gl_GlobalInvocationID.xy);
-    const vec2 uv = vec2(gid) / vec2(imageSize(dest));
+    const vec2 gid = gl_GlobalInvocationID.xy;
+    const vec2 uv = gid / imageSize(dest);
     const float d = 1.0 / textureSize(source, 0).x;
     const int off = -kernel.length() / 2;
 
@@ -24,5 +24,5 @@ void main() {
     for (int i = 0; i < kernel.length(); i++)
         sum += textureLod(source, vec2(uv.s + d * (off + i), uv.t), 0.0) * kernel[i];
 
-    imageStore(dest, gid, sum);
+    imageStore(dest, ivec2(gid), sum);
 }
