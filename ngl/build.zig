@@ -16,7 +16,7 @@ fn addModule(
     optimize: std.builtin.OptimizeMode,
 ) *std.Build.Module {
     return b.addModule("ngl", .{
-        .root_source_file = .{ .path = "src/ngl.zig" },
+        .root_source_file = b.path("src/ngl.zig"),
         .target = target,
         .optimize = optimize,
         .link_libc = true,
@@ -29,7 +29,7 @@ fn addTests(
     optimize: std.builtin.OptimizeMode,
 ) *std.Build.Step.Compile {
     const tests = b.addTest(.{
-        .root_source_file = .{ .path = "src/ngl.zig" },
+        .root_source_file = b.path("src/ngl.zig"),
         .target = target,
         .optimize = optimize,
         .link_libc = true,
@@ -49,7 +49,7 @@ fn addDocs(
 ) *std.Build.Step.Compile {
     const docs = b.addObject(.{
         .name = "ngl",
-        .root_source_file = .{ .path = "src/ngl.zig" },
+        .root_source_file = b.path("src/ngl.zig"),
         .target = target,
         .optimize = optimize,
     });
