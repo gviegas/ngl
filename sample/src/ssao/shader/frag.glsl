@@ -2,7 +2,7 @@
 
 const float pi = 3.141592653589793;
 
-layout(set = 0, binding = 5) uniform Light {
+layout(set = 0, binding = 9) uniform Light {
     vec3 position;
     vec3 color;
     float intensity;

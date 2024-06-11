@@ -60,7 +60,9 @@ cd sample && zig build cube
 ```sh
 cd sample && zig build ssao
 ```
-![SSAO sample](sample/capture/ssao.png)
+![SSAO sample (direct lighting only)](sample/capture/ssao_color.png)
+![SSAO sample (ambient occlusion computation)](sample/capture/ssao_ao.png)
+![SSAO sample (final)](sample/capture/ssao_final.png")
 
 
 ## HDR Sample

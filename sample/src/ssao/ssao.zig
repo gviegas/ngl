@@ -1,5 +1,3 @@
-//! TODO: Smoothing pass.
-
 const std = @import("std");
 const assert = std.debug.assert;
 
@@ -61,6 +59,12 @@ fn do(gpa: std.mem.Allocator) !void {
     var rnd_spl = try RandomSampling.init(gpa);
     defer rnd_spl.deinit(gpa);
 
+    var blur = try Blur(0).init(gpa);
+    defer blur.deinit(gpa);
+
+    var blur_2 = try Blur(1).init(gpa);
+    defer blur_2.deinit(gpa);
+
     var tpot = try mdata.loadObj(gpa, "data/model/teapot_double_sided.obj");
     defer tpot.deinit(gpa);
     const plane = &mdata.plane;
@@ -97,13 +101,13 @@ fn do(gpa: std.mem.Allocator) !void {
     var stg_buf = try Buffer(.host).init(gpa, stg_buf_size, .{ .transfer_source = true });
     defer stg_buf.deinit(gpa);
 
-    var desc = try Descriptor.init(gpa, &col_s1, &norm_s1, &depth, &rnd_spl);
+    var desc = try Descriptor.init(gpa, &col_s1, &norm_s1, &depth, &rnd_spl, &blur, &blur_2);
     defer desc.deinit(gpa);
 
     const ao_params = AoParameters{
-        .scale = 1.2,
-        .bias = 0.02,
-        .intensity = 2,
+        .scale = 1,
+        .bias = 0,
+        .intensity = 0.75,
     };
 
     var shd = try Shader.init(gpa, &desc, ao_params);
@@ -119,7 +123,7 @@ fn do(gpa: std.mem.Allocator) !void {
     const inv_p = gmath.invert4(p);
     const camera = Camera.init(inv_p);
 
-    const light_ws_pos = .{ 7, -10, -8 };
+    const light_ws_pos = .{ 10, -10, -10 };
     const light_es_pos = gmath.mulMV(4, v, light_ws_pos ++ [1]f32{1})[0..3].*;
     const light = Light.init(light_es_pos);
 
@@ -194,17 +198,28 @@ fn do(gpa: std.mem.Allocator) !void {
         }
     }
 
-    try desc.writeSet0(gpa, &col_s1, &norm_s1, &depth, &rnd_spl, &unif_buf.buffer, blk: {
-        var offs: [frame_n]u64 = undefined;
-        for (&offs, 0..) |*off, frame|
-            off.* = frame * unif_strd + cam_off;
-        break :blk offs;
-    }, blk: {
-        var offs: [frame_n]u64 = undefined;
-        for (&offs, 0..) |*off, frame|
-            off.* = frame * unif_strd + light_off;
-        break :blk offs;
-    });
+    try desc.writeSet0(
+        gpa,
+        &col_s1,
+        &norm_s1,
+        &depth,
+        &rnd_spl,
+        &blur,
+        &blur_2,
+        &unif_buf.buffer,
+        blk: {
+            var offs: [frame_n]u64 = undefined;
+            for (&offs, 0..) |*off, frame|
+                off.* = frame * unif_strd + cam_off;
+            break :blk offs;
+        },
+        blk: {
+            var offs: [frame_n]u64 = undefined;
+            for (&offs, 0..) |*off, frame|
+                off.* = frame * unif_strd + light_off;
+            break :blk offs;
+        },
+    );
 
     try desc.writeSet1(gpa, &unif_buf.buffer, blk: {
         var offs: [frame_n][material_n]u64 = undefined;
@@ -351,10 +366,8 @@ fn do(gpa: std.mem.Allocator) !void {
             .inheritance = null,
         });
 
-        cmd.setDescriptors(.graphics, &shd.layout, 0, &.{
-            &desc.sets[0][frame],
-            &desc.sets[1][frame][0],
-        });
+        inline for (.{ .graphics, .compute }) |bp|
+            cmd.setDescriptors(bp, &shd.layout, 0, &.{&desc.sets[0][frame]});
         cmd.setRasterizationEnable(true);
         cmd.setPolygonMode(.fill);
         cmd.setCullMode(.none);
@@ -363,6 +376,50 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setStencilTestEnable(false);
         cmd.setColorBlendEnable(0, &.{ false, false });
         cmd.setColorWrite(0, &.{ .all, .all });
+
+        cmd.setVertexInput(&.{
+            .{
+                .binding = 0,
+                .stride = 3 * @sizeOf(f32),
+                .step_rate = .vertex,
+            },
+            .{
+                .binding = 1,
+                .stride = 3 * @sizeOf(f32),
+                .step_rate = .vertex,
+            },
+        }, &.{
+            .{
+                .location = 0,
+                .binding = 0,
+                .format = .rgb32_sfloat,
+                .offset = 0,
+            },
+            .{
+                .location = 1,
+                .binding = 1,
+                .format = .rgb32_sfloat,
+                .offset = 0,
+            },
+        });
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = rend_width,
+            .height = rend_height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = rend_width,
+            .height = rend_height,
+        }});
+        cmd.setSampleCount(.@"4");
+        cmd.setDepthTestEnable(true);
+        cmd.setDepthCompareOp(.less);
+        cmd.setDepthWriteEnable(true);
 
         cmd.barrier(&.{.{
             .image = &.{
@@ -502,49 +559,7 @@ fn do(gpa: std.mem.Allocator) !void {
         });
 
         cmd.setShaders(&.{ .vertex, .fragment }, &.{ &shd.vertex, &shd.fragment });
-        cmd.setVertexInput(&.{
-            .{
-                .binding = 0,
-                .stride = 3 * @sizeOf(f32),
-                .step_rate = .vertex,
-            },
-            .{
-                .binding = 1,
-                .stride = 3 * @sizeOf(f32),
-                .step_rate = .vertex,
-            },
-        }, &.{
-            .{
-                .location = 0,
-                .binding = 0,
-                .format = .rgb32_sfloat,
-                .offset = 0,
-            },
-            .{
-                .location = 1,
-                .binding = 1,
-                .format = .rgb32_sfloat,
-                .offset = 0,
-            },
-        });
-        cmd.setViewports(&.{.{
-            .x = 0,
-            .y = 0,
-            .width = rend_width,
-            .height = rend_height,
-            .znear = 0,
-            .zfar = 1,
-        }});
-        cmd.setScissorRects(&.{.{
-            .x = 0,
-            .y = 0,
-            .width = rend_width,
-            .height = rend_height,
-        }});
-        cmd.setSampleCount(.@"4");
-        cmd.setDepthTestEnable(true);
-        cmd.setDepthCompareOp(.less);
-        cmd.setDepthWriteEnable(true);
+        cmd.setDescriptors(.graphics, &shd.layout, 1, &.{&desc.sets[1][frame][0]});
 
         cmd.setPrimitiveTopology(.triangle_list);
         cmd.setVertexBuffers(
@@ -574,25 +589,16 @@ fn do(gpa: std.mem.Allocator) !void {
 
         cmd.endRendering();
 
+        cmd.setShaders(&.{.vertex}, &.{&shd.screen});
+        cmd.setVertexInput(&.{}, &.{});
+        cmd.setPrimitiveTopology(.triangle_list);
+        cmd.setFrontFace(.clockwise);
+        cmd.setSampleCount(.@"1");
+        cmd.setDepthTestEnable(false);
+        cmd.setDepthWriteEnable(false);
+
         cmd.barrier(&.{.{
             .image = &.{
-                .{
-                    .source_stage_mask = .{ .color_attachment_output = true },
-                    .source_access_mask = .{ .color_attachment_write = true },
-                    .dest_stage_mask = .{ .fragment_shader = true },
-                    .dest_access_mask = .{ .shader_sampled_read = true },
-                    .queue_transfer = null,
-                    .old_layout = .color_attachment_optimal,
-                    .new_layout = .shader_read_only_optimal,
-                    .image = &col_s1.image,
-                    .range = .{
-                        .aspect_mask = .{ .color = true },
-                        .level = 0,
-                        .levels = 1,
-                        .layer = 0,
-                        .layers = 1,
-                    },
-                },
                 .{
                     .source_stage_mask = .{ .color_attachment_output = true },
                     .source_access_mask = .{ .color_attachment_write = true },
@@ -624,6 +630,182 @@ fn do(gpa: std.mem.Allocator) !void {
                     .image = &depth.image,
                     .range = .{
                         .aspect_mask = .{ .depth = true },
+                        .level = 0,
+                        .levels = 1,
+                        .layer = 0,
+                        .layers = 1,
+                    },
+                },
+                .{
+                    .source_stage_mask = .{ .fragment_shader = true },
+                    .source_access_mask = .{ .shader_sampled_read = true },
+                    .dest_stage_mask = .{ .color_attachment_output = true },
+                    .dest_access_mask = .{ .color_attachment_write = true },
+                    .queue_transfer = null,
+                    .old_layout = .unknown,
+                    .new_layout = .color_attachment_optimal,
+                    .image = &blur.image,
+                    .range = .{
+                        .aspect_mask = .{ .color = true },
+                        .level = 0,
+                        .levels = 1,
+                        .layer = 0,
+                        .layers = 1,
+                    },
+                },
+            },
+        }});
+
+        cmd.beginRendering(.{
+            .colors = &.{.{
+                .view = &blur.view,
+                .layout = .color_attachment_optimal,
+                .load_op = .dont_care,
+                .store_op = .store,
+                .clear_value = null,
+                .resolve = null,
+            }},
+            .depth = null,
+            .stencil = null,
+            .render_area = .{ .width = rend_width, .height = rend_height },
+            .layers = 1,
+            .contents = .@"inline",
+        });
+
+        cmd.setShaders(&.{.fragment}, &.{&shd.ssao});
+        cmd.draw(3, 1, 0, 0);
+
+        cmd.endRendering();
+
+        cmd.barrier(&.{.{
+            .image = &.{
+                .{
+                    .source_stage_mask = .{ .color_attachment_output = true },
+                    .source_access_mask = .{ .color_attachment_write = true },
+                    .dest_stage_mask = .{ .compute_shader = true },
+                    .dest_access_mask = .{ .shader_sampled_read = true },
+                    .queue_transfer = null,
+                    .old_layout = .color_attachment_optimal,
+                    .new_layout = .shader_read_only_optimal,
+                    .image = &blur.image,
+                    .range = .{
+                        .aspect_mask = .{ .color = true },
+                        .level = 0,
+                        .levels = 1,
+                        .layer = 0,
+                        .layers = 1,
+                    },
+                },
+                .{
+                    .source_stage_mask = .{ .compute_shader = true },
+                    .source_access_mask = .{ .shader_sampled_read = true },
+                    .dest_stage_mask = .{ .compute_shader = true },
+                    .dest_access_mask = .{ .shader_storage_write = true },
+                    .queue_transfer = null,
+                    .old_layout = .unknown,
+                    .new_layout = .general,
+                    .image = &blur_2.image,
+                    .range = .{
+                        .aspect_mask = .{ .color = true },
+                        .level = 0,
+                        .levels = 1,
+                        .layer = 0,
+                        .layers = 1,
+                    },
+                },
+            },
+        }});
+
+        cmd.setShaders(&.{.compute}, &.{&shd.blur});
+        cmd.dispatch(rend_width, rend_height, 1);
+
+        cmd.barrier(&.{.{
+            .image = &.{
+                .{
+                    .source_stage_mask = .{ .compute_shader = true },
+                    .source_access_mask = .{ .shader_sampled_read = true },
+                    .dest_stage_mask = .{ .compute_shader = true },
+                    .dest_access_mask = .{ .shader_storage_write = true },
+                    .queue_transfer = null,
+                    .old_layout = .shader_read_only_optimal,
+                    .new_layout = .general,
+                    .image = &blur.image,
+                    .range = .{
+                        .aspect_mask = .{ .color = true },
+                        .level = 0,
+                        .levels = 1,
+                        .layer = 0,
+                        .layers = 1,
+                    },
+                },
+                .{
+                    .source_stage_mask = .{ .compute_shader = true },
+                    .source_access_mask = .{ .shader_storage_write = true },
+                    .dest_stage_mask = .{ .compute_shader = true },
+                    .dest_access_mask = .{ .shader_sampled_read = true },
+                    .queue_transfer = null,
+                    .old_layout = .general,
+                    .new_layout = .shader_read_only_optimal,
+                    .image = &blur_2.image,
+                    .range = .{
+                        .aspect_mask = .{ .color = true },
+                        .level = 0,
+                        .levels = 1,
+                        .layer = 0,
+                        .layers = 1,
+                    },
+                },
+            },
+        }});
+
+        cmd.setShaders(&.{.compute}, &.{&shd.blur_2});
+        cmd.dispatch(rend_width, rend_height, 1);
+
+        cmd.setViewports(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = pres_width,
+            .height = pres_height,
+            .znear = 0,
+            .zfar = 1,
+        }});
+        cmd.setScissorRects(&.{.{
+            .x = 0,
+            .y = 0,
+            .width = pres_width,
+            .height = pres_height,
+        }});
+
+        cmd.barrier(&.{.{
+            .image = &.{
+                .{
+                    .source_stage_mask = .{ .color_attachment_output = true },
+                    .source_access_mask = .{ .color_attachment_write = true },
+                    .dest_stage_mask = .{ .fragment_shader = true },
+                    .dest_access_mask = .{ .shader_sampled_read = true },
+                    .queue_transfer = null,
+                    .old_layout = .color_attachment_optimal,
+                    .new_layout = .shader_read_only_optimal,
+                    .image = &col_s1.image,
+                    .range = .{
+                        .aspect_mask = .{ .color = true },
+                        .level = 0,
+                        .levels = 1,
+                        .layer = 0,
+                        .layers = 1,
+                    },
+                },
+                .{
+                    .source_stage_mask = .{ .compute_shader = true },
+                    .source_access_mask = .{ .shader_storage_write = true },
+                    .dest_stage_mask = .{ .fragment_shader = true },
+                    .dest_access_mask = .{ .shader_sampled_read = true },
+                    .queue_transfer = null,
+                    .old_layout = .general,
+                    .new_layout = .shader_read_only_optimal,
+                    .image = &blur.image,
+                    .range = .{
+                        .aspect_mask = .{ .color = true },
                         .level = 0,
                         .levels = 1,
                         .layer = 0,
@@ -666,27 +848,7 @@ fn do(gpa: std.mem.Allocator) !void {
             .contents = .@"inline",
         });
 
-        cmd.setShaders(&.{ .vertex, .fragment }, &.{ &shd.ssao_vertex, &shd.ssao_fragment });
-        cmd.setVertexInput(&.{}, &.{});
-        cmd.setPrimitiveTopology(.triangle_list);
-        cmd.setViewports(&.{.{
-            .x = 0,
-            .y = 0,
-            .width = pres_width,
-            .height = pres_height,
-            .znear = 0,
-            .zfar = 1,
-        }});
-        cmd.setScissorRects(&.{.{
-            .x = 0,
-            .y = 0,
-            .width = pres_width,
-            .height = pres_height,
-        }});
-        cmd.setFrontFace(.clockwise);
-        cmd.setSampleCount(.@"1");
-        cmd.setDepthTestEnable(false);
-        cmd.setDepthWriteEnable(false);
+        cmd.setShaders(&.{.fragment}, &.{&shd.final});
         cmd.draw(3, 1, 0, 0);
 
         cmd.endRendering();
@@ -1204,6 +1366,106 @@ const RandomSampling = struct {
     }
 };
 
+fn Blur(comptime index: u1) type {
+    return struct {
+        image: ngl.Image,
+        memory: ngl.Memory,
+        view: ngl.ImageView,
+        sampler: ngl.Sampler,
+
+        const format = ngl.Format.rgba8_unorm;
+        const combined = struct {
+            const set_index = 0;
+            const binding = switch (index) {
+                0 => 4,
+                1 => 6,
+            };
+        };
+        const storage = struct {
+            const set_index = 0;
+            const binding = switch (index) {
+                0 => 7,
+                1 => 5,
+            };
+        };
+
+        fn init(gpa: std.mem.Allocator) ngl.Error!@This() {
+            var img = try ngl.Image.init(gpa, dev, .{
+                .type = .@"2d",
+                .format = format,
+                .width = rend_width,
+                .height = rend_height,
+                .depth_or_layers = 1,
+                .levels = 1,
+                .samples = .@"1",
+                .tiling = .optimal,
+                .usage = .{
+                    .sampled_image = true,
+                    .storage_image = true,
+                    .color_attachment = index == 0,
+                },
+                .misc = .{},
+            });
+            errdefer img.deinit(gpa, dev);
+
+            var mem = blk: {
+                const reqs = img.getMemoryRequirements(dev);
+                var mem = try dev.alloc(gpa, .{
+                    .size = reqs.size,
+                    .type_index = reqs.findType(dev.*, .{ .device_local = true }, null).?,
+                });
+                errdefer dev.free(gpa, &mem);
+                try img.bind(dev, &mem, 0);
+                break :blk mem;
+            };
+            errdefer dev.free(gpa, &mem);
+
+            var view = try ngl.ImageView.init(gpa, dev, .{
+                .image = &img,
+                .type = .@"2d",
+                .format = format,
+                .range = .{
+                    .aspect_mask = .{ .color = true },
+                    .level = 0,
+                    .levels = 1,
+                    .layer = 0,
+                    .layers = 1,
+                },
+            });
+            errdefer view.deinit(gpa, dev);
+
+            const splr = try ngl.Sampler.init(gpa, dev, .{
+                .normalized_coordinates = true,
+                .u_address = .clamp_to_edge,
+                .v_address = .clamp_to_edge,
+                .w_address = .clamp_to_edge,
+                .border_color = null,
+                .mag = .linear,
+                .min = .linear,
+                .mipmap = .nearest,
+                .min_lod = 0,
+                .max_lod = null,
+                .max_anisotropy = null,
+                .compare = null,
+            });
+
+            return .{
+                .image = img,
+                .memory = mem,
+                .view = view,
+                .sampler = splr,
+            };
+        }
+
+        fn deinit(self: *@This(), gpa: std.mem.Allocator) void {
+            self.view.deinit(gpa, dev);
+            self.image.deinit(gpa, dev);
+            dev.free(gpa, &self.memory);
+            self.sampler.deinit(gpa, dev);
+        }
+    };
+}
+
 fn Buffer(comptime kind: enum { host, device }) type {
     return struct {
         buffer: ngl.Buffer,
@@ -1269,6 +1531,8 @@ const Descriptor = struct {
         normal: *Normal(.@"1"),
         depth: *Depth,
         random_sampling: *RandomSampling,
+        blur: *Blur(0),
+        blur_2: *Blur(1),
     ) ngl.Error!Descriptor {
         var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
@@ -1299,6 +1563,34 @@ const Descriptor = struct {
                     .count = 1,
                     .shader_mask = .{ .fragment = true },
                     .immutable_samplers = &.{&random_sampling.sampler},
+                },
+                .{
+                    .binding = Blur(0).combined.binding,
+                    .type = .combined_image_sampler,
+                    .count = 1,
+                    .shader_mask = .{ .compute = true, .fragment = true },
+                    .immutable_samplers = &.{&blur.sampler},
+                },
+                .{
+                    .binding = Blur(1).combined.binding,
+                    .type = .combined_image_sampler,
+                    .count = 1,
+                    .shader_mask = .{ .compute = true },
+                    .immutable_samplers = &.{&blur_2.sampler},
+                },
+                .{
+                    .binding = Blur(0).storage.binding,
+                    .type = .storage_image,
+                    .count = 1,
+                    .shader_mask = .{ .compute = true },
+                    .immutable_samplers = &.{},
+                },
+                .{
+                    .binding = Blur(1).storage.binding,
+                    .type = .storage_image,
+                    .count = 1,
+                    .shader_mask = .{ .compute = true },
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = Camera.binding,
@@ -1343,7 +1635,8 @@ const Descriptor = struct {
         var pool = try ngl.DescriptorPool.init(gpa, dev, .{
             .max_sets = frame_n * (1 + material_n + draw_n),
             .pool_size = .{
-                .combined_image_sampler = frame_n * 4,
+                .combined_image_sampler = frame_n * 6,
+                .sampled_image = frame_n * 2,
                 .uniform_buffer = frame_n * (2 + material_n + draw_n),
             },
         });
@@ -1390,21 +1683,31 @@ const Descriptor = struct {
         normal: *Normal(.@"1"),
         depth: *Depth,
         random_sampling: *RandomSampling,
+        blur: *Blur(0),
+        blur_2: *Blur(1),
         uniform_buffer: *ngl.Buffer,
         camera_offsets: [frame_n]u64,
         light_offsets: [frame_n]u64,
     ) ngl.Error!void {
-        var writes: [6 * frame_n]ngl.DescriptorSet.Write = undefined;
+        var writes: [10 * frame_n]ngl.DescriptorSet.Write = undefined;
         const comb_col = writes[0..frame_n];
         const comb_norm = writes[frame_n .. 2 * frame_n];
         const comb_dep = writes[2 * frame_n .. 3 * frame_n];
         const comb_rnd = writes[3 * frame_n .. 4 * frame_n];
-        const unif_cam = writes[4 * frame_n .. 5 * frame_n];
-        const unif_light = writes[5 * frame_n .. 6 * frame_n];
+        const comb_blur = writes[4 * frame_n .. 5 * frame_n];
+        const comb_blur_2 = writes[5 * frame_n .. 6 * frame_n];
+        const stor_blur = writes[6 * frame_n .. 7 * frame_n];
+        const stor_blur_2 = writes[7 * frame_n .. 8 * frame_n];
+        const unif_cam = writes[8 * frame_n .. 9 * frame_n];
+        const unif_light = writes[9 * frame_n .. 10 * frame_n];
 
         const Isw = ngl.DescriptorSet.Write.ImageSamplerWrite;
-        var isw_arr: [4 * frame_n]Isw = undefined;
+        var isw_arr: [6 * frame_n]Isw = undefined;
         var isw: []Isw = &isw_arr;
+
+        const Iw = ngl.DescriptorSet.Write.ImageWrite;
+        var iw_arr: [2 * frame_n]Iw = undefined;
+        var iw: []Iw = &iw_arr;
 
         const Bw = ngl.DescriptorSet.Write.BufferWrite;
         var bw_arr: [2 * frame_n]Bw = undefined;
@@ -1416,18 +1719,24 @@ const Descriptor = struct {
                 Normal(.@"1"),
                 Depth,
                 RandomSampling,
+                Blur(0).combined,
+                Blur(1).combined,
             },
             .{
                 &color.view,
                 &normal.view,
                 &depth.view,
                 &random_sampling.view,
+                &blur.view,
+                &blur_2.view,
             },
             .{
                 comb_col,
                 comb_norm,
                 comb_dep,
                 comb_rnd,
+                comb_blur,
+                comb_blur_2,
             },
         ) |T, view, combs|
             for (combs, &self.sets[0]) |*comb, *set| {
@@ -1443,6 +1752,25 @@ const Descriptor = struct {
                     .contents = .{ .combined_image_sampler = isw[0..1] },
                 };
                 isw = isw[1..];
+            };
+
+        inline for (
+            .{ Blur(0).storage, Blur(1).storage },
+            .{ &blur.view, &blur_2.view },
+            .{ stor_blur, stor_blur_2 },
+        ) |T, view, stors|
+            for (stors, &self.sets[0]) |*stor, *set| {
+                iw[0] = .{
+                    .view = view,
+                    .layout = .general,
+                };
+                stor.* = .{
+                    .descriptor_set = set,
+                    .binding = T.binding,
+                    .element = 0,
+                    .contents = .{ .storage_image = iw[0..1] },
+                };
+                iw = iw[1..];
             };
 
         inline for (
@@ -1540,8 +1868,11 @@ const Descriptor = struct {
 const Shader = struct {
     vertex: ngl.Shader,
     fragment: ngl.Shader,
-    ssao_vertex: ngl.Shader,
-    ssao_fragment: ngl.Shader,
+    screen: ngl.Shader,
+    ssao: ngl.Shader,
+    blur: ngl.Shader,
+    blur_2: ngl.Shader,
+    final: ngl.Shader,
     layout: ngl.ShaderLayout,
 
     fn init(
@@ -1561,14 +1892,29 @@ const Shader = struct {
             .vulkan => &frag_code_spv,
         };
 
-        const ssao_vert_code_spv align(4) = @embedFile("shader/ssao.vert.spv").*;
-        const ssao_vert_code = switch (dapi) {
-            .vulkan => &ssao_vert_code_spv,
+        const scrn_code_spv align(4) = @embedFile("shader/screen.vert.spv").*;
+        const scrn_code = switch (dapi) {
+            .vulkan => &scrn_code_spv,
         };
 
-        const ssao_frag_code_spv align(4) = @embedFile("shader/ssao.frag.spv").*;
-        const ssao_frag_code = switch (dapi) {
-            .vulkan => &ssao_frag_code_spv,
+        const ssao_code_spv align(4) = @embedFile("shader/ssao.frag.spv").*;
+        const ssao_code = switch (dapi) {
+            .vulkan => &ssao_code_spv,
+        };
+
+        const blur_code_spv align(4) = @embedFile("shader/blur.comp.spv").*;
+        const blur_code = switch (dapi) {
+            .vulkan => &blur_code_spv,
+        };
+
+        const blur_2_code_spv align(4) = @embedFile("shader/blur_2.comp.spv").*;
+        const blur_2_code = switch (dapi) {
+            .vulkan => &blur_2_code_spv,
+        };
+
+        const final_code_spv align(4) = @embedFile("shader/final.frag.spv").*;
+        const final_code = switch (dapi) {
+            .vulkan => &final_code_spv,
         };
 
         const set_layts = &.{
@@ -1603,31 +1949,70 @@ const Shader = struct {
         errdefer for (shaders) |*shd|
             (shd.* catch continue).deinit(gpa, dev);
 
-        const ssao_shds = try ngl.Shader.init(gpa, dev, &.{
+        const scrn_shd = try ngl.Shader.init(gpa, dev, &.{.{
+            .type = .vertex,
+            .next = .{ .fragment = true },
+            .code = scrn_code,
+            .name = "main",
+            .set_layouts = set_layts,
+            .push_constants = &.{},
+            .specialization = null,
+            .link = false,
+        }});
+        defer gpa.free(scrn_shd);
+        errdefer if (scrn_shd[0]) |*shd| shd.deinit(gpa, dev) else |_| {};
+
+        const ssao_shd = try ngl.Shader.init(gpa, dev, &.{.{
+            .type = .fragment,
+            .next = .{},
+            .code = ssao_code,
+            .name = "main",
+            .set_layouts = set_layts,
+            .push_constants = &.{},
+            .specialization = ao_parameters.specialization(),
+            .link = false,
+        }});
+        defer gpa.free(ssao_shd);
+        errdefer if (ssao_shd[0]) |*shd| shd.deinit(gpa, dev) else |_| {};
+
+        const blur_shds = try ngl.Shader.init(gpa, dev, &.{
             .{
-                .type = .vertex,
-                .next = .{ .fragment = true },
-                .code = ssao_vert_code,
+                .type = .compute,
+                .next = .{},
+                .code = blur_code,
                 .name = "main",
                 .set_layouts = set_layts,
                 .push_constants = &.{},
                 .specialization = null,
-                .link = true,
+                .link = false,
             },
             .{
-                .type = .fragment,
+                .type = .compute,
                 .next = .{},
-                .code = ssao_frag_code,
+                .code = blur_2_code,
                 .name = "main",
                 .set_layouts = set_layts,
                 .push_constants = &.{},
-                .specialization = ao_parameters.specialization(),
-                .link = true,
+                .specialization = null,
+                .link = false,
             },
         });
-        defer gpa.free(ssao_shds);
-        errdefer for (ssao_shds) |*shd|
+        defer gpa.free(blur_shds);
+        errdefer for (blur_shds) |*shd|
             (shd.* catch continue).deinit(gpa, dev);
+
+        const final_shd = try ngl.Shader.init(gpa, dev, &.{.{
+            .type = .fragment,
+            .next = .{},
+            .code = final_code,
+            .name = "main",
+            .set_layouts = set_layts,
+            .push_constants = &.{},
+            .specialization = null,
+            .link = false,
+        }});
+        defer gpa.free(final_shd);
+        errdefer if (final_shd[0]) |*shd| shd.deinit(gpa, dev) else |_| {};
 
         var layt = try ngl.ShaderLayout.init(gpa, dev, .{
             .set_layouts = set_layts,
@@ -1638,8 +2023,11 @@ const Shader = struct {
         return .{
             .vertex = try shaders[0],
             .fragment = try shaders[1],
-            .ssao_vertex = try ssao_shds[0],
-            .ssao_fragment = try ssao_shds[1],
+            .screen = try scrn_shd[0],
+            .ssao = try ssao_shd[0],
+            .blur = try blur_shds[0],
+            .blur_2 = try blur_shds[1],
+            .final = try final_shd[0],
             .layout = layt,
         };
     }
@@ -1648,8 +2036,11 @@ const Shader = struct {
         for ([_]*ngl.Shader{
             &self.vertex,
             &self.fragment,
-            &self.ssao_vertex,
-            &self.ssao_fragment,
+            &self.screen,
+            &self.ssao,
+            &self.blur,
+            &self.blur_2,
+            &self.final,
         }) |shd|
             shd.deinit(gpa, dev);
 
@@ -1768,12 +2159,10 @@ const AoParameters = packed struct {
     scale: f32,
     bias: f32,
     intensity: f32,
-    sample_count: i32 = RandomSampling.count,
 
     const scale_id = 0;
     const bias_id = 1;
     const intensity_id = 2;
-    const sample_count_id = 3;
 
     // NOTE: Self-reference.
     fn specialization(self: *const AoParameters) ngl.Shader.Specialization {
@@ -1794,11 +2183,6 @@ const AoParameters = packed struct {
                     .offset = @offsetOf(AoParameters, "intensity"),
                     .size = @sizeOf(@TypeOf(self.intensity)),
                 },
-                .{
-                    .id = sample_count_id,
-                    .offset = @offsetOf(AoParameters, "sample_count"),
-                    .size = @sizeOf(@TypeOf(self.sample_count)),
-                },
             },
             .data = std.mem.asBytes(self),
         };
@@ -1810,7 +2194,7 @@ const Camera = struct {
 
     const size = @sizeOf(@typeInfo(Camera).Struct.fields[0].type);
     const set_index = 0;
-    const binding = 4;
+    const binding = 8;
 
     fn init(inverse_p: [16]f32) Camera {
         var self: Camera = undefined;
@@ -1838,7 +2222,7 @@ const Light = packed struct {
 
     const size = @sizeOf(Light);
     const set_index = 0;
-    const binding = 5;
+    const binding = 9;
 
     fn init(position: [3]f32) Light {
         return Light{
