@@ -1,5 +1,5 @@
 const std = @import("std");
-const log = std.log.scoped(.@"sample.mdata");
+const log = std.log.scoped(.sample);
 
 const ngl = @import("ngl");
 
@@ -370,7 +370,7 @@ pub fn loadObj(gpa: std.mem.Allocator, path: []const u8) !Data {
             try data_obj.parseF(gpa, &it);
         } else if (str[0] != '#') {
             log.warn(
-                \\{s}: Ignoring "{s}"
+                \\mdata.{s}: Ignoring "{s}"
             , .{ @src().fn_name, buf[0..n] });
         }
     }
