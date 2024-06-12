@@ -1,6 +1,10 @@
+const std = @import("std");
+const assert = std.debug.assert;
+
 const ngl = @import("../../ngl.zig");
 const Error = ngl.Error;
 const c = @import("../../inc.zig");
+const log = @import("init.zig").log;
 
 /// Non-dispatchable handles should check against this constant.
 pub const null_handle = switch (@typeInfo(@TypeOf(c.VK_NULL_HANDLE))) {
@@ -324,8 +328,7 @@ pub fn toVkImageUsageFlags(usage: ngl.Image.Usage) c.VkImageUsageFlags {
         flags |= c.VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     if (usage.transient_attachment)
         flags |= c.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
-    if (usage.input_attachment)
-        flags |= c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    comptime assert(!@hasField(@TypeOf(usage), "input_attachment"));
     if (usage.transfer_source)
         flags |= c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     if (usage.transfer_dest)
@@ -1082,8 +1085,10 @@ pub fn fromVkImageUsageFlags(flags: c.VkImageUsageFlags) ngl.Image.Usage {
         usage.depth_stencil_attachment = true;
     if (flags & c.VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT != 0)
         usage.transient_attachment = true;
-    if (flags & c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT != 0)
-        usage.input_attachment = true;
+    if (flags & c.VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT != 0) {
+        comptime assert(!@hasField(@TypeOf(usage), "input_attachment"));
+        log.warn("{s}: Ignoring input attachment", .{@src().fn_name});
+    }
     if (flags & c.VK_IMAGE_USAGE_TRANSFER_SRC_BIT != 0)
         usage.transfer_source = true;
     if (flags & c.VK_IMAGE_USAGE_TRANSFER_DST_BIT != 0)

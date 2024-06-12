@@ -1385,7 +1385,8 @@ pub const Image = struct {
         color_attachment: bool = false,
         depth_stencil_attachment: bool = false,
         transient_attachment: bool = false,
-        input_attachment: bool = false,
+        // Not supported currently.
+        //input_attachment: bool = false,
         transfer_source: bool = false,
         transfer_dest: bool = false,
     };
