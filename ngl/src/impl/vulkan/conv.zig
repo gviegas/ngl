@@ -565,8 +565,7 @@ pub fn toVkAccessFlags(access_mask: ngl.Access.Flags) c.VkAccessFlags {
             flags |= c.VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
         if (access_mask.uniform_read)
             flags |= c.VK_ACCESS_UNIFORM_READ_BIT;
-        if (access_mask.input_attachment_read)
-            flags |= c.VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+        comptime assert(!@hasField(@TypeOf(access_mask), "input_attachment_read"));
         if (access_mask.shader_sampled_read or access_mask.shader_storage_read)
             flags |= c.VK_ACCESS_SHADER_READ_BIT;
         if (access_mask.color_attachment_read)
@@ -588,8 +587,7 @@ pub fn toVkAccessFlags(access_mask: ngl.Access.Flags) c.VkAccessFlags {
         flags |= c.VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
     if (access_mask.uniform_read)
         flags |= c.VK_ACCESS_UNIFORM_READ_BIT;
-    if (access_mask.input_attachment_read)
-        flags |= c.VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
+    comptime assert(!@hasField(@TypeOf(access_mask), "input_attachment_read"));
     if (access_mask.shader_sampled_read or access_mask.shader_storage_read)
         flags |= c.VK_ACCESS_SHADER_READ_BIT;
     if (access_mask.shader_storage_write)

@@ -33,7 +33,8 @@ pub const Access = enum {
     index_read,
     vertex_attribute_read,
     uniform_read,
-    input_attachment_read,
+    // Not supported currently.
+    //input_attachment_read,
     shader_sampled_read,
     shader_storage_read,
     shader_storage_write,
