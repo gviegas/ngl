@@ -1,18 +1,16 @@
 .{
     .name = "sample",
     .version = "0.1.0",
-    //.minimum_zig_version = "0.12.0",
+    .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .ngl = .{
             .url = "../ngl/",
-            .hash = "1220e13dcf379713a4b5d7e1809a256abb2a8a5d51f51cb10589740958faec9d1b6b",
+            .hash = "12201bfddbaa2d4b840dfe6b6c95cef1e286ce37babad1b61f5fd3fb8cccfc3bb440",
         },
     },
     .paths = .{
-        //"",
         "build.zig",
         "build.zig.zon",
-        "capture",
         "data",
         "src",
     },
