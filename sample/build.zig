@@ -7,28 +7,28 @@ pub fn build(b: *std.Build) void {
     const ngl = b.dependency("ngl", .{});
 
     const ctx = b.createModule(.{
-        .root_source_file = .{ .path = "src/Ctx.zig" },
+        .root_source_file = b.path("src/Ctx.zig"),
         .target = target,
         .optimize = optimize,
     });
     ctx.addImport("ngl", ngl.module("ngl"));
 
     const mdata = b.createModule(.{
-        .root_source_file = .{ .path = "src/mdata.zig" },
+        .root_source_file = b.path("src/mdata.zig"),
         .target = target,
         .optimize = optimize,
     });
     mdata.addImport("ngl", ngl.module("ngl"));
 
     const idata = b.createModule(.{
-        .root_source_file = .{ .path = "src/idata.zig" },
+        .root_source_file = b.path("src/idata.zig"),
         .target = target,
         .optimize = optimize,
     });
     idata.addImport("ngl", ngl.module("ngl"));
 
     const gmath = b.createModule(.{
-        .root_source_file = .{ .path = "src/gmath.zig" },
+        .root_source_file = b.path("src/gmath.zig"),
         .target = target,
         .optimize = optimize,
     });
@@ -65,7 +65,7 @@ fn addExecutable(
     const exe = b.addExecutable(.{
         .name = name,
         .target = target,
-        .root_source_file = .{ .path = "src/" ++ name ++ "/" ++ root_file_name },
+        .root_source_file = b.path("src/" ++ name ++ "/" ++ root_file_name),
         .optimize = optimize,
         .link_libc = true,
     });
