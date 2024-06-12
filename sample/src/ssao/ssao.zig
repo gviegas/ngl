@@ -8,10 +8,6 @@ const Ctx = @import("Ctx");
 const mdata = @import("mdata");
 const gmath = @import("gmath");
 
-var ctx: Ctx = undefined;
-var dev: *ngl.Device = undefined;
-var plat: *pfm.Platform = undefined;
-
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer if (gpa.detectLeaks())
@@ -34,6 +30,10 @@ const pres_width = 1024;
 const pres_height = 576;
 const rend_width = pres_width / 2;
 const rend_height = pres_height / 2;
+
+var ctx: Ctx = undefined;
+var dev: *ngl.Device = undefined;
+var plat: *pfm.Platform = undefined;
 
 fn do(gpa: std.mem.Allocator) !void {
     ctx = try Ctx.init(gpa);
@@ -127,7 +127,7 @@ fn do(gpa: std.mem.Allocator) !void {
     const light_es_pos = gmath.mulMV(4, v, light_ws_pos ++ [1]f32{1})[0..3].*;
     const light = Light.init(light_es_pos);
 
-    const material = Material{};
+    const matls = [material_n]Material{.{}};
 
     const models: [draw_n]Model = blk: {
         const xforms = [draw_n][16]f32{
@@ -187,10 +187,12 @@ fn do(gpa: std.mem.Allocator) !void {
         const data = stg_buf.data[unif_cpy_off + strd .. unif_cpy_off + strd + unif_strd];
 
         camera.copy(data[cam_off .. cam_off + Camera.size]);
-
         light.copy(data[light_off .. light_off + Light.size]);
 
-        material.copy(data[matl_off .. matl_off + Material.size]);
+        for (matls, 0..) |matl, i| {
+            const off = matl_off + i * ((Material.size + 255) & ~@as(u64, 255));
+            matl.copy(data[off .. off + Material.size]);
+        }
 
         for (models, 0..) |model, i| {
             const off = model_off + i * ((Model.size + 255) & ~@as(u64, 255));
@@ -559,6 +561,7 @@ fn do(gpa: std.mem.Allocator) !void {
         });
 
         cmd.setShaders(&.{ .vertex, .fragment }, &.{ &shd.vertex, &shd.fragment });
+        comptime assert(material_n == 1);
         cmd.setDescriptors(.graphics, &shd.layout, 1, &.{&desc.sets[1][frame][0]});
 
         cmd.setPrimitiveTopology(.triangle_list);
