@@ -95,8 +95,8 @@ fn do(gpa: std.mem.Allocator) !void {
     defer unif_buf.deinit(gpa);
 
     const vert_cpy_off = 0;
-    const unif_cpy_off = (vert_cpy_off + vert_buf_size + 255) & ~@as(u64, 255);
-    const rnd_cpy_off = (unif_cpy_off + unif_buf_size + 255) & ~@as(u64, 255);
+    const unif_cpy_off = (vert_cpy_off + vert_buf_size + 3) & ~@as(u64, 3);
+    const rnd_cpy_off = (unif_cpy_off + unif_buf_size + 511) & ~@as(u64, 511);
     const stg_buf_size = rnd_cpy_off + RandomSampling.size;
     var stg_buf = try Buffer(.host).init(gpa, stg_buf_size, .{ .transfer_source = true });
     defer stg_buf.deinit(gpa);
