@@ -95,7 +95,91 @@ pub fn mulMV(comptime n: comptime_int, matrix: [n * n]f32, vector: [n]f32) [n]f3
     return res;
 }
 
-pub fn lookAt(eye: [3]f32, center: [3]f32, up: [3]f32) [16]f32 {
+pub fn translate(t: [3]f32) [4 * 4]f32 {
+    const x, const y, const z = t;
+    return .{
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        x, y, z, 1,
+    };
+}
+
+pub fn rotate(comptime n: comptime_int, axis: [3]f32, angle: f32) [n * n]f32 {
+    const x_y_z: @Vector(3, f32) = norm(3, axis);
+    const y_z_x = @shuffle(f32, x_y_z, undefined, @Vector(3, i32){ 1, 2, 0 });
+    const z_x_y = @shuffle(f32, x_y_z, undefined, @Vector(3, i32){ 2, 0, 1 });
+    const xx_yy_zz = x_y_z * x_y_z;
+    const xy_yz_zx = x_y_z * y_z_x;
+    const one: @Vector(3, f32) = @splat(1);
+    const cos: @Vector(3, f32) = @splat(@cos(angle));
+    const dcos = one - cos;
+    const sin: @Vector(3, f32) = @splat(@sin(angle));
+    const dcosxx_dcosyy_dcoszz = dcos * xx_yy_zz;
+    const dcosxy_dcosyz_dcoszx = dcos * xy_yz_zx;
+    const sinz_sinx_siny = sin * z_x_y;
+    const m00_m11_m22 = cos + dcosxx_dcosyy_dcoszz;
+    const m01_m12_m20 = dcosxy_dcosyz_dcoszx + sinz_sinx_siny;
+    const m10_m21_m02 = dcosxy_dcosyz_dcoszx - sinz_sinx_siny;
+    return switch (n) {
+        3 => .{
+            m00_m11_m22[0],
+            m01_m12_m20[0],
+            m10_m21_m02[2],
+
+            m10_m21_m02[0],
+            m00_m11_m22[1],
+            m01_m12_m20[1],
+
+            m01_m12_m20[2],
+            m10_m21_m02[1],
+            m00_m11_m22[2],
+        },
+        4 => .{
+            m00_m11_m22[0],
+            m01_m12_m20[0],
+            m10_m21_m02[2],
+            0,
+
+            m10_m21_m02[0],
+            m00_m11_m22[1],
+            m01_m12_m20[1],
+            0,
+
+            m01_m12_m20[2],
+            m10_m21_m02[1],
+            m00_m11_m22[2],
+            0,
+
+            0,
+            0,
+            0,
+            1,
+        },
+        else => @compileError("Only for 3x3 and 4x4 matrices"),
+    };
+}
+
+pub fn scale3(s: [3]f32) [3 * 3]f32 {
+    const x, const y, const z = s;
+    return .{
+        x, 0, 0,
+        0, y, 0,
+        0, 0, z,
+    };
+}
+
+pub fn scale4(s: [3]f32) [4 * 4]f32 {
+    const x, const y, const z = s;
+    return .{
+        x, 0, 0, 0,
+        0, y, 0, 0,
+        0, 0, z, 0,
+        0, 0, 0, 1,
+    };
+}
+
+pub fn lookAt(eye: [3]f32, center: [3]f32, up: [3]f32) [4 * 4]f32 {
     const f = norm(3, subV(3, center, eye));
     const s = norm(3, cross(f, up));
     const u = cross(f, s);
@@ -119,7 +203,7 @@ pub fn lookAt(eye: [3]f32, center: [3]f32, up: [3]f32) [16]f32 {
     };
 }
 
-pub fn frustum(left: f32, right: f32, top: f32, bottom: f32, znear: f32, zfar: f32) [16]f32 {
+pub fn frustum(left: f32, right: f32, top: f32, bottom: f32, znear: f32, zfar: f32) [4 * 4]f32 {
     var m = [_]f32{0} ** 16;
     m[0] = (2 * znear) / (right - left);
     m[5] = (2 * znear) / (bottom - top);
@@ -131,7 +215,7 @@ pub fn frustum(left: f32, right: f32, top: f32, bottom: f32, znear: f32, zfar: f
     return m;
 }
 
-pub fn perspective(yfov: f32, aspect_ratio: f32, znear: f32, zfar: f32) [16]f32 {
+pub fn perspective(yfov: f32, aspect_ratio: f32, znear: f32, zfar: f32) [4 * 4]f32 {
     var m = [_]f32{0} ** 16;
     const ct = 1 / @tan(yfov * 0.5);
     m[0] = ct / aspect_ratio;
