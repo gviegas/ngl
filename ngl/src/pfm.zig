@@ -1768,18 +1768,18 @@ const PlatformWayland = struct {
             _ = time;
 
             const pinned: *Pinned = @ptrCast(@alignCast(data));
+            const pressed = state == c.WL_KEYBOARD_KEY_STATE_PRESSED;
 
-            if (state == c.WL_KEYBOARD_KEY_STATE_PRESSED)
-                switch (key) {
-                    1 => pinned.input.done = true,
-                    2 => pinned.input.option = true,
-                    3 => pinned.input.option_2 = true,
-                    103 => pinned.input.up = true,
-                    105 => pinned.input.left = true,
-                    106 => pinned.input.right = true,
-                    108 => pinned.input.down = true,
-                    else => {},
-                };
+            switch (key) {
+                1 => pinned.input.done = pressed,
+                2 => pinned.input.option = pressed,
+                3 => pinned.input.option_2 = pressed,
+                103 => pinned.input.up = pressed,
+                105 => pinned.input.left = pressed,
+                106 => pinned.input.right = pressed,
+                108 => pinned.input.down = pressed,
+                else => {},
+            }
         }
 
         fn keyboardModifiers(
