@@ -114,12 +114,12 @@ fn do(gpa: std.mem.Allocator) !void {
     const shdw_v = gmath.lookAt(light_world_pos, .{ 0, 0, 0 }, .{ 0, -1, 0 });
     const shdw_p = gmath.frustum(-0.25, 0.25, -0.25, 0.25, 1, 100);
     const shdw_vp = gmath.mulM(4, shdw_p, shdw_v);
-    const bias = gmath.mulM(4, gmath.translate(.{ 0.5, 0.5, 0 }), gmath.scale4(.{ 0.5, 0.5, 1 }));
+    const bias = gmath.mulM(4, gmath.translate(0.5, 0.5, 0), gmath.scale4(0.5, 0.5, 1));
     const vps = gmath.mulM(4, bias, shdw_vp);
     const draws = blk: {
         const xforms = [draw_n][16]f32{
             gmath.identity(4),
-            gmath.mulM(4, gmath.translate(.{ 0, 1, 0 }), gmath.scale4(.{ 20, 1, 20 })),
+            gmath.mulM(4, gmath.translate(0, 1, 0), gmath.scale4(20, 1, 20)),
         };
         const matls = [draw_n]Material{
             Material.init(.{ 0.8392157, 0.8196078, 0.7843137, 1 }, 1, 0.725, 0),

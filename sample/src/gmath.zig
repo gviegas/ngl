@@ -95,8 +95,7 @@ pub fn mulMV(comptime n: comptime_int, matrix: [n * n]f32, vector: [n]f32) [n]f3
     return res;
 }
 
-pub fn translate(t: [3]f32) [4 * 4]f32 {
-    const x, const y, const z = t;
+pub fn translate(x: f32, y: f32, z: f32) [4 * 4]f32 {
     return .{
         1, 0, 0, 0,
         0, 1, 0, 0,
@@ -160,8 +159,7 @@ pub fn rotate(comptime n: comptime_int, axis: [3]f32, angle: f32) [n * n]f32 {
     };
 }
 
-pub fn scale3(s: [3]f32) [3 * 3]f32 {
-    const x, const y, const z = s;
+pub fn scale3(x: f32, y: f32, z: f32) [3 * 3]f32 {
     return .{
         x, 0, 0,
         0, y, 0,
@@ -169,8 +167,7 @@ pub fn scale3(s: [3]f32) [3 * 3]f32 {
     };
 }
 
-pub fn scale4(s: [3]f32) [4 * 4]f32 {
-    const x, const y, const z = s;
+pub fn scale4(x: f32, y: f32, z: f32) [4 * 4]f32 {
     return .{
         x, 0, 0, 0,
         0, y, 0, 0,
