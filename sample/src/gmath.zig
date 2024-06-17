@@ -1,3 +1,6 @@
+const std = @import("std");
+const assert = std.debug.assert;
+
 pub fn addV(comptime n: comptime_int, lh: [n]f32, rh: [n]f32) [n]f32 {
     const a: @Vector(n, f32) = lh;
     const b: @Vector(n, f32) = rh;
@@ -27,7 +30,9 @@ pub fn len(comptime n: comptime_int, vector: [n]f32) f32 {
 }
 
 pub fn norm(comptime n: comptime_int, vector: [n]f32) [n]f32 {
-    return scaleV(n, vector, 1 / len(n, vector));
+    const l = len(n, vector);
+    assert(!std.math.approxEqAbs(f32, l, 0, std.math.floatEps(f32)));
+    return scaleV(n, vector, 1 / l);
 }
 
 pub fn cross(lh: [3]f32, rh: [3]f32) [3]f32 {
@@ -251,14 +256,17 @@ pub fn invert3(matrix: [3 * 3]f32) [3 * 3]f32 {
     const s0 = m11 * m22 - m12 * m21;
     const s1 = m10 * m22 - m12 * m20;
     const s2 = m10 * m21 - m11 * m20;
-    const inv_det = 1 / (m00 * s0 - m01 * s1 + m02 * s2);
-    return @as(@Vector(3 * 3, f32), @splat(inv_det)) * @Vector(3 * 3, f32){
+    const det = m00 * s0 - m01 * s1 + m02 * s2;
+    assert(!std.math.approxEqAbs(f32, det, 0, std.math.floatEps(f32)));
+    return @as(@Vector(3 * 3, f32), @splat(1 / det)) * @Vector(3 * 3, f32){
         s0,
         -(m01 * m22 - m02 * m21),
         m01 * m12 - m02 * m11,
+
         -s1,
         m00 * m22 - m02 * m20,
         -(m00 * m12 - m02 * m10),
+
         s2,
         -(m00 * m21 - m01 * m20),
         m00 * m11 - m01 * m10,
@@ -294,8 +302,9 @@ pub fn invert4(matrix: [4 * 4]f32) [4 * 4]f32 {
     const c3 = m21 * m32 - m22 * m31;
     const c4 = m21 * m33 - m23 * m31;
     const c5 = m22 * m33 - m23 * m32;
-    const inv_det = 1 / (s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0);
-    return @as(@Vector(4 * 4, f32), @splat(inv_det)) * @Vector(4 * 4, f32){
+    const det = s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0;
+    assert(!std.math.approxEqAbs(f32, det, 0, std.math.floatEps(f32)));
+    return @as(@Vector(4 * 4, f32), @splat(1 / det)) * @Vector(4 * 4, f32){
         c5 * m11 - c4 * m12 + c3 * m13,
         -c5 * m01 + c4 * m02 - c3 * m03,
         s5 * m31 - s4 * m32 + s3 * m33,
