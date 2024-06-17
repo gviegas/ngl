@@ -53,7 +53,7 @@ fn do(gpa: std.mem.Allocator) !void {
     });
     defer vert_buf.deinit(gpa);
 
-    const m = gmath.identity(4);
+    const m = gmath.iM(4);
     const n = blk: {
         const n = gmath.invert3(gmath.upperLeft(4, m));
         break :blk [12]f32{

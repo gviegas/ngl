@@ -44,7 +44,7 @@ pub fn cross(lh: [3]f32, rh: [3]f32) [3]f32 {
     return v[0] - v[1];
 }
 
-pub fn identity(comptime n: comptime_int) [n * n]f32 {
+pub fn iM(comptime n: comptime_int) [n * n]f32 {
     var m: @Vector(n * n, f32) = @splat(0);
     for (0..n) |i|
         m[i * n + i] = 1;

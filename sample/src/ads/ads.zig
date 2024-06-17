@@ -90,7 +90,7 @@ fn do(gpa: std.mem.Allocator) !void {
     defer cq.deinit(gpa);
     const one_queue = cq.multiqueue == null;
 
-    const m = gmath.identity(4);
+    const m = gmath.iM(4);
     const v = gmath.lookAt(.{ -4, -5, -6 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
     const p = gmath.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
     const mv = gmath.mulM(4, v, m);

@@ -117,7 +117,7 @@ fn do(gpa: std.mem.Allocator) !void {
     const vps = gmath.mulM(4, bias, shdw_vp);
     const draws = blk: {
         const xforms = [draw_n][16]f32{
-            gmath.identity(4),
+            gmath.iM(4),
             gmath.mulM(4, gmath.translate(0, 1, 0), gmath.scale4(20, 1, 20)),
         };
         const matls = [draw_n]Material{
