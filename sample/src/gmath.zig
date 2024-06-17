@@ -273,6 +273,31 @@ pub fn invert3(matrix: [3 * 3]f32) [3 * 3]f32 {
     };
 }
 
+pub fn det4(matrix: [4 * 4]f32) f32 {
+    const m00 = matrix[0];
+    const m01 = matrix[1];
+    const m02 = matrix[2];
+    const m03 = matrix[3];
+    const m10 = matrix[4];
+    const m11 = matrix[5];
+    const m12 = matrix[6];
+    const m13 = matrix[7];
+    const m20 = matrix[8];
+    const m21 = matrix[9];
+    const m22 = matrix[10];
+    const m23 = matrix[11];
+    const m30 = matrix[12];
+    const m31 = matrix[13];
+    const m32 = matrix[14];
+    const m33 = matrix[15];
+    return (m00 * m11 - m01 * m10) * (m22 * m33 - m23 * m32) -
+        (m00 * m12 - m02 * m10) * (m21 * m33 - m23 * m31) +
+        (m00 * m13 - m03 * m10) * (m21 * m32 - m22 * m31) +
+        (m01 * m12 - m02 * m11) * (m20 * m33 - m23 * m30) -
+        (m01 * m13 - m03 * m11) * (m20 * m32 - m22 * m30) +
+        (m02 * m13 - m03 * m12) * (m20 * m31 - m21 * m30);
+}
+
 pub fn invert4(matrix: [4 * 4]f32) [4 * 4]f32 {
     const m00 = matrix[0];
     const m01 = matrix[1];
