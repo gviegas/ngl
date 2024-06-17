@@ -318,7 +318,7 @@ const DataPng = struct {
 
         /// Called by `decode`.
         /// This is the final step.
-        // TODO: Currently this only handles gray8/rgb8/rgba8.
+        // TODO: Currently this only handles gray8/rgb8/rgba8/rgb16.
         fn convert(self: *Idat, dest: anytype) !struct { ngl.Format, []u8 } {
             if (self.channels == 3 and self.bits_per_pixel == 24) {
                 const w = self.scanline_size / 3;
@@ -345,6 +345,29 @@ const DataPng = struct {
                     @memcpy(to[0 .. w * 4], from[0 .. w * 4]);
                 }
                 return .{ .rgba8_srgb, data };
+            }
+
+            // TODO: Too slow.
+            if (self.channels == 3 and self.bits_per_pixel == 48) {
+                const w = self.scanline_size / 6;
+                const h = self.image_height;
+                var data = try dest.get(w * h * 8);
+                for (0..h) |i| {
+                    const from = self.data.items[w * 6 * i + i + 1 ..];
+                    const to = data[w * 8 * i ..];
+                    for (0..w) |j| {
+                        for (0..3) |k| {
+                            var uint: u16 = undefined;
+                            @memcpy(std.mem.asBytes(&uint), from[j * 6 + k * 2 ..][0..2]);
+                            uint = std.mem.bigToNative(u16, uint);
+                            const highp: f32 = @floatFromInt(uint);
+                            const lowp: f16 = @floatCast(highp / 65535);
+                            @memcpy(to[j * 8 + k * 2 ..][0..2], std.mem.asBytes(&lowp));
+                        }
+                        @memcpy(to[j * 8 + 6 ..][0..2], std.mem.asBytes(&@as(f16, 1)));
+                    }
+                }
+                return .{ .rgba16_sfloat, data };
             }
 
             if (self.channels == 1 and self.bits_per_pixel == 8) {
