@@ -7,10 +7,13 @@ pub fn addV(comptime n: comptime_int, lh: [n]f32, rh: [n]f32) [n]f32 {
     return a + b;
 }
 
+pub fn negV(comptime n: comptime_int, vector: [n]f32) [n]f32 {
+    const v: @Vector(n, f32) = vector;
+    return -v;
+}
+
 pub fn subV(comptime n: comptime_int, lh: [n]f32, rh: [n]f32) [n]f32 {
-    const a: @Vector(n, f32) = lh;
-    const b: @Vector(n, f32) = rh;
-    return a - b;
+    return addV(n, lh, negV(n, rh));
 }
 
 pub fn scaleV(comptime n: comptime_int, vector: [n]f32, scalar: f32) [n]f32 {
