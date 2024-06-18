@@ -52,6 +52,29 @@ pub fn cross(lh: [3]f32, rh: [3]f32) [3]f32 {
     return v[0] - v[1];
 }
 
+pub fn iQ() [4]f32 {
+    return .{ 0, 0, 0, 1 };
+}
+
+pub fn mulQ(lh: [4]f32, rh: [4]f32) [4]f32 {
+    const q: @Vector(4, f32) = lh;
+    const p: @Vector(4, f32) = rh;
+    const q_imag = @shuffle(f32, q, undefined, @Vector(3, i32){ 0, 1, 2 });
+    const p_imag = @shuffle(f32, p, undefined, @Vector(3, i32){ 0, 1, 2 });
+    const q_real: @Vector(3, f32) = @splat(q[3]);
+    const p_real: @Vector(3, f32) = @splat(p[3]);
+    const imag = q_imag * p_real + p_imag * q_real + cross(q_imag, p_imag);
+    const real = q_real * p_real - @as(@Vector(3, f32), @splat(dot(3, q_imag, p_imag)));
+    return @shuffle(f32, imag, real, @Vector(4, i32){ 0, 1, 2, ~@as(i32, 0) });
+}
+
+pub fn rotateQ(axis: [3]f32, angle: f32) [4]f32 {
+    const half_angle = angle * 0.5;
+    const sin: @Vector(3, f32) = @splat(@sin(half_angle));
+    const cos: @Vector(3, f32) = @splat(@cos(half_angle));
+    return @shuffle(f32, sin * norm(3, axis), cos, @Vector(4, i32){ 0, 1, 2, ~@as(i32, 0) });
+}
+
 pub fn iM(comptime n: comptime_int) [n * n]f32 {
     var m: @Vector(n * n, f32) = @splat(0);
     for (0..n) |i|
@@ -112,7 +135,7 @@ pub fn translate(x: f32, y: f32, z: f32) [4 * 4]f32 {
     };
 }
 
-pub fn rotate(comptime n: comptime_int, axis: [3]f32, angle: f32) [n * n]f32 {
+pub fn rotateM(comptime n: comptime_int, axis: [3]f32, angle: f32) [n * n]f32 {
     const x_y_z: @Vector(3, f32) = norm(3, axis);
     const y_z_x = @shuffle(f32, x_y_z, undefined, @Vector(3, i32){ 1, 2, 0 });
     const z_x_y = @shuffle(f32, x_y_z, undefined, @Vector(3, i32){ 2, 0, 1 });
@@ -155,6 +178,62 @@ pub fn rotate(comptime n: comptime_int, axis: [3]f32, angle: f32) [n * n]f32 {
 
             m01_m12_m20[2],
             m10_m21_m02[1],
+            m00_m11_m22[2],
+            0,
+
+            0,
+            0,
+            0,
+            1,
+        },
+        else => @compileError("Only for 3x3 and 4x4 matrices"),
+    };
+}
+
+pub fn rotateMQ(comptime n: comptime_int, quaternion: [4]f32) [n * n]f32 {
+    const q: @Vector(4, f32) = norm(4, quaternion);
+    const two: @Vector(4, f32) = @splat(2);
+    const xx2_yy2_zz2_na = q * q * two;
+    const xy2_yz2_zx2_na = q * @shuffle(f32, q, undefined, @Vector(4, i32){ 1, 2, 0, 3 }) * two;
+    const zw2_xw2_yw2_na = @shuffle(
+        f32,
+        q * @as(@Vector(4, f32), @splat(q[3])) * two,
+        undefined,
+        @Vector(4, i32){ 2, 0, 1, 3 },
+    );
+    const m00_m11_m22 =
+        @as(@Vector(3, f32), @splat(1)) -
+        @shuffle(f32, xx2_yy2_zz2_na, undefined, @Vector(3, i32){ 1, 0, 0 }) -
+        @shuffle(f32, xx2_yy2_zz2_na, undefined, @Vector(3, i32){ 2, 2, 1 });
+    const m01_m12_m20_na = xy2_yz2_zx2_na + zw2_xw2_yw2_na;
+    const m10_m21_m02_na = xy2_yz2_zx2_na - zw2_xw2_yw2_na;
+    return switch (n) {
+        3 => .{
+            m00_m11_m22[0],
+            m01_m12_m20_na[0],
+            m10_m21_m02_na[2],
+
+            m10_m21_m02_na[0],
+            m00_m11_m22[1],
+            m01_m12_m20_na[1],
+
+            m01_m12_m20_na[2],
+            m10_m21_m02_na[1],
+            m00_m11_m22[2],
+        },
+        4 => .{
+            m00_m11_m22[0],
+            m01_m12_m20_na[0],
+            m10_m21_m02_na[2],
+            0,
+
+            m10_m21_m02_na[0],
+            m00_m11_m22[1],
+            m01_m12_m20_na[1],
+            0,
+
+            m01_m12_m20_na[2],
+            m10_m21_m02_na[1],
             m00_m11_m22[2],
             0,
 
