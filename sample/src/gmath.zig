@@ -28,14 +28,14 @@ pub fn dot(comptime n: comptime_int, lh: [n]f32, rh: [n]f32) f32 {
     return @reduce(.Add, a * b);
 }
 
-pub fn len(comptime n: comptime_int, vector: [n]f32) f32 {
+pub fn length(comptime n: comptime_int, vector: [n]f32) f32 {
     return @sqrt(dot(n, vector, vector));
 }
 
-pub fn norm(comptime n: comptime_int, vector: [n]f32) [n]f32 {
-    const l = len(n, vector);
-    assert(!std.math.approxEqAbs(f32, l, 0, std.math.floatEps(f32)));
-    return scaleV(n, vector, 1 / l);
+pub fn normalize(comptime n: comptime_int, vector: [n]f32) [n]f32 {
+    const len = length(n, vector);
+    assert(!std.math.approxEqAbs(f32, len, 0, std.math.floatEps(f32)));
+    return scaleV(n, vector, 1 / len);
 }
 
 pub fn cross(lh: [3]f32, rh: [3]f32) [3]f32 {
@@ -72,7 +72,7 @@ pub fn rotateQ(axis: [3]f32, angle: f32) [4]f32 {
     const half_angle = angle * 0.5;
     const sin: @Vector(3, f32) = @splat(@sin(half_angle));
     const cos: @Vector(3, f32) = @splat(@cos(half_angle));
-    return @shuffle(f32, sin * norm(3, axis), cos, @Vector(4, i32){ 0, 1, 2, ~@as(i32, 0) });
+    return @shuffle(f32, sin * normalize(3, axis), cos, @Vector(4, i32){ 0, 1, 2, ~@as(i32, 0) });
 }
 
 pub fn iM(comptime n: comptime_int) [n * n]f32 {
@@ -136,7 +136,7 @@ pub fn translate(x: f32, y: f32, z: f32) [4 * 4]f32 {
 }
 
 pub fn rotateM(comptime n: comptime_int, axis: [3]f32, angle: f32) [n * n]f32 {
-    const x_y_z: @Vector(3, f32) = norm(3, axis);
+    const x_y_z: @Vector(3, f32) = normalize(3, axis);
     const y_z_x = @shuffle(f32, x_y_z, undefined, @Vector(3, i32){ 1, 2, 0 });
     const z_x_y = @shuffle(f32, x_y_z, undefined, @Vector(3, i32){ 2, 0, 1 });
     const xx_yy_zz = x_y_z * x_y_z;
@@ -191,7 +191,7 @@ pub fn rotateM(comptime n: comptime_int, axis: [3]f32, angle: f32) [n * n]f32 {
 }
 
 pub fn rotateMQ(comptime n: comptime_int, quaternion: [4]f32) [n * n]f32 {
-    const q: @Vector(4, f32) = norm(4, quaternion);
+    const q: @Vector(4, f32) = normalize(4, quaternion);
     const two: @Vector(4, f32) = @splat(2);
     const xx2_yy2_zz2_na = q * q * two;
     const xy2_yz2_zx2_na = q * @shuffle(f32, q, undefined, @Vector(4, i32){ 1, 2, 0, 3 }) * two;
@@ -264,8 +264,8 @@ pub fn scale4(x: f32, y: f32, z: f32) [4 * 4]f32 {
 }
 
 pub fn lookAt(eye: [3]f32, center: [3]f32, up: [3]f32) [4 * 4]f32 {
-    const f = norm(3, subV(3, center, eye));
-    const s = norm(3, cross(f, up));
+    const f = normalize(3, subV(3, center, eye));
+    const s = normalize(3, cross(f, up));
     const u = cross(f, s);
     return .{
         s[0],
