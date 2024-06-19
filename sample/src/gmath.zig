@@ -217,6 +217,11 @@ fn mScope(comptime n: comptime_int, comptime T: type) type {
         pub fn upperLeft(matrix: M) [(n - 1) * (n - 1)]T {
             return upperLeftM(n, T, matrix);
         }
+
+        pub fn to3x4(matrix: M, fill: T) [3 * 4]T {
+            comptime assert(n > 2 and n < 5);
+            return toM3x4(n, T, matrix, fill);
+        }
     };
 }
 
@@ -601,4 +606,21 @@ fn upperLeftM(comptime n: comptime_int, comptime T: type, matrix: [n * n]T) [(n 
             matrix[i * n .. i * n + n - 1],
         );
     return m;
+}
+
+fn toM3x4(comptime n: comptime_int, comptime T: type, matrix: [n * n]T, fill: T) [3 * 4]T {
+    const m: @Vector(n * n, T) = matrix;
+    return switch (n) {
+        3 => .{
+            m[0], m[1], m[2], fill,
+            m[3], m[4], m[5], fill,
+            m[6], m[7], m[8], fill,
+        },
+        4 => @shuffle(T, m, undefined, @Vector(3 * 4, i32){
+            0, 1, 2,  3,
+            4, 5, 6,  7,
+            8, 9, 10, 11,
+        }),
+        else => unreachable,
+    };
 }

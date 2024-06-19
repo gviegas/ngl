@@ -54,14 +54,8 @@ fn do(gpa: std.mem.Allocator) !void {
     defer vert_buf.deinit(gpa);
 
     const m = gmath.m4f.id;
-    const n = blk: {
-        const n = gmath.m3f.invert(gmath.m4f.upperLeft(m));
-        break :blk [12]f32{
-            n[0], n[3], n[6], undefined,
-            n[1], n[4], n[7], undefined,
-            n[2], n[5], n[8], undefined,
-        };
-    };
+    const inv = gmath.m3f.invert(gmath.m4f.upperLeft(m));
+    const n = gmath.m3f.to3x4(gmath.m3f.transpose(inv), undefined);
     const eye = [3]f32{ 0, -3, 6 };
     const v = gmath.m4f.lookAt(eye, .{ 0, 0, 0 }, .{ 0, -1, 0 });
     const p = gmath.m4f.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);

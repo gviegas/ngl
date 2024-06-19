@@ -96,11 +96,7 @@ fn do(gpa: std.mem.Allocator) !void {
     const mv = gmath.m4f.mul(v, m);
     const mvp = gmath.m4f.mul(p, mv);
     const inv = gmath.m3f.invert(gmath.m4f.upperLeft(mv));
-    const n = [12]f32{
-        inv[0], inv[3], inv[6], undefined,
-        inv[1], inv[4], inv[7], undefined,
-        inv[2], inv[5], inv[8], undefined,
-    };
+    const n = gmath.m3f.to3x4(gmath.m3f.transpose(inv), undefined);
     const globl = Global.init(mvp, mv, n);
 
     const light_pos = gmath.m4f.mul(v, .{ -4, -6, -4, 1 })[0..3].*;

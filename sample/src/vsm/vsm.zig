@@ -131,11 +131,7 @@ fn do(gpa: std.mem.Allocator) !void {
             const s = gmath.m4f.mul(vps, m);
             const mv = gmath.m4f.mul(v, m);
             const inv = gmath.m3f.invert(gmath.m4f.upperLeft(mv));
-            const n = .{
-                inv[0], inv[3], inv[6], undefined,
-                inv[1], inv[4], inv[7], undefined,
-                inv[2], inv[5], inv[8], undefined,
-            };
+            const n = gmath.m3f.to3x4(gmath.m3f.transpose(inv), undefined);
             const mvp = gmath.m4f.mul(p, mv);
             draw.* = .{
                 .model = Model.init(shdw_mvp, s, mvp, mv, n),
