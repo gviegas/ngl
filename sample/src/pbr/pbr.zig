@@ -53,9 +53,9 @@ fn do(gpa: std.mem.Allocator) !void {
     });
     defer vert_buf.deinit(gpa);
 
-    const m = gmath.iM(4);
+    const m = gmath.m4f.id;
     const n = blk: {
-        const n = gmath.invert3(gmath.upperLeft(4, m));
+        const n = gmath.m3f.invert(gmath.m4f.upperLeft(m));
         break :blk [12]f32{
             n[0], n[3], n[6], undefined,
             n[1], n[4], n[7], undefined,
@@ -63,9 +63,9 @@ fn do(gpa: std.mem.Allocator) !void {
         };
     };
     const eye = [3]f32{ 0, -3, 6 };
-    const v = gmath.lookAt(eye, .{ 0, 0, 0 }, .{ 0, -1, 0 });
-    const p = gmath.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
-    const vp = gmath.mulM(4, p, v);
+    const v = gmath.m4f.lookAt(eye, .{ 0, 0, 0 }, .{ 0, -1, 0 });
+    const p = gmath.m4f.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
+    const vp = gmath.m4f.mul(p, v);
     const globl = Global.init(vp, m, n, eye);
 
     const light_desc = Light(light_n).Desc{

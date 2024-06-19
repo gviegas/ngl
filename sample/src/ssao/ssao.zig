@@ -117,28 +117,33 @@ fn do(gpa: std.mem.Allocator) !void {
     defer cq.deinit(gpa);
     const one_queue = cq.multiqueue == null;
 
-    const v = gmath.lookAt(.{ 0, -4, -4 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
-    const p = gmath.perspective(std.math.pi / 4.0, @as(f32, rend_width) / rend_height, 0.01, 100);
+    const v = gmath.m4f.lookAt(.{ 0, -4, -4 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
+    const p = gmath.m4f.perspective(
+        std.math.pi / 4.0,
+        @as(f32, rend_width) / rend_height,
+        0.01,
+        100,
+    );
 
-    const inv_p = gmath.invert4(p);
+    const inv_p = gmath.m4f.invert(p);
     const camera = Camera.init(inv_p);
 
     const light_ws_pos = .{ 10, -10, -10 };
-    const light_es_pos = gmath.mulMV(4, v, light_ws_pos ++ [1]f32{1})[0..3].*;
+    const light_es_pos = gmath.m4f.mul(v, light_ws_pos ++ [1]f32{1})[0..3].*;
     const light = Light.init(light_es_pos);
 
     const matls = [material_n]Material{.{}};
 
     const models: [draw_n]Model = blk: {
         const xforms = [draw_n][16]f32{
-            gmath.iM(4),
-            gmath.mulM(4, gmath.translate(0, 1, 0), gmath.scale4(20, 1, 20)),
+            gmath.m4f.id,
+            gmath.m4f.mul(gmath.m4f.t(0, 1, 0), gmath.m4f.s(20, 1, 20)),
         };
         var models: [draw_n]Model = undefined;
         for (&models, xforms) |*model, m| {
-            const mv = gmath.mulM(4, v, m);
-            const mvp = gmath.mulM(4, p, mv);
-            const inv = gmath.invert3(gmath.upperLeft(4, mv));
+            const mv = gmath.m4f.mul(v, m);
+            const mvp = gmath.m4f.mul(p, mv);
+            const inv = gmath.m3f.invert(gmath.m4f.upperLeft(mv));
             const n = [12]f32{
                 inv[0], inv[3], inv[6], undefined,
                 inv[1], inv[4], inv[7], undefined,

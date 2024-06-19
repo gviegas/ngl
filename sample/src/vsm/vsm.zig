@@ -102,24 +102,24 @@ fn do(gpa: std.mem.Allocator) !void {
     defer cq.deinit(gpa);
     const one_queue = cq.multiqueue == null;
 
-    const v = gmath.lookAt(.{ 0, -4, -4 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
-    const p = gmath.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
+    const v = gmath.m4f.lookAt(.{ 0, -4, -4 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
+    const p = gmath.m4f.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
 
     const light_world_pos = .{ 13, -10, 2 };
-    const light_view_pos = gmath.mulMV(4, v, light_world_pos ++ [1]f32{1})[0..3].*;
+    const light_view_pos = gmath.m4f.mul(v, light_world_pos ++ [1]f32{1})[0..3].*;
     const light_col = .{ 1, 1, 1 };
     const intensity = 100;
     const light = Light.init(light_view_pos, light_col, intensity);
 
-    const shdw_v = gmath.lookAt(light_world_pos, .{ 0, 0, 0 }, .{ 0, -1, 0 });
-    const shdw_p = gmath.frustum(-0.25, 0.25, -0.25, 0.25, 1, 100);
-    const shdw_vp = gmath.mulM(4, shdw_p, shdw_v);
-    const bias = gmath.mulM(4, gmath.translate(0.5, 0.5, 0), gmath.scale4(0.5, 0.5, 1));
-    const vps = gmath.mulM(4, bias, shdw_vp);
+    const shdw_v = gmath.m4f.lookAt(light_world_pos, .{ 0, 0, 0 }, .{ 0, -1, 0 });
+    const shdw_p = gmath.m4f.frustum(-0.25, 0.25, -0.25, 0.25, 1, 100);
+    const shdw_vp = gmath.m4f.mul(shdw_p, shdw_v);
+    const bias = gmath.m4f.mul(gmath.m4f.t(0.5, 0.5, 0), gmath.m4f.s(0.5, 0.5, 1));
+    const vps = gmath.m4f.mul(bias, shdw_vp);
     const draws = blk: {
         const xforms = [draw_n][16]f32{
-            gmath.iM(4),
-            gmath.mulM(4, gmath.translate(0, 1, 0), gmath.scale4(20, 1, 20)),
+            gmath.m4f.id,
+            gmath.m4f.mul(gmath.m4f.t(0, 1, 0), gmath.m4f.s(20, 1, 20)),
         };
         const matls = [draw_n]Material{
             Material.init(.{ 0.8392157, 0.8196078, 0.7843137, 1 }, 1, 0.725, 0),
@@ -127,16 +127,16 @@ fn do(gpa: std.mem.Allocator) !void {
         };
         var draws: [draw_n]Draw = undefined;
         for (&draws, xforms, matls) |*draw, m, matl| {
-            const shdw_mvp = gmath.mulM(4, shdw_vp, m);
-            const s = gmath.mulM(4, vps, m);
-            const mv = gmath.mulM(4, v, m);
-            const inv = gmath.invert3(gmath.upperLeft(4, mv));
+            const shdw_mvp = gmath.m4f.mul(shdw_vp, m);
+            const s = gmath.m4f.mul(vps, m);
+            const mv = gmath.m4f.mul(v, m);
+            const inv = gmath.m3f.invert(gmath.m4f.upperLeft(mv));
             const n = .{
                 inv[0], inv[3], inv[6], undefined,
                 inv[1], inv[4], inv[7], undefined,
                 inv[2], inv[5], inv[8], undefined,
             };
-            const mvp = gmath.mulM(4, p, mv);
+            const mvp = gmath.m4f.mul(p, mv);
             draw.* = .{
                 .model = Model.init(shdw_mvp, s, mvp, mv, n),
                 .material = matl,
