@@ -222,20 +222,20 @@ fn mScope(comptime n: comptime_int, comptime T: type) type {
 
 fn mulM(comptime n: comptime_int, comptime T: type, lh: [n * n]T, rh: [n * n]T) [n * n]T {
     const row_mask = comptime blk: {
-        var m: [n]@Vector(n, i32) = undefined;
+        var mask: [n]@Vector(n, i32) = undefined;
         for (0..n) |i|
             for (0..n) |j| {
-                m[i][j] = i + n * j;
+                mask[i][j] = i + n * j;
             };
-        break :blk m;
+        break :blk mask;
     };
     const col_mask = comptime blk: {
-        var m: [n]@Vector(n, i32) = undefined;
+        var mask: [n]@Vector(n, i32) = undefined;
         for (0..n) |i|
             for (0..n) |j| {
-                m[i][j] = i * n + j;
+                mask[i][j] = i * n + j;
             };
-        break :blk m;
+        break :blk mask;
     };
     var m: @Vector(n * n, T) = undefined;
     inline for (0..n) |i|
@@ -249,12 +249,12 @@ fn mulM(comptime n: comptime_int, comptime T: type, lh: [n * n]T, rh: [n * n]T) 
 
 fn mulMV(comptime n: comptime_int, comptime T: type, matrix: [n * n]T, vector: [n]T) [n]T {
     const row_mask = comptime blk: {
-        var m: [n]@Vector(n, i32) = undefined;
+        var mask: [n]@Vector(n, i32) = undefined;
         for (0..n) |i|
             for (0..n) |j| {
-                m[i][j] = i + n * j;
+                mask[i][j] = i + n * j;
             };
-        break :blk m;
+        break :blk mask;
     };
     const m: @Vector(n * n, T) = matrix;
     const v: @Vector(n, T) = vector;
@@ -582,12 +582,12 @@ fn invertM(comptime n: comptime_int, comptime T: type, matrix: [n * n]T) [n * n]
 
 fn transposeM(comptime n: comptime_int, comptime T: type, matrix: [n * n]T) [n * n]T {
     const mask = comptime blk: {
-        var m: @Vector(n * n, T) = undefined;
+        var mask: @Vector(n * n, i32) = undefined;
         for (0..n) |i|
             for (0..n) |j| {
-                m[i * n + j] = i + n * j;
+                mask[i * n + j] = i + n * j;
             };
-        break :blk m;
+        break :blk mask;
     };
     const m: @Vector(n * n, T) = matrix;
     return @shuffle(T, m, undefined, mask);
