@@ -1,4 +1,5 @@
 const std = @import("std");
+const log = std.log.scoped(.sample);
 const native_endian = @import("builtin").cpu.arch.endian();
 
 const ngl = @import("ngl");
@@ -382,7 +383,10 @@ const DataPng = struct {
                 return .{ .r8_srgb, data };
             }
 
-            // TODO
+            log.err(
+                "idata.DataPng: TODO: Conversion from {} bpp, {}-channel data",
+                .{ self.bits_per_pixel, self.channels },
+            );
             return error.ConversionNotImplementedPng;
         }
 
