@@ -238,7 +238,7 @@ pub const DescriptorSet = struct {
         pub const BufferWrite = struct {
             buffer: *Buffer,
             offset: u64,
-            range: u64,
+            size: u64,
         };
     };
 

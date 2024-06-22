@@ -672,7 +672,7 @@ pub const DescriptorSet = packed struct {
                         info.* = .{
                             .buffer = Buffer.cast(buf.buffer.impl).handle,
                             .offset = buf.offset,
-                            .range = buf.range,
+                            .range = buf.size,
                         };
                     buf_infos_ptr += x.len;
                 },

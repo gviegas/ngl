@@ -212,7 +212,7 @@ test "depth-only rendering" {
             .contents = .{ .uniform_buffer = &.{.{
                 .buffer = &unif_buf,
                 .offset = unif_off[0],
-                .range = @sizeOf(@TypeOf(unif_data[0])),
+                .size = @sizeOf(@TypeOf(unif_data[0])),
             }} },
         },
         .{
@@ -222,7 +222,7 @@ test "depth-only rendering" {
             .contents = .{ .uniform_buffer = &.{.{
                 .buffer = &unif_buf,
                 .offset = unif_off[1],
-                .range = @sizeOf(@TypeOf(unif_data[1])),
+                .size = @sizeOf(@TypeOf(unif_data[1])),
             }} },
         },
     });

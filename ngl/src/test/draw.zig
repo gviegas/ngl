@@ -255,7 +255,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         .contents = .{ .uniform_buffer = &.{.{
             .buffer = &unif_buf,
             .offset = 0,
-            .range = unif_size,
+            .size = unif_size,
         }} },
     }});
 

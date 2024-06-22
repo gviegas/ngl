@@ -168,7 +168,7 @@ test "shader specialization" {
         .contents = .{ .storage_buffer = &.{.{
             .buffer = &stor_buf,
             .offset = 0,
-            .range = size,
+            .size = size,
         }} },
     }});
 

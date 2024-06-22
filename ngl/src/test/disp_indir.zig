@@ -103,7 +103,7 @@ test "dispatchIndirect command" {
         .contents = .{ .storage_buffer = &.{.{
             .buffer = &stor_buf,
             .offset = 0,
-            .range = 4 * invoc,
+            .size = 4 * invoc,
         }} },
     }});
 

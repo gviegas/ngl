@@ -201,12 +201,12 @@ test "DescriptorSet.write" {
             .{
                 .buffer = &buf,
                 .offset = 4096,
-                .range = 1024,
+                .size = 1024,
             },
             .{
                 .buffer = &buf,
                 .offset = 0,
-                .range = 2048,
+                .size = 2048,
             },
         } },
     };
@@ -272,7 +272,7 @@ test "DescriptorSet.write" {
             .contents = .{ .uniform_buffer = &.{.{
                 .buffer = &buf,
                 .offset = 8192,
-                .range = 256,
+                .size = 256,
             }} },
         },
     });
