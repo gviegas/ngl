@@ -1306,7 +1306,7 @@ const Descriptor = struct {
             bw[0] = .{
                 .buffer = uniform_buffer,
                 .offset = off,
-                .range = Light.size,
+                .size = Light.size,
             };
             unif.* = .{
                 .descriptor_set = set,
@@ -1338,7 +1338,7 @@ const Descriptor = struct {
                 bw[0] = .{
                     .buffer = uniform_buffer,
                     .offset = matl_off,
-                    .range = Material.size,
+                    .size = Material.size,
                 };
                 w[0] = .{
                     .descriptor_set = set,
@@ -1371,7 +1371,7 @@ const Descriptor = struct {
                 bw[0] = .{
                     .buffer = uniform_buffer,
                     .offset = model_off,
-                    .range = Model.size,
+                    .size = Model.size,
                 };
                 w[0] = .{
                     .descriptor_set = set,

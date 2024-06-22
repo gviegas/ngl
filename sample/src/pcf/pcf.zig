@@ -1198,7 +1198,7 @@ const Descriptor = struct {
             .contents = .{ .uniform_buffer = &.{.{
                 .buffer = buffer,
                 .offset = offset,
-                .range = T.size,
+                .size = T.size,
             }} },
         }});
     }

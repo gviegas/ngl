@@ -1781,7 +1781,7 @@ const Descriptor = struct {
                 bw[0] = .{
                     .buffer = uniform_buffer,
                     .offset = off,
-                    .range = T.size,
+                    .size = T.size,
                 };
                 unif.* = .{
                     .descriptor_set = set,
@@ -1842,7 +1842,7 @@ const Descriptor = struct {
                 bw[0] = .{
                     .buffer = uniform_buffer,
                     .offset = off,
-                    .range = T.size,
+                    .size = T.size,
                 };
                 w[0] = .{
                     .descriptor_set = set,
