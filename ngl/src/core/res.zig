@@ -1331,7 +1331,7 @@ pub const BufferView = struct {
         buffer: *Buffer,
         format: Format,
         offset: u64,
-        range: u64,
+        size: u64,
     };
 
     const Self = @This();

@@ -106,7 +106,7 @@ test "DescriptorSet.write" {
         .buffer = &buf,
         .format = .rgba8_unorm,
         .offset = 16384,
-        .range = 163840 - 16384,
+        .size = 163840 - 16384,
     });
     defer buf_view.deinit(gpa, dev);
 

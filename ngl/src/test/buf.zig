@@ -96,7 +96,7 @@ test "BufferView.init/deinit" {
         .buffer = &tb,
         .format = .rgba8_unorm,
         .offset = 0,
-        .range = 147456,
+        .size = 147456,
     });
     defer tb_view.deinit(gpa, dev);
 
@@ -105,7 +105,7 @@ test "BufferView.init/deinit" {
         .buffer = &tb,
         .format = .r32_uint,
         .offset = 16384,
-        .range = 65536,
+        .size = 65536,
     });
     tb_view_2.deinit(gpa, dev);
 }

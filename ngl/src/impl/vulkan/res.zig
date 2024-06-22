@@ -171,7 +171,7 @@ pub const BufferView = packed struct {
             .buffer = Buffer.cast(desc.buffer.impl).handle,
             .format = try conv.toVkFormat(desc.format),
             .offset = desc.offset,
-            .range = desc.range,
+            .range = desc.size,
         }, null, &buf_view));
 
         return .{ .val = @bitCast(BufferView{ .handle = buf_view }) };
