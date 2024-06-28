@@ -37,6 +37,10 @@ pub const Platform = struct {
         right: bool = false,
         option: bool = false,
         option_2: bool = false,
+        button: bool = false,
+        button_2: bool = false,
+        px: f32 = 0,
+        py: f32 = 0,
     };
 
     pub const Error = ngl.Error || @typeInfo(Platform).Struct.fields[0].type.Error;
@@ -1630,11 +1634,16 @@ const PlatformWayland = struct {
             surface_x: c.wl_fixed_t,
             surface_y: c.wl_fixed_t,
         ) callconv(.C) void {
-            _ = data;
             _ = pointer;
             _ = time;
-            _ = surface_x;
-            _ = surface_y;
+
+            const pinned: *Pinned = @ptrCast(@alignCast(data));
+
+            const xi = ((1023 + 44) << 52) + (1 << 51) + @as(i64, @intCast(surface_x));
+            pinned.input.px = @floatCast(@as(f64, @bitCast(xi)) - (3 << 43));
+
+            const yi = ((1023 + 44) << 52) + (1 << 51) + @as(i64, @intCast(surface_y));
+            pinned.input.py = @floatCast(@as(f64, @bitCast(yi)) - (3 << 43));
         }
 
         fn pointerButton(
@@ -1645,12 +1654,18 @@ const PlatformWayland = struct {
             button: u32,
             state: u32,
         ) callconv(.C) void {
-            _ = data;
             _ = pointer;
             _ = serial;
             _ = time;
-            _ = button;
-            _ = state;
+
+            const pinned: *Pinned = @ptrCast(@alignCast(data));
+            const pressed = state == c.WL_POINTER_BUTTON_STATE_PRESSED;
+
+            switch (button) {
+                272 => pinned.input.button = pressed,
+                273 => pinned.input.button_2 = pressed,
+                else => {},
+            }
         }
 
         fn pointerAxis(
