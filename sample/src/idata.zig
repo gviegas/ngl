@@ -284,7 +284,7 @@ const DataPng = struct {
                     },
                     // Average.
                     3 => {
-                        for (1..self.bytes_per_pixel) |i|
+                        for (1..self.bytes_per_pixel + 1) |i|
                             ln[i] +%= prev_ln[i] / 2;
                         for (self.bytes_per_pixel + 1..self.scanline_size) |i| {
                             const left: u9 = ln[i - self.bytes_per_pixel];
@@ -294,7 +294,7 @@ const DataPng = struct {
                     },
                     // Paeth.
                     4 => {
-                        for (1..self.bytes_per_pixel) |i|
+                        for (1..self.bytes_per_pixel + 1) |i|
                             ln[i] +%= prev_ln[i];
                         for (self.bytes_per_pixel + 1..self.scanline_size) |i| {
                             const a: i10 = ln[i - self.bytes_per_pixel];
