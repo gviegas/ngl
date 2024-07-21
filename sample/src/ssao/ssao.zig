@@ -2217,7 +2217,7 @@ const Light = packed struct {
     col_r: f32 = 1,
     col_g: f32 = 1,
     col_b: f32 = 1,
-    intensity: f32 = 100,
+    intensity: f32 = 400,
 
     const size = @sizeOf(Light);
     const set_index = 0;
@@ -2240,13 +2240,13 @@ const Light = packed struct {
 };
 
 const Material = packed struct {
-    col_r: f32 = 0.5803921568627451,
-    col_g: f32 = 0.4901960784313725,
-    col_b: f32 = 0.4588235294117647,
+    col_r: f32 = 0.991225,
+    col_g: f32 = 0.896444,
+    col_b: f32 = 0.727533,
     col_a: f32 = 1,
     metallic: f32 = 0,
-    smoothness: f32 = 0.75,
-    reflectance: f32 = 0.04,
+    smoothness: f32 = 0.9,
+    reflectance: f32 = 0.06,
 
     const size = @sizeOf(Material);
     const set_index = 1;
