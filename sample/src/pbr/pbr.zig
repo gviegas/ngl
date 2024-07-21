@@ -83,8 +83,8 @@ fn do(gpa: std.mem.Allocator) !void {
 
     const matl_col = [4]f32{ 0.92, 0.74, 0.02, 1 };
     const metal = 0;
-    const smooth = 0.85;
-    const reflec = 0.5;
+    const smooth = 0.66;
+    const reflec = 0.04;
     const matl = Material.init(matl_col, metal, smooth, reflec);
 
     const globl_off = 0;

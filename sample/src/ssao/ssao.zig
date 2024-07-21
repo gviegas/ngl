@@ -2246,7 +2246,7 @@ const Material = packed struct {
     col_a: f32 = 1,
     metallic: f32 = 0,
     smoothness: f32 = 0.75,
-    reflectance: f32 = 0.5,
+    reflectance: f32 = 0.04,
 
     const size = @sizeOf(Material);
     const set_index = 1;

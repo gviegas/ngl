@@ -123,7 +123,7 @@ fn do(gpa: std.mem.Allocator) !void {
         };
         const matls = [draw_n]Material{
             Material.init(.{ 0.8392157, 0.8196078, 0.7843137, 1 }, 1, 0.725, 0),
-            Material.init(.{ 0.5803922, 0.4901961, 0.4588235, 1 }, 0, 0.6, 0.5),
+            Material.init(.{ 0.5803922, 0.4901961, 0.4588235, 1 }, 0, 0.6, 0.04),
         };
         var draws: [draw_n]Draw = undefined;
         for (&draws, xforms, matls) |*draw, m, matl| {
