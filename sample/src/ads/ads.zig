@@ -29,8 +29,8 @@ pub const platform_desc = pfm.Platform.Desc{
 };
 
 const frame_n = 2;
-const width = 1024;
-const height = 576;
+const width = 1280;
+const height = 720;
 
 var ctx: Ctx = undefined;
 var dev: *ngl.Device = undefined;

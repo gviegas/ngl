@@ -26,8 +26,8 @@ const material_n = 1;
 const teapot_n = 1;
 const plane_n = 1;
 const draw_n = teapot_n + plane_n;
-const pres_width = 1024;
-const pres_height = 576;
+const pres_width = 1280;
+const pres_height = 720;
 const rend_width = pres_width / 2;
 const rend_height = pres_height / 2;
 

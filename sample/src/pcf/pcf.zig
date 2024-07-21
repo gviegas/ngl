@@ -29,8 +29,8 @@ const material_n = draw_n;
 comptime {
     assert(material_n == draw_n);
 }
-const width = 1024;
-const height = 576;
+const width = 1280;
+const height = 720;
 
 var ctx: Ctx = undefined;
 var dev: *ngl.Device = undefined;
