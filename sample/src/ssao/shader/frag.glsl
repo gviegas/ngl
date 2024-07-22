@@ -35,8 +35,8 @@ float dGgx(float n_dot_h, float m) {
     return m_2 / (f * f) * (1.0 / pi);
 }
 
-float fdLambert() {
-    return 1.0 / pi;
+vec3 fdLambert(vec3 diffuse_color) {
+    return diffuse_color * (1.0 / pi);
 }
 
 vec3 lightFactor(float n_dot_l) {
@@ -76,7 +76,7 @@ void main() {
     const float fr_d = dGgx(n_dot_h, rough);
     const vec3 fr = fr_f * fr_v * fr_d;
 
-    const float fd = fdLambert();
+    const vec3 fd = (1.0 - fr_f) * fdLambert(diff_col);
 
-    color_0.rgb = (fr + fd * diff_col) * lightFactor(n_dot_l);
+    color_0.rgb = (fr + fd) * lightFactor(n_dot_l);
 }
