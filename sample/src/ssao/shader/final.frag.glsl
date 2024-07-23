@@ -1,5 +1,7 @@
 #version 460 core
 
+layout(constant_id = 0) const float gamma = 1e-5;
+
 layout(set = 0, binding = 0) uniform sampler2D color;
 layout(set = 0, binding = 4) uniform sampler2D ao;
 
@@ -19,4 +21,6 @@ void main() {
     color_0 = texture(color, uv);
     color_0.rgb *= texture(ao, uv).r;
 #endif
+
+    color_0.rgb = pow(color_0.rgb, vec3(1.0 / gamma));
 }

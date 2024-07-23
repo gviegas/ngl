@@ -2,7 +2,8 @@
 
 const float pi = 3.141592653589793;
 
-layout(constant_id = 0) const int shadow_sample_count = 1;
+layout(constant_id = 0) const uint shadow_sample_n = 1;
+layout(constant_id = 1) const float gamma = 1e-5;
 
 layout(set = 0, binding = 0) uniform sampler2DShadow shadow_map;
 layout(set = 0, binding = 1) uniform sampler3D random_sampling;
@@ -52,17 +53,17 @@ float shadowFactor() {
         return 1.0;
 
     const vec2 uv = gl_FragCoord.xy / textureSize(random_sampling, 0).xy;
-    const float d = 1.0 / shadow_sample_count;
+    const float d = 1.0 / shadow_sample_n;
     float shdw_fac = 0.0;
 
-    for (int i = 0; i < shadow_sample_count; i++) {
+    for (uint i = 0; i < shadow_sample_n; i++) {
         const vec3 uvw = vec3(uv, d * i);
         const vec2 rnd = normalize(texture(random_sampling, uvw).rg * 2.0 - 1.0);
         const vec4 off = vec4(0.075 * rnd, 0.0, 0.0);
         shdw_fac += textureProj(shadow_map, vertex.shadow + off);
     }
 
-    shdw_fac *= 1.0 / shadow_sample_count;
+    shdw_fac *= 1.0 / shadow_sample_n;
     return shdw_fac;
 }
 
@@ -107,4 +108,5 @@ void main() {
     const vec3 light_fac = lightFactor(n_dot_l);
 
     color_0.rgb = mix(brdf, brdf * shdw_fac, 0.7) * light_fac;
+    color_0.rgb = pow(color_0.rgb, vec3(1.0 / gamma));
 }

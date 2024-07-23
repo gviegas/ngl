@@ -2,6 +2,8 @@
 
 const float pi = 3.141592653589793;
 
+layout(constant_id = 0) const float gamma = 1e-5;
+
 layout(set = 0, binding = 0) uniform sampler2D shadow_map;
 
 layout(set = 0, binding = 4) uniform Light {
@@ -96,4 +98,5 @@ void main() {
     const vec3 fd = (1.0 - fr_f) * fdLambert(diff_col);
 
     color_0.rgb = (fr + fd) * shadowFactor() * lightFactor(n_dot_l);
+    color_0.rgb = pow(color_0.rgb, vec3(1.0 / gamma));
 }

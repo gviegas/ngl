@@ -1,5 +1,7 @@
 #version 460 core
 
+layout(constant_id = 0) const float gamma = 1e-5;
+
 layout(set = 0, binding = 1) uniform Light {
     vec3 position;
     float intensity;
@@ -29,4 +31,5 @@ void main() {
     color_0.rgb += material.kd * max(dot(n, l), 0.0);
     color_0.rgb += material.ks * pow(max(dot(n, h), 0.0), material.sp);
     color_0.rgb *= light.intensity;
+    color_0.rgb = pow(color_0.rgb, vec3(1.0 / gamma));
 }

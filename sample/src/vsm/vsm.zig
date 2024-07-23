@@ -1511,7 +1511,14 @@ const Shader = struct {
                 .name = "main",
                 .set_layouts = set_layts,
                 .push_constants = &.{},
-                .specialization = null,
+                .specialization = .{
+                    .constants = &.{.{
+                        .id = 0,
+                        .offset = 0,
+                        .size = @sizeOf(f32),
+                    }},
+                    .data = std.mem.asBytes(&@as(f32, if (plat.format.format.isSrgb()) 1 else 2.2)),
+                },
                 .link = true,
             },
         });

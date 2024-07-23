@@ -22,7 +22,7 @@ pub const platform_desc = pfm.Platform.Desc{
 };
 
 const frame_n = 2;
-const light_n: i32 = 3;
+const light_n = 3;
 const width = 1280;
 const height = 720;
 
@@ -805,12 +805,25 @@ const Shader = struct {
                 .set_layouts = set_layts,
                 .push_constants = &.{},
                 .specialization = .{
-                    .constants = &.{.{
-                        .id = 0,
-                        .offset = 0,
-                        .size = 4,
-                    }},
-                    .data = std.mem.asBytes(&light_n),
+                    .constants = &.{
+                        .{
+                            .id = 0,
+                            .offset = 0,
+                            .size = @sizeOf(u32),
+                        },
+                        .{
+                            .id = 1,
+                            .offset = @sizeOf(u32),
+                            .size = @sizeOf(f32),
+                        },
+                    },
+                    .data = std.mem.asBytes(&@as(packed struct {
+                        light_n: u32,
+                        gamma: f32,
+                    }, .{
+                        .light_n = light_n,
+                        .gamma = if (plat.format.format.isSrgb()) 1 else 2.2,
+                    })),
                 },
                 .link = true,
             },

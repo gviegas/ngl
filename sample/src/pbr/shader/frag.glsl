@@ -2,6 +2,9 @@
 
 const float pi = 3.141592653589793;
 
+layout(constant_id = 0) const uint light_n = 1;
+layout(constant_id = 1) const float gamma = 1e-5;
+
 layout(set = 0, binding = 0) uniform Global {
     mat4 vp;
     mat4 m;
@@ -14,8 +17,6 @@ struct LightData {
     vec3 color;
     float intensity;
 };
-
-layout(constant_id = 0) const int light_n = 1;
 
 layout(set = 0, binding = 1) uniform Light {
     LightData lights[light_n];
@@ -93,5 +94,6 @@ void main() {
         const vec3 fac = lig.color * lig.intensity * atten * n_dot_l;
 
         color_0.rgb += (fr + fd) * fac;
+        color_0.rgb = pow(color_0.rgb, vec3(1.0 / gamma));
     }
 }

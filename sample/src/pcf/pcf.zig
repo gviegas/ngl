@@ -1293,12 +1293,25 @@ const Shader = struct {
                 .set_layouts = set_layts,
                 .push_constants = &.{},
                 .specialization = .{
-                    .constants = &.{.{
-                        .id = 0,
-                        .offset = 0,
-                        .size = 4,
-                    }},
-                    .data = std.mem.asBytes(&RandomSampling.count),
+                    .constants = &.{
+                        .{
+                            .id = 0,
+                            .offset = 0,
+                            .size = @sizeOf(u32),
+                        },
+                        .{
+                            .id = 1,
+                            .offset = @sizeOf(u32),
+                            .size = @sizeOf(f32),
+                        },
+                    },
+                    .data = std.mem.asBytes(&@as(packed struct {
+                        shadow_sample_n: u32,
+                        gamma: f32,
+                    }, .{
+                        .shadow_sample_n = RandomSampling.count,
+                        .gamma = if (plat.format.format.isSrgb()) 1 else 2.2,
+                    })),
                 },
                 .link = true,
             },
