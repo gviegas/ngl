@@ -37,6 +37,15 @@ cd sample && zig build vsm
 ```sh
 cd sample && zig build ssao
 ```
-![SSAO sample (direct lighting only)](sample/capture/ssao_color.png)
-![SSAO sample (ambient occlusion computation)](sample/capture/ssao_ao.png)
-![SSAO sample (final)](sample/capture/ssao_final.png)
+![SSAO sample - direct lighting only](sample/capture/ssao_color.png)
+![SSAO sample - ambient occlusion computation](sample/capture/ssao_ao.png)
+![SSAO sample - final](sample/capture/ssao_final.png)
+
+
+## IBL Sample
+```sh
+cd sample && zig build ibl
+```
+![IBL sample - black (dielectric) and nickel (conductor)](sample/capture/ibl_black_and_nickel.png)
+![IBL sample - magenta (dielectric) and silver (conductor)](sample/capture/ibl_magenta_and_silver.png)
+![IBL sample - white (dielectric) and gold (conductor)](sample/capture/ibl_white_and_gold.png)
