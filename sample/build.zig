@@ -39,6 +39,7 @@ pub fn build(b: *std.Build) void {
         .{ "pcf.zig", b.step("pcf", "Run PCF sample") },
         .{ "vsm.zig", b.step("vsm", "Run VSM sample") },
         .{ "ssao.zig", b.step("ssao", "Run SSAO sample") },
+        .{ "ibl.zig", b.step("ibl", "Run IBL sample") },
     }) |x| {
         var exe = addExecutable(b, target, optimize, x[0], x[1]);
         exe.root_module.addImport("ngl", ngl.module("ngl"));
