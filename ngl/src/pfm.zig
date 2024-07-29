@@ -325,7 +325,7 @@ const PlatformWayland = struct {
 
     fn setVars() Error!void {
         const lib_name = "libwayland-client.so";
-        lib = std.c.dlopen(lib_name, c.RTLD_LAZY | c.RTLD_LOCAL) orelse return Error.Lib;
+        lib = std.c.dlopen(lib_name, .{ .LAZY = true }) orelse return Error.Lib;
         errdefer _ = std.c.dlclose(lib);
 
         displayConnect = @ptrCast(std.c.dlsym(lib, "wl_display_connect") orelse return Error.Sym);

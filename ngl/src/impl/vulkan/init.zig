@@ -101,7 +101,7 @@ pub fn init(allocator: std.mem.Allocator) Error!Impl {
             }
         }
         const name = if (builtin.target.isAndroid()) "libvulkan.so" else "libvulkan.so.1";
-        libvulkan = std.c.dlopen(name, c.RTLD_LAZY | c.RTLD_LOCAL);
+        libvulkan = std.c.dlopen(name, .{ .LAZY = true });
         if (libvulkan == null)
             return Error.InitializationFailed;
         getInstanceProcAddr = @ptrCast(std.c.dlsym(libvulkan.?, sym));
