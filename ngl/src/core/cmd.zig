@@ -26,11 +26,11 @@ pub const CommandPool = struct {
         queue: *Queue,
     };
 
-    pub const ResetMode = enum {
+    pub const ResetMode = union(enum) {
         /// Don't release resources back to the system.
         keep,
         /// Do release resources back to the system.
-        release,
+        release: std.mem.Allocator,
     };
 
     const Self = @This();

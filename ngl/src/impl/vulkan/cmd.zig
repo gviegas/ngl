@@ -123,7 +123,6 @@ pub const CommandPool = struct {
         }
     }
 
-    // TODO: Tie allocator w/ `release` mode.
     pub fn reset(
         _: *anyopaque,
         device: Impl.Device,
@@ -134,10 +133,43 @@ pub const CommandPool = struct {
         const cmd_pool = cast(command_pool);
         const need_dyn = !dev.isFullyDynamic();
 
-        try check(dev.vkResetCommandPool(cmd_pool.handle, switch (mode) {
+        const flags: c.VkCommandPoolResetFlags = switch (mode) {
             .keep => 0,
-            .release => c.VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT,
-        }));
+            .release => |a| blk: {
+                const flags = c.VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT;
+                const cap = cmd_pool.unused.capacity();
+                const used_n = cap - cmd_pool.unused.count();
+
+                if (used_n * 2 >= cap)
+                    break :blk flags;
+                var new_unused = @TypeOf(cmd_pool.unused).initEmpty(a, used_n) catch
+                    break :blk flags;
+                var new_allocs = @TypeOf(cmd_pool.allocs).initCapacity(a, used_n) catch {
+                    new_unused.deinit(a);
+                    break :blk flags;
+                };
+
+                for (cmd_pool.allocs.items, 0..) |ptr, i| {
+                    if (!cmd_pool.unused.isSet(i)) {
+                        new_allocs.appendAssumeCapacity(ptr);
+                        continue;
+                    }
+                    if (need_dyn) {
+                        ptr.dyn.?.clear(a, dev);
+                        a.destroy(ptr.dyn.?);
+                    }
+                    a.destroy(ptr);
+                }
+
+                cmd_pool.allocs.deinit(a);
+                cmd_pool.unused.deinit(a);
+                cmd_pool.allocs = new_allocs;
+                cmd_pool.unused = new_unused;
+                break :blk flags;
+            },
+        };
+
+        try check(dev.vkResetCommandPool(cmd_pool.handle, flags));
 
         if (!need_dyn)
             return;
@@ -2005,7 +2037,9 @@ test CommandPool {
     try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 2);
     try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 1);
 
-    try CommandPool.reset(undefined, dev, cmd_pool, .release);
+    try CommandPool.reset(undefined, dev, cmd_pool, .keep);
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 2);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 1);
 
     try CommandPool.alloc(
         undefined,
@@ -2050,11 +2084,33 @@ test CommandPool {
     try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 5);
     try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 3);
 
-    try CommandPool.reset(undefined, dev, cmd_pool, .release);
-
-    CommandPool.free(undefined, testing.allocator, dev, cmd_pool, &.{ &cmd_bufs[4], &cmd_bufs[2] });
+    try CommandPool.reset(undefined, dev, cmd_pool, .keep);
     try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 5);
-    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 5);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 3);
+
+    try CommandPool.reset(undefined, dev, cmd_pool, .{ .release = testing.allocator });
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 2);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 0);
+
+    CommandPool.free(undefined, testing.allocator, dev, cmd_pool, &.{&cmd_bufs[2]});
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 2);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 1);
+
+    try CommandPool.reset(undefined, dev, cmd_pool, .{ .release = testing.allocator });
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 2);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 1);
+
+    CommandPool.free(undefined, testing.allocator, dev, cmd_pool, &.{&cmd_bufs[4]});
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 2);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 2);
+
+    try CommandPool.reset(undefined, dev, cmd_pool, .keep);
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 2);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 2);
+
+    try CommandPool.reset(undefined, dev, cmd_pool, .{ .release = testing.allocator });
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 0);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 0);
 
     try CommandPool.alloc(
         undefined,
@@ -2074,7 +2130,9 @@ test CommandPool {
     }
 
     try CommandPool.reset(undefined, dev, cmd_pool, .keep);
-    try CommandPool.reset(undefined, dev, cmd_pool, .release);
+    try CommandPool.reset(undefined, dev, cmd_pool, .{ .release = testing.allocator });
+    try testing.expect(CommandPool.cast(cmd_pool).allocs.items.len == 5);
+    try testing.expect(CommandPool.cast(cmd_pool).unused.count() == 0);
 }
 
 test CommandBuffer {

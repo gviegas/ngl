@@ -30,7 +30,7 @@ test "CommandBuffer.begin/Cmd.end" {
     // The pool can be reset during recording, which invalidates
     // the command buffer.
     cmd = try cmd_bufs[0].begin(gpa, dev, .{ .one_time_submit = false, .inheritance = null });
-    try cmd_pool.reset(dev, .release);
+    try cmd_pool.reset(dev, .{ .release = gpa });
     cmd = try cmd_bufs[0].begin(gpa, dev, .{ .one_time_submit = false, .inheritance = null });
     try cmd.end();
 
