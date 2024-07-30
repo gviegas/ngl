@@ -312,8 +312,7 @@ pub fn createPrimitivePipeline(
         .minSampleShading = 0,
         .pSampleMask = &spl_mask,
         .alphaToCoverageEnable = c.VK_FALSE,
-        // TODO: Add a command for this.
-        .alphaToOneEnable = c.VK_FALSE,
+        .alphaToOneEnable = if (state.alpha_to_one_enable.enable) c.VK_TRUE else c.VK_FALSE,
     };
 
     const toVkStencilOpState = struct {
@@ -827,6 +826,7 @@ test "Cache" {
 
 test getPrimitivePipeline {
     const dev = Device.cast(context().device.impl);
+    const core_feat = ngl.Feature.get(testing.allocator, context().gpu, .core).?;
 
     var cache = @This(){};
     defer cache.deinit(testing.allocator, dev);
@@ -919,6 +919,7 @@ test getPrimitivePipeline {
     key.state.front_face.set(.clockwise);
     key.state.sample_count.set(.@"1");
     key.state.sample_mask.set(0x1);
+    key.state.alpha_to_one_enable.set(core_feat.rasterization.alpha_to_one);
 
     key.state.depth_bias_enable.set(false);
     key.state.depth_test_enable.set(true);
@@ -1273,6 +1274,7 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
     try testing.expect(raster.*.lineWidth == 1);
 
     const ms = create_info.pMultisampleState orelse return error.NullPtr;
+    const a_to_one_enable = ms.*.alphaToOneEnable == c.VK_TRUE;
     try testing.expect(
         conv.toVkSampleCount(state.sample_count.sample_count) == ms.*.rasterizationSamples,
     );
@@ -1284,8 +1286,7 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
     try testing.expect(
         @as(c.VkSampleMask, @truncate(state.sample_mask.sample_mask >> 32)) == ms.*.pSampleMask[1],
     );
-    try testing.expect(ms.*.alphaToCoverageEnable == c.VK_FALSE);
-    // TODO: Test alpha to one when dynamic state for it is added.
+    try testing.expect(state.alpha_to_one_enable.enable == a_to_one_enable);
 
     const ds = create_info.pDepthStencilState orelse return error.NullPtr;
     const dep_test_enable = ds.*.depthTestEnable == c.VK_TRUE;

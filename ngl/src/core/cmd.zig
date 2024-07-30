@@ -462,6 +462,19 @@ pub const CommandBuffer = struct {
             Impl.get().setSampleMask(self.device.impl, self.command_buffer.impl, sample_mask);
         }
 
+        /// `Feature.core.rasterization.alpha_to_one`.
+        ///
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setAlphaToOneEnable(self: *Cmd, enable: bool) void {
+            Impl.get().setAlphaToOneEnable(self.device.impl, self.command_buffer.impl, enable);
+        }
+
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope

@@ -786,6 +786,23 @@ pub const CommandBuffer = struct {
         }
     }
 
+    pub fn setAlphaToOneEnable(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        enable: bool,
+    ) void {
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d| {
+            d.state.alpha_to_one_enable.set(enable);
+            d.changed = true;
+        } else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
+    }
+
     pub fn setDepthBiasEnable(
         _: *anyopaque,
         device: Impl.Device,
@@ -1914,6 +1931,7 @@ pub const Dynamic = struct {
         .front_face = true,
         .sample_count = true,
         .sample_mask = true,
+        .alpha_to_one_enable = true,
         .depth_bias_enable = true,
         .depth_test_enable = true,
         .depth_compare_op = true,
