@@ -462,6 +462,17 @@ pub const CommandBuffer = struct {
             Impl.get().setSampleMask(self.device.impl, self.command_buffer.impl, sample_mask);
         }
 
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setAlphaToCoverageEnable(self: *Cmd, enable: bool) void {
+            Impl.get().setAlphaToCoverageEnable(self.device.impl, self.command_buffer.impl, enable);
+        }
+
         /// `Feature.core.rasterization.alpha_to_one`.
         ///
         /// ✔ Primary command buffer

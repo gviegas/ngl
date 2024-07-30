@@ -3085,6 +3085,7 @@ const vtable = Impl.VTable{
     .setFrontFace = @import("cmd.zig").CommandBuffer.setFrontFace,
     .setSampleCount = @import("cmd.zig").CommandBuffer.setSampleCount,
     .setSampleMask = @import("cmd.zig").CommandBuffer.setSampleMask,
+    .setAlphaToCoverageEnable = @import("cmd.zig").CommandBuffer.setAlphaToCoverageEnable,
     .setAlphaToOneEnable = @import("cmd.zig").CommandBuffer.setAlphaToOneEnable,
     .setDepthClampEnable = @import("cmd.zig").CommandBuffer.setDepthClampEnable,
     .setDepthBiasEnable = @import("cmd.zig").CommandBuffer.setDepthBiasEnable,

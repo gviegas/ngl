@@ -310,7 +310,10 @@ pub fn createPrimitivePipeline(
         .sampleShadingEnable = c.VK_FALSE,
         .minSampleShading = 0,
         .pSampleMask = &spl_mask,
-        .alphaToCoverageEnable = c.VK_FALSE,
+        .alphaToCoverageEnable = if (state.alpha_to_coverage_enable.enable)
+            c.VK_TRUE
+        else
+            c.VK_FALSE,
         .alphaToOneEnable = if (state.alpha_to_one_enable.enable) c.VK_TRUE else c.VK_FALSE,
     };
 
@@ -918,6 +921,7 @@ test getPrimitivePipeline {
     key.state.front_face.set(.clockwise);
     key.state.sample_count.set(.@"1");
     key.state.sample_mask.set(0x1);
+    key.state.alpha_to_coverage_enable.set(true);
     key.state.alpha_to_one_enable.set(core_feat.rasterization.alpha_to_one);
     key.state.depth_clamp_enable.set(core_feat.rasterization.depth_clamp);
     key.state.depth_bias_enable.set(false);
@@ -1276,6 +1280,7 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
     try testing.expect(raster.*.lineWidth == 1);
 
     const ms = create_info.pMultisampleState orelse return error.NullPtr;
+    const a_to_cover_enable = ms.*.alphaToCoverageEnable == c.VK_TRUE;
     const a_to_one_enable = ms.*.alphaToOneEnable == c.VK_TRUE;
     try testing.expect(
         conv.toVkSampleCount(state.sample_count.sample_count) == ms.*.rasterizationSamples,
@@ -1288,6 +1293,7 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
     try testing.expect(
         @as(c.VkSampleMask, @truncate(state.sample_mask.sample_mask >> 32)) == ms.*.pSampleMask[1],
     );
+    try testing.expect(state.alpha_to_coverage_enable.enable == a_to_cover_enable);
     try testing.expect(state.alpha_to_one_enable.enable == a_to_one_enable);
 
     const ds = create_info.pDepthStencilState orelse return error.NullPtr;

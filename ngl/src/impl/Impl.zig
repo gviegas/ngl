@@ -332,6 +332,13 @@ pub const VTable = struct {
         sample_mask: u64,
     ) void,
 
+    setAlphaToCoverageEnable: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        enable: bool,
+    ) void,
+
     setAlphaToOneEnable: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1464,6 +1471,15 @@ pub fn setSampleMask(
     sample_mask: u64,
 ) void {
     self.vtable.setSampleMask(self.ptr, device, command_buffer, sample_mask);
+}
+
+pub fn setAlphaToCoverageEnable(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    enable: bool,
+) void {
+    self.vtable.setAlphaToCoverageEnable(self.ptr, device, command_buffer, enable);
 }
 
 pub fn setAlphaToOneEnable(

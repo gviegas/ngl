@@ -148,6 +148,7 @@ pub fn State(comptime state_mask: anytype) type {
                 .front_face => if (has) FrontFace else None,
                 .sample_count => if (has) SampleCount else None,
                 .sample_mask => if (has) SampleMask else None,
+                .alpha_to_coverage_enable => if (has) Enable(false) else None,
                 .alpha_to_one_enable => if (has) Enable(false) else None,
                 .depth_clamp_enable => if (has) Enable(false) else None,
                 .depth_bias_enable => if (has) Enable(false) else None,
@@ -182,6 +183,7 @@ pub fn State(comptime state_mask: anytype) type {
         front_face: getType(.front_face),
         sample_count: getType(.sample_count),
         sample_mask: getType(.sample_mask),
+        alpha_to_coverage_enable: getType(.alpha_to_coverage_enable),
         alpha_to_one_enable: getType(.alpha_to_one_enable),
         depth_clamp_enable: getType(.depth_clamp_enable),
         depth_bias_enable: getType(.depth_bias_enable),
@@ -238,6 +240,8 @@ pub fn StateMask(comptime kind: enum { primitive }) type {
         "sample_count",
         // `Cmd.setSampleMask`.
         "sample_mask",
+        // `Cmd.setAlphaToCoverageEnable`.
+        "alpha_to_coverage_enable",
         // `Cmd.setAlphaToOneEnable`.
         "alpha_to_one_enable",
         // `Cmd.setDepthClampEnable`.
@@ -1175,6 +1179,7 @@ test State {
         .front_face = true,
         .sample_count = true,
         .sample_mask = true,
+        .alpha_to_coverage_enable = true,
         .alpha_to_one_enable = true,
         .depth_clamp_enable = true,
         .depth_bias_enable = true,
@@ -1351,6 +1356,12 @@ test State {
     s2.sample_mask.set(0b1111);
     try expectNotEql(s1, h1, s2);
     s1.sample_mask.set(0xf);
+    h1 = hashT(s1);
+    try expectEql(s1, h1, s2);
+
+    s2.alpha_to_coverage_enable.set(true);
+    try expectNotEql(s1, h1, s2);
+    s1.alpha_to_coverage_enable.set(true);
     h1 = hashT(s1);
     try expectEql(s1, h1, s2);
 

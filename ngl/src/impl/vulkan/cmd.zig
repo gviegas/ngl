@@ -786,6 +786,23 @@ pub const CommandBuffer = struct {
         }
     }
 
+    pub fn setAlphaToCoverageEnable(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        enable: bool,
+    ) void {
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d| {
+            d.state.alpha_to_coverage_enable.set(enable);
+            d.changed = true;
+        } else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
+    }
+
     pub fn setAlphaToOneEnable(
         _: *anyopaque,
         device: Impl.Device,
@@ -1948,6 +1965,7 @@ pub const Dynamic = struct {
         .front_face = true,
         .sample_count = true,
         .sample_mask = true,
+        .alpha_to_coverage_enable = true,
         .alpha_to_one_enable = true,
         .depth_clamp_enable = true,
         .depth_bias_enable = true,
@@ -2285,6 +2303,10 @@ test CommandBuffer {
     const prev_spl_mask = d.state.sample_mask;
     CommandBuffer.setSampleMask(undefined, dev, cmd_buf, 0xf);
     try testing.expect(!prev_spl_mask.eql(d.state.sample_mask));
+
+    const prev_a_to_cover_enable = d.state.alpha_to_coverage_enable;
+    CommandBuffer.setAlphaToCoverageEnable(undefined, dev, cmd_buf, true);
+    try testing.expect(!prev_a_to_cover_enable.eql(d.state.alpha_to_coverage_enable));
 
     if (core_feat.rasterization.alpha_to_one) {
         const prev_a_to_one_enable = d.state.alpha_to_one_enable;
