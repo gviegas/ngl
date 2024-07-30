@@ -339,6 +339,13 @@ pub const VTable = struct {
         enable: bool,
     ) void,
 
+    setDepthClampEnable: *const fn (
+        ctx: *anyopaque,
+        device: Device,
+        command_buffer: CommandBuffer,
+        enable: bool,
+    ) void,
+
     setDepthBiasEnable: *const fn (
         ctx: *anyopaque,
         device: Device,
@@ -1466,6 +1473,15 @@ pub fn setAlphaToOneEnable(
     enable: bool,
 ) void {
     self.vtable.setAlphaToOneEnable(self.ptr, device, command_buffer, enable);
+}
+
+pub fn setDepthClampEnable(
+    self: *Self,
+    device: Device,
+    command_buffer: CommandBuffer,
+    enable: bool,
+) void {
+    self.vtable.setDepthClampEnable(self.ptr, device, command_buffer, enable);
 }
 
 pub fn setDepthBiasEnable(

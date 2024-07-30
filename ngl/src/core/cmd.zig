@@ -475,6 +475,19 @@ pub const CommandBuffer = struct {
             Impl.get().setAlphaToOneEnable(self.device.impl, self.command_buffer.impl, enable);
         }
 
+        /// `Feature.core.rasterization.depth_clamp`.
+        ///
+        /// ✔ Primary command buffer
+        /// ✔ Secondary command buffer
+        /// ✔ Global scope
+        /// ✔ Render pass scope
+        /// ✔ Graphics queue
+        /// ✘ Compute queue
+        /// ✘ Transfer queue
+        pub fn setDepthClampEnable(self: *Cmd, enable: bool) void {
+            Impl.get().setDepthClampEnable(self.device.impl, self.command_buffer.impl, enable);
+        }
+
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope

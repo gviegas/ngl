@@ -803,6 +803,23 @@ pub const CommandBuffer = struct {
         }
     }
 
+    pub fn setDepthClampEnable(
+        _: *anyopaque,
+        device: Impl.Device,
+        command_buffer: Impl.CommandBuffer,
+        enable: bool,
+    ) void {
+        const cmd_buf = cast(command_buffer);
+
+        if (cmd_buf.dyn) |d| {
+            d.state.depth_clamp_enable.set(enable);
+            d.changed = true;
+        } else {
+            _ = device;
+            @panic("Not yet implemented");
+        }
+    }
+
     pub fn setDepthBiasEnable(
         _: *anyopaque,
         device: Impl.Device,
@@ -1932,6 +1949,7 @@ pub const Dynamic = struct {
         .sample_count = true,
         .sample_mask = true,
         .alpha_to_one_enable = true,
+        .depth_clamp_enable = true,
         .depth_bias_enable = true,
         .depth_test_enable = true,
         .depth_compare_op = true,
@@ -2162,6 +2180,7 @@ test CommandBuffer {
             null,
         ) orelse return error.SkipZigTest
     ];
+    const core_feat = ngl.Feature.get(testing.allocator, ctx.gpu, .core).?;
 
     const cmd_pool = try CommandPool.init(undefined, testing.allocator, dev, .{ .queue = queue });
     defer CommandPool.deinit(undefined, testing.allocator, dev, cmd_pool);
@@ -2266,6 +2285,18 @@ test CommandBuffer {
     const prev_spl_mask = d.state.sample_mask;
     CommandBuffer.setSampleMask(undefined, dev, cmd_buf, 0xf);
     try testing.expect(!prev_spl_mask.eql(d.state.sample_mask));
+
+    if (core_feat.rasterization.alpha_to_one) {
+        const prev_a_to_one_enable = d.state.alpha_to_one_enable;
+        CommandBuffer.setAlphaToOneEnable(undefined, dev, cmd_buf, true);
+        try testing.expect(!prev_a_to_one_enable.eql(d.state.alpha_to_one_enable));
+    }
+
+    if (core_feat.rasterization.depth_clamp) {
+        const prev_dep_clamp_enable = d.state.depth_clamp_enable;
+        CommandBuffer.setDepthClampEnable(undefined, dev, cmd_buf, true);
+        try testing.expect(!prev_dep_clamp_enable.eql(d.state.depth_clamp_enable));
+    }
 
     const prev_dep_bias_enable = d.state.depth_bias_enable;
     CommandBuffer.setDepthBiasEnable(undefined, dev, cmd_buf, true);

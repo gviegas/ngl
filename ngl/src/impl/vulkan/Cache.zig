@@ -285,8 +285,7 @@ pub fn createPrimitivePipeline(
         .sType = c.VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         .pNext = null,
         .flags = 0,
-        // TODO: Add a command for this.
-        .depthClampEnable = c.VK_FALSE,
+        .depthClampEnable = if (state.depth_clamp_enable.enable) c.VK_TRUE else c.VK_FALSE,
         .rasterizerDiscardEnable = if (state.rasterization_enable.enable) c.VK_FALSE else c.VK_TRUE,
         .polygonMode = conv.toVkPolygonMode(state.polygon_mode.polygon_mode),
         .cullMode = conv.toVkCullModeFlags(state.cull_mode.cull_mode),
@@ -920,8 +919,9 @@ test getPrimitivePipeline {
     key.state.sample_count.set(.@"1");
     key.state.sample_mask.set(0x1);
     key.state.alpha_to_one_enable.set(core_feat.rasterization.alpha_to_one);
-
+    key.state.depth_clamp_enable.set(core_feat.rasterization.depth_clamp);
     key.state.depth_bias_enable.set(false);
+
     key.state.depth_test_enable.set(true);
     key.state.depth_compare_op.set(.less_equal);
     key.state.depth_write_enable.set(true);
@@ -1262,8 +1262,10 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
     try testing.expect(vport.*.pScissors == null);
 
     const raster = create_info.pRasterizationState orelse return error.NullPtr;
+    const dep_clamp_enable = raster.*.depthClampEnable == c.VK_TRUE;
     const raster_enable = raster.*.rasterizerDiscardEnable == c.VK_FALSE;
     const dep_bias_enable = raster.*.depthBiasEnable == c.VK_TRUE;
+    try testing.expect(state.depth_clamp_enable.enable == dep_clamp_enable);
     try testing.expect(state.rasterization_enable.enable == raster_enable);
     try testing.expect(
         conv.toVkPolygonMode(state.polygon_mode.polygon_mode) == raster.*.polygonMode,
