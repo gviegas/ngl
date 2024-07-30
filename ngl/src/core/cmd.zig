@@ -510,6 +510,10 @@ pub const CommandBuffer = struct {
             Impl.get().setDepthBiasEnable(self.device.impl, self.command_buffer.impl, enable);
         }
 
+        /// The `clamp` parameter must be zero if
+        /// `Feature.core.rasterization.depth_bias_clamp`
+        /// isn't supported.
+        ///
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
         /// ✔ Global scope
