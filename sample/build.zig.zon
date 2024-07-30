@@ -1,11 +1,11 @@
 .{
     .name = "sample",
-    .version = "0.1.0",
+    .version = "0.2.0",
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .ngl = .{
             .url = "../ngl/",
-            .hash = "1220f4896e0b3e3ae6c519f0b5fd0a8065617364c12a65a8c2fe765ad5838626e6e6",
+            .hash = "122023eb607fcc25f992a0a6756006fa7a1d64f043af798f19e49b9452edfe9ae566",
         },
     },
     .paths = .{
