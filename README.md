@@ -1,11 +1,12 @@
 # ngl
 
-[ngl/ngl](ngl) contains the graphics API wrapper.
+[ngl](ngl) contains the graphics API wrapper.
 
-[ngl/sample](sample) contains sample programs.
+[sample](sample) contains sample programs.
 
 
 ## ADS Sample
+[sample/src/ads](sample/src/ads)
 ```sh
 cd sample && zig build ads
 ```
@@ -13,6 +14,7 @@ cd sample && zig build ads
 
 
 ## PBR Sample
+[sample/src/pbr](sample/src/pbr)
 ```sh
 cd sample && zig build pbr
 ```
@@ -20,6 +22,7 @@ cd sample && zig build pbr
 
 
 ## PCF Sample
+[sample/src/pcf](sample/src/pcf)
 ```sh
 cd sample && zig build pcf
 ```
@@ -27,6 +30,7 @@ cd sample && zig build pcf
 
 
 ## VSM Sample
+[sample/src/vsm](sample/src/vsm)
 ```sh
 cd sample && zig build vsm
 ```
@@ -34,6 +38,7 @@ cd sample && zig build vsm
 
 
 ## SSAO Sample
+[sample/src/ssao](sample/src/ssao)
 ```sh
 cd sample && zig build ssao
 ```
@@ -43,6 +48,7 @@ cd sample && zig build ssao
 
 
 ## IBL Sample
+[sample/src/ibl](sample/src/ibl)
 ```sh
 cd sample && zig build ibl
 ```
