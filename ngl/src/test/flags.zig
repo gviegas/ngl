@@ -12,6 +12,13 @@ test "Flags" {
         const F = ngl.Flags(@This());
     };
 
+    const hi = ngl.flag.fromEnum(E.hi);
+    const bye = ngl.flag.fromEnum(E.bye);
+    const why = ngl.flag.fromEnum(E.why);
+    try testing.expect(hi.hi and !hi.bye and !hi.why);
+    try testing.expect(bye.bye and !bye.hi and !bye.why);
+    try testing.expect(why.why and !why.hi and !why.bye);
+
     var f = E.F{};
     try testing.expect(ngl.flag.empty(ngl.flag.@"and"(f, f)));
     try testing.expect(!ngl.flag.full(ngl.flag.@"or"(f, f)));
@@ -21,6 +28,7 @@ test "Flags" {
     f.hi = true;
     try testing.expect(!ngl.flag.empty(f));
     try testing.expect(!ngl.flag.full(f));
+    try testing.expect(ngl.flag.eql(hi, f));
     try testing.expect(ngl.flag.eql(
         ngl.flag.@"and"(f, .{ .hi = true, .bye = true }),
         f,
@@ -41,6 +49,7 @@ test "Flags" {
     f.why = true;
     try testing.expect(!ngl.flag.empty(f));
     try testing.expect(!ngl.flag.full(f));
+    try testing.expect(!ngl.flag.eql(why, f));
     try testing.expect(ngl.flag.eql(
         ngl.flag.@"and"(f, .{ .why = true, .bye = true }),
         E.F{ .why = true },

@@ -65,12 +65,15 @@ pub const Error = error{
     Other,
 } || std.mem.Allocator.Error;
 
+/// `E` must be an enum with no overriden ordinal value.
 pub fn Flags(comptime E: type) type {
     const StructField = std.builtin.Type.StructField;
     var fields: []const StructField = &[_]StructField{};
     switch (@typeInfo(E)) {
         .Enum => |e| {
-            for (e.fields) |f|
+            for (e.fields, 0..) |f, i| {
+                if (f.value != i)
+                    @compileError("E must have default ordinal values");
                 fields = fields ++ &[_]StructField{.{
                     .name = f.name,
                     .type = bool,
@@ -78,6 +81,7 @@ pub fn Flags(comptime E: type) type {
                     .is_comptime = false,
                     .alignment = 0,
                 }};
+            }
         },
         else => @compileError("E must be an enum type"),
     }
@@ -90,6 +94,15 @@ pub fn Flags(comptime E: type) type {
 }
 
 pub const flag = struct {
+    pub fn fromEnum(enum_value: anytype) Flags(@TypeOf(enum_value)) {
+        const F = Flags(@TypeOf(enum_value));
+        const U = @typeInfo(F).Struct.backing_integer.?;
+        const lhs = @as(U, 1);
+        const S = std.math.Log2Int(U);
+        const rhs = @as(S, @intFromEnum(enum_value));
+        return @as(F, @bitCast(lhs << rhs));
+    }
+
     pub fn empty(flags: anytype) bool {
         const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
         return @as(U, @bitCast(flags)) == 0;
