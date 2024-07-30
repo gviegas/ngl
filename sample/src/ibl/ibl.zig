@@ -1325,10 +1325,8 @@ const Depth = struct {
             if (!opt.depth_stencil_attachment)
                 continue;
             const capab = try ngl.Image.getCapabilities(dev, @"type", fmt, tiling, usage, misc);
-            const U = @typeInfo(@TypeOf(capab.sample_counts)).Struct.backing_integer.?;
-            const flag = @as(U, 1) << @intFromEnum(color_ms.samples);
-            const mask = @as(U, @bitCast(capab.sample_counts));
-            if (flag & mask != 0)
+            const spl_cnt = ngl.flag.fromEnum(color_ms.samples);
+            if (!ngl.flag.empty(ngl.flag.@"and"(spl_cnt, capab.sample_counts)))
                 break fmt;
         } else return ngl.Error.NotSupported;
 
