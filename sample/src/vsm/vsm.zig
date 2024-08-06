@@ -102,7 +102,7 @@ fn do(gpa: std.mem.Allocator) !void {
     defer cq.deinit(gpa);
     const one_queue = cq.multiqueue == null;
 
-    const v = gmath.m4f.lookAt(.{ 0, -4, -4 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
+    const v = gmath.m4f.lookAt(.{ 0, -4, -4 }, .{ 0, 0, 0 }, .{ 0, 1, 0 });
     const p = gmath.m4f.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
 
     const light_world_pos = .{ 13, -10, 2 };
@@ -111,7 +111,7 @@ fn do(gpa: std.mem.Allocator) !void {
     const intensity = 100;
     const light = Light.init(light_view_pos, light_col, intensity);
 
-    const shdw_v = gmath.m4f.lookAt(light_world_pos, .{ 0, 0, 0 }, .{ 0, -1, 0 });
+    const shdw_v = gmath.m4f.lookAt(light_world_pos, .{ 0, 0, 0 }, .{ 0, 1, 0 });
     const shdw_p = gmath.m4f.frustum(-0.25, 0.25, -0.25, 0.25, 1, 100);
     const shdw_vp = gmath.m4f.mul(shdw_p, shdw_v);
     const bias = gmath.m4f.mul(gmath.m4f.t(0.5, 0.5, 0), gmath.m4f.s(0.5, 0.5, 1));

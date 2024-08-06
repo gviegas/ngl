@@ -315,7 +315,7 @@ fn mScope(comptime n: comptime_int, comptime T: type) type {
 
         pub fn lookAt(eye: [3]T, center: [3]T, up: [3]T) M {
             const f = v3.normalize(v3.sub(center, eye));
-            const l = v3.normalize(v3.cross(f, up));
+            const l = v3.normalize(v3.cross(up, f));
             const u = v3.cross(f, l);
             return .{
                 l[0],

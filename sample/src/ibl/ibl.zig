@@ -3226,7 +3226,7 @@ const Camera = struct {
     direction: [3]f32,
     stale: bool,
 
-    const up = [3]f32{ 0, -1, 0 };
+    const up = [3]f32{ 0, 1, 0 };
     const size = @sizeOf(@typeInfo(Camera).Struct.fields[0].type);
 
     fn init(position: [3]f32, target: [3]f32) Camera {
