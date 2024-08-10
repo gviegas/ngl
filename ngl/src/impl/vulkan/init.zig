@@ -101,18 +101,29 @@ pub fn init(allocator: std.mem.Allocator) Error!Impl {
             }
         }
         const name = if (builtin.target.isAndroid()) "libvulkan.so" else "libvulkan.so.1";
-        libvulkan = std.c.dlopen(name, .{ .LAZY = true });
-        if (libvulkan == null)
-            return Error.InitializationFailed;
-        getInstanceProcAddr = @ptrCast(std.c.dlsym(libvulkan.?, sym));
-        if (getInstanceProcAddr == null)
-            return Error.InitializationFailed;
+        libvulkan = std.c.dlopen(name, .{ .LAZY = true }) orelse return Error.InitializationFailed;
+        getInstanceProcAddr = @ptrCast(
+            std.c.dlsym(libvulkan.?, sym) orelse return Error.InitializationFailed,
+        );
         try setCommon(allocator);
     }
 
     if (builtin.os.tag == .windows) {
-        // TODO
-        @compileError("Not yet implemented");
+        const kernel32 = std.os.windows.kernel32;
+        errdefer {
+            if (libvulkan) |handle| {
+                _ = kernel32.FreeLibrary(@ptrCast(handle));
+                libvulkan = null;
+                getInstanceProcAddr = null;
+            }
+        }
+        const name = &[_:0]u16{ 'v', 'u', 'l', 'k', 'a', 'n', '-', '1', '.', 'd', 'l', 'l' };
+        libvulkan = kernel32.LoadLibraryW(name) orelse return Error.InitializationFailed;
+        getInstanceProcAddr = @ptrCast(
+            kernel32.GetProcAddress(@ptrCast(libvulkan.?), sym) orelse
+                return Error.InitializationFailed,
+        );
+        try setCommon(allocator);
     }
 
     return .{
@@ -130,8 +141,7 @@ fn deinit(_: *anyopaque, _: std.mem.Allocator) void {
         if (builtin.os.tag != .windows) {
             _ = std.c.dlclose(handle);
         } else {
-            // TODO
-            @compileError("Not yet implemented");
+            _ = std.os.windows.kernel32.FreeLibrary(@ptrCast(handle));
         }
         libvulkan = null;
         getInstanceProcAddr = null;
