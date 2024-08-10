@@ -56,7 +56,7 @@ pub const Platform = struct {
         if (!gpu.feature_set.presentation)
             return error.NotSupported;
 
-        var impl = try @typeInfo(Platform).Struct.fields[0].type.init(allocator);
+        var impl = try @typeInfo(Platform).Struct.fields[0].type.init(allocator, desc);
         errdefer impl.deinit(allocator);
 
         var sf = try switch (builtin.os.tag) {
@@ -71,7 +71,14 @@ pub const Platform = struct {
                         },
                     },
                 }),
-            .windows => @compileError("TODO"),
+            .windows => ngl.Surface.init(allocator, .{
+                .platform = .{
+                    .win32 = .{
+                        .hinstance = impl.hinstance,
+                        .hwnd = impl.hwnd,
+                    },
+                },
+            }),
             else => @compileError("OS not supported"),
         };
         errdefer sf.deinit(allocator);
@@ -183,7 +190,7 @@ pub const Platform = struct {
 const PlatformAndroid = struct {
     const Error = error{};
 
-    fn init(_: std.mem.Allocator) Error!PlatformAndroid {
+    fn init(_: std.mem.Allocator, _: Platform.Desc) Error!PlatformAndroid {
         @compileError("TODO");
     }
 
@@ -229,7 +236,7 @@ const PlatformWayland = struct {
         XdgToplevel,
     } || std.mem.Allocator.Error;
 
-    fn init(allocator: std.mem.Allocator) Error!PlatformWayland {
+    fn init(allocator: std.mem.Allocator, _: Platform.Desc) Error!PlatformWayland {
         try setVars();
 
         const display = displayConnect(null) orelse return Error.Connection;
@@ -1829,19 +1836,130 @@ const PlatformWayland = struct {
     };
 };
 
-// TODO
+// NOTE: Using explicit unicode functions here due to C macro
+// translation failures.
 const PlatformWin32 = struct {
-    const Error = error{};
+    hinstance: c.HINSTANCE,
+    hwnd: c.HWND,
 
-    fn init(_: std.mem.Allocator) Error!PlatformWin32 {
-        @compileError("TODO");
+    var input = Platform.Input{};
+    const class_name = &[_:0]u16{ 'n', 'g', 'l', '.', 'p', 'f', 'm' };
+
+    const Error = error{
+        NullModule,
+        ClassRegistration,
+        RectAdjustment,
+        WindowCreation,
+    };
+
+    fn init(_: std.mem.Allocator, desc: Platform.Desc) Error!PlatformWin32 {
+        const inst = c.GetModuleHandleW(null) orelse return Error.NullModule;
+
+        const wclass = c.WNDCLASSEXW{
+            .cbSize = @sizeOf(c.WNDCLASSEXW),
+            .style = c.CS_HREDRAW | c.CS_VREDRAW,
+            .lpfnWndProc = wndProc,
+            .cbClsExtra = 0,
+            .cbWndExtra = 0,
+            .hInstance = inst,
+            .hIcon = null,
+            .hCursor = null, // TODO
+            .hbrBackground = null,
+            .lpszMenuName = null,
+            .lpszClassName = class_name,
+            .hIconSm = null,
+        };
+        if (c.RegisterClassExW(&wclass) == 0)
+            return Error.ClassRegistration;
+
+        var rect = c.RECT{
+            .left = 0,
+            .top = 0,
+            .right = @intCast(desc.width),
+            .bottom = @intCast(desc.height),
+        };
+        if (c.AdjustWindowRect(&rect, c.WS_OVERLAPPEDWINDOW, c.FALSE) == 0)
+            return Error.RectAdjustment;
+
+        const wnd = c.CreateWindowW(
+            wclass.lpszClassName,
+            &[_:0]u16{ 'n', 'g', 'l' },
+            c.WS_OVERLAPPEDWINDOW,
+            c.CW_USEDEFAULT,
+            c.CW_USEDEFAULT,
+            rect.right - rect.left,
+            rect.bottom - rect.top,
+            null,
+            null,
+            inst,
+            null,
+        ) orelse return Error.WindowCreation;
+
+        return .{
+            .hinstance = inst,
+            .hwnd = wnd,
+        };
     }
 
     fn poll(_: *PlatformWin32) Platform.Input {
-        @compileError("TODO");
+        var msg = c.MSG{};
+        while (msg.message != c.WM_QUIT and
+            c.PeekMessageW(&msg, null, 0, 0, c.PM_REMOVE) != c.FALSE)
+        {
+            _ = c.TranslateMessage(&msg);
+            _ = c.DispatchMessageW(&msg);
+        }
+        return input;
     }
 
-    fn deinit(_: *PlatformWin32, _: std.mem.Allocator) void {
-        @compileError("TODO");
+    fn deinit(self: *PlatformWin32, _: std.mem.Allocator) void {
+        _ = c.DestroyWindow(self.hwnd);
+        _ = c.UnregisterClassW(class_name, self.hinstance);
+    }
+
+    fn wndProc(
+        hwnd: c.HWND,
+        message: c.UINT,
+        wparam: c.WPARAM,
+        lparam: c.LPARAM,
+    ) callconv(.C) c.LRESULT {
+        switch (message) {
+            c.WM_CREATE => _ = c.ShowWindow(hwnd, c.SW_NORMAL),
+
+            c.WM_KEYDOWN, c.WM_KEYUP => {
+                const pressed = lparam & (1 << 31) == 0;
+                switch (wparam) {
+                    27 => input.done = pressed,
+                    37 => input.left = pressed,
+                    38 => input.up = pressed,
+                    39 => input.right = pressed,
+                    40 => input.down = pressed,
+                    49 => input.option = pressed,
+                    50 => input.option_2 = pressed,
+                    else => {},
+                }
+            },
+
+            c.WM_LBUTTONDOWN,
+            c.WM_LBUTTONDBLCLK,
+            c.WM_LBUTTONUP,
+            => input.button = message != c.WM_LBUTTONUP,
+
+            c.WM_RBUTTONDOWN,
+            c.WM_RBUTTONDBLCLK,
+            c.WM_RBUTTONUP,
+            => input.button_2 = message != c.WM_RBUTTONUP,
+
+            c.WM_MOUSEMOVE => {
+                input.px = @floatFromInt(lparam & 0xffff);
+                input.py = @floatFromInt(lparam >> 16 & 0xffff);
+            },
+
+            c.WM_CLOSE => input.done = true,
+            c.WM_DESTROY => c.PostQuitMessage(0),
+
+            else => return c.DefWindowProcW(hwnd, message, wparam, lparam),
+        }
+        return 0;
     }
 };
