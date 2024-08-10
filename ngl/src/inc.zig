@@ -20,6 +20,7 @@ pub usingnamespace @cImport({
             @cInclude("vulkan/vulkan_wayland.h");
         },
         .windows => {
+            @cDefine("UNICODE", {});
             @cInclude("windows.h");
             @cInclude("vulkan/vulkan_win32.h");
         },
