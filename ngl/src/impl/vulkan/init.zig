@@ -173,7 +173,7 @@ const Extension = struct {
         return .{ .allocator = allocator };
     }
 
-    fn putAllInstance(self: *Extension, layer: [:0]const u8) !void {
+    fn putAllInstance(self: *Extension, layer: ?[*:0]const u8) !void {
         var n: u32 = undefined;
         try check(vkEnumerateInstanceExtensionProperties(layer, &n, null));
         if (n == 0)
@@ -590,7 +590,7 @@ pub const Instance = struct {
 
         var ext = Extension.init(allocator);
         defer ext.deinit();
-        try ext.putAllInstance("");
+        try ext.putAllInstance(null);
         var ext_names = std.ArrayList([*:0]const u8).init(allocator);
         defer ext_names.deinit();
 
