@@ -117,7 +117,7 @@ fn do(gpa: std.mem.Allocator) !void {
     defer cq.deinit(gpa);
     const one_queue = cq.multiqueue == null;
 
-    const v = gmath.m4f.lookAt(.{ 0, -4, -4 }, .{ 0, 0, 0 }, .{ 0, 1, 0 });
+    const v = gmath.m4f.lookAt(.{ 0, -4, -4 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
     const p = gmath.m4f.perspective(
         std.math.pi / 4.0,
         @as(f32, rend_width) / rend_height,

@@ -91,7 +91,7 @@ fn do(gpa: std.mem.Allocator) !void {
     const one_queue = cq.multiqueue == null;
 
     const m = gmath.m4f.id;
-    const v = gmath.m4f.lookAt(.{ -4, -5, -6 }, .{ 0, 0, 0 }, .{ 0, 1, 0 });
+    const v = gmath.m4f.lookAt(.{ -4, -5, -6 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
     const p = gmath.m4f.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
     const mv = gmath.m4f.mul(v, m);
     const mvp = gmath.m4f.mul(p, mv);
