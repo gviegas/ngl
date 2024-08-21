@@ -91,19 +91,19 @@ fn do(gpa: std.mem.Allocator) !void {
     const one_queue = cq.multiqueue == null;
 
     const m = gmath.m4f.id;
-    const v = gmath.m4f.lookAt(.{ -4, -5, -6 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
-    const p = gmath.m4f.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
+    const v = gmath.m4f.lookAt(.{ -3, -3, -4 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
+    const p = gmath.m4f.perspective(std.math.pi / 3.0, @as(f32, width) / height, 0.01, 100);
     const mv = gmath.m4f.mul(v, m);
     const mvp = gmath.m4f.mul(p, mv);
     const inv = gmath.m3f.invert(gmath.m4f.upperLeft(mv));
     const n = gmath.m3f.to3x4(gmath.m3f.transpose(inv), undefined);
     const globl = Global.init(mvp, mv, n);
 
-    const light_pos = gmath.m4f.mul(v, .{ -4, -6, -4, 1 })[0..3].*;
+    const light_pos = gmath.m4f.mul(v, .{ -2, -3, -4, 1 })[0..3].*;
     const intens = 1;
     const light = Light.init(light_pos, intens);
 
-    const ka = .{ 1e-2, 1e-2, 1e-2 };
+    const ka = .{ 1e-3, 1e-3, 1e-3 };
     const kd = .{ 1, 0, 0 };
     const ks = .{ 1, 1, 1 };
     const sp = 8;
