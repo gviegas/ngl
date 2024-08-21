@@ -56,34 +56,34 @@ fn do(gpa: std.mem.Allocator) !void {
     const m = gmath.m4f.id;
     const inv = gmath.m3f.invert(gmath.m4f.upperLeft(m));
     const n = gmath.m3f.to3x4(gmath.m3f.transpose(inv), undefined);
-    const eye = [3]f32{ 0, -3, 6 };
+    const eye = [3]f32{ 0, -3, 2.5 };
     const v = gmath.m4f.lookAt(eye, .{ 0, 0, 0 }, .{ 0, -1, 0 });
-    const p = gmath.m4f.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
+    const p = gmath.m4f.perspective(std.math.pi / 3.0, @as(f32, width) / height, 0.01, 100);
     const vp = gmath.m4f.mul(p, v);
     const globl = Global.init(vp, m, n, eye);
 
     const light_desc = Light(light_n).Desc{
         .{
-            .position = .{ 13, -20, 10 },
+            .position = .{ 10, -10, 10 },
             .color = .{ 1, 1, 1 },
-            .intensity = 100,
+            .intensity = 140,
         },
         .{
-            .position = .{ -7, 0, 8 },
+            .position = .{ -11, 0, 9 },
             .color = .{ 1, 1, 1 },
-            .intensity = 100,
+            .intensity = 120,
         },
         .{
-            .position = .{ -4, -15, -2 },
+            .position = .{ -4, -7, -2 },
             .color = .{ 1, 1, 1 },
             .intensity = 100,
         },
     };
     const light = Light(light_n).init(light_desc);
 
-    const matl_col = [4]f32{ 0.92, 0.74, 0.02, 1 };
+    const matl_col = [4]f32{ 1, 0, 0, 1 };
     const metal = 0;
-    const smooth = 0.66;
+    const smooth = 0.85;
     const reflec = 0.04;
     const matl = Material.init(matl_col, metal, smooth, reflec);
 
