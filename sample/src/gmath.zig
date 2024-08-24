@@ -337,6 +337,17 @@ fn mScope(comptime n: comptime_int, comptime T: type) type {
             };
         }
 
+        pub fn perspective(yfov: T, aspect_ratio: T, znear: T, zfar: T) M {
+            var m = [_]T{0} ** 16;
+            const ct = 1 / @tan(yfov * 0.5);
+            m[0] = ct / aspect_ratio;
+            m[5] = ct;
+            m[10] = zfar / (zfar - znear);
+            m[11] = 1;
+            m[14] = -(zfar * znear) / (zfar - znear);
+            return m;
+        }
+
         pub fn frustum(left: T, right: T, top: T, bottom: T, znear: T, zfar: T) M {
             var m = [_]T{0} ** 16;
             m[0] = (2 * znear) / (right - left);
@@ -349,14 +360,15 @@ fn mScope(comptime n: comptime_int, comptime T: type) type {
             return m;
         }
 
-        pub fn perspective(yfov: T, aspect_ratio: T, znear: T, zfar: T) M {
+        pub fn ortho(left: T, right: T, top: T, bottom: T, znear: T, zfar: T) M {
             var m = [_]T{0} ** 16;
-            const ct = 1 / @tan(yfov * 0.5);
-            m[0] = ct / aspect_ratio;
-            m[5] = ct;
-            m[10] = zfar / (zfar - znear);
-            m[11] = 1;
-            m[14] = -(zfar * znear) / (zfar - znear);
+            m[0] = 2 / (right - left);
+            m[5] = 2 / (bottom - top);
+            m[10] = 1 / (zfar - znear);
+            m[12] = -(right + left) / (right - left);
+            m[13] = -(bottom + top) / (bottom - top);
+            m[14] = -znear / (zfar - znear);
+            m[15] = 1;
             return m;
         }
 
