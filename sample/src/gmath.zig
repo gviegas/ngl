@@ -113,7 +113,7 @@ fn mScope(comptime n: comptime_int, comptime T: type) type {
         const v3 = vScope(3, T);
         const v4 = vScope(4, T);
 
-        fn mulm(lh: M, rh: M) M {
+        fn mulM(lh: M, rh: M) M {
             const row_mask = comptime blk: {
                 var mask: [n]@Vector(n, i32) = undefined;
                 for (0..n) |i|
@@ -140,7 +140,7 @@ fn mScope(comptime n: comptime_int, comptime T: type) type {
             return m;
         }
 
-        fn mulv(matrix: M, vector: V) V {
+        fn mulV(matrix: M, vector: V) V {
             const row_mask = comptime blk: {
                 var mask: [n]@Vector(n, i32) = undefined;
                 for (0..n) |i|
@@ -163,14 +163,14 @@ fn mScope(comptime n: comptime_int, comptime T: type) type {
             else => unreachable,
         } {
             return switch (@TypeOf(rh)) {
-                M => mulm(lh, rh),
-                V => mulv(lh, rh),
+                M => mulM(lh, rh),
+                V => mulV(lh, rh),
                 else => |U| blk: {
                     const S = @typeInfo(U).Struct;
                     comptime assert(S.is_tuple);
                     break :blk switch (S.fields.len) {
-                        n * n => mulm(lh, rh),
-                        n => mulv(lh, rh),
+                        n * n => mulM(lh, rh),
+                        n => mulV(lh, rh),
                         else => comptime unreachable,
                     };
                 },
