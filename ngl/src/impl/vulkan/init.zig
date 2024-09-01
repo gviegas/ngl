@@ -2952,9 +2952,6 @@ fn getFeature(
                 },
                 .compute = .{
                     .max_shared_memory_size = l.maxComputeSharedMemorySize,
-                    .max_group_count_x = l.maxComputeWorkGroupCount[0],
-                    .max_group_count_y = l.maxComputeWorkGroupCount[1],
-                    .max_group_count_z = l.maxComputeWorkGroupCount[2],
                     .max_local_invocations = l.maxComputeWorkGroupInvocations,
                     .max_local_size_x = l.maxComputeWorkGroupSize[0],
                     .max_local_size_y = l.maxComputeWorkGroupSize[1],
@@ -3020,6 +3017,9 @@ fn getFeature(
                     .indirect_first_instance = f.drawIndirectFirstInstance == c.VK_TRUE,
                 },
                 .dispatch = .{
+                    .max_group_count_x = l.maxComputeWorkGroupCount[0],
+                    .max_group_count_y = l.maxComputeWorkGroupCount[1],
+                    .max_group_count_z = l.maxComputeWorkGroupCount[2],
                     .indirect_command = true,
                 },
                 .query = .{

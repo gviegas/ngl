@@ -468,9 +468,6 @@ pub const Feature = union(enum) {
         },
         compute: struct {
             max_shared_memory_size: u32 = 16384,
-            max_group_count_x: u32 = 65535,
-            max_group_count_y: u32 = 65535,
-            max_group_count_z: u32 = 65535,
             max_local_invocations: u32 = 128,
             max_local_size_x: u32 = 128,
             max_local_size_y: u32 = 128,
@@ -541,6 +538,9 @@ pub const Feature = union(enum) {
             indirect_first_instance: bool,
         },
         dispatch: struct {
+            max_group_count_x: u32 = 65535,
+            max_group_count_y: u32 = 65535,
+            max_group_count_z: u32 = 65535,
             indirect_command: bool,
         },
         query: struct {
