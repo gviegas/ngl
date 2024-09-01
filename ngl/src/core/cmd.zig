@@ -1224,14 +1224,14 @@ pub const CommandBuffer = struct {
 
         pub const QueryControl = struct {
             /// Must be `false` if `Feature.core.query.occlusion_precise`
-            /// isn't supported or the query type isn't `.occlusion`.
+            /// isn't supported or the query type isn't `occlusion`.
             precise: bool = false,
         };
 
         /// If called outside of a render pass, then it must also end
         /// outside of a render pass, and must not span across multiple
         /// render passes.
-        /// The type of the query must not be `.timestamp`.
+        /// The type of the query must not be `timestamp`.
         /// It must be paired with `endQuery`.
         ///
         /// ✔ Primary command buffer
@@ -1278,7 +1278,7 @@ pub const CommandBuffer = struct {
             );
         }
 
-        /// The type of the query must be `.timestamp`.
+        /// The type of the query must be `timestamp`.
         ///
         /// ✔ Primary command buffer
         /// ✔ Secondary command buffer
