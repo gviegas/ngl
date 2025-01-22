@@ -209,16 +209,16 @@ pub const Format = enum {
 
     /// Required format support.
     /// The image features pertain only to optimal tiling.
-    pub const min_features = @Type(.{ .Struct = .{
+    pub const min_features = @Type(.{ .@"struct" = .{
         .layout = .auto,
         .fields = blk: {
             const StructField = std.builtin.Type.StructField;
             var fields: []const StructField = &[_]StructField{};
-            for (@typeInfo(Self).Enum.fields) |f|
+            for (@typeInfo(Self).@"enum".fields) |f|
                 fields = fields ++ &[_]StructField{.{
                     .name = f.name,
                     .type = Features,
-                    .default_value = &Features{},
+                    .default_value_ptr = &Features{},
                     .is_comptime = false,
                     .alignment = @alignOf(Features),
                 }};

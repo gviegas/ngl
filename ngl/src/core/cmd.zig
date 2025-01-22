@@ -47,7 +47,7 @@ pub const CommandPool = struct {
         desc: CommandBuffer.Desc,
     ) Error![]CommandBuffer {
         assert(desc.count > 0);
-        if (@typeInfo(CommandBuffer).Struct.fields.len > 1)
+        if (@typeInfo(CommandBuffer).@"struct".fields.len > 1)
             @compileError("Uninitialized field(s)");
 
         const cmd_bufs = try allocator.alloc(CommandBuffer, desc.count);

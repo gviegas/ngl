@@ -141,7 +141,7 @@ pub const Device = struct {
         capabilities: Queue.Capabilities,
         priority: ?Queue.Priority,
     ) ?Queue.Index {
-        const U = @typeInfo(Queue.Capabilities).Struct.backing_integer.?;
+        const U = @typeInfo(Queue.Capabilities).@"struct".backing_integer.?;
         var idx: ?Queue.Index = null;
         for (self.queues[0..self.queue_n], 0..) |q, i| {
             const j: Queue.Index = @intCast(i);
@@ -361,7 +361,7 @@ pub const Memory = struct {
             properties: Properties,
             heap_index: ?HeapIndex,
         ) ?TypeIndex {
-            const U = @typeInfo(Properties).Struct.backing_integer.?;
+            const U = @typeInfo(Properties).@"struct".backing_integer.?;
             for (0..device.mem_type_n) |i| {
                 const idx: TypeIndex = @intCast(i);
                 const typ: Type = device.mem_types[idx];
@@ -553,25 +553,25 @@ pub const Feature = union(enum) {
     /// Can create swapchains.
     presentation,
 
-    pub const Set = @Type(.{ .Struct = .{
+    pub const Set = @Type(.{ .@"struct" = .{
         .layout = .@"packed",
         .fields = blk: {
             const type_info = @typeInfo(Feature);
-            if (!std.mem.eql(u8, type_info.Union.fields[0].name, "core"))
+            if (!std.mem.eql(u8, type_info.@"union".fields[0].name, "core"))
                 @compileError("Feature.core must come first");
             const StructField = std.builtin.Type.StructField;
             var fields: []const StructField = &[_]StructField{.{
-                .name = type_info.Union.fields[0].name,
+                .name = type_info.@"union".fields[0].name,
                 .type = bool,
-                .default_value = @ptrCast(&true),
+                .default_value_ptr = @ptrCast(&true),
                 .is_comptime = false,
                 .alignment = 0,
             }};
-            for (type_info.Union.fields[1..]) |f|
+            for (type_info.@"union".fields[1..]) |f|
                 fields = fields ++ &[_]StructField{.{
                     .name = f.name,
                     .type = bool,
-                    .default_value = @ptrCast(&false),
+                    .default_value_ptr = @ptrCast(&false),
                     .is_comptime = false,
                     .alignment = 0,
                 }};
@@ -586,8 +586,8 @@ pub const Feature = union(enum) {
     pub fn get(
         allocator: std.mem.Allocator,
         gpu: Gpu,
-        comptime tag: @typeInfo(Feature).Union.tag_type.?,
-    ) ?@typeInfo(Feature).Union.fields[@intFromEnum(tag)].type {
+        comptime tag: @typeInfo(Feature).@"union".tag_type.?,
+    ) ?@typeInfo(Feature).@"union".fields[@intFromEnum(tag)].type {
         var feat = @unionInit(Feature, @tagName(tag), undefined);
         return if (Impl.get().getFeature(allocator, gpu, &feat)) |_|
             @field(feat, @tagName(tag))

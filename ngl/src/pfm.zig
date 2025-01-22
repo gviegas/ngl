@@ -43,7 +43,7 @@ pub const Platform = struct {
         py: f32 = 0,
     };
 
-    pub const Error = ngl.Error || @typeInfo(Platform).Struct.fields[0].type.Error;
+    pub const Error = ngl.Error || @typeInfo(Platform).@"struct".fields[0].type.Error;
 
     /// Call this once.
     // TODO: Detect misuse.
@@ -56,7 +56,7 @@ pub const Platform = struct {
         if (!gpu.feature_set.presentation)
             return error.NotSupported;
 
-        var impl = try @typeInfo(Platform).Struct.fields[0].type.init(allocator, desc);
+        var impl = try @typeInfo(Platform).@"struct".fields[0].type.init(allocator, desc);
         errdefer impl.deinit(allocator);
 
         var sf = try switch (builtin.os.tag) {
@@ -105,7 +105,7 @@ pub const Platform = struct {
             .pre_transform = capab.current_transform,
             .composite_alpha = blk: {
                 const CAlpha = ngl.Surface.CompositeAlpha;
-                const fields = @typeInfo(CAlpha).Enum.fields;
+                const fields = @typeInfo(CAlpha).@"enum".fields;
                 break :blk inline for (fields) |f| {
                     if (@field(capab.supported_composite_alpha, f.name))
                         break @field(CAlpha, f.name);

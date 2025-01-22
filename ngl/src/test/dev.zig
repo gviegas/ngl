@@ -11,7 +11,7 @@ fn testInitializedDevice(device: ngl.Device, gpu: ngl.Gpu) !void {
         var n: ngl.Queue.Count = 0;
         for (gpu.queues) |q|
             if (q) |d| {
-                if (@typeInfo(ngl.Queue).Struct.fields.len != 4) @compileError("Update me");
+                if (@typeInfo(ngl.Queue).@"struct".fields.len != 4) @compileError("Update me");
                 try testing.expectEqual(device.queues[n].capabilities, d.capabilities);
                 try testing.expectEqual(device.queues[n].priority, d.priority);
                 try testing.expectEqual(
@@ -26,7 +26,7 @@ fn testInitializedDevice(device: ngl.Device, gpu: ngl.Gpu) !void {
     for (device.queues[0..device.queue_n]) |q| {
         // Queues must be capable of something.
         try testing.expect(@as(
-            @typeInfo(ngl.Queue.Capabilities).Struct.backing_integer.?,
+            @typeInfo(ngl.Queue.Capabilities).@"struct".backing_integer.?,
             @bitCast(q.capabilities),
         ) != 0);
 
@@ -151,7 +151,7 @@ test "aliasing Device instances" {
         try testing.expectEqual(devs[0].mem_heap_n, dev.mem_heap_n);
         for (devs[0].queues[0..devs[0].queue_n], dev.queues[0..dev.queue_n]) |x, y| {
             // Note that `impl` can differ.
-            if (@typeInfo(ngl.Queue).Struct.fields.len != 4) @compileError("Update me");
+            if (@typeInfo(ngl.Queue).@"struct".fields.len != 4) @compileError("Update me");
             try testing.expectEqual(x.capabilities, y.capabilities);
             try testing.expectEqual(x.priority, y.priority);
             try testing.expectEqual(x.image_transfer_granularity, y.image_transfer_granularity);

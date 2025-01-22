@@ -139,16 +139,16 @@ pub const DescriptorPool = struct {
     impl: Impl.DescriptorPool,
 
     pub const PoolSize = @Type(.{
-        .Struct = .{
+        .@"struct" = .{
             .layout = .auto,
             .fields = blk: {
                 const StructField = std.builtin.Type.StructField;
                 var fields: []const StructField = &[_]StructField{};
-                for (@typeInfo(DescriptorType).Enum.fields) |f|
+                for (@typeInfo(DescriptorType).@"enum".fields) |f|
                     fields = fields ++ &[1]StructField{.{
                         .name = f.name,
                         .type = u32,
-                        .default_value = &@as(u32, 0),
+                        .default_value_ptr = &@as(u32, 0),
                         .is_comptime = false,
                         .alignment = @alignOf(u32),
                     }};
@@ -178,7 +178,7 @@ pub const DescriptorPool = struct {
         desc: DescriptorSet.Desc,
     ) Error![]DescriptorSet {
         assert(desc.layouts.len > 0);
-        if (@typeInfo(DescriptorSet).Struct.fields.len > 1)
+        if (@typeInfo(DescriptorSet).@"struct".fields.len > 1)
             @compileError("Uninitialized field(s)");
 
         const desc_sets = try allocator.alloc(DescriptorSet, desc.layouts.len);

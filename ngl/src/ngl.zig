@@ -70,14 +70,14 @@ pub fn Flags(comptime E: type) type {
     const StructField = std.builtin.Type.StructField;
     var fields: []const StructField = &[_]StructField{};
     switch (@typeInfo(E)) {
-        .Enum => |e| {
+        .@"enum" => |e| {
             for (e.fields, 0..) |f, i| {
                 if (f.value != i)
                     @compileError("E must have default ordinal values");
                 fields = fields ++ &[_]StructField{.{
                     .name = f.name,
                     .type = bool,
-                    .default_value = @ptrCast(&false),
+                    .default_value_ptr = @ptrCast(&false),
                     .is_comptime = false,
                     .alignment = 0,
                 }};
@@ -85,7 +85,7 @@ pub fn Flags(comptime E: type) type {
         },
         else => @compileError("E must be an enum type"),
     }
-    return @Type(.{ .Struct = .{
+    return @Type(.{ .@"struct" = .{
         .layout = .@"packed",
         .fields = fields,
         .decls = &.{},
@@ -96,7 +96,7 @@ pub fn Flags(comptime E: type) type {
 pub const flag = struct {
     pub fn fromEnum(enum_value: anytype) Flags(@TypeOf(enum_value)) {
         const F = Flags(@TypeOf(enum_value));
-        const U = @typeInfo(F).Struct.backing_integer.?;
+        const U = @typeInfo(F).@"struct".backing_integer.?;
         const lhs = @as(U, 1);
         const S = std.math.Log2Int(U);
         const rhs = @as(S, @intFromEnum(enum_value));
@@ -104,40 +104,40 @@ pub const flag = struct {
     }
 
     pub fn empty(flags: anytype) bool {
-        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        const U = @typeInfo(@TypeOf(flags)).@"struct".backing_integer.?;
         return @as(U, @bitCast(flags)) == 0;
     }
 
     pub fn full(flags: anytype) bool {
-        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        const U = @typeInfo(@TypeOf(flags)).@"struct".backing_integer.?;
         return @as(U, @bitCast(flags)) == ~@as(U, 0);
     }
 
     pub fn eql(flags: anytype, other: anytype) bool {
-        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        const U = @typeInfo(@TypeOf(flags)).@"struct".backing_integer.?;
         return @as(U, @bitCast(flags)) == @as(U, @bitCast(other));
     }
 
     pub fn @"and"(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
-        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        const U = @typeInfo(@TypeOf(flags)).@"struct".backing_integer.?;
         const masked = @as(U, @bitCast(flags)) & @as(U, @bitCast(mask));
         return @bitCast(masked);
     }
 
     pub fn @"or"(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
-        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        const U = @typeInfo(@TypeOf(flags)).@"struct".backing_integer.?;
         const masked = @as(U, @bitCast(flags)) | @as(U, @bitCast(mask));
         return @bitCast(masked);
     }
 
     pub fn xor(flags: anytype, mask: @TypeOf(flags)) @TypeOf(flags) {
-        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        const U = @typeInfo(@TypeOf(flags)).@"struct".backing_integer.?;
         const masked = @as(U, @bitCast(flags)) ^ @as(U, @bitCast(mask));
         return @bitCast(masked);
     }
 
     pub fn not(flags: anytype) @TypeOf(flags) {
-        const U = @typeInfo(@TypeOf(flags)).Struct.backing_integer.?;
+        const U = @typeInfo(@TypeOf(flags)).@"struct".backing_integer.?;
         return @bitCast(~@as(U, @bitCast(flags)));
     }
 };

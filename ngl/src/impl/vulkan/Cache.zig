@@ -804,7 +804,7 @@ test "Cache" {
         .contents = .@"inline",
     };
 
-    inline for (@typeInfo(@TypeOf(Dynamic.rendering_mask)).Struct.fields) |field| {
+    inline for (@typeInfo(@TypeOf(Dynamic.rendering_mask)).@"struct".fields) |field| {
         if (!@field(Dynamic.rendering_mask, field.name))
             continue;
 

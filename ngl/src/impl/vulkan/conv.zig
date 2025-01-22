@@ -8,8 +8,8 @@ const log = @import("init.zig").log;
 
 /// Non-dispatchable handles should check against this constant.
 pub const null_handle = switch (@typeInfo(@TypeOf(c.VK_NULL_HANDLE))) {
-    .Optional => null,
-    .Int => 0,
+    .optional => null,
+    .int => 0,
     else => unreachable,
 };
 
@@ -1112,7 +1112,7 @@ pub fn fromVkCompositeAlphaFlags(
 /// `Error.NotSupported` indicates that the API doesn't expose the given
 /// Vulkan color space.
 pub fn fromVkColorSpace(color_space: c.VkColorSpaceKHR) Error!ngl.Surface.ColorSpace {
-    if (@typeInfo(ngl.Surface.ColorSpace).Enum.fields.len > 1)
+    if (@typeInfo(ngl.Surface.ColorSpace).@"enum".fields.len > 1)
         @compileError("Update conversion");
     return switch (color_space) {
         c.VK_COLOR_SPACE_SRGB_NONLINEAR_KHR => .srgb_non_linear,

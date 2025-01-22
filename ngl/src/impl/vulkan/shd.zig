@@ -437,7 +437,7 @@ pub const DescriptorPool = packed struct {
         var pool_sizes: [max_type]c.VkDescriptorPoolSize = undefined;
         const pool_size_n = blk: {
             var n: u32 = 0;
-            inline for (@typeInfo(ngl.DescriptorPool.PoolSize).Struct.fields) |f| {
+            inline for (@typeInfo(ngl.DescriptorPool.PoolSize).@"struct".fields) |f| {
                 const size = @field(desc.pool_size, f.name);
                 if (size > 0) {
                     pool_sizes[n] = .{

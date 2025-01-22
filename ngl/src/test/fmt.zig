@@ -22,7 +22,7 @@ test "Format.getFeatures" {
         const first = @intFromEnum(ngl.Format.r8_unorm);
         const last = @intFromEnum(ngl.Format.rgba64_sfloat);
         var fmts: [last - first + 1]ngl.Format = undefined;
-        inline for (@typeInfo(ngl.Format).Enum.fields[first .. last + 1], 0..) |field, i|
+        inline for (@typeInfo(ngl.Format).@"enum".fields[first .. last + 1], 0..) |field, i|
             fmts[i] = @field(ngl.Format, field.name);
         break :blk fmts;
     };
@@ -38,7 +38,7 @@ test "Format.getFeatures" {
         const first = @intFromEnum(ngl.Format.d16_unorm);
         const last = @intFromEnum(ngl.Format.d32_sfloat_s8_uint);
         var fmts: [last - first + 1]ngl.Format = undefined;
-        inline for (@typeInfo(ngl.Format).Enum.fields[first .. last + 1], 0..) |field, i|
+        inline for (@typeInfo(ngl.Format).@"enum".fields[first .. last + 1], 0..) |field, i|
             fmts[i] = @field(ngl.Format, field.name);
         break :blk fmts;
     };
@@ -56,7 +56,7 @@ test "Format.getFeatures" {
         const first = @intFromEnum(ngl.Format.bc1_rgb_unorm);
         const last = @intFromEnum(ngl.Format.astc_12x12_srgb);
         var fmts: [last - first + 1]ngl.Format = undefined;
-        inline for (@typeInfo(ngl.Format).Enum.fields[first .. last + 1], 0..) |field, i|
+        inline for (@typeInfo(ngl.Format).@"enum".fields[first .. last + 1], 0..) |field, i|
             fmts[i] = @field(ngl.Format, field.name);
         break :blk fmts;
     };
@@ -76,10 +76,10 @@ test "Format.getFeatures" {
         } else break;
     } else try testing.expect(false);
 
-    if (@typeInfo(ngl.Format).Enum.fields.len - 1 != fmts_col.len + fmts_ds.len + fmts_cmpr.len)
+    if (@typeInfo(ngl.Format).@"enum".fields.len - 1 != fmts_col.len + fmts_ds.len + fmts_cmpr.len)
         @compileError("Update test when changing Format enum");
 
-    const U = @typeInfo(ngl.Format.Features).Struct.backing_integer.?;
+    const U = @typeInfo(ngl.Format.Features).@"struct".backing_integer.?;
     const feats_img: U = @bitCast(ngl.Format.Features{
         .sampled_image = true,
         .sampled_image_filter_linear = true,
@@ -95,7 +95,7 @@ test "Format.getFeatures" {
         .storage_texel_buffer_atomic = true,
         .vertex_buffer = true,
     });
-    inline for (@typeInfo(ngl.Format).Enum.fields) |field| {
+    inline for (@typeInfo(ngl.Format).@"enum".fields) |field| {
         feat_set = @field(ngl.Format, field.name).getFeatures(dev);
         // Shouldn't mix image and buffer features.
         try testing.expect(@as(U, @bitCast(feat_set.linear_tiling)) & feats_buf == 0);
@@ -109,8 +109,8 @@ test "required format support" {
 
     var ok = true;
 
-    inline for (@typeInfo(ngl.Format).Enum.fields) |field| {
-        const U = @typeInfo(ngl.Format.Features).Struct.backing_integer.?;
+    inline for (@typeInfo(ngl.Format).@"enum".fields) |field| {
+        const U = @typeInfo(ngl.Format.Features).@"struct".backing_integer.?;
 
         const feat_set = @field(ngl.Format, field.name).getFeatures(dev);
         const opt: U = @bitCast(feat_set.optimal_tiling);
@@ -144,7 +144,7 @@ test "required format support" {
     try testing.expect(ok);
 }
 
-var formats: [@typeInfo(ngl.Format).Enum.fields.len]ngl.Format = .{
+var formats: [@typeInfo(ngl.Format).@"enum".fields.len]ngl.Format = .{
     .unknown,
 
     .r8_unorm,

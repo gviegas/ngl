@@ -12,7 +12,7 @@ fn getInitFn(comptime K: type) (fn () K) {
     return struct {
         fn init() K {
             var self: K = undefined;
-            inline for (@typeInfo(K).Struct.fields) |field|
+            inline for (@typeInfo(K).@"struct".fields) |field|
                 @field(self, field.name) = .{};
             return self;
         }
@@ -24,7 +24,7 @@ fn getInitFn(comptime K: type) (fn () K) {
 fn getClearFn(comptime K: type) (fn (*K, ?std.mem.Allocator) void) {
     return struct {
         fn clear(self: *K, allocator: ?std.mem.Allocator) void {
-            inline for (@typeInfo(K).Struct.fields) |field| {
+            inline for (@typeInfo(K).@"struct".fields) |field| {
                 if (@hasDecl(field.type, "clear"))
                     @field(self, field.name).clear(allocator)
                 else
@@ -39,7 +39,7 @@ fn getClearFn(comptime K: type) (fn (*K, ?std.mem.Allocator) void) {
 fn getCloneFn(comptime K: type) (fn (K, std.mem.Allocator) Error!K) {
     return struct {
         fn clone(self: K, allocator: std.mem.Allocator) Error!K {
-            const fields = @typeInfo(K).Struct.fields;
+            const fields = @typeInfo(K).@"struct".fields;
             var cloned: K = undefined;
             inline for (fields, 0..) |field, i| {
                 errdefer {
@@ -61,7 +61,7 @@ fn getCloneFn(comptime K: type) (fn (K, std.mem.Allocator) Error!K) {
 fn getEqlFn(comptime K: type) (fn (K, K) bool) {
     return struct {
         fn eql(self: K, other: K) bool {
-            inline for (@typeInfo(K).Struct.fields) |field|
+            inline for (@typeInfo(K).@"struct".fields) |field|
                 if (!@field(self, field.name).eql(@field(other, field.name)))
                     return false;
             return true;
@@ -73,7 +73,7 @@ fn getEqlFn(comptime K: type) (fn (K, K) bool) {
 fn getHashFn(comptime K: type) (fn (K, hasher: anytype) void) {
     return struct {
         fn hash(self: K, hasher: anytype) void {
-            inline for (@typeInfo(K).Struct.fields) |field|
+            inline for (@typeInfo(K).@"struct".fields) |field|
                 @field(self, field.name).hash(hasher);
         }
     }.hash;
@@ -85,13 +85,13 @@ fn getEqlSubsetFn(comptime K: type) (fn (K, comptime mask: @TypeOf(K.mask), K) b
     return struct {
         fn eqlSubset(self: K, comptime mask: @TypeOf(K.mask), other: K) bool {
             comptime {
-                const U = @typeInfo(@TypeOf(mask)).Struct.backing_integer.?;
+                const U = @typeInfo(@TypeOf(mask)).@"struct".backing_integer.?;
                 const m: U = @bitCast(K.mask);
                 const n: U = @bitCast(mask);
                 if (m & n != n)
                     @compileError("Not a subset");
             }
-            inline for (@typeInfo(K).Struct.fields) |field|
+            inline for (@typeInfo(K).@"struct".fields) |field|
                 if (@field(mask, field.name))
                     if (!@field(self, field.name).eql(@field(other, field.name)))
                         return false;
@@ -110,13 +110,13 @@ fn getHashSubsetFn(comptime K: type) (fn (
     return struct {
         fn hashSubset(self: K, comptime mask: @TypeOf(K.mask), hasher: anytype) void {
             comptime {
-                const U = @typeInfo(@TypeOf(mask)).Struct.backing_integer.?;
+                const U = @typeInfo(@TypeOf(mask)).@"struct".backing_integer.?;
                 const m: U = @bitCast(K.mask);
                 const n: U = @bitCast(mask);
                 if (m & n != n)
                     @compileError("Not a subset");
             }
-            inline for (@typeInfo(K).Struct.fields) |field|
+            inline for (@typeInfo(K).@"struct".fields) |field|
                 if (@field(mask, field.name))
                     @field(self, field.name).hash(hasher);
         }
@@ -291,12 +291,12 @@ pub fn StateMask(comptime kind: enum { primitive }) type {
         fields = fields ++ &[_]StructField{.{
             .name = name,
             .type = bool,
-            .default_value = @ptrCast(&false),
+            .default_value_ptr = @ptrCast(&false),
             .is_comptime = false,
             .alignment = 0,
         }};
 
-    return @Type(.{ .Struct = .{
+    return @Type(.{ .@"struct" = .{
         .layout = .@"packed",
         .fields = fields,
         .decls = &.{},
@@ -391,7 +391,7 @@ pub fn Rendering(comptime rendering_mask: RenderingMask) type {
         /// Every field must have a `set` method that takes a
         /// `Cmd.Rendering` as parameter and returns nothing.
         pub fn set(self: *@This(), rendering: Cmd.Rendering) void {
-            inline for (@typeInfo(@This()).Struct.fields) |field|
+            inline for (@typeInfo(@This()).@"struct".fields) |field|
                 if (field.type != None)
                     @field(self, field.name).set(rendering);
         }
@@ -829,7 +829,7 @@ const ColorWrite = struct {
             switch (write_mask.*) {
                 .all => {},
                 .mask => |x| {
-                    const U = @typeInfo(@TypeOf(x)).Struct.backing_integer.?;
+                    const U = @typeInfo(@TypeOf(x)).@"struct".backing_integer.?;
                     if (@as(U, @bitCast(x)) == ~@as(U, 0))
                         write_mask.* = .all;
                 },
@@ -1199,7 +1199,7 @@ test State {
     });
     if (@TypeOf(P.init().shaders) != Shaders(.primitive))
         @compileError("Bad dyn.State layout");
-    inline for (@typeInfo(@TypeOf(P.mask)).Struct.fields) |field|
+    inline for (@typeInfo(@TypeOf(P.mask)).@"struct".fields) |field|
         if (@field(P.mask, field.name) and @TypeOf(@field(P.init(), field.name)) == None)
             @compileError("Bad dyn.State layout");
 
@@ -1636,7 +1636,7 @@ test State {
 }
 
 test Rendering {
-    const U = @typeInfo(RenderingMask).Struct.backing_integer.?;
+    const U = @typeInfo(RenderingMask).@"struct".backing_integer.?;
 
     const R = Rendering(.{
         .color_view = true,
@@ -1671,7 +1671,7 @@ test Rendering {
         .layers = true,
         .view_mask = true,
     });
-    inline for (@typeInfo(R).Struct.fields) |field| {
+    inline for (@typeInfo(R).@"struct".fields) |field| {
         const has = @field(R.mask, field.name);
         if ((field.type == None and has) or (field.type != None and !has))
             @compileError("Bad dyn.Rendering layout");
@@ -2088,7 +2088,7 @@ test Rendering {
     defer cloned.clear(testing.allocator);
     try expectEql(r1, h1, cloned);
     comptime {
-        for (@typeInfo(R).Struct.fields) |field|
+        for (@typeInfo(R).@"struct".fields) |field|
             if (@hasDecl(field.type, "clone")) unreachable;
     }
     // Shouldn't fail and shouldn't leak.
@@ -2129,7 +2129,7 @@ test Rendering {
     try expectNotEql(r0, h0, r1);
     h1 = hashT(r1);
     r2.clear(null);
-    inline for (@typeInfo(R).Struct.fields) |field| {
+    inline for (@typeInfo(R).@"struct".fields) |field| {
         if (field.type == None) continue;
         @field(r2, field.name).set(rend);
         try testing.expect(@field(r2, field.name).eql(@field(r1, field.name)));

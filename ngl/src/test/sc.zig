@@ -32,7 +32,7 @@ test "Swapchain.init/deinit" {
     }
 
     const capab = try plat.surface.getCapabilities(ctx.gpu, .fifo);
-    const comp_alpha = inline for (@typeInfo(ngl.Surface.CompositeAlpha.Flags).Struct.fields) |f| {
+    const comp_alpha = inline for (@typeInfo(ngl.Surface.CompositeAlpha.Flags).@"struct".fields) |f| {
         if (@field(capab.supported_composite_alpha, f.name))
             break @field(ngl.Surface.CompositeAlpha, f.name);
     } else unreachable;

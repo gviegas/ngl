@@ -58,7 +58,7 @@ test "Image capabilities" {
     const CoreFeat = @TypeOf(core);
 
     const expect = struct {
-        const U = @typeInfo(ngl.SampleCount.Flags).Struct.backing_integer.?;
+        const U = @typeInfo(ngl.SampleCount.Flags).@"struct".backing_integer.?;
 
         fn dimensions(capabilities: ngl.Image.Capabilities, core_feat: CoreFeat) !void {
             try testing.expect(capabilities.max_width >= core_feat.image.max_2d_extent);
@@ -113,7 +113,7 @@ test "Image capabilities" {
         }
     };
 
-    inline for (@typeInfo(ngl.Format).Enum.fields) |f| {
+    inline for (@typeInfo(ngl.Format).@"enum".fields) |f| {
         const feats = @field(ngl.Format.min_features, f.name);
         if (feats.color_attachment) {
             const usage = ngl.Image.Usage{
@@ -153,7 +153,7 @@ test "Image capabilities" {
         }
     }
 
-    inline for (@typeInfo(ngl.Format).Enum.fields) |f| {
+    inline for (@typeInfo(ngl.Format).@"enum".fields) |f| {
         const feats = @field(ngl.Format.min_features, f.name);
         if (feats.color_attachment or feats.depth_stencil_attachment)
             continue;
