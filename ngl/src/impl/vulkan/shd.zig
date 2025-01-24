@@ -243,7 +243,7 @@ pub const Shader = packed union {
         }
     };
 
-    pub fn compat(device: *Device) bool {
+    pub fn compatible(device: *Device) bool {
         return !device.hasShaderObject();
     }
 
@@ -260,7 +260,7 @@ pub const Shader = packed union {
     ) Error!void {
         const dev = Device.cast(device);
 
-        if (compat(dev))
+        if (compatible(dev))
             try Compat.init(allocator, dev, descs, shaders)
         else
             @panic("Not yet implemented");
@@ -275,7 +275,7 @@ pub const Shader = packed union {
         const dev = Device.cast(device);
         const shd = cast(shader);
 
-        if (compat(dev))
+        if (compatible(dev))
             shd.compat.deinit(allocator, dev)
         else
             @panic("Not yet implemented");
