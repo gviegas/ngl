@@ -34,7 +34,7 @@ test "Buffer.init/deinit" {
 test "Buffer allocation" {
     const dev = &context().device;
 
-    const buf_desc = .{
+    const buf_desc = ngl.Buffer.Desc{
         .size = 4096,
         .usage = .{ .storage_buffer = true },
     };
