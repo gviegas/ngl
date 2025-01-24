@@ -173,7 +173,7 @@ test "Image capabilities" {
 
             else => .{ .color = true },
         };
-        const usage = .{
+        const usage = ngl.Image.Usage{
             .sampled_image = true,
             .storage_image = feats.storage_image,
             .color_attachment = asp_mask.color,
