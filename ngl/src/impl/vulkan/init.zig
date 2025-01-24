@@ -1016,7 +1016,7 @@ fn getGpus(_: *anyopaque, allocator: std.mem.Allocator) Error![]ngl.Gpu {
             try ext.putAllDevice(dev);
         }
 
-        if (@typeInfo(ngl.Feature).Union.fields.len > 2)
+        if (@typeInfo(ngl.Feature).@"union".fields.len > 2)
             @compileError("Set new feature(s)");
 
         gpus[gpu_n] = .{

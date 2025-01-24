@@ -433,7 +433,7 @@ pub const DescriptorPool = packed struct {
         device: Impl.Device,
         desc: ngl.DescriptorPool.Desc,
     ) Error!Impl.DescriptorPool {
-        const max_type = @typeInfo(ngl.DescriptorType).Enum.fields.len;
+        const max_type = @typeInfo(ngl.DescriptorType).@"enum".fields.len;
         var pool_sizes: [max_type]c.VkDescriptorPoolSize = undefined;
         const pool_size_n = blk: {
             var n: u32 = 0;
