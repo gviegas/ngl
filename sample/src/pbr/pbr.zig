@@ -957,7 +957,7 @@ const Command = struct {
 const Global = struct {
     vp_m_n_eye: [16 + 16 + 12 + 3]f32,
 
-    const size = @sizeOf(@typeInfo(Global).Struct.fields[0].type);
+    const size = @sizeOf(@typeInfo(Global).@"struct".fields[0].type);
     const set_index = 0;
     const binding = 0;
 
@@ -1008,7 +1008,7 @@ fn Light(comptime n: u16) type {
         };
 
         comptime {
-            assert(@sizeOf(@typeInfo(@This()).Struct.fields[0].type) == size);
+            assert(@sizeOf(@typeInfo(@This()).@"struct".fields[0].type) == size);
         }
 
         fn init(desc: Desc) @This() {
