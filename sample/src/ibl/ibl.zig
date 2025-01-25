@@ -1185,7 +1185,7 @@ fn Color(comptime msr: enum { ms, @"1" }) type {
         fn init(gpa: std.mem.Allocator) ngl.Error!@This() {
             const @"type" = .@"2d";
             const tiling = .optimal;
-            const usage = .{
+            const usage = ngl.Image.Usage{
                 .sampled_image = msr == .@"1",
                 .color_attachment = true,
                 .transient_attachment = msr == .ms,
@@ -1311,7 +1311,7 @@ const Depth = struct {
     fn init(gpa: std.mem.Allocator, color_ms: *Color(.ms)) ngl.Error!Depth {
         const @"type" = .@"2d";
         const tiling = .optimal;
-        const usage = .{
+        const usage = ngl.Image.Usage{
             .depth_stencil_attachment = true,
             .transient_attachment = true,
         };
