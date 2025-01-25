@@ -1571,7 +1571,7 @@ const Material = packed struct {
 const Model = struct {
     shdw_s_mvp_mv_n: [16 + 16 + 16 + 16 + 12]f32,
 
-    const size = @sizeOf(@typeInfo(Model).Struct.fields[0].type);
+    const size = @sizeOf(@typeInfo(Model).@"struct".fields[0].type);
     const set_index = 2;
     const binding = 0;
 
