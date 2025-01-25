@@ -2659,7 +2659,7 @@ const PreShader = struct {
             roughness: f32,
             sample_n: u32,
         };
-        const pre_ld_spec_n = @typeInfo(PreLdSpecData).Struct.fields.len;
+        const pre_ld_spec_n = @typeInfo(PreLdSpecData).@"struct".fields.len;
 
         const pre_ld_spec_consts, const pre_ld_spec_data = blk: {
             const strd = @sizeOf(PreLdSpecData);
@@ -2672,7 +2672,7 @@ const PreShader = struct {
                 const rough = @as(f32, @floatFromInt(level)) / @as(f32, Ld.mip_sizes.len);
                 for (0..6) |layer| {
                     const base_off: u32 = @intCast(strd * level * 6 + strd * layer);
-                    inline for (@typeInfo(PreLdSpecData).Struct.fields, 0..) |field, id| {
+                    inline for (@typeInfo(PreLdSpecData).@"struct".fields, 0..) |field, id| {
                         const off = base_off + @offsetOf(PreLdSpecData, field.name);
                         spec_consts[level * 6 * pre_ld_spec_n + layer * pre_ld_spec_n + id] = .{
                             .id = id,
@@ -2696,11 +2696,11 @@ const PreShader = struct {
             inv_group_size: f32,
             sample_n: u32,
         };
-        const pre_dfg_spec_n = @typeInfo(PreDfgSpecData).Struct.fields.len;
+        const pre_dfg_spec_n = @typeInfo(PreDfgSpecData).@"struct".fields.len;
 
         const pre_dfg_spec_consts, const pre_dfg_spec_data = blk: {
             var spec_consts: [pre_dfg_spec_n]ngl.Shader.Specialization.Constant = undefined;
-            inline for (@typeInfo(PreDfgSpecData).Struct.fields, 0..) |field, id|
+            inline for (@typeInfo(PreDfgSpecData).@"struct".fields, 0..) |field, id|
                 spec_consts[id] = .{
                     .id = id,
                     .offset = @offsetOf(PreDfgSpecData, field.name),
@@ -2718,7 +2718,7 @@ const PreShader = struct {
             phi_delta: f32,
             theta_delta: f32,
         };
-        const pre_irrad_spec_n = @typeInfo(PreIrradSpecData).Struct.fields.len;
+        const pre_irrad_spec_n = @typeInfo(PreIrradSpecData).@"struct".fields.len;
 
         const pre_irrad_spec_consts, const pre_irrad_spec_data = blk: {
             const strd = @sizeOf(PreIrradSpecData);
@@ -2727,7 +2727,7 @@ const PreShader = struct {
 
             for (0..6) |layer| {
                 const base_off: u32 = @intCast(strd * layer);
-                inline for (@typeInfo(PreIrradSpecData).Struct.fields, 0..) |field, id| {
+                inline for (@typeInfo(PreIrradSpecData).@"struct".fields, 0..) |field, id| {
                     const off = base_off + @offsetOf(PreIrradSpecData, field.name);
                     spec_consts[layer * pre_ld_spec_n + id] = .{
                         .id = id,
@@ -3054,7 +3054,7 @@ const Shader = struct {
             };
 
             var spec_consts: [4]ngl.Shader.Specialization.Constant = undefined;
-            inline for (@typeInfo(@TypeOf(spec_data)).Struct.fields, 0..) |field, id|
+            inline for (@typeInfo(@TypeOf(spec_data)).@"struct".fields, 0..) |field, id|
                 spec_consts[id] = .{
                     .id = id,
                     .offset = @offsetOf(@TypeOf(spec_data), field.name),
@@ -3227,7 +3227,7 @@ const Camera = struct {
     stale: bool,
 
     const up = [3]f32{ 0, -1, 0 };
-    const size = @sizeOf(@typeInfo(Camera).Struct.fields[0].type);
+    const size = @sizeOf(@typeInfo(Camera).@"struct".fields[0].type);
 
     fn init(position: [3]f32, target: [3]f32) Camera {
         var self: Camera = undefined;
@@ -3343,7 +3343,7 @@ const Light = struct {
     };
 
     comptime {
-        assert(@sizeOf(@typeInfo(Light).Struct.fields[0].type) == size);
+        assert(@sizeOf(@typeInfo(Light).@"struct".fields[0].type) == size);
     }
 
     fn init(desc: Desc) Light {
@@ -3412,7 +3412,7 @@ const Material = packed struct {
 const Model = struct {
     m_n: [16 + 12]f32,
 
-    const size = @sizeOf(@typeInfo(Model).Struct.fields[0].type);
+    const size = @sizeOf(@typeInfo(Model).@"struct".fields[0].type);
 
     fn init(m: [16]f32) Model {
         var self: Model = undefined;
