@@ -2182,7 +2182,7 @@ const PreDescriptor = struct {
             stor_ld,
         ) |*set, *comb_view, *stor_view, *comb, *stor| {
             isw[0] = .{
-                .view = comb_view,
+                .view = @constCast(comb_view),
                 .layout = .shader_read_only_optimal,
                 .sampler = null,
             };
