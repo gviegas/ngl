@@ -166,7 +166,7 @@ fn mScope(comptime n: comptime_int, comptime T: type) type {
                 M => mulM(lh, rh),
                 V => mulV(lh, rh),
                 else => |U| blk: {
-                    const S = @typeInfo(U).Struct;
+                    const S = @typeInfo(U).@"struct";
                     comptime assert(S.is_tuple);
                     break :blk switch (S.fields.len) {
                         n * n => mulM(lh, rh),
