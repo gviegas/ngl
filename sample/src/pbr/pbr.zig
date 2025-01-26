@@ -183,6 +183,12 @@ fn do(gpa: std.mem.Allocator) !void {
         }});
     }
 
+    const clr_col: ngl.Cmd.ClearValue = blk: {
+        const lin = 0.75;
+        const ch = if (plat.format.format.isSrgb()) lin else std.math.pow(f32, lin, 1.0 / 2.0);
+        break :blk .{ .color_f32 = .{ ch, ch, ch, 1 } };
+    };
+
     while (true) {
         const input = plat.poll();
         if (input.done)
@@ -347,7 +353,7 @@ fn do(gpa: std.mem.Allocator) !void {
                 .layout = .color_attachment_optimal,
                 .load_op = .clear,
                 .store_op = .dont_care,
-                .clear_value = .{ .color_f32 = .{ 0.5, 0.5, 0.5, 1 } },
+                .clear_value = clr_col,
                 .resolve = .{
                     .view = &plat.image_views[next],
                     .layout = .color_attachment_optimal,
