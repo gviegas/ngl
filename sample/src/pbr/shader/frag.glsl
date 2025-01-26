@@ -94,6 +94,7 @@ void main() {
         const vec3 fac = lig.color * lig.intensity * atten * n_dot_l;
 
         color_0.rgb += (fr + fd) * fac;
-        color_0.rgb = pow(color_0.rgb, vec3(1.0 / gamma));
     }
+
+    color_0.rgb = pow(color_0.rgb, vec3(1.0 / gamma));
 }
