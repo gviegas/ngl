@@ -12,8 +12,9 @@ const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
 /// Caller is responsible for freeing the returned slice.
-/// It may be necessary to allocate memory when initializing the
-/// underlying implementation, so `allocator` may be retained
+///
+/// Since it may be necessary to allocate memory when initializing
+/// the underlying implementation, `allocator` may be retained
 /// until the process terminates.
 pub fn getGpus(allocator: std.mem.Allocator) Error![]Gpu {
     try Impl.init(allocator);
@@ -36,8 +37,8 @@ pub const Gpu = struct {
 
     const Self = @This();
 
-    /// One can use this to find out which type of shader code
-    /// the implementation expects.
+    /// This can be used to find out which kind of shader code the
+    /// implementation expects.
     pub fn getDriverApi(self: Self) DriverApi {
         _ = self;
         return Impl.getDriverApi();
