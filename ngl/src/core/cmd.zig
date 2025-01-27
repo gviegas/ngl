@@ -1298,9 +1298,9 @@ pub const CommandBuffer = struct {
         }
 
         pub const QueryResult = struct {
-            /// Wait that query results be available.
+            /// Wait that query results become available.
             wait: bool = true,
-            /// Store whether results are available for each query
+            /// Store whether results were available for each query
             /// (alongside the results themselves).
             with_availability: bool = false,
         };
@@ -1342,7 +1342,8 @@ pub const CommandBuffer = struct {
             pub const Flags = ngl.Flags(Dependency);
         };
 
-        /// `global`, `buffer` and `image` must not all be empty.
+        /// At least one of `global`, `buffer` or `image` must be
+        /// provided (i.e. the slices must not all be empty).
         pub const Barrier = struct {
             global: []const GlobalBarrier = &.{},
             buffer: []const BufferBarrier = &.{},
