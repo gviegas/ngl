@@ -1502,7 +1502,7 @@ pub const Image = struct {
     }
 
     pub fn getMemoryRequirements(self: *Self, device: *Device) Memory.Requirements {
-        return Impl.get().getMemoryRequirementsImage(device.impl, self.impl);
+        return Impl.get().getImageMemoryRequirements(device.impl, self.impl);
     }
 
     pub fn bind(self: *Self, device: *Device, memory: *Memory, memory_offset: u64) Error!void {

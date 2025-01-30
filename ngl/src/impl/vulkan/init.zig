@@ -3156,7 +3156,7 @@ const vtable = Impl.VTable{
     .initImage = @import("res.zig").Image.init,
     .getImageCapabilities = @import("res.zig").Image.getCapabilities,
     .getImageDataLayout = @import("res.zig").Image.getDataLayout,
-    .getMemoryRequirementsImage = @import("res.zig").Image.getMemoryRequirements,
+    .getImageMemoryRequirements = @import("res.zig").Image.getMemoryRequirements,
     .bindImage = @import("res.zig").Image.bind,
     .deinitImage = @import("res.zig").Image.deinit,
 

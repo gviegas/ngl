@@ -785,7 +785,7 @@ pub const VTable = struct {
         layer: u32,
     ) ngl.Image.DataLayout,
 
-    getMemoryRequirementsImage: *const fn (
+    getImageMemoryRequirements: *const fn (
         ctx: *anyopaque,
         device: Device,
         image: Image,
@@ -2102,12 +2102,12 @@ pub fn getImageDataLayout(
     return self.vtable.getImageDataLayout(self.ptr, device, image, @"type", aspect, level, layer);
 }
 
-pub fn getMemoryRequirementsImage(
+pub fn getImageMemoryRequirements(
     self: *Self,
     device: Device,
     image: Image,
 ) ngl.Memory.Requirements {
-    return self.vtable.getMemoryRequirementsImage(self.ptr, device, image);
+    return self.vtable.getImageMemoryRequirements(self.ptr, device, image);
 }
 
 pub fn bindImage(
