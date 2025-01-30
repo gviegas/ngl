@@ -1311,7 +1311,7 @@ pub const Buffer = struct {
     }
 
     pub fn getMemoryRequirements(self: *Self, device: *Device) Memory.Requirements {
-        return Impl.get().getMemoryRequirementsBuffer(device.impl, self.impl);
+        return Impl.get().getBufferMemoryRequirements(device.impl, self.impl);
     }
 
     pub fn bind(self: *Self, device: *Device, memory: *Memory, memory_offset: u64) Error!void {

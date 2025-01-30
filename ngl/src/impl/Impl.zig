@@ -719,7 +719,7 @@ pub const VTable = struct {
         desc: ngl.Buffer.Desc,
     ) Error!Buffer,
 
-    getMemoryRequirementsBuffer: *const fn (
+    getBufferMemoryRequirements: *const fn (
         ctx: *anyopaque,
         device: Device,
         buffer: Buffer,
@@ -2020,12 +2020,12 @@ pub fn initBuffer(
     return self.vtable.initBuffer(self.ptr, allocator, device, desc);
 }
 
-pub fn getMemoryRequirementsBuffer(
+pub fn getBufferMemoryRequirements(
     self: *Self,
     device: Device,
     buffer: Buffer,
 ) ngl.Memory.Requirements {
-    return self.vtable.getMemoryRequirementsBuffer(self.ptr, device, buffer);
+    return self.vtable.getBufferMemoryRequirements(self.ptr, device, buffer);
 }
 
 pub fn bindBuffer(

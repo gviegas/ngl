@@ -3146,7 +3146,7 @@ const vtable = Impl.VTable{
     .getFormatFeatures = @import("res.zig").getFormatFeatures,
 
     .initBuffer = @import("res.zig").Buffer.init,
-    .getMemoryRequirementsBuffer = @import("res.zig").Buffer.getMemoryRequirements,
+    .getBufferMemoryRequirements = @import("res.zig").Buffer.getMemoryRequirements,
     .bindBuffer = @import("res.zig").Buffer.bind,
     .deinitBuffer = @import("res.zig").Buffer.deinit,
 
