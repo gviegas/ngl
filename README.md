@@ -1,20 +1,20 @@
 # ngl
 
-ngl is a thin layer on top of low-level graphics/compute APIs.
+**ngl** is a thin layer on top of low-level graphics/compute APIs.
 
 
 ## Graphics API
 
-[ngl](ngl) contains the graphics API wrapper. It closely follows the Vulkan specification.
+[ngl](ngl) contains the graphics API wrapper. It closely follows the [Vulkan specification](https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html).
 
-The only dependencies are system libraries (including a Vulkan driver) and the Zig standard library.
+The only dependencies are system libraries (including a Vulkan driver) and the [Zig standard library](https://ziglang.org/documentation/master/std/).
 
 
 ## Sample Programs
 
-[sample](sample) contains sample programs that use ngl. Each subdirectory under [sample/src](sample/src) is a standalone executable.
+[sample](sample) contains sample programs that use **ngl**. Each subdirectory under [sample/src](sample/src) is a standalone executable.
 
-```zig build -l``` lists the available samples.
+`zig build -l` lists the available samples.
 
 
 ### ADS Sample
