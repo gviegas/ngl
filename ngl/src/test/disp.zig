@@ -14,7 +14,7 @@ test "dispatch command" {
     defer fence.deinit(gpa, dev);
 
     // Dimensions for the `dispatch` call.
-    const groups = .{ 4, 5, 1 };
+    const groups = .{ 3, 5, 1 };
     // Defined in shader code.
     const local = .{ 8, 8, 1 };
 
@@ -238,7 +238,7 @@ test "dispatch command" {
             const p = @as(*const u32, @ptrCast(@alignCast(&s[i])));
             try str.appendSlice(switch (p.*) {
                 0xff_00_00_00, 0x00_00_00_ff => "⚫",
-                0xff_ff_ff_ff => "⚪",
+                0xff_ff_ff_ff => "📦",
                 else => unreachable,
             });
             if ((k + 1) % w == 0) try str.append('\n');
