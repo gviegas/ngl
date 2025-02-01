@@ -26,8 +26,8 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     const clear_col_un: u32 = 0xff_ff_ff_ff;
     const vert_col_un = comptime std.mem.bigToNative(u32, 0x00_00_00_ff);
 
-    const w = 64;
-    const h = 36;
+    const w = 38;
+    const h = 30;
 
     const unif_data = [16]f32{
         1, 0,  0, 0,
@@ -551,7 +551,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
                 const data = @as([*]const u32, @ptrCast(@alignCast(p[i..])))[0];
                 try str.appendSlice(switch (data) {
                     clear_col_un => "⚫",
-                    vert_col_un => "🐩",
+                    vert_col_un => "💅",
                     else => unreachable,
                 });
             }
