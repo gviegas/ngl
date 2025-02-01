@@ -13,7 +13,7 @@ test "depth-only rendering" {
     var fence = try ngl.Fence.init(gpa, dev, .{ .status = .unsignaled });
     defer fence.deinit(gpa, dev);
 
-    const w = 45;
+    const w = 37;
     const h = 27;
 
     const unif_data = [2][16]f32{
@@ -516,8 +516,8 @@ test "depth-only rendering" {
                 const data = @as([*]const u16, @ptrCast(@alignCast(p[i..])))[0];
                 try str.appendSlice(switch (data) {
                     clear_dep => "⚫",
-                    vert_dep[0] => "🙊",
-                    vert_dep[1] => "🍌",
+                    vert_dep[0] => "👅",
+                    vert_dep[1] => "👄",
                     else => unreachable,
                 });
             }
