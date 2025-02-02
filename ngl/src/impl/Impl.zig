@@ -1058,8 +1058,8 @@ pub const DriverApi = enum {
     vulkan,
 };
 
-/// It's only valid to call this after `init()` succeeds.
-/// `deinit()` invalidates the `Impl`. Don't store it.
+/// It's only valid to call this after `init` succeeds.
+/// `deinit` invalidates the `Impl`. Don't store it.
 pub fn get() *Self {
     assert(impl != null);
     return &impl.?;
