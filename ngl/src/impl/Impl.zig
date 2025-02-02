@@ -1086,6 +1086,8 @@ pub fn init(allocator: std.mem.Allocator) Error!void {
         },
         else => return Error.NotSupported,
     }
+    assert(impl != null);
+    assert(dapi != null);
 }
 
 pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
