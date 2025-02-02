@@ -1073,6 +1073,11 @@ pub fn getDriverApi() DriverApi {
 
 // TODO: Debug-check inputs/outputs of these functions.
 
+const careful = switch (builtin.mode) {
+    .Debug, .ReleaseSafe => true,
+    .ReleaseFast, .ReleaseSmall => false,
+};
+
 // TODO: Parameters.
 pub fn init(allocator: std.mem.Allocator) Error!void {
     lock.lock();
@@ -1104,7 +1109,23 @@ pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
 }
 
 pub fn getGpus(self: *Self, allocator: std.mem.Allocator) Error![]ngl.Gpu {
-    return self.vtable.getGpus(self.ptr, allocator);
+    const gpus = try self.vtable.getGpus(self.ptr, allocator);
+    if (careful) {
+        assert(gpus.len > 0);
+        for (gpus) |gpu| {
+            var queue_n = @as(usize, 0);
+            for (gpu.queues) |queue| {
+                const q = queue orelse continue;
+                queue_n += 1;
+                assert(q.capabilities.transfer);
+                if (q.capabilities.graphics or q.capabilities.compute)
+                    assert(q.image_transfer_granularity == .one);
+            }
+            assert(queue_n > 0);
+            // TODO: Check `gpu.feature_set`.
+        }
+    }
+    return gpus;
 }
 
 pub fn initDevice(self: *Self, allocator: std.mem.Allocator, gpu: ngl.Gpu) Error!Device {
