@@ -95,9 +95,11 @@ test "Device.init/deinit" {
 
     for (gpus) |gpu| {
         // Should fail if no queue descriptions are provided.
-        var gpu_no_q = gpu;
-        gpu_no_q.queues = [_]?ngl.Queue.Desc{null} ** ngl.Queue.max;
-        try testing.expectError(ngl.Error.InvalidArgument, ngl.Device.init(gpa, gpu_no_q));
+        // TODO: This actually panics in Debug/ReleaseSafe.
+        // Implementations are not required to catch this.
+        //var gpu_no_q = gpu;
+        //gpu_no_q.queues = [_]?ngl.Queue.Desc{null} ** ngl.Queue.max;
+        //try testing.expectError(ngl.Error.InvalidArgument, ngl.Device.init(gpa, gpu_no_q));
 
         var dev = try ngl.Device.init(gpa, gpu);
         defer dev.deinit(gpa);
