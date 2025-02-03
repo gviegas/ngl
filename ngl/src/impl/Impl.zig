@@ -1164,7 +1164,13 @@ pub fn getMemoryHeaps(
     allocation: *[ngl.Memory.max_heap]ngl.Memory.Heap,
     device: Device,
 ) ngl.Memory.HeapCount {
-    return self.vtable.getMemoryHeaps(self.ptr, allocation, device);
+    const heap_n = self.vtable.getMemoryHeaps(self.ptr, allocation, device);
+    if (careful) {
+        assert(heap_n > 0 and heap_n <= ngl.Memory.max_heap);
+        for (allocation[0..heap_n]) |heap|
+            assert(heap.size == null or heap.size.? > 0);
+    }
+    return heap_n;
 }
 
 pub fn allocMemory(
