@@ -1179,6 +1179,7 @@ pub fn allocMemory(
     device: Device,
     desc: ngl.Memory.Desc,
 ) Error!Memory {
+    assert(desc.size > 0);
     return self.vtable.allocMemory(self.ptr, allocator, device, desc);
 }
 
