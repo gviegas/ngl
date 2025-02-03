@@ -1148,7 +1148,15 @@ pub fn getMemoryTypes(
     allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
     device: Device,
 ) ngl.Memory.TypeCount {
-    return self.vtable.getMemoryTypes(self.ptr, allocation, device);
+    const type_n = self.vtable.getMemoryTypes(self.ptr, allocation, device);
+    if (careful) {
+        assert(type_n > 0 and type_n <= ngl.Memory.max_type);
+        for (allocation[0..type_n]) |typ| {
+            assert(typ.properties != ngl.Memory.Properties{});
+            assert(typ.heap_index < ngl.Memory.max_heap);
+        }
+    }
+    return type_n;
 }
 
 pub fn getMemoryHeaps(
