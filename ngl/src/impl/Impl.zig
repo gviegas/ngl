@@ -1108,22 +1108,25 @@ pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
     dapi = null;
 }
 
+fn checkGpu(gpu: ngl.Gpu) void {
+    var que_n = @as(usize, 0);
+    for (gpu.queues) |queue| {
+        const que = queue orelse continue;
+        que_n += 1;
+        assert(que.capabilities.transfer);
+        if (que.capabilities.graphics or que.capabilities.compute)
+            assert(que.image_transfer_granularity == .one);
+    }
+    assert(que_n > 0);
+    // TODO: Check `gpu.feature_set`.
+}
+
 pub fn getGpus(self: *Self, allocator: std.mem.Allocator) Error![]ngl.Gpu {
     const gpus = try self.vtable.getGpus(self.ptr, allocator);
     if (careful) {
         assert(gpus.len > 0);
-        for (gpus) |gpu| {
-            var queue_n = @as(usize, 0);
-            for (gpu.queues) |queue| {
-                const q = queue orelse continue;
-                queue_n += 1;
-                assert(q.capabilities.transfer);
-                if (q.capabilities.graphics or q.capabilities.compute)
-                    assert(q.image_transfer_granularity == .one);
-            }
-            assert(queue_n > 0);
-            // TODO: Check `gpu.feature_set`.
-        }
+        for (gpus) |gpu|
+            checkGpu(gpu);
     }
     return gpus;
 }
