@@ -1132,6 +1132,8 @@ pub fn getGpus(self: *Self, allocator: std.mem.Allocator) Error![]ngl.Gpu {
 }
 
 pub fn initDevice(self: *Self, allocator: std.mem.Allocator, gpu: ngl.Gpu) Error!Device {
+    if (careful)
+        checkGpu(gpu);
     return self.vtable.initDevice(self.ptr, allocator, gpu);
 }
 
