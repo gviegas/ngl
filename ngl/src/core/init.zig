@@ -1,4 +1,6 @@
 const std = @import("std");
+const builtin = @import("builtin");
+const assert = std.debug.assert;
 
 const ngl = @import("../ngl.zig");
 const DriverApi = ngl.DriverApi;
@@ -11,6 +13,11 @@ const Swapchain = ngl.Swapchain;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
 
+pub const careful = switch (builtin.mode) {
+    .Debug, .ReleaseSafe => true,
+    .ReleaseFast, .ReleaseSmall => false,
+};
+
 /// Caller is responsible for freeing the returned slice.
 ///
 /// Since it may be necessary to allocate memory when initializing
@@ -18,7 +25,13 @@ const Impl = @import("../impl/Impl.zig");
 /// until the process terminates.
 pub fn getGpus(allocator: std.mem.Allocator) Error![]Gpu {
     try Impl.init(allocator);
-    return Impl.get().getGpus(allocator);
+    const gpus = try Impl.get().getGpus(allocator);
+    if (careful) {
+        assert(gpus.len > 0);
+        for (gpus) |gpu|
+            checkGpu(gpu);
+    }
+    return gpus;
 }
 
 pub const Gpu = struct {
@@ -45,6 +58,19 @@ pub const Gpu = struct {
     }
 };
 
+fn checkGpu(gpu: ngl.Gpu) void {
+    var que_n: usize = 0;
+    for (gpu.queues) |queue| {
+        const que = queue orelse continue;
+        que_n += 1;
+        assert(que.capabilities.transfer);
+        if (que.capabilities.graphics or que.capabilities.compute)
+            assert(que.image_transfer_granularity == .one);
+    }
+    assert(que_n > 0);
+    // TODO: Check `gpu.feature_set`.
+}
+
 pub const Device = struct {
     impl: Impl.Device,
     queues: [Queue.max]Queue,
@@ -64,6 +90,9 @@ pub const Device = struct {
     /// instance of a type. It is thus advisable to provide a robust
     /// allocator when initializing the device.
     pub fn init(allocator: std.mem.Allocator, gpu: Gpu) Error!Self {
+        if (careful)
+            checkGpu(gpu);
+
         var self = Self{
             .impl = try Impl.get().initDevice(allocator, gpu),
             .queues = undefined,
@@ -79,6 +108,7 @@ pub const Device = struct {
         var que_idx: usize = 0;
         var que_alloc: [Queue.max]Impl.Queue = undefined;
         self.queue_n = Impl.get().getQueues(&que_alloc, self.impl);
+        assert(self.queue_n > 0 and self.queue_n <= Queue.max);
         for (self.queues[0..self.queue_n], que_alloc[0..self.queue_n]) |*queue, impl| {
             // This assumes that implementations won't reorder
             // the queues.
@@ -93,12 +123,26 @@ pub const Device = struct {
         }
 
         self.mem_type_n = Impl.get().getMemoryTypes(&self.mem_types, self.impl);
+        if (careful) {
+            assert(self.mem_type_n > 0 and self.mem_type_n <= ngl.Memory.max_type);
+            for (self.mem_types[0..self.mem_type_n]) |typ| {
+                assert(typ.properties != ngl.Memory.Properties{});
+                assert(typ.heap_index < ngl.Memory.max_heap);
+            }
+        }
+
         self.mem_heap_n = Impl.get().getMemoryHeaps(&self.mem_heaps, self.impl);
+        if (careful) {
+            assert(self.mem_heap_n > 0 and self.mem_heap_n <= ngl.Memory.max_heap);
+            for (self.mem_heaps[0..self.mem_heap_n]) |heap|
+                assert(heap.size == null or heap.size.? > 0);
+        }
 
         return self;
     }
 
     pub fn alloc(self: *Self, allocator: std.mem.Allocator, desc: Memory.Desc) Error!Memory {
+        assert(desc.size > 0);
         return .{ .impl = try Impl.get().allocMemory(allocator, self.impl, desc) };
     }
 

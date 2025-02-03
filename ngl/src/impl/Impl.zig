@@ -1071,13 +1071,6 @@ pub fn getDriverApi() DriverApi {
     return dapi.?;
 }
 
-// TODO: Debug-check inputs/outputs of these functions.
-
-const careful = switch (builtin.mode) {
-    .Debug, .ReleaseSafe => true,
-    .ReleaseFast, .ReleaseSmall => false,
-};
-
 // TODO: Parameters.
 pub fn init(allocator: std.mem.Allocator) Error!void {
     lock.lock();
@@ -1108,39 +1101,16 @@ pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
     dapi = null;
 }
 
-fn checkGpu(gpu: ngl.Gpu) void {
-    var que_n = @as(usize, 0);
-    for (gpu.queues) |queue| {
-        const que = queue orelse continue;
-        que_n += 1;
-        assert(que.capabilities.transfer);
-        if (que.capabilities.graphics or que.capabilities.compute)
-            assert(que.image_transfer_granularity == .one);
-    }
-    assert(que_n > 0);
-    // TODO: Check `gpu.feature_set`.
-}
-
 pub fn getGpus(self: *Self, allocator: std.mem.Allocator) Error![]ngl.Gpu {
-    const gpus = try self.vtable.getGpus(self.ptr, allocator);
-    if (careful) {
-        assert(gpus.len > 0);
-        for (gpus) |gpu|
-            checkGpu(gpu);
-    }
-    return gpus;
+    return self.vtable.getGpus(self.ptr, allocator);
 }
 
 pub fn initDevice(self: *Self, allocator: std.mem.Allocator, gpu: ngl.Gpu) Error!Device {
-    if (careful)
-        checkGpu(gpu);
     return self.vtable.initDevice(self.ptr, allocator, gpu);
 }
 
 pub fn getQueues(self: *Self, allocation: *[ngl.Queue.max]Queue, device: Device) ngl.Queue.Count {
-    const que_n = self.vtable.getQueues(self.ptr, allocation, device);
-    assert(que_n > 0 and que_n <= ngl.Queue.max);
-    return que_n;
+    return self.vtable.getQueues(self.ptr, allocation, device);
 }
 
 pub fn getMemoryTypes(
@@ -1148,15 +1118,7 @@ pub fn getMemoryTypes(
     allocation: *[ngl.Memory.max_type]ngl.Memory.Type,
     device: Device,
 ) ngl.Memory.TypeCount {
-    const type_n = self.vtable.getMemoryTypes(self.ptr, allocation, device);
-    if (careful) {
-        assert(type_n > 0 and type_n <= ngl.Memory.max_type);
-        for (allocation[0..type_n]) |typ| {
-            assert(typ.properties != ngl.Memory.Properties{});
-            assert(typ.heap_index < ngl.Memory.max_heap);
-        }
-    }
-    return type_n;
+    return self.vtable.getMemoryTypes(self.ptr, allocation, device);
 }
 
 pub fn getMemoryHeaps(
@@ -1164,13 +1126,7 @@ pub fn getMemoryHeaps(
     allocation: *[ngl.Memory.max_heap]ngl.Memory.Heap,
     device: Device,
 ) ngl.Memory.HeapCount {
-    const heap_n = self.vtable.getMemoryHeaps(self.ptr, allocation, device);
-    if (careful) {
-        assert(heap_n > 0 and heap_n <= ngl.Memory.max_heap);
-        for (allocation[0..heap_n]) |heap|
-            assert(heap.size == null or heap.size.? > 0);
-    }
-    return heap_n;
+    return self.vtable.getMemoryHeaps(self.ptr, allocation, device);
 }
 
 pub fn allocMemory(
@@ -1179,7 +1135,6 @@ pub fn allocMemory(
     device: Device,
     desc: ngl.Memory.Desc,
 ) Error!Memory {
-    assert(desc.size > 0);
     return self.vtable.allocMemory(self.ptr, allocator, device, desc);
 }
 
