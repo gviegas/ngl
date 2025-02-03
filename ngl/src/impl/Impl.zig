@@ -1138,7 +1138,9 @@ pub fn initDevice(self: *Self, allocator: std.mem.Allocator, gpu: ngl.Gpu) Error
 }
 
 pub fn getQueues(self: *Self, allocation: *[ngl.Queue.max]Queue, device: Device) ngl.Queue.Count {
-    return self.vtable.getQueues(self.ptr, allocation, device);
+    const que_n = self.vtable.getQueues(self.ptr, allocation, device);
+    assert(que_n > 0 and que_n <= ngl.Queue.max);
+    return que_n;
 }
 
 pub fn getMemoryTypes(
