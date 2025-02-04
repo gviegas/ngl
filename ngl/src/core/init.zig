@@ -337,6 +337,14 @@ pub const Queue = struct {
         wait_semaphores: []const *Semaphore,
         presents: []const Present,
     ) Error!void {
+        if (careful) {
+            for (presents) |pres| {
+                const imgs = try pres.swapchain.getImages(allocator, device);
+                const img_n = imgs.len;
+                allocator.free(imgs);
+                assert(pres.image_index < img_n);
+            }
+        }
         try Impl.get().present(allocator, device.impl, self.impl, wait_semaphores, presents);
     }
 
