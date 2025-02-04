@@ -264,7 +264,7 @@ pub const Queue = struct {
     };
 
     /// This is only meaningful for transfer-only queues,
-    /// as graphics/compute queues will always report `.one`.
+    /// as graphics/compute queues will always report `one`.
     pub const ImageTransferGranularity = enum {
         whole_level,
         one,
