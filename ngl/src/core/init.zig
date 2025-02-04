@@ -280,6 +280,8 @@ pub const Queue = struct {
         },
     };
 
+    // At least one of `commands`, `wait` or `signal` must be
+    // provided (i.e. the slices must not all be empty).
     pub const Submit = struct {
         commands: []const CommandBufferSubmit,
         wait: []const SemaphoreSubmit,
@@ -312,6 +314,10 @@ pub const Queue = struct {
         fence: ?*Fence,
         submits: []const Submit,
     ) Error!void {
+        if (careful) {
+            for (submits) |subm|
+                assert(subm.commands.len > 0 or subm.wait.len > 0 or subm.signal.len > 0);
+        }
         try Impl.get().submit(
             allocator,
             device.impl,
