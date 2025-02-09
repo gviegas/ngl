@@ -125,10 +125,16 @@ pub const Device = struct {
         self.mem_type_n = Impl.get().getMemoryTypes(&self.mem_types, self.impl);
         if (careful) {
             assert(self.mem_type_n > 0 and self.mem_type_n <= ngl.Memory.max_type);
+            var local = false;
+            var vis_coh = false;
             for (self.mem_types[0..self.mem_type_n]) |typ| {
                 assert(typ.properties != ngl.Memory.Properties{});
                 assert(typ.heap_index < ngl.Memory.max_heap);
+                local = local or typ.properties.device_local;
+                vis_coh = vis_coh or typ.properties.host_visible and typ.properties.host_coherent;
             }
+            assert(local);
+            assert(vis_coh);
         }
 
         self.mem_heap_n = Impl.get().getMemoryHeaps(&self.mem_heaps, self.impl);
