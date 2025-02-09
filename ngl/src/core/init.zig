@@ -482,7 +482,11 @@ pub const Memory = struct {
         offsets: []const u64,
         sizes: []const u64,
     ) Error!void {
-        assert(offsets.len == sizes.len);
+        if (careful) {
+            assert(offsets.len == sizes.len);
+            for (sizes) |size|
+                assert(size > 0);
+        }
         try Impl.get().flushMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
     }
 
@@ -494,7 +498,11 @@ pub const Memory = struct {
         offsets: []const u64,
         sizes: []const u64,
     ) Error!void {
-        assert(offsets.len == sizes.len);
+        if (careful) {
+            assert(offsets.len == sizes.len);
+            for (sizes) |size|
+                assert(size > 0);
+        }
         try Impl.get().invalidateMappedMemory(allocator, device.impl, self.impl, offsets, sizes);
     }
 };
