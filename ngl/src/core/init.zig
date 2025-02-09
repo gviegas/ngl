@@ -60,14 +60,17 @@ pub const Gpu = struct {
 
 fn checkGpu(gpu: ngl.Gpu) void {
     var que_n: usize = 0;
+    var comp = false;
     for (gpu.queues) |queue| {
         const que = queue orelse continue;
         que_n += 1;
         assert(que.capabilities.transfer);
+        comp = comp or que.capabilities.compute;
         if (que.capabilities.graphics or que.capabilities.compute)
             assert(que.image_transfer_granularity == .one);
     }
     assert(que_n > 0);
+    assert(comp);
     assert(gpu.feature_set.core);
 }
 
