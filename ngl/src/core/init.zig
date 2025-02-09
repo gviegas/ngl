@@ -466,6 +466,7 @@ pub const Memory = struct {
     const Self = @This();
 
     pub fn map(self: *Self, device: *Device, offset: u64, size: u64) Error![]u8 {
+        assert(size > 0);
         return try Impl.get().mapMemory(device.impl, self.impl, offset, size);
     }
 
