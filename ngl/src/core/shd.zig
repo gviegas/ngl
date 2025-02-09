@@ -181,6 +181,13 @@ pub const DescriptorPool = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        if (careful) {
+            assert(desc.max_sets > 0);
+            var size: u32 = 0;
+            inline for (@typeInfo(PoolSize).@"struct".fields) |f|
+                size += @field(desc.pool_size, f.name);
+            assert(size > 0);
+        }
         return .{ .impl = try Impl.get().initDescriptorPool(allocator, device.impl, desc) };
     }
 
