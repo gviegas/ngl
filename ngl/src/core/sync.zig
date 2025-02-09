@@ -80,12 +80,18 @@ pub const Fence = struct {
         try Impl.get().resetFences(allocator, device.impl, fences);
     }
 
+    // `fences` must not be empty.
     pub fn wait(
         allocator: std.mem.Allocator,
         device: *Device,
         timeout: u64,
         fences: []const *Self,
     ) Error!void {
+        if (careful) {
+            assert(fences.len > 0);
+            for (fences[1..]) |fnc|
+                assert(fnc != fences[0]);
+        }
         try Impl.get().waitFences(allocator, device.impl, timeout, fences);
     }
 
