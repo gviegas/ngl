@@ -68,7 +68,7 @@ fn checkGpu(gpu: ngl.Gpu) void {
             assert(que.image_transfer_granularity == .one);
     }
     assert(que_n > 0);
-    // TODO: Check `gpu.feature_set`.
+    assert(gpu.feature_set.core);
 }
 
 pub const Device = struct {
