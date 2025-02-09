@@ -1,9 +1,11 @@
 const std = @import("std");
+const assert = std.debug.assert;
 
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
+const careful = @import("init.zig").careful;
 
 pub const Stage = enum {
     none,
@@ -68,7 +70,13 @@ pub const Fence = struct {
         return .{ .impl = try Impl.get().initFence(allocator, device.impl, desc) };
     }
 
+    // `fences` must not be empty.
     pub fn reset(allocator: std.mem.Allocator, device: *Device, fences: []const *Self) Error!void {
+        if (careful) {
+            assert(fences.len > 0);
+            for (fences[1..]) |fnc|
+                assert(fnc != fences[0]);
+        }
         try Impl.get().resetFences(allocator, device.impl, fences);
     }
 
