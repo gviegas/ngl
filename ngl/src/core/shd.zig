@@ -10,6 +10,7 @@ const ImageView = ngl.ImageView;
 const Sampler = ngl.Sampler;
 const Error = ngl.Error;
 const Impl = @import("../impl/Impl.zig");
+const careful = @import("init.zig").careful;
 
 pub const Shader = struct {
     impl: Impl.Shader,
@@ -120,6 +121,19 @@ pub const DescriptorSetLayout = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        if (careful) {
+            for (desc.bindings) |bind| {
+                assert(bind.count > 0);
+                assert(bind.shader_mask != Shader.Type.Flags{});
+                switch (bind.type) {
+                    .sampler, .combined_image_sampler => {
+                        const n = bind.immutable_samplers.len;
+                        assert(n == 0 or n == bind.count);
+                    },
+                    else => {},
+                }
+            }
+        }
         return .{ .impl = try Impl.get().initDescriptorSetLayout(allocator, device.impl, desc) };
     }
 
