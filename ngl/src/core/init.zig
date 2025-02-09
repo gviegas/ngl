@@ -140,8 +140,12 @@ pub const Device = struct {
         self.mem_heap_n = Impl.get().getMemoryHeaps(&self.mem_heaps, self.impl);
         if (careful) {
             assert(self.mem_heap_n > 0 and self.mem_heap_n <= ngl.Memory.max_heap);
-            for (self.mem_heaps[0..self.mem_heap_n]) |heap|
+            var local = false;
+            for (self.mem_heaps[0..self.mem_heap_n]) |heap| {
                 assert(heap.size == null or heap.size.? > 0);
+                local = local or heap.device_local;
+            }
+            assert(local);
         }
 
         return self;
