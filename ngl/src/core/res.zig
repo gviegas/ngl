@@ -1501,6 +1501,10 @@ pub const Image = struct {
         usage: Usage,
         misc: Misc,
     ) Error!Capabilities {
+        assert(usage != Usage{});
+        assert(@"type" == .@"2d" or !misc.cube_compatible);
+        if (format == .unknown)
+            return Error.NotSupported;
         return Impl.get().getImageCapabilities(device.impl, @"type", format, tiling, usage, misc);
     }
 
