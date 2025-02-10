@@ -266,6 +266,41 @@ pub const DescriptorSet = struct {
     const Self = @This();
 
     pub fn write(allocator: std.mem.Allocator, device: *Device, writes: []const Write) Error!void {
+        if (careful) {
+            assert(writes.len > 0);
+            const isValidLayout = struct {
+                fn isValidLayout(layout: Image.Layout) bool {
+                    return switch (layout) {
+                        .general,
+                        .shader_read_only_optimal,
+                        .depth_stencil_read_only_optimal,
+                        // TODO: Any others?
+                        => true,
+                        else => false,
+                    };
+                }
+            }.isValidLayout;
+            for (writes) |w| {
+                switch (w.contents) {
+                    .combined_image_sampler => |x| {
+                        assert(x.len > 0);
+                        for (x) |y|
+                            assert(isValidLayout(y.layout));
+                    },
+                    .sampled_image, .storage_image => |x| {
+                        assert(x.len > 0);
+                        for (x) |y|
+                            assert(isValidLayout(y.layout));
+                    },
+                    .uniform_buffer, .storage_buffer => |x| {
+                        assert(x.len > 0);
+                        for (x) |y|
+                            assert(y.size > 0);
+                    },
+                    else => {},
+                }
+            }
+        }
         try Impl.get().writeDescriptorSets(allocator, device.impl, writes);
     }
 };
