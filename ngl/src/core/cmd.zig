@@ -392,6 +392,11 @@ pub const CommandBuffer = struct {
         /// ✘ Compute queue
         /// ✘ Transfer queue
         pub fn setScissorRects(self: *Cmd, scissor_rects: []const ScissorRect) void {
+            assert(scissor_rects.len > 0);
+            for (scissor_rects) |sciss| {
+                assert(sciss.width > 0);
+                assert(sciss.height > 0);
+            }
             Impl.get().setScissorRects(
                 self.allocator,
                 self.device.impl,
