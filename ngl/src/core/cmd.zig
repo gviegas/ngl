@@ -215,6 +215,8 @@ pub const CommandBuffer = struct {
             offset: u16,
             constants: []align(4) const u8,
         ) void {
+            assert(shader_mask != Shader.Type.Flags{});
+            assert(constants.len > 0);
             Impl.get().setPushConstants(
                 self.device.impl,
                 self.command_buffer.impl,
