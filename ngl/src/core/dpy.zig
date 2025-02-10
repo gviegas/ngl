@@ -138,7 +138,9 @@ pub const Surface = struct {
     }
 
     pub fn getPresentModes(self: *Self, gpu: Gpu) Error!PresentMode.Flags {
-        return Impl.get().getSurfacePresentModes(self.impl, gpu);
+        const modes = try Impl.get().getSurfacePresentModes(self.impl, gpu);
+        assert(modes != PresentMode.Flags{});
+        return modes;
     }
 
     /// Caller is responsible for freeing the returned slice.
