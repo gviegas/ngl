@@ -1049,6 +1049,9 @@ pub const CommandBuffer = struct {
             group_count_y: u32,
             group_count_z: u32,
         ) void {
+            assert(group_count_x > 0);
+            assert(group_count_y > 0);
+            assert(group_count_z > 0);
             Impl.get().dispatch(
                 self.device.impl,
                 self.command_buffer.impl,
