@@ -763,6 +763,7 @@ pub const CommandBuffer = struct {
             first_attachment: ColorAttachmentIndex,
             blend: []const Blend,
         ) void {
+            assert(blend.len > 0);
             Impl.get().setColorBlend(
                 self.allocator,
                 self.device.impl,
