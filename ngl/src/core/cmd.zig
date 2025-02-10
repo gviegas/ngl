@@ -1100,6 +1100,7 @@ pub const CommandBuffer = struct {
         /// ✔ Compute queue
         /// ⚠ Transfer queue
         pub fn clearBuffer(self: *Cmd, buffer: *Buffer, offset: u64, size: u64, value: u8) void {
+            assert(size > 0);
             Impl.get().clearBuffer(
                 self.device.impl,
                 self.command_buffer.impl,
