@@ -1,4 +1,5 @@
 const std = @import("std");
+const assert = std.debug.assert;
 
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
@@ -23,7 +24,11 @@ pub const QueryType = enum {
         query_count: u32,
         with_availability: bool,
     ) Layout {
-        return Impl.get().getQueryLayout(device.impl, self, query_count, with_availability);
+        assert(query_count > 0);
+        const layt = Impl.get().getQueryLayout(device.impl, self, query_count, with_availability);
+        assert(layt.size > 0);
+        assert(layt.alignment > 0);
+        return layt;
     }
 };
 
