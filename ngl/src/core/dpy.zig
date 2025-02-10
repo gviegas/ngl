@@ -234,6 +234,7 @@ pub const Swapchain = struct {
         semaphore: ?*Semaphore,
         fence: ?*Fence,
     ) Error!Index {
+        assert(semaphore != null or fence != null);
         return Impl.get().nextSwapchainImage(
             device.impl,
             self.impl,
