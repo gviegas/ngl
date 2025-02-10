@@ -1,4 +1,5 @@
 const std = @import("std");
+const assert = std.debug.assert;
 
 const ngl = @import("../ngl.zig");
 const Device = ngl.Device;
@@ -1307,6 +1308,8 @@ pub const Buffer = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        assert(desc.size > 0);
+        assert(desc.usage != Usage{});
         return .{ .impl = try Impl.get().initBuffer(allocator, device.impl, desc) };
     }
 
