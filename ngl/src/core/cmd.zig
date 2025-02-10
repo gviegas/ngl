@@ -1494,6 +1494,7 @@ pub const CommandBuffer = struct {
         /// ✔ Compute queue
         /// ✔ Transfer queue
         pub fn executeCommands(self: *Cmd, secondary_command_buffers: []const *CommandBuffer) void {
+            assert(secondary_command_buffers.len > 0);
             Impl.get().executeCommands(
                 self.allocator,
                 self.device.impl,
