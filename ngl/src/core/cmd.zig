@@ -890,6 +890,10 @@ pub const CommandBuffer = struct {
         /// ✘ Compute queue
         /// ✘ Transfer queue
         pub fn beginRendering(self: *Cmd, rendering: Rendering) void {
+            assert(rendering.render_area.width > 0);
+            assert(rendering.render_area.height > 0);
+            assert(rendering.layers > 0);
+            // TODO: More checks.
             Impl.get().beginRendering(
                 self.allocator,
                 self.device.impl,
