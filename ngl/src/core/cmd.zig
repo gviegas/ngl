@@ -362,6 +362,13 @@ pub const CommandBuffer = struct {
         /// ✘ Compute queue
         /// ✘ Transfer queue
         pub fn setViewports(self: *Cmd, viewports: []const Viewport) void {
+            assert(viewports.len > 0);
+            for (viewports) |vport| {
+                assert(vport.width > 0);
+                assert(vport.height > 0);
+                assert(vport.znear >= 0 and vport.znear <= 1);
+                assert(vport.zfar >= 0 and vport.zfar <= 1);
+            }
             Impl.get().setViewports(
                 self.allocator,
                 self.device.impl,
