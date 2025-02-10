@@ -188,6 +188,8 @@ pub const CommandBuffer = struct {
             first_set: u32,
             descriptor_sets: []const *DescriptorSet,
         ) void {
+            assert(@as(u64, first_set) + @as(u64, descriptor_sets.len) <= 0xffffffff);
+            assert(descriptor_sets.len > 0);
             return Impl.get().setDescriptors(
                 self.allocator,
                 self.device.impl,
