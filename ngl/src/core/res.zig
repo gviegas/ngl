@@ -1344,6 +1344,7 @@ pub const BufferView = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        assert(desc.size > 0);
         return .{ .impl = try Impl.get().initBufferView(allocator, device.impl, desc) };
     }
 
