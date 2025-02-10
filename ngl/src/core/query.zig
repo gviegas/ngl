@@ -44,6 +44,7 @@ pub const QueryPool = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        assert(desc.query_count > 0);
         return .{
             .impl = try Impl.get().initQueryPool(allocator, device.impl, desc),
             .type = desc.query_type,
