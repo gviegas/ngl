@@ -1477,6 +1477,13 @@ pub const Image = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        assert(desc.format != .unknown);
+        assert(desc.width > 0);
+        assert(desc.height > 0);
+        assert(desc.depth_or_layers > 0);
+        assert(desc.levels > 0);
+        assert(desc.usage != Usage{});
+        assert(desc.type == .@"2d" or !desc.misc.cube_compatible);
         return .{
             .impl = try Impl.get().initImage(allocator, device.impl, desc),
             .type = desc.type,
