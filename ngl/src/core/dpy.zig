@@ -221,7 +221,9 @@ pub const Swapchain = struct {
     /// by `self.deinit`. Calling `Image.deinit` on these images
     /// is not allowed.
     pub fn getImages(self: *Self, allocator: std.mem.Allocator, device: *Device) Error![]Image {
-        return Impl.get().getSwapchainImages(allocator, device.impl, self.impl);
+        const imgs = try Impl.get().getSwapchainImages(allocator, device.impl, self.impl);
+        assert(imgs.len > 0);
+        return imgs;
     }
 
     /// `semaphore` and `fence` must not both be `null`.
