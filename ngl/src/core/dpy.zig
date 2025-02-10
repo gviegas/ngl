@@ -1,5 +1,6 @@
 const std = @import("std");
 const builtin = @import("builtin");
+const assert = std.debug.assert;
 
 const ngl = @import("../ngl.zig");
 const Gpu = ngl.Gpu;
@@ -150,7 +151,18 @@ pub const Surface = struct {
         gpu: Gpu,
         present_mode: PresentMode,
     ) Error!Capabilities {
-        return Impl.get().getSurfaceCapabilities(self.impl, gpu, present_mode);
+        const capab = try Impl.get().getSurfaceCapabilities(self.impl, gpu, present_mode);
+        assert(capab.min_count > 0);
+        assert(capab.max_count >= capab.min_count);
+        assert(capab.max_width > 0);
+        assert(capab.max_height > 0);
+        assert(capab.max_layers > 0);
+        assert(capab.current_width == null or capab.current_width.? <= capab.max_width);
+        assert(capab.current_height == null or capab.current_height.? <= capab.max_height);
+        assert(capab.supported_transforms != Transform.Flags{});
+        assert(capab.supported_composite_alpha != CompositeAlpha.Flags{});
+        assert(capab.supported_usage.color_attachment);
+        return capab;
     }
 
     pub fn deinit(self: *Self, allocator: std.mem.Allocator) void {
