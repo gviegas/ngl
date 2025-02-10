@@ -206,6 +206,12 @@ pub const Swapchain = struct {
     /// created with `Device.Desc.feature_set.presentation` set
     /// to `true`.
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        assert(desc.min_count > 0);
+        assert(desc.format != .unknown);
+        assert(desc.width > 0);
+        assert(desc.height > 0);
+        assert(desc.layers > 0);
+        assert(desc.usage.color_attachment);
         return .{ .impl = try Impl.get().initSwapchain(allocator, device.impl, desc) };
     }
 
