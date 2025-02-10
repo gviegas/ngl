@@ -331,6 +331,9 @@ pub const CommandBuffer = struct {
             offsets: []const u64,
             sizes: []const u64,
         ) void {
+            assert(buffers.len == offsets.len and offsets.len == sizes.len);
+            for (sizes) |size|
+                assert(size > 0);
             Impl.get().setVertexBuffers(
                 self.allocator,
                 self.device.impl,
