@@ -1643,6 +1643,12 @@ pub const Sampler = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        assert(desc.u_address != .clamp_to_border and
+            desc.v_address != .clamp_to_border and
+            desc.w_address != .clamp_to_border or
+            desc.border_color != null);
+        assert(desc.min_lod >= 0);
+        assert(desc.max_lod == null or desc.max_lod.? >= desc.min_lod);
         return .{ .impl = try Impl.get().initSampler(allocator, device.impl, desc) };
     }
 
