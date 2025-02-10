@@ -304,6 +304,7 @@ pub const CommandBuffer = struct {
             offset: u64,
             size: u64,
         ) void {
+            assert(size > 0);
             Impl.get().setIndexBuffer(
                 self.device.impl,
                 self.command_buffer.impl,
