@@ -1566,6 +1566,10 @@ pub const ImageView = struct {
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, device: *Device, desc: Desc) Error!Self {
+        assert(desc.format != .unknown);
+        assert(desc.range.aspect_mask != Image.Aspect.Flags{});
+        assert(desc.range.levels > 0);
+        assert(desc.range.layers > 0);
         return .{
             .impl = try Impl.get().initImageView(allocator, device.impl, desc),
             .format = desc.format,
