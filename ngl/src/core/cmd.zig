@@ -795,6 +795,7 @@ pub const CommandBuffer = struct {
             first_attachment: ColorAttachmentIndex,
             write_masks: []const ColorMask,
         ) void {
+            assert(write_masks.len > 0);
             Impl.get().setColorWrite(
                 self.allocator,
                 self.device.impl,
