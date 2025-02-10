@@ -143,7 +143,11 @@ pub const Surface = struct {
 
     /// Caller is responsible for freeing the returned slice.
     pub fn getFormats(self: *Self, allocator: std.mem.Allocator, gpu: Gpu) Error![]Self.Format {
-        return Impl.get().getSurfaceFormats(allocator, self.impl, gpu);
+        const fmts = try Impl.get().getSurfaceFormats(allocator, self.impl, gpu);
+        assert(fmts.len > 0);
+        for (fmts) |fmt|
+            assert(fmt.format != .unknown);
+        return fmts;
     }
 
     pub fn getCapabilities(
