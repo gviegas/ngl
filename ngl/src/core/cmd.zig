@@ -1131,6 +1131,10 @@ pub const CommandBuffer = struct {
         /// ✔ Compute queue
         /// ✔ Transfer queue
         pub fn copyBuffer(self: *Cmd, copies: []const BufferCopy) void {
+            assert(copies.len > 0);
+            for (copies) |copy|
+                // TODO: Check the regions themselves.
+                assert(copy.regions.len > 0);
             Impl.get().copyBuffer(
                 self.allocator,
                 self.device.impl,
