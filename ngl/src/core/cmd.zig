@@ -159,6 +159,7 @@ pub const CommandBuffer = struct {
         /// ✔ Compute queue
         /// ✘ Transfer queue
         pub fn setShaders(self: *Cmd, types: []const Shader.Type, shaders: []const ?*Shader) void {
+            assert(types.len == shaders.len);
             Impl.get().setShaders(
                 self.allocator,
                 self.device.impl,
