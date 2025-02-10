@@ -68,6 +68,8 @@ pub const CommandPool = struct {
         device: *Device,
         command_buffers: []const *CommandBuffer,
     ) void {
+        if (command_buffers.len < 1)
+            return;
         Impl.get().freeCommandBuffers(allocator, device.impl, self.impl, command_buffers);
         for (command_buffers) |cmd_buf|
             cmd_buf.* = undefined;
