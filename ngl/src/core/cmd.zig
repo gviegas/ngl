@@ -1394,6 +1394,7 @@ pub const CommandBuffer = struct {
             dest_offset: u64,
             result: QueryResult,
         ) void {
+            assert(query_count > 0);
             Impl.get().copyQueryPoolResults(
                 self.device.impl,
                 self.command_buffer.impl,
