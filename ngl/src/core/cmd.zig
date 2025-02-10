@@ -1285,6 +1285,7 @@ pub const CommandBuffer = struct {
             first_query: u32,
             query_count: u32,
         ) void {
+            assert(query_count > 0);
             Impl.get().resetQueryPool(
                 self.device.impl,
                 self.command_buffer.impl,
