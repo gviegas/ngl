@@ -1521,7 +1521,11 @@ pub const Image = struct {
     }
 
     pub fn getMemoryRequirements(self: *Self, device: *Device) Memory.Requirements {
-        return Impl.get().getImageMemoryRequirements(device.impl, self.impl);
+        const reqs = Impl.get().getImageMemoryRequirements(device.impl, self.impl);
+        assert(reqs.size > 0);
+        assert(reqs.alignment > 0);
+        assert(reqs.type_bits != 0);
+        return reqs;
     }
 
     pub fn bind(self: *Self, device: *Device, memory: *Memory, memory_offset: u64) Error!void {
