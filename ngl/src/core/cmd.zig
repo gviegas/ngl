@@ -1175,6 +1175,19 @@ pub const CommandBuffer = struct {
         /// ✔ Compute queue
         /// ✔ Transfer queue
         pub fn copyImage(self: *Cmd, copies: []const ImageCopy) void {
+            assert(copies.len > 0);
+            for (copies) |copy| {
+                // TODO: Check the regions themselves.
+                assert(copy.regions.len > 0);
+                assert(switch (copy.source_layout) {
+                    .transfer_source_optimal, .general => true,
+                    else => false,
+                });
+                assert(switch (copy.dest_layout) {
+                    .transfer_dest_optimal, .general => true,
+                    else => false,
+                });
+            }
             Impl.get().copyImage(
                 self.allocator,
                 self.device.impl,
