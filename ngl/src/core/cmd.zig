@@ -255,6 +255,8 @@ pub const CommandBuffer = struct {
             bindings: []const VertexInputBinding,
             attributes: []const VertexInputAttribute,
         ) void {
+            assert(bindings.len == 0 and attributes.len == 0 or
+                bindings.len > 0 and bindings.len <= attributes.len);
             Impl.get().setVertexInput(
                 self.allocator,
                 self.device.impl,
