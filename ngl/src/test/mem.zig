@@ -69,7 +69,7 @@ test "Memory.map/unmap" {
     @memset(try mem.map(dev, 0, size), 0xff);
     mem.unmap(dev);
 
-    const size_2 = std.heap.pageSize() + 513;
+    const size_2 = std.heap.pageSize() + 1;
 
     var mem_2 = try dev.alloc(gpa, .{ .size = size_2, .type_index = type_idx });
     defer dev.free(gpa, &mem_2);
@@ -85,7 +85,7 @@ test "Memory.map/unmap" {
         defer mem_2.unmap(dev);
     }
 
-    const off_2 = 512;
+    const off_2 = std.heap.pageSize();
 
     {
         var s = try mem.map(dev, off, size - off);
