@@ -1,5 +1,6 @@
 .{
-    .name = "ngl",
+    .name = .ngl,
+    .fingerprint = 0xd3b0ef2b2d5a56f8,
     .version = "0.2.0",
     .minimum_zig_version = "0.14.0",
     .dependencies = .{},
