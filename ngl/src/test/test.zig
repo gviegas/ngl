@@ -7,11 +7,14 @@ const pfm = @import("../pfm.zig");
 pub const Platform = pfm.Platform;
 
 pub const gpa = std.testing.allocator;
-// Set `writer` to `null` to suppress test output.
-pub const writer: ?std.fs.File.Writer = std.io.getStdErr().writer();
 pub const log = std.log.scoped(.@"ngl|test");
 
+pub var writer: ?std.fs.File.Writer = null;
+
 test {
+    // Comment out the line below to suppress test output.
+    writer = std.io.getStdErr().writer();
+
     _ = @import("flags.zig");
     _ = @import("gpu.zig");
     _ = @import("dev.zig");
