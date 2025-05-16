@@ -13,7 +13,7 @@ pub usingnamespace @cImport({
         else => {},
     }
     switch (builtin.os.tag) {
-        .linux => if (!builtin.target.isAndroid()) {
+        .linux => if (!builtin.abi.isAndroid()) {
             @cInclude("dlfcn.h");
             @cInclude("wayland-client.h");
             @cInclude("xdg-shell-client.h");

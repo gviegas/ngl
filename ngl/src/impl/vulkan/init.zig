@@ -100,7 +100,7 @@ pub fn init(allocator: std.mem.Allocator) Error!Impl {
                 getInstanceProcAddr = null;
             }
         }
-        const name = if (builtin.target.isAndroid()) "libvulkan.so" else "libvulkan.so.1";
+        const name = if (builtin.abi.isAndroid()) "libvulkan.so" else "libvulkan.so.1";
         libvulkan = std.c.dlopen(name, .{ .LAZY = true }) orelse return Error.InitializationFailed;
         getInstanceProcAddr = @ptrCast(
             std.c.dlsym(libvulkan.?, sym) orelse return Error.InitializationFailed,
@@ -558,12 +558,12 @@ pub const Instance = struct {
     getPhysicalDeviceSurfaceFormats: c.PFN_vkGetPhysicalDeviceSurfaceFormatsKHR,
     getPhysicalDeviceSurfacePresentModes: c.PFN_vkGetPhysicalDeviceSurfacePresentModesKHR,
     // VK_KHR_android_surface.
-    createAndroidSurface: if (builtin.target.isAndroid())
+    createAndroidSurface: if (builtin.abi.isAndroid())
         c.PFN_vkCreateAndroidSurfaceKHR
     else
         void,
     // VK_KHR_wayland_surface.
-    createWaylandSurface: if (builtin.os.tag == .linux and !builtin.target.isAndroid())
+    createWaylandSurface: if (builtin.os.tag == .linux and !builtin.abi.isAndroid())
         c.PFN_vkCreateWaylandSurfaceKHR
     else
         void,
@@ -600,7 +600,7 @@ pub const Instance = struct {
         if (presentation) {
             const surface_ext = [1][:0]const u8{"VK_KHR_surface"};
             const platform_exts = switch (builtin.os.tag) {
-                .linux => if (builtin.target.isAndroid())
+                .linux => if (builtin.abi.isAndroid())
                     [1][:0]const u8{"VK_KHR_android_surface"}
                 else
                     [1][:0]const u8{"VK_KHR_wayland_surface"},
@@ -697,14 +697,14 @@ pub const Instance = struct {
             else
                 null,
 
-            .createAndroidSurface = if (builtin.target.isAndroid())
+            .createAndroidSurface = if (builtin.abi.isAndroid())
                 if (presentation)
                     @ptrCast(try Instance.getProc(inst, "vkCreateAndroidSurfaceKHR"))
                 else
                     null
             else {},
 
-            .createWaylandSurface = if (builtin.os.tag == .linux and !builtin.target.isAndroid())
+            .createWaylandSurface = if (builtin.os.tag == .linux and !builtin.abi.isAndroid())
                 if (presentation)
                     @ptrCast(try Instance.getProc(inst, "vkCreateWaylandSurfaceKHR"))
                 else

@@ -35,14 +35,14 @@ pub const Surface = struct {
     pub const Platform = @Type(.{ .@"union" = .{
         .layout = .auto,
         .tag_type = switch (builtin.os.tag) {
-            .linux => if (builtin.target.isAndroid()) enum { android } else enum { wayland },
+            .linux => if (builtin.abi.isAndroid()) enum { android } else enum { wayland },
             .windows => enum { win32 },
             else => enum {},
         },
         .fields = blk: {
             const UnionField = std.builtin.Type.UnionField;
             const fields: []const UnionField = switch (builtin.os.tag) {
-                .linux => if (builtin.target.isAndroid()) &[_]UnionField{.{
+                .linux => if (builtin.abi.isAndroid()) &[_]UnionField{.{
                     .name = "android",
                     .type = Android,
                     .alignment = @alignOf(Android),

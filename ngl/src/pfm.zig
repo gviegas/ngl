@@ -9,7 +9,7 @@ const c = @import("inc.zig");
 
 pub const Platform = struct {
     impl: switch (builtin.os.tag) {
-        .linux => if (builtin.target.isAndroid()) PlatformAndroid else PlatformWayland,
+        .linux => if (builtin.abi.isAndroid()) PlatformAndroid else PlatformWayland,
         .windows => PlatformWin32,
         else => @compileError("OS not supported"),
     },
@@ -60,7 +60,7 @@ pub const Platform = struct {
         errdefer impl.deinit(allocator);
 
         var sf = try switch (builtin.os.tag) {
-            .linux => if (builtin.target.isAndroid())
+            .linux => if (builtin.abi.isAndroid())
                 @compileError("TODO")
             else
                 ngl.Surface.init(allocator, .{

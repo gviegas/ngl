@@ -30,7 +30,7 @@ pub const Surface = packed struct {
         var surface: c.VkSurfaceKHR = undefined;
 
         switch (builtin.os.tag) {
-            .linux => if (builtin.target.isAndroid()) switch (desc.platform) {
+            .linux => if (builtin.abi.isAndroid()) switch (desc.platform) {
                 .android => |x| try check(inst.vkCreateAndroidSurfaceKHR(&.{
                     .sType = c.VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR,
                     .pNext = null,
