@@ -131,7 +131,7 @@ pub const Device = struct {
             var local = false;
             var vis_coh = false;
             for (self.mem_types[0..self.mem_type_n]) |typ| {
-                assert(typ.properties != ngl.Memory.Properties{});
+                // Note that `typ` need not have any properties set.
                 assert(typ.heap_index < ngl.Memory.max_heap);
                 local = local or typ.properties.device_local;
                 vis_coh = vis_coh or typ.properties.host_visible and typ.properties.host_coherent;
