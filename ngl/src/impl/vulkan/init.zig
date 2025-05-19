@@ -1547,12 +1547,18 @@ pub const Device = struct {
 
     // TODO: Extension.
     pub fn hasDynamicRendering(self: Device) bool {
-        return self.version >= c.VK_API_VERSION_1_3;
+        _ = self;
+        return false;
+        // TODO: Replace with this when implemented:
+        //return self.version >= c.VK_API_VERSION_1_3;
     }
 
     // TODO: Extension.
     pub fn hasSynchronization2(self: Device) bool {
-        return self.version >= c.VK_API_VERSION_1_3;
+        _ = self;
+        return false;
+        // TODO: Replace with this when implemented:
+        //return self.version >= c.VK_API_VERSION_1_3;
     }
 
     // Wrappers --------------------------------------------
