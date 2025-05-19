@@ -480,28 +480,25 @@ test "depth-only rendering" {
     const s = @as([*]const u16, @ptrCast(@alignCast(p)))[0 .. w * h];
 
     const clear_dep: u16 = 65535;
-    const vert_dep = [2]u16{
-        0,
-        32768, // Due to the uniform's transform.
-    };
+    const front_dep: u16 = 0;
+    const back_dep = [2]u16{ 32767, 32768 }; // Due to the uniform's transform.
 
     const clear_dep_n = std.mem.count(u16, s, &.{clear_dep});
-    const vert_dep_n = [2]usize{
-        std.mem.count(u16, s, &.{vert_dep[0]}),
-        std.mem.count(u16, s, &.{vert_dep[1]}),
-    };
+    const front_dep_n = std.mem.count(u16, s, &.{front_dep});
+    const back_dep_n = std.mem.count(u16, s, &.{back_dep[0]}) +
+        std.mem.count(u16, s, &.{back_dep[1]});
 
-    try testing.expectEqual(clear_dep_n + vert_dep_n[0] + vert_dep_n[1], w * h);
-    try testing.expect(vert_dep_n[0] > vert_dep_n[1]);
-    try testing.expect(clear_dep > vert_dep_n[0] + vert_dep_n[1]);
-    try testing.expect(clear_dep_n / (vert_dep_n[0] + vert_dep_n[1]) < 2);
+    try testing.expectEqual(clear_dep_n + front_dep_n + back_dep_n, w * h);
+    try testing.expect(front_dep_n > back_dep_n);
+    try testing.expect(clear_dep > front_dep_n + back_dep_n);
+    try testing.expect(clear_dep_n / (front_dep_n + back_dep_n) < 2);
 
     // The drawn rectangles were transformed in such a way that they
     // partially intersect one another in the XY plane, and where
     // they intersect, the depth value must be zero (i.e., the depth
     // value from the first draw).
     try testing.expectApproxEqAbs(
-        @as(f64, @floatFromInt(vert_dep_n[0])) / @as(f64, @floatFromInt(vert_dep_n[1])),
+        @as(f64, @floatFromInt(front_dep_n)) / @as(f64, @floatFromInt(back_dep_n)),
         4.0 / 3.0,
         0.1,
     );
@@ -516,8 +513,8 @@ test "depth-only rendering" {
                 const data = @as([*]const u16, @ptrCast(@alignCast(p[i..])))[0];
                 try str.appendSlice(switch (data) {
                     clear_dep => "⚫",
-                    vert_dep[0] => "👅",
-                    vert_dep[1] => "👄",
+                    front_dep => "👅",
+                    back_dep[0], back_dep[1] => "👄",
                     else => unreachable,
                 });
             }
