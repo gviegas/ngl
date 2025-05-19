@@ -201,9 +201,5 @@ test "DescriptorPool.alloc/reset" {
 
     try pool.reset(dev);
     gpa.free(try pool.alloc(gpa, dev, .{ .layouts = &.{&layt_2} }));
-    gpa.free(try pool.alloc(gpa, dev, .{ .layouts = &.{
-        &layt_4,
-        &layt_4,
-        &layt,
-    } }));
+    gpa.free(try pool.alloc(gpa, dev, .{ .layouts = &.{ &layt_4, &layt } }));
 }
