@@ -105,7 +105,7 @@ test "DescriptorPool.alloc/reset" {
             .immutable_samplers = &.{},
         },
         .{
-            .binding = 0,
+            .binding = 1,
             .type = .uniform_buffer,
             .count = 8,
             .shader_mask = shader_mask,
@@ -167,7 +167,7 @@ test "DescriptorPool.alloc/reset" {
 
     var layt_4 = try ngl.DescriptorSetLayout.init(gpa, dev, .{ .bindings = &.{
         .{
-            .binding = 0,
+            .binding = 1,
             .type = .combined_image_sampler,
             .count = 3,
             .shader_mask = shader_mask,
