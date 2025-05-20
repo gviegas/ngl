@@ -915,6 +915,15 @@ test getPrimitivePipeline {
     );
     key.state.primitive_topology.set(.triangle_strip);
 
+    key.state.viewport_count.set(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = 1600,
+        .height = 900,
+        .znear = 0,
+        .zfar = 1,
+    }});
+
     key.state.rasterization_enable.set(true);
     key.state.polygon_mode.set(.fill);
     key.state.cull_mode.set(.none);
@@ -1491,6 +1500,15 @@ test createPrimitivePipeline {
         },
     );
     key.state.primitive_topology.set(.triangle_strip);
+
+    key.state.viewport_count.set(&.{.{
+        .x = 0,
+        .y = 0,
+        .width = 1920,
+        .height = 1080,
+        .znear = 0,
+        .zfar = 1,
+    }});
 
     key.state.rasterization_enable.set(true); // This is the default.
     key.state.polygon_mode.set(.line);
