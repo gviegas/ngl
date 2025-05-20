@@ -1264,6 +1264,8 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
     try testing.expect(vport.*.pViewports == null);
     try testing.expect(state.viewport_count.count == vport.*.scissorCount);
     try testing.expect(vport.*.pScissors == null);
+    try testing.expect(vport.*.viewportCount == vport.*.scissorCount);
+    try testing.expect(vport.*.viewportCount > 0);
 
     const raster = create_info.pRasterizationState orelse return error.NullPtr;
     const dep_clamp_enable = raster.*.depthClampEnable == c.VK_TRUE;
