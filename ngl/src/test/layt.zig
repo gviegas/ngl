@@ -79,7 +79,7 @@ test "ShaderLayout and DescriptorSetLayout" {
             .{
                 .offset = 16,
                 .size = 8,
-                .shader_mask = .{ .fragment = true, .compute = true },
+                .shader_mask = .{ .fragment = true },
             },
             .{
                 .offset = 32,
@@ -89,11 +89,7 @@ test "ShaderLayout and DescriptorSetLayout" {
             .{
                 .offset = 0,
                 .size = 16,
-                .shader_mask = .{
-                    .vertex = true,
-                    .fragment = true,
-                    .compute = true,
-                },
+                .shader_mask = .{ .vertex = true },
             },
         },
     });
