@@ -427,7 +427,7 @@ test "depth-only rendering" {
             .new_layout = .transfer_source_optimal,
             .image = &image,
             .range = .{
-                .aspect_mask = .{ .color = true },
+                .aspect_mask = .{ .depth = true },
                 .level = 0,
                 .levels = 1,
                 .layer = 0,
