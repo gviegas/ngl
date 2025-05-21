@@ -269,6 +269,8 @@ test "Queue.present" {
             &.{.{ .swapchain = &plat.swapchain, .image_index = next }},
         );
     }
+
+    try dev.queues[plat.queue_index].wait(dev);
 }
 
 test "Queue.wait" {
