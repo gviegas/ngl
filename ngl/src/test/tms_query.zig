@@ -206,9 +206,20 @@ test "timestamp query" {
             };
             img_mem = blk_2: {
                 const mem_reqs = image.getMemoryRequirements(dev);
+                if (mem_reqs.size > core_feat.memory.max_size) {
+                    image.deinit(gpa, dev);
+                    continue;
+                }
+                const type_idx = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?;
+                const heap_size = dev.mem_heaps[dev.mem_types[type_idx].heap_index].size;
+                // NOTE: Vulkan forbids even trying to allocate in this case.
+                if (heap_size != null and heap_size.? < mem_reqs.size) {
+                    image.deinit(gpa, dev);
+                    continue;
+                }
                 var mem = dev.alloc(gpa, .{
                     .size = mem_reqs.size,
-                    .type_index = mem_reqs.findType(dev.*, .{ .device_local = true }, null).?,
+                    .type_index = type_idx,
                 }) catch |err| {
                     image.deinit(gpa, dev);
                     if (err != ngl.Error.OutOfMemory) return err;
