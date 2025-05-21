@@ -5,8 +5,8 @@
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .ngl = .{
-            .url = "../ngl/",
-            .hash = "12203a2b52c6d876e0503d9fba9126f1cfa9468dfaf7af87266ac0a71791285dbbe9",
+            .url = "..\\ngl\\",
+            .hash = "ngl-0.2.0--FZaLbpYdwDJ7xIq_EFbOnmfwJdS7D1iQufGyIsVY7Ei",
         },
     },
     .paths = .{
