@@ -23,6 +23,10 @@ Simple Phong shading.
 
 [sample/src/ads](sample/src/ads)
 
+```ps1
+Set-Location sample; if ($?) { zig build ads }
+```
+
 ```sh
 cd sample && zig build ads
 ```
@@ -35,6 +39,10 @@ cd sample && zig build ads
 Simple physically based shading.
 
 [sample/src/pbr](sample/src/pbr)
+
+```ps1
+Set-Location sample; if ($?) { zig build pbr }
+```
 
 ```sh
 cd sample && zig build pbr
@@ -49,6 +57,10 @@ Shadow mapping with percentage closer filtering.
 
 [sample/src/pcf](sample/src/pcf)
 
+```ps1
+Set-Location sample; if ($?) { zig build pcf }
+```
+
 ```sh
 cd sample && zig build pcf
 ```
@@ -62,6 +74,10 @@ Variance shadow mapping.
 
 [sample/src/vsm](sample/src/vsm)
 
+```ps1
+Set-Location sample; if ($?) { zig build vsm }
+```
+
 ```sh
 cd sample && zig build vsm
 ```
@@ -74,6 +90,10 @@ cd sample && zig build vsm
 Screen space ambient occlusion.
 
 [sample/src/ssao](sample/src/ssao)
+
+```ps1
+Set-Location sample; if ($?) { zig build ssao }
+```
 
 ```sh
 cd sample && zig build ssao
@@ -89,6 +109,10 @@ cd sample && zig build ssao
 Image-based lighting.
 
 [sample/src/ibl](sample/src/ibl)
+
+```ps1
+Set-Location sample; if ($?) { zig build ibl }
+```
 
 ```sh
 cd sample && zig build ibl
