@@ -1,5 +1,6 @@
 const std = @import("std");
 const log = std.log.scoped(.sample);
+const builtin = @import("builtin");
 
 const ngl = @import("ngl");
 
@@ -345,11 +346,14 @@ pub fn loadObj(gpa: std.mem.Allocator, path: []const u8) !Data {
 
     var pos: u64 = 0;
     while (true) {
-        rd.streamUntilDelimiter(wr, '\n', buf.len) catch |err| {
+        const delim = if (builtin.os.tag == .windows) '\r' else '\n';
+        rd.streamUntilDelimiter(wr, delim, buf.len) catch |err| {
             if (err != error.EndOfStream)
                 return err;
             break;
         };
+        if (builtin.os.tag == .windows)
+            try rd.skipBytes(1, .{});
 
         const n = cwr.bytes_written - pos;
         defer {
