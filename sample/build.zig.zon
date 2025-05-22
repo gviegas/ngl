@@ -1,12 +1,12 @@
 .{
     .name = .sample,
     .fingerprint = 0xf10b76c3691692e3,
-    .version = "0.3.0",
+    .version = "0.4.0",
     .minimum_zig_version = "0.14.0",
     .dependencies = .{
         .ngl = .{
             .url = "..\\ngl\\",
-            .hash = "ngl-0.2.0--FZaLbpYdwDJ7xIq_EFbOnmfwJdS7D1iQufGyIsVY7Ei",
+            .hash = "ngl-0.4.0--FZaLbpYdwDFtOPq-fzqMfptkJ5kcE_MGRrTpo72zgGP",
         },
     },
     .paths = .{
