@@ -12,11 +12,14 @@ const idata = @import("idata");
 const gmath = @import("gmath");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer if (gpa.detectLeaks())
-        @panic("Memory leak");
-
-    try do(gpa.allocator());
+    switch (builtin.mode) {
+        .Debug, .ReleaseSafe => {
+            var gpa = std.heap.DebugAllocator(.{}){};
+            defer if (gpa.deinit() == .leak) @panic("Memory leak");
+            try do(gpa.allocator());
+        },
+        .ReleaseFast, .ReleaseSmall => try do(std.heap.smp_allocator),
+    }
 }
 
 pub const platform_desc = pfm.Platform.Desc{
