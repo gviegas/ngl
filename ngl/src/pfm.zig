@@ -1793,7 +1793,7 @@ const PlatformWayland = struct {
             const pressed = state == c.WL_KEYBOARD_KEY_STATE_PRESSED;
 
             switch (key) {
-                1 => pinned.input.done = pressed,
+                1 => pinned.input.done = true,
                 2 => pinned.input.option = pressed,
                 3 => pinned.input.option_2 = pressed,
                 103 => pinned.input.up = pressed,
@@ -1929,7 +1929,7 @@ const PlatformWin32 = struct {
             c.WM_KEYDOWN, c.WM_KEYUP => {
                 const pressed = lparam & (1 << 31) == 0;
                 switch (wparam) {
-                    27 => input.done = pressed,
+                    27 => input.done = true,
                     37 => input.left = pressed,
                     38 => input.up = pressed,
                     39 => input.right = pressed,
