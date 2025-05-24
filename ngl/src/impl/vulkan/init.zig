@@ -1165,6 +1165,7 @@ pub const Device = struct {
     // v1.3.
     cmdBeginRendering: c.PFN_vkCmdBeginRendering,
     cmdEndRendering: c.PFN_vkCmdEndRendering,
+    cmdPipelineBarrier2: c.PFN_vkCmdPipelineBarrier2,
     // VK_KHR_swapchain.
     queuePresent: c.PFN_vkQueuePresentKHR,
     createSwapchain: c.PFN_vkCreateSwapchainKHR,
@@ -1392,6 +1393,10 @@ pub const Device = struct {
                 null,
             .cmdEndRendering = if (ver >= c.VK_API_VERSION_1_3)
                 @ptrCast(try Device.getProc(get, dev, "vkCmdEndRendering"))
+            else
+                null,
+            .cmdPipelineBarrier2 = if (ver >= c.VK_API_VERSION_1_3)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdPipelineBarrier2"))
             else
                 null,
 
@@ -2518,6 +2523,14 @@ pub const Device = struct {
 
     pub fn vkCmdEndRendering(self: *Device, command_buffer: c.VkCommandBuffer) void {
         self.cmdEndRendering.?(command_buffer);
+    }
+
+    pub fn vkCmdPipelineBarrier2(
+        self: *Device,
+        commandBuffer: c.VkCommandBuffer,
+        dependency_info: *const c.VkDependencyInfo,
+    ) void {
+        self.cmdPipelineBarrier2.?(commandBuffer, dependency_info);
     }
 
     pub fn vkQueuePresentKHR(
