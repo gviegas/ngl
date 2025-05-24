@@ -607,8 +607,6 @@ pub const Instance = struct {
                 .windows => [1][:0]const u8{"VK_KHR_win32_surface"},
                 else => @compileError("OS not supported"),
             };
-            // TODO: Consider succeeding if at least one of the
-            // surface extensions is available.
             for (surface_ext ++ platform_exts) |x| {
                 if (ext.contains(x)) {
                     try ext_names.append(x);
