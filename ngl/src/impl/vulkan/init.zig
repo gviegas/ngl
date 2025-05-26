@@ -1163,6 +1163,7 @@ pub const Device = struct {
     createQueryPool: c.PFN_vkCreateQueryPool,
     destroyQueryPool: c.PFN_vkDestroyQueryPool,
     // v1.3.
+    queueSubmit2: c.PFN_vkQueueSubmit2,
     cmdBeginRendering: c.PFN_vkCmdBeginRendering,
     cmdEndRendering: c.PFN_vkCmdEndRendering,
     cmdPipelineBarrier2: c.PFN_vkCmdPipelineBarrier2,
@@ -1387,6 +1388,10 @@ pub const Device = struct {
             .createQueryPool = @ptrCast(try Device.getProc(get, dev, "vkCreateQueryPool")),
             .destroyQueryPool = @ptrCast(try Device.getProc(get, dev, "vkDestroyQueryPool")),
 
+            .queueSubmit2 = if (ver >= c.VK_API_VERSION_1_3)
+                @ptrCast(try Device.getProc(get, dev, "vkQueueSubmit2"))
+            else
+                null,
             .cmdBeginRendering = if (ver >= c.VK_API_VERSION_1_3)
                 @ptrCast(try Device.getProc(get, dev, "vkCmdBeginRendering"))
             else
@@ -2511,6 +2516,16 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.destroyQueryPool.?(self.handle, query_pool, vk_allocator);
+    }
+
+    pub fn vkQueueSubmit2(
+        self: *Device,
+        queue: c.VkQueue,
+        submit_count: u32,
+        submits: ?[*]const c.VkSubmitInfo2,
+        fence: c.VkFence,
+    ) c.VkResult {
+        return self.queueSubmit2.?(queue, submit_count, submits, fence);
     }
 
     pub fn vkCmdBeginRendering(
