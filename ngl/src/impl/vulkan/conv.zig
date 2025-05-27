@@ -467,24 +467,27 @@ pub fn toVkPipelineStage(
     };
 }
 
-pub fn toVkPipelineStage2(stage: ngl.Stage) c.VkPipelineStageFlagBits2 {
-    return switch (stage) {
-        .none => c.VK_PIPELINE_STAGE_2_NONE,
-        .all_commands => c.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
-        .all_graphics => c.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
-        .draw_indirect => c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
-        .index_input => c.VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
-        .vertex_attribute_input => c.VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT,
-        .vertex_shader => c.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
-        .early_fragment_tests => c.VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
-        .fragment_shader => c.VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
-        .late_fragment_tests => c.VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
-        .color_attachment_output => c.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .compute_shader => c.VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-        .clear => c.VK_PIPELINE_STAGE_2_CLEAR_BIT,
-        .copy => c.VK_PIPELINE_STAGE_2_COPY_BIT,
-        .host => c.VK_PIPELINE_STAGE_2_HOST_BIT,
-    };
+pub fn toVkPipelineStage2(_: ngl.Stage) c.VkPipelineStageFlagBits2 {
+    // Nothing in Vulkan 1.4 seems to use these values
+    // by themselves, only as `VkPipelineStageFlags2`.
+    @compileError("What do you need this for?");
+    // return switch (stage) {
+    //     .none => c.VK_PIPELINE_STAGE_2_NONE,
+    //     .all_commands => c.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+    //     .all_graphics => c.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+    //     .draw_indirect => c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+    //     .index_input => c.VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+    //     .vertex_attribute_input => c.VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT,
+    //     .vertex_shader => c.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+    //     .early_fragment_tests => c.VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+    //     .fragment_shader => c.VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+    //     .late_fragment_tests => c.VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+    //     .color_attachment_output => c.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+    //     .compute_shader => c.VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+    //     .clear => c.VK_PIPELINE_STAGE_2_CLEAR_BIT,
+    //     .copy => c.VK_PIPELINE_STAGE_2_COPY_BIT,
+    //     .host => c.VK_PIPELINE_STAGE_2_HOST_BIT,
+    // };
 }
 
 pub fn toVkPipelineStageFlags(
