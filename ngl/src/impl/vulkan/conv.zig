@@ -431,7 +431,6 @@ pub fn toVkSamplerMipmapMode(mipmap_mode: ngl.Sampler.MipmapMode) c.VkSamplerMip
     };
 }
 
-// TODO: `toVkPipelineStage2`.
 pub fn toVkPipelineStage(
     comptime scope: enum { source, dest },
     stage: ngl.Stage,
@@ -468,7 +467,26 @@ pub fn toVkPipelineStage(
     };
 }
 
-// TODO: `toVkPipelineStageFlags2`.
+pub fn toVkPipelineStage2(stage: ngl.Stage) c.VkPipelineStageFlagBits2 {
+    return switch (stage) {
+        .none => c.VK_PIPELINE_STAGE_2_NONE,
+        .all_commands => c.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+        .all_graphics => c.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+        .draw_indirect => c.VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
+        .index_input => c.VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT,
+        .vertex_attribute_input => c.VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT,
+        .vertex_shader => c.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT,
+        .early_fragment_tests => c.VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,
+        .fragment_shader => c.VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+        .late_fragment_tests => c.VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+        .color_attachment_output => c.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .compute_shader => c.VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
+        .clear => c.VK_PIPELINE_STAGE_2_CLEAR_BIT,
+        .copy => c.VK_PIPELINE_STAGE_2_COPY_BIT,
+        .host => c.VK_PIPELINE_STAGE_2_HOST_BIT,
+    };
+}
+
 pub fn toVkPipelineStageFlags(
     comptime scope: enum { source, dest },
     stage_mask: ngl.Stage.Flags,
@@ -519,6 +537,59 @@ pub fn toVkPipelineStageFlags(
         flags |= c.VK_PIPELINE_STAGE_TRANSFER_BIT;
     if (stage_mask.host)
         flags |= c.VK_PIPELINE_STAGE_HOST_BIT;
+    return flags;
+}
+
+pub fn toVkPipelineStageFlags2(stage_mask: ngl.Stage.Flags) c.VkPipelineStageFlags2 {
+    if (stage_mask.none or ngl.flag.empty(stage_mask))
+        return 0; // c.VK_PIPELINE_STAGE_2_NONE.
+
+    var flags: c.VkPipelineStageFlags2 = 0;
+
+    if (stage_mask.all_commands) {
+        flags |= c.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+        if (stage_mask.host)
+            flags |= c.VK_PIPELINE_STAGE_2_HOST_BIT;
+        return flags;
+    }
+
+    if (stage_mask.all_graphics) {
+        flags |= c.VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT;
+        if (stage_mask.compute_shader)
+            flags |= c.VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+        if (stage_mask.clear)
+            flags |= c.VK_PIPELINE_STAGE_2_CLEAR_BIT;
+        if (stage_mask.copy)
+            flags |= c.VK_PIPELINE_STAGE_2_COPY_BIT;
+        if (stage_mask.host)
+            flags |= c.VK_PIPELINE_STAGE_2_HOST_BIT;
+        return flags;
+    }
+
+    if (stage_mask.draw_indirect)
+        flags |= c.VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT;
+    if (stage_mask.index_input)
+        flags |= c.VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT;
+    if (stage_mask.vertex_attribute_input)
+        flags |= c.VK_PIPELINE_STAGE_2_VERTEX_ATTRIBUTE_INPUT_BIT;
+    if (stage_mask.vertex_shader)
+        flags |= c.VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT;
+    if (stage_mask.early_fragment_tests)
+        flags |= c.VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
+    if (stage_mask.fragment_shader)
+        flags |= c.VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT;
+    if (stage_mask.late_fragment_tests)
+        flags |= c.VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT;
+    if (stage_mask.color_attachment_output)
+        flags |= c.VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+    if (stage_mask.compute_shader)
+        flags |= c.VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT;
+    if (stage_mask.clear)
+        flags |= c.VK_PIPELINE_STAGE_2_CLEAR_BIT;
+    if (stage_mask.copy)
+        flags |= c.VK_PIPELINE_STAGE_2_COPY_BIT;
+    if (stage_mask.host)
+        flags |= c.VK_PIPELINE_STAGE_2_HOST_BIT;
     return flags;
 }
 
