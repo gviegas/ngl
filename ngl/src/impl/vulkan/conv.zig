@@ -593,14 +593,18 @@ pub fn toVkPipelineStageFlags2(stage_mask: ngl.Stage.Flags) c.VkPipelineStageFla
     return flags;
 }
 
-// TODO: toVkAccess2.
 pub fn toVkAccess(_: ngl.Access) c.VkAccessFlagBits {
-    // Nothing in Vulkan 1.3 seems to use these values
+    // Nothing in Vulkan 1.4 seems to use these values
     // by themselves, only as `VkAccessFlags`.
     @compileError("What do you need this for?");
 }
 
-// TODO: toVkAccessFlags2.
+pub fn toVkAccess2(_: ngl.Access) c.VkAccessFlagBits2 {
+    // Nothing in Vulkan 1.4 seems to use these values
+    // by themselves, only as `VkAccessFlags2`.
+    @compileError("What do you need this for?");
+}
+
 pub fn toVkAccessFlags(access_mask: ngl.Access.Flags) c.VkAccessFlags {
     if (access_mask.none or ngl.flag.empty(access_mask))
         return 0; // c.VK_ACCESS_NONE.
@@ -679,6 +683,91 @@ pub fn toVkAccessFlags(access_mask: ngl.Access.Flags) c.VkAccessFlags {
         flags |= c.VK_ACCESS_HOST_READ_BIT;
     if (access_mask.host_write)
         flags |= c.VK_ACCESS_HOST_WRITE_BIT;
+    return flags;
+}
+
+pub fn toVkAccessFlags2(access_mask: ngl.Access.Flags) c.VkAccessFlags2 {
+    if (access_mask.none or ngl.flag.empty(access_mask))
+        return 0; // c.VK_ACCESS_2_NONE.
+
+    var flags: c.VkAccessFlags2 = 0;
+
+    if (access_mask.memory_read) {
+        flags |= c.VK_ACCESS_2_MEMORY_READ_BIT;
+        if (access_mask.memory_write) {
+            flags |= c.VK_ACCESS_2_MEMORY_WRITE_BIT;
+        } else {
+            if (access_mask.shader_storage_write)
+                flags |= c.VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT;
+            if (access_mask.color_attachment_write)
+                flags |= c.VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+            if (access_mask.depth_stencil_attachment_write)
+                flags |= c.VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            if (access_mask.transfer_write)
+                flags |= c.VK_ACCESS_2_TRANSFER_WRITE_BIT;
+            if (access_mask.host_write)
+                flags |= c.VK_ACCESS_2_HOST_WRITE_BIT;
+        }
+        return flags;
+    }
+
+    if (access_mask.memory_write) {
+        flags |= c.VK_ACCESS_2_MEMORY_WRITE_BIT;
+        if (access_mask.indirect_command_read)
+            flags |= c.VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+        if (access_mask.index_read)
+            flags |= c.VK_ACCESS_2_INDEX_READ_BIT;
+        if (access_mask.vertex_attribute_read)
+            flags |= c.VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
+        if (access_mask.uniform_read)
+            flags |= c.VK_ACCESS_2_UNIFORM_READ_BIT;
+        comptime assert(!@hasField(@TypeOf(access_mask), "input_attachment_read"));
+        if (access_mask.shader_sampled_read)
+            flags |= c.VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+        if (access_mask.shader_storage_read)
+            flags |= c.VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+        if (access_mask.color_attachment_read)
+            flags |= c.VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
+        if (access_mask.depth_stencil_attachment_read)
+            flags |= c.VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+        if (access_mask.transfer_read)
+            flags |= c.VK_ACCESS_2_TRANSFER_READ_BIT;
+        if (access_mask.host_read)
+            flags |= c.VK_ACCESS_2_HOST_READ_BIT;
+        return flags;
+    }
+
+    if (access_mask.indirect_command_read)
+        flags |= c.VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT;
+    if (access_mask.index_read)
+        flags |= c.VK_ACCESS_2_INDEX_READ_BIT;
+    if (access_mask.vertex_attribute_read)
+        flags |= c.VK_ACCESS_2_VERTEX_ATTRIBUTE_READ_BIT;
+    if (access_mask.uniform_read)
+        flags |= c.VK_ACCESS_2_UNIFORM_READ_BIT;
+    comptime assert(!@hasField(@TypeOf(access_mask), "input_attachment_read"));
+    if (access_mask.shader_sampled_read)
+        flags |= c.VK_ACCESS_2_SHADER_SAMPLED_READ_BIT;
+    if (access_mask.shader_storage_read)
+        flags |= c.VK_ACCESS_2_SHADER_STORAGE_READ_BIT;
+    if (access_mask.shader_storage_write)
+        flags |= c.VK_ACCESS_2_SHADER_STORAGE_WRITE_BIT_KHR;
+    if (access_mask.color_attachment_read)
+        flags |= c.VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT;
+    if (access_mask.color_attachment_write)
+        flags |= c.VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT;
+    if (access_mask.depth_stencil_attachment_read)
+        flags |= c.VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    if (access_mask.depth_stencil_attachment_write)
+        flags |= c.VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    if (access_mask.transfer_read)
+        flags |= c.VK_ACCESS_2_TRANSFER_READ_BIT;
+    if (access_mask.transfer_write)
+        flags |= c.VK_ACCESS_2_TRANSFER_WRITE_BIT;
+    if (access_mask.host_read)
+        flags |= c.VK_ACCESS_2_HOST_READ_BIT;
+    if (access_mask.host_write)
+        flags |= c.VK_ACCESS_2_HOST_WRITE_BIT;
     return flags;
 }
 
