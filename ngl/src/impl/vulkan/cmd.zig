@@ -1647,12 +1647,25 @@ pub const CommandBuffer = struct {
         query_pool: Impl.QueryPool,
         query: u32,
     ) void {
-        Device.cast(device).vkCmdWriteTimestamp(
-            cast(command_buffer).handle,
-            conv.toVkPipelineStage(.source, stage),
-            QueryPool.cast(query_pool).handle,
-            query,
-        );
+        const dev = Device.cast(device);
+        const cmd_buf = cast(command_buffer);
+        const pool = QueryPool.cast(query_pool);
+
+        if (dev.hasSynchronization2()) {
+            dev.vkCmdWriteTimestamp2(
+                cmd_buf.handle,
+                conv.toVkPipelineStageFlags2(ngl.flag.fromEnum(stage)),
+                pool.handle,
+                query,
+            );
+        } else {
+            dev.vkCmdWriteTimestamp(
+                cmd_buf.handle,
+                conv.toVkPipelineStage(.source, stage),
+                pool.handle,
+                query,
+            );
+        }
     }
 
     pub fn copyQueryPoolResults(
