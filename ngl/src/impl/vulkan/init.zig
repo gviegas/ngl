@@ -1166,6 +1166,7 @@ pub const Device = struct {
     queueSubmit2: c.PFN_vkQueueSubmit2,
     cmdBeginRendering: c.PFN_vkCmdBeginRendering,
     cmdEndRendering: c.PFN_vkCmdEndRendering,
+    cmdWriteTimestamp2: c.PFN_vkCmdWriteTimestamp2,
     cmdPipelineBarrier2: c.PFN_vkCmdPipelineBarrier2,
     // VK_KHR_swapchain.
     queuePresent: c.PFN_vkQueuePresentKHR,
@@ -1398,6 +1399,10 @@ pub const Device = struct {
                 null,
             .cmdEndRendering = if (ver >= c.VK_API_VERSION_1_3)
                 @ptrCast(try Device.getProc(get, dev, "vkCmdEndRendering"))
+            else
+                null,
+            .cmdWriteTimestamp2 = if (ver >= c.VK_API_VERSION_1_3)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdWriteTimestamp2"))
             else
                 null,
             .cmdPipelineBarrier2 = if (ver >= c.VK_API_VERSION_1_3)
@@ -2538,6 +2543,16 @@ pub const Device = struct {
 
     pub fn vkCmdEndRendering(self: *Device, command_buffer: c.VkCommandBuffer) void {
         self.cmdEndRendering.?(command_buffer);
+    }
+
+    pub fn vkCmdWriteTimestamp2(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        pipeline_stage: c.VkPipelineStageFlags2,
+        query_pool: c.VkQueryPool,
+        query: u32,
+    ) void {
+        self.cmdWriteTimestamp2.?(command_buffer, pipeline_stage, query_pool, query);
     }
 
     pub fn vkCmdPipelineBarrier2(
