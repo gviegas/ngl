@@ -294,11 +294,12 @@ pub const CommandBuffer = struct {
 
             if (inher.rendering_continue) |x| {
                 if (dev.hasDynamicRendering()) {
+                    const col_n = @min(ngl.Cmd.max_color_attachment, x.color_formats.len);
                     const cols = blk: {
-                        if (x.color_formats.len < 1)
+                        if (col_n < 1)
                             break :blk null;
                         var cols: [ngl.Cmd.max_color_attachment]c.VkFormat = undefined;
-                        for (cols[0..x.color_formats.len], x.color_formats) |*dest, source|
+                        for (cols[0..col_n], x.color_formats[0..col_n]) |*dest, source|
                             dest.* = try conv.toVkFormat(source);
                         break :blk cols;
                     };
@@ -316,7 +317,7 @@ pub const CommandBuffer = struct {
                         .pNext = null,
                         .flags = 0,
                         .viewMask = x.view_mask,
-                        .colorAttachmentCount = @min(ngl.Cmd.max_color_attachment, x.color_formats.len),
+                        .colorAttachmentCount = col_n,
                         .pColorAttachmentFormats = if (cols) |*y| y else null,
                         .depthAttachmentFormat = dep,
                         .stencilAttachmentFormat = sten,
@@ -331,13 +332,14 @@ pub const CommandBuffer = struct {
                     var key = &d.rendering;
 
                     const max_col = ngl.Cmd.max_color_attachment;
+                    const col_n = @min(max_col, x.color_formats.len);
                     var cols: [max_col]ngl.Cmd.Rendering.Attachment = undefined;
                     var dep: ngl.Cmd.Rendering.Attachment = undefined;
                     var sten: ngl.Cmd.Rendering.Attachment = undefined;
                     var views: [max_col + 1]ngl.ImageView = undefined;
                     var view_i: u32 = 0;
 
-                    for (cols[0..x.color_formats.len], x.color_formats) |*col, fmt| {
+                    for (cols[0..col_n], x.color_formats[0..col_n]) |*col, fmt| {
                         views[view_i] = .{
                             .impl = .{ .val = 0 },
                             .format = fmt,
@@ -386,7 +388,7 @@ pub const CommandBuffer = struct {
                     }
 
                     key.set(.{
-                        .colors = cols[0..x.color_formats.len],
+                        .colors = cols[0..col_n],
                         .depth = if (x.depth_format) |_| dep else null,
                         .stencil = if (x.stencil_format) |_| sten else null,
                         .render_area = .{ .width = 1, .height = 1 },
@@ -1104,11 +1106,12 @@ pub const CommandBuffer = struct {
                 d.changed = true;
             }
 
+            const col_n = @min(ngl.Cmd.max_color_attachment, rendering.colors.len);
             const cols = blk: {
                 if (rendering.colors.len < 1)
                     break :blk null;
                 var cols: [ngl.Cmd.max_color_attachment]c.VkRenderingAttachmentInfo = undefined;
-                for (cols[0..rendering.colors.len], rendering.colors) |*info, col| {
+                for (cols[0..col_n], rendering.colors[0..col_n]) |*info, col| {
                     info.* = .{
                         .sType = c.VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                         .pNext = null,
@@ -1206,7 +1209,7 @@ pub const CommandBuffer = struct {
                     },
                     .layerCount = rendering.layers,
                     .viewMask = rendering.view_mask,
-                    .colorAttachmentCount = if (cols != null) @intCast(rendering.colors.len) else 0,
+                    .colorAttachmentCount = col_n,
                     .pColorAttachments = if (cols) |*x| x else null,
                     .pDepthAttachment = if (dep) |*x| x else null,
                     .pStencilAttachment = if (sten) |*x| x else null,
