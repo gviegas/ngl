@@ -294,8 +294,35 @@ pub const CommandBuffer = struct {
 
             if (inher.rendering_continue) |x| {
                 if (dev.hasDynamicRendering()) {
-                    _ = &inher_rend_info;
-                    @panic("Not yet implemented");
+                    const cols = blk: {
+                        if (x.color_formats.len < 1)
+                            break :blk null;
+                        var cols: [ngl.Cmd.max_color_attachment]c.VkFormat = undefined;
+                        for (cols[0..x.color_formats.len], x.color_formats) |*dest, source|
+                            dest.* = try conv.toVkFormat(source);
+                        break :blk cols;
+                    };
+                    const dep = if (x.depth_format) |y|
+                        try conv.toVkFormat(y)
+                    else
+                        c.VK_FORMAT_UNDEFINED;
+                    const sten = if (x.stencil_format) |y|
+                        try conv.toVkFormat(y)
+                    else
+                        c.VK_FORMAT_UNDEFINED;
+
+                    inher_rend_info = .{
+                        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO,
+                        .pNext = null,
+                        .flags = 0,
+                        .viewMask = x.view_mask,
+                        .colorAttachmentCount = @min(ngl.Cmd.max_color_attachment, x.color_formats.len),
+                        .pColorAttachmentFormats = if (cols) |*y| y else null,
+                        .depthAttachmentFormat = dep,
+                        .stencilAttachmentFormat = sten,
+                    };
+
+                    inher_info.pNext = &inher_rend_info;
                 } else {
                     // TODO: Add functionality to `Cache` for
                     // this purpose. We only need a compatible
@@ -326,7 +353,6 @@ pub const CommandBuffer = struct {
                         };
                         view_i += 1;
                     }
-
                     if (x.depth_format) |fmt| {
                         views[view_i] = .{
                             .impl = .{ .val = 0 },
@@ -343,7 +369,6 @@ pub const CommandBuffer = struct {
                         };
                         // Don't increment `view_i`.
                     }
-
                     if (x.stencil_format) |fmt| {
                         views[view_i] = .{
                             .impl = .{ .val = 0 },
