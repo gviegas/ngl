@@ -1288,8 +1288,7 @@ pub const CommandBuffer = struct {
         if (dev.hasDynamicRendering()) {
             if (cmd_buf.dyn) |d|
                 d.rendering.clear(null);
-            // TODO...
-            @panic("Not yet implemented");
+            dev.vkCmdEndRendering(cmd_buf.handle);
         } else {
             const d = cmd_buf.dyn.?;
             d.rendering.clear(null);
