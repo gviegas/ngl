@@ -15,6 +15,7 @@ const Queue = @import("init.zig").Queue;
 const Cache = @import("Cache.zig");
 const Buffer = @import("res.zig").Buffer;
 const Image = @import("res.zig").Image;
+const ImageView = @import("res.zig").ImageView;
 const Shader = @import("shd.zig").Shader;
 const ShaderLayout = @import("shd.zig").ShaderLayout;
 const DescriptorSet = @import("shd.zig").DescriptorSet;
@@ -1077,8 +1078,115 @@ pub const CommandBuffer = struct {
                 d.rendering.set(rendering);
                 d.changed = true;
             }
-            // TODO...
-            @panic("Not yet implemented");
+
+            const cols = blk: {
+                if (rendering.colors.len < 1)
+                    break :blk null;
+                var cols: [ngl.Cmd.max_color_attachment]c.VkRenderingAttachmentInfo = undefined;
+                for (cols[0..rendering.colors.len], rendering.colors) |*info, col| {
+                    info.* = .{
+                        .sType = c.VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                        .pNext = null,
+                        .imageView = ImageView.cast(col.view.impl).handle,
+                        .imageLayout = conv.toVkImageLayout(col.layout),
+                        .resolveMode = c.VK_RESOLVE_MODE_NONE,
+                        .resolveImageView = null_handle,
+                        .resolveImageLayout = c.VK_IMAGE_LAYOUT_UNDEFINED,
+                        .loadOp = conv.toVkAttachmentLoadOp(col.load_op),
+                        .storeOp = conv.toVkAttachmentStoreOp(col.store_op),
+                        .clearValue = if (col.clear_value) |x|
+                            conv.toVkClearValue(x)
+                        else
+                            .{ .color = .{ .float32 = .{ 0, 0, 0, 0 } } },
+                    };
+                    if (col.resolve) |rsv| {
+                        info.resolveMode = conv.toVkResolveMode(rsv.mode);
+                        info.resolveImageView = ImageView.cast(rsv.view.impl).handle;
+                        info.resolveImageLayout = conv.toVkImageLayout(rsv.layout);
+                    }
+                }
+                break :blk cols;
+            };
+            const dep = blk: {
+                if (rendering.depth) |dep| {
+                    var info = c.VkRenderingAttachmentInfo{
+                        .sType = c.VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                        .pNext = null,
+                        .imageView = ImageView.cast(dep.view.impl).handle,
+                        .imageLayout = conv.toVkImageLayout(dep.layout),
+                        .resolveMode = c.VK_RESOLVE_MODE_NONE,
+                        .resolveImageView = null_handle,
+                        .resolveImageLayout = c.VK_IMAGE_LAYOUT_UNDEFINED,
+                        .loadOp = conv.toVkAttachmentLoadOp(dep.load_op),
+                        .storeOp = conv.toVkAttachmentStoreOp(dep.store_op),
+                        .clearValue = if (dep.clear_value) |x|
+                            conv.toVkClearValue(x)
+                        else
+                            .{ .depthStencil = .{} },
+                    };
+                    if (dep.resolve) |rsv| {
+                        info.resolveMode = conv.toVkResolveMode(rsv.mode);
+                        info.resolveImageView = ImageView.cast(rsv.view.impl).handle;
+                        info.resolveImageLayout = conv.toVkImageLayout(rsv.layout);
+                    }
+                    break :blk info;
+                }
+                break :blk null;
+            };
+            const sten = blk: {
+                if (rendering.stencil) |sten| {
+                    var info = c.VkRenderingAttachmentInfo{
+                        .sType = c.VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                        .pNext = null,
+                        .imageView = ImageView.cast(sten.view.impl).handle,
+                        .imageLayout = conv.toVkImageLayout(sten.layout),
+                        .resolveMode = c.VK_RESOLVE_MODE_NONE,
+                        .resolveImageView = null_handle,
+                        .resolveImageLayout = c.VK_IMAGE_LAYOUT_UNDEFINED,
+                        .loadOp = conv.toVkAttachmentLoadOp(sten.load_op),
+                        .storeOp = conv.toVkAttachmentStoreOp(sten.store_op),
+                        .clearValue = if (sten.clear_value) |x|
+                            conv.toVkClearValue(x)
+                        else
+                            .{ .depthStencil = .{} },
+                    };
+                    if (sten.resolve) |rsv| {
+                        info.resolveMode = conv.toVkResolveMode(rsv.mode);
+                        info.resolveImageView = ImageView.cast(rsv.view.impl).handle;
+                        info.resolveImageLayout = conv.toVkImageLayout(rsv.layout);
+                    }
+                    break :blk info;
+                }
+                break :blk null;
+            };
+
+            dev.vkCmdBeginRendering(
+                cmd_buf.handle,
+                &.{
+                    .sType = c.VK_STRUCTURE_TYPE_RENDERING_INFO,
+                    .pNext = null,
+                    .flags = switch (rendering.contents) {
+                        .@"inline" => 0,
+                        .replay => c.VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT,
+                    },
+                    .renderArea = .{
+                        .offset = .{
+                            .x = @min(rendering.render_area.x, std.math.maxInt(i32)),
+                            .y = @min(rendering.render_area.y, std.math.maxInt(i32)),
+                        },
+                        .extent = .{
+                            .width = rendering.render_area.width,
+                            .height = rendering.render_area.height,
+                        },
+                    },
+                    .layerCount = rendering.layers,
+                    .viewMask = rendering.view_mask,
+                    .colorAttachmentCount = if (cols != null) @intCast(rendering.colors.len) else 0,
+                    .pColorAttachments = if (cols) |*x| x else null,
+                    .pDepthAttachment = if (dep) |*x| x else null,
+                    .pStencilAttachment = if (sten) |*x| x else null,
+                },
+            );
         } else {
             const d = cmd_buf.dyn.?;
             d.rendering.set(rendering);
