@@ -1565,10 +1565,7 @@ pub const Device = struct {
 
     // TODO: Extension.
     pub fn hasSynchronization2(self: Device) bool {
-        _ = self;
-        return false;
-        // TODO: Replace with this when implemented:
-        //return self.version >= c.VK_API_VERSION_1_3;
+        return self.version >= c.VK_API_VERSION_1_3;
     }
 
     // Wrappers --------------------------------------------

@@ -1996,9 +1996,6 @@ pub const CommandBuffer = struct {
                     img_i += img_max;
                 }
             }
-
-            // TODO
-            @panic("Not yet implemented");
         } else {
             // XXX: Need synchronization2 to implement this efficiently.
             for (barriers) |x| {
