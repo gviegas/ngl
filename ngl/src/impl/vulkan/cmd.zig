@@ -321,6 +321,7 @@ pub const CommandBuffer = struct {
                         .pColorAttachmentFormats = if (cols) |*y| y else null,
                         .depthAttachmentFormat = dep,
                         .stencilAttachmentFormat = sten,
+                        .rasterizationSamples = conv.toVkSampleCount(x.samples),
                     };
 
                     inher_info.pNext = &inher_rend_info;
