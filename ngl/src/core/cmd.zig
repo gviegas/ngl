@@ -1468,16 +1468,14 @@ pub const CommandBuffer = struct {
         /// ✔ Graphics queue
         /// ✔ Compute queue
         /// ✔ Transfer queue
-        pub fn barrier(self: *Cmd, barriers: []const Barrier) void {
-            assert(barriers.len > 0);
-            for (barriers) |bar|
-                // TODO: Check the global/buffer/image barriers themselves.
-                assert(bar.global.len > 0 or bar.buffer.len > 0 or bar.image.len > 0);
+        pub fn barrier(self: *Cmd, barrier_: Barrier) void {
+            // TODO: Check the global/buffer/image barriers themselves.
+            assert(barrier_.global.len > 0 or barrier_.buffer.len > 0 or barrier_.image.len > 0);
             Impl.get().barrier(
                 self.allocator,
                 self.device.impl,
                 self.command_buffer.impl,
-                barriers,
+                barrier_,
             );
         }
 

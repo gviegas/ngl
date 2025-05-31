@@ -631,7 +631,7 @@ pub const VTable = struct {
         allocator: std.mem.Allocator,
         device: Device,
         command_buffer: CommandBuffer,
-        barriers: []const ngl.Cmd.Barrier,
+        barrier_: ngl.Cmd.Barrier,
     ) void,
 
     executeCommands: *const fn (
@@ -1923,9 +1923,9 @@ pub fn barrier(
     allocator: std.mem.Allocator,
     device: Device,
     command_buffer: CommandBuffer,
-    barriers: []const ngl.Cmd.Barrier,
+    barrier_: ngl.Cmd.Barrier,
 ) void {
-    self.vtable.barrier(self.ptr, allocator, device, command_buffer, barriers);
+    self.vtable.barrier(self.ptr, allocator, device, command_buffer, barrier_);
 }
 
 pub fn executeCommands(
