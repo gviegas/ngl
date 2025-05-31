@@ -1869,9 +1869,9 @@ pub const CommandBuffer = struct {
             }
 
             for (barriers) |x| {
-                const mem_n = x.global.len;
-                const buf_n = x.buffer.len;
-                const img_n = x.image.len;
+                const mem_n = @min(x.global.len, std.math.maxInt(u32));
+                const buf_n = @min(x.buffer.len, std.math.maxInt(u32));
+                const img_n = @min(x.image.len, std.math.maxInt(u32));
 
                 if (mem_n > mem_barriers.len) {
                     if (mem_barriers.len == 1) {
@@ -1915,7 +1915,11 @@ pub const CommandBuffer = struct {
                 var buf_i: usize = 0;
                 var img_i: usize = 0;
                 while (mem_i < mem_n or buf_i < buf_n or img_i < img_n) {
-                    for (0..@min(mem_n -| mem_i, mem_max)) |j| {
+                    const mem_count: u32 = @intCast(@min(mem_n -| mem_i, mem_max));
+                    const buf_count: u32 = @intCast(@min(buf_n -| buf_i, buf_max));
+                    const img_count: u32 = @intCast(@min(img_n -| img_i, img_max));
+
+                    for (0..mem_count) |j| {
                         const d = &x.global[mem_i + j];
                         mem_barriers[j] = .{
                             .sType = c.VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
@@ -1926,7 +1930,7 @@ pub const CommandBuffer = struct {
                             .dstAccessMask = conv.toVkAccessFlags2(d.dest_access_mask),
                         };
                     }
-                    for (0..@min(buf_n -| buf_i, buf_max)) |j| {
+                    for (0..buf_count) |j| {
                         const d = &x.buffer[buf_i + j];
                         const source_fam, const dest_fam = if (d.queue_transfer) |qt|
                             .{ Queue.cast(qt.source.impl).family, Queue.cast(qt.dest.impl).family }
@@ -1946,7 +1950,7 @@ pub const CommandBuffer = struct {
                             .size = d.size,
                         };
                     }
-                    for (0..@min(img_n -| img_i, img_max)) |j| {
+                    for (0..img_count) |j| {
                         const d = &x.image[img_i + j];
                         const source_fam, const dest_fam = if (d.queue_transfer) |qt|
                             .{ Queue.cast(qt.source.impl).family, Queue.cast(qt.dest.impl).family }
@@ -1980,12 +1984,12 @@ pub const CommandBuffer = struct {
                             .sType = c.VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
                             .pNext = null,
                             .dependencyFlags = conv.toVkDependencyFlags(x.dependency_mask),
-                            .memoryBarrierCount = @min(x.global.len, std.math.maxInt(u32)),
-                            .pMemoryBarriers = if (x.global.len > 0) mem_barriers.ptr else null,
-                            .bufferMemoryBarrierCount = @min(x.buffer.len, std.math.maxInt(u32)),
-                            .pBufferMemoryBarriers = if (x.buffer.len > 0) buf_barriers.ptr else null,
-                            .imageMemoryBarrierCount = @min(x.image.len, std.math.maxInt(u32)),
-                            .pImageMemoryBarriers = if (x.image.len > 0) img_barriers.ptr else null,
+                            .memoryBarrierCount = mem_count,
+                            .pMemoryBarriers = if (mem_count > 0) mem_barriers.ptr else null,
+                            .bufferMemoryBarrierCount = buf_count,
+                            .pBufferMemoryBarriers = if (buf_count > 0) buf_barriers.ptr else null,
+                            .imageMemoryBarrierCount = img_count,
+                            .pImageMemoryBarriers = if (img_count > 0) img_barriers.ptr else null,
                         },
                     );
 
