@@ -109,7 +109,7 @@ test "linear tiling" {
 
     // Copy from the linear tiling image to the optimal tiling one.
     var cmd = try cmd_buf[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{
             .{
                 .source_stage_mask = .{},
@@ -134,7 +134,7 @@ test "linear tiling" {
                 .range = range,
             },
         },
-    }});
+    });
     cmd.copyImage(&.{.{
         .source = &lin_img,
         .source_layout = .transfer_source_optimal,
@@ -156,7 +156,7 @@ test "linear tiling" {
             .depth_or_layers = 1,
         }},
     }});
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_read = true },
@@ -168,7 +168,7 @@ test "linear tiling" {
             .image = &lin_img,
             .range = range,
         }},
-    }});
+    });
     try cmd.end();
     {
         ctx.lockQueue(queue_i);
@@ -202,7 +202,7 @@ test "linear tiling" {
     try ngl.Fence.reset(gpa, dev, &.{&fence});
     try cmd_pool.reset(dev, .keep);
     cmd = try cmd_buf[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{
             .{
                 .source_stage_mask = .{},
@@ -227,7 +227,7 @@ test "linear tiling" {
                 .range = range,
             },
         },
-    }});
+    });
     cmd.copyImage(&.{.{
         .source = &opt_img,
         .source_layout = .transfer_source_optimal,
@@ -249,7 +249,7 @@ test "linear tiling" {
             .depth_or_layers = 1,
         }},
     }});
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
@@ -261,7 +261,7 @@ test "linear tiling" {
             .image = &lin_img,
             .range = range,
         }},
-    }});
+    });
     try cmd.end();
     {
         ctx.lockQueue(queue_i);

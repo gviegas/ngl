@@ -303,7 +303,7 @@ test "depth-only rendering" {
         },
     });
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .global = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
@@ -341,7 +341,7 @@ test "depth-only rendering" {
                 .layers = 1,
             },
         }},
-    }});
+    });
 
     cmd.beginRendering(.{
         .colors = &.{},
@@ -410,7 +410,7 @@ test "depth-only rendering" {
 
     cmd.endRendering();
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{
                 .early_fragment_tests = true,
@@ -434,7 +434,7 @@ test "depth-only rendering" {
                 .layers = 1,
             },
         }},
-    }});
+    });
 
     cmd.copyImageToBuffer(&.{.{
         .buffer = &stg_buf,

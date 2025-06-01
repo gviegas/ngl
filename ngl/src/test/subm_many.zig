@@ -232,7 +232,7 @@ test "submission of multiple command buffers" {
                     .one_time_submit = true,
                     .inheritance = null,
                 });
-                cmd.barrier(&.{.{
+                cmd.barrier(.{
                     .image = &.{.{
                         .source_stage_mask = .{},
                         .source_access_mask = .{},
@@ -250,7 +250,7 @@ test "submission of multiple command buffers" {
                             .layers = 1,
                         },
                     }},
-                }});
+                });
                 cmd.copyBufferToImage(&.{.{
                     .buffer = &buf,
                     .image = &image,
@@ -269,7 +269,7 @@ test "submission of multiple command buffers" {
                         .image_depth_or_layers = 1,
                     }},
                 }});
-                cmd.barrier(&.{.{
+                cmd.barrier(.{
                     .image = &.{.{
                         .source_stage_mask = .{ .copy = true },
                         .source_access_mask = .{ .transfer_write = true },
@@ -290,7 +290,7 @@ test "submission of multiple command buffers" {
                             .layers = 1,
                         },
                     }},
-                }});
+                });
                 try cmd.end();
             }
 
@@ -300,7 +300,7 @@ test "submission of multiple command buffers" {
                     .one_time_submit = true,
                     .inheritance = null,
                 });
-                cmd.barrier(&.{.{
+                cmd.barrier(.{
                     .global = &.{.{
                         .source_stage_mask = .{ .color_attachment_output = true },
                         .source_access_mask = .{ .color_attachment_write = true },
@@ -310,7 +310,7 @@ test "submission of multiple command buffers" {
                             .color_attachment_write = true,
                         },
                     }},
-                }});
+                });
                 try cmd.end();
             }
 
@@ -320,7 +320,7 @@ test "submission of multiple command buffers" {
                     .one_time_submit = true,
                     .inheritance = null,
                 });
-                cmd.barrier(&.{.{
+                cmd.barrier(.{
                     .image = &.{.{
                         .source_stage_mask = .{ .color_attachment_output = true },
                         .source_access_mask = .{ .color_attachment_write = true },
@@ -338,7 +338,7 @@ test "submission of multiple command buffers" {
                             .layers = 1,
                         },
                     }},
-                }});
+                });
                 cmd.copyImageToBuffer(&.{.{
                     .buffer = &buf,
                     .image = &image,

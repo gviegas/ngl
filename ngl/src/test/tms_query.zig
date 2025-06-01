@@ -275,7 +275,7 @@ test "timestamp query" {
     var cmd = try cmd_buf.begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
     cmd.resetQueryPool(&query_pool, 0, query_count);
     cmd.writeTimestamp(.all_commands, &query_pool, 0);
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
@@ -293,19 +293,19 @@ test "timestamp query" {
                 .layers = 1,
             },
         }},
-    }});
+    });
     // This should take a while.
     for (0..extent / tile) |x| {
         for (0..extent / tile) |y| {
             cmd.clearBuffer(&copy_buf, 0, copy_buf_size, @intCast((x ^ y) & 255));
-            cmd.barrier(&.{.{
+            cmd.barrier(.{
                 .global = &.{.{
                     .source_stage_mask = .{ .clear = true },
                     .source_access_mask = .{ .transfer_write = true },
                     .dest_stage_mask = .{ .copy = true },
                     .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
                 }},
-            }});
+            });
             cmd.copyBufferToImage(&.{.{
                 .buffer = &copy_buf,
                 .image = &image,
@@ -324,14 +324,14 @@ test "timestamp query" {
                     .image_depth_or_layers = 1,
                 }},
             }});
-            cmd.barrier(&.{.{
+            cmd.barrier(.{
                 .global = &.{.{
                     .source_stage_mask = .{ .copy = true },
                     .source_access_mask = .{ .transfer_read = true, .transfer_write = true },
                     .dest_stage_mask = .{ .copy = true },
                     .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
                 }},
-            }});
+            });
         }
     }
     cmd.writeTimestamp(.all_commands, &query_pool, 1);

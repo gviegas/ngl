@@ -324,7 +324,7 @@ test "executeCommands command (dispatching)" {
     defer for (thrds) |thrd| thrd.join();
 
     var cmd = try t.cmd_bufs[0].begin(gpa, dev, .{ .one_time_submit = true, .inheritance = null });
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
@@ -342,14 +342,14 @@ test "executeCommands command (dispatching)" {
                 .layers = 1,
             },
         }},
-    }});
+    });
     while (@atomicLoad(@TypeOf(rem), &rem, .acquire) > 0) {}
     cmd.executeCommands(blk: {
         var ptrs: [rec.len]*ngl.CommandBuffer = undefined;
         for (&ptrs, t.cmd_bufs[1..]) |*p, *c| p.* = c;
         break :blk &ptrs;
     });
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{ .compute_shader = true },
             .source_access_mask = .{ .shader_storage_write = true },
@@ -367,7 +367,7 @@ test "executeCommands command (dispatching)" {
                 .layers = 1,
             },
         }},
-    }});
+    });
     cmd.copyImageToBuffer(&.{.{
         .buffer = &t.stg_buf,
         .image = &image,
@@ -736,7 +736,7 @@ test "executeCommands command (drawing)" {
             .size = @sizeOf(@TypeOf(triangle.data)),
         }},
     }});
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .buffer = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_read = true, .transfer_write = true },
@@ -764,7 +764,7 @@ test "executeCommands command (drawing)" {
                 .layers = 1,
             },
         }},
-    }});
+    });
     cmd.beginRendering(.{
         .colors = &.{.{
             .view = &view,
@@ -790,7 +790,7 @@ test "executeCommands command (drawing)" {
         break :blk &ptrs;
     });
     cmd.endRendering();
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{ .color_attachment_output = true },
             .source_access_mask = .{ .color_attachment_write = true },
@@ -808,7 +808,7 @@ test "executeCommands command (drawing)" {
                 .layers = 1,
             },
         }},
-    }});
+    });
     cmd.copyImageToBuffer(&.{.{
         .buffer = &t.stg_buf,
         .image = &image,

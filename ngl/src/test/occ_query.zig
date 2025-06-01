@@ -362,7 +362,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     cmd.setStencilTestEnable(false);
     cmd.setColorBlendEnable(0, &.{false});
     cmd.setColorWrite(0, &.{.all});
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{
             .{
                 .source_stage_mask = .{},
@@ -405,7 +405,7 @@ fn testOcclusionQuery(comptime precise: bool) !void {
                 },
             },
         },
-    }});
+    });
     cmd.beginRendering(.{
         .colors = &.{.{
             .view = &color_view,

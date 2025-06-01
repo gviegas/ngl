@@ -324,7 +324,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
         }},
     }} else &[_]ngl.Cmd.BufferCopy{});
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .global = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
@@ -356,7 +356,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
                 .layers = 1,
             },
         }},
-    }});
+    });
 
     cmd.beginRendering(.{
         .colors = &.{.{
@@ -449,7 +449,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
 
     cmd.endRendering();
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{ .color_attachment_output = true },
             .source_access_mask = .{ .color_attachment_write = true },
@@ -467,7 +467,7 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
                 .layers = 1,
             },
         }},
-    }});
+    });
 
     cmd.copyImageToBuffer(&.{.{
         .buffer = &stg_buf,

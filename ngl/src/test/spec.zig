@@ -186,14 +186,14 @@ test "shader specialization" {
     cmd.dispatch(groups[0], groups[1], groups[2]);
     cmd.setShaders(&.{.compute}, &.{&(try shaders[1])});
     cmd.dispatch(groups[0], groups[1], groups[2]);
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .global = &.{.{
             .source_stage_mask = .{ .compute_shader = true },
             .source_access_mask = .{ .shader_storage_write = true },
             .dest_stage_mask = .{ .copy = true },
             .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
         }},
-    }});
+    });
     cmd.copyBuffer(&.{.{
         .source = &stor_buf,
         .dest = &stg_buf,

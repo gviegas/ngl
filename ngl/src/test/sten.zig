@@ -238,7 +238,7 @@ test "stencil test" {
         }},
     }});
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .buffer = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
@@ -288,7 +288,7 @@ test "stencil test" {
                 },
             },
         },
-    }});
+    });
 
     cmd.setShaders(
         &.{
@@ -420,7 +420,7 @@ test "stencil test" {
 
     cmd.endRendering();
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{
             .{
                 .source_stage_mask = .{ .color_attachment_output = true },
@@ -457,7 +457,7 @@ test "stencil test" {
                 },
             },
         },
-    }});
+    });
 
     cmd.copyImageToBuffer(&.{
         .{

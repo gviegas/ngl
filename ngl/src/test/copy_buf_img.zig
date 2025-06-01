@@ -110,7 +110,7 @@ test "copy between resources" {
     cmd.clearBuffer(&bufs[0], 0, size / 2, 0x9d);
     cmd.clearBuffer(&bufs[0], size / 2, size / 2, 0xfa);
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .buffer = &.{.{
             .source_stage_mask = .{ .clear = true },
             .source_access_mask = .{ .memory_write = true },
@@ -138,7 +138,7 @@ test "copy between resources" {
                 .layers = 1,
             },
         }},
-    }});
+    });
 
     // Invert the top and bottom halves.
     cmd.copyBufferToImage(&.{.{
@@ -175,7 +175,7 @@ test "copy between resources" {
         },
     }});
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{
             .{
                 .source_stage_mask = .{ .copy = true },
@@ -212,7 +212,7 @@ test "copy between resources" {
                 },
             },
         },
-    }});
+    });
 
     // Invert the top and bottom halves for the first layer.
     // For the second layer, the contents are copied as-is.
@@ -270,7 +270,7 @@ test "copy between resources" {
         },
     }});
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .memory_write = true },
@@ -288,7 +288,7 @@ test "copy between resources" {
                 .layers = 2,
             },
         }},
-    }});
+    });
 
     // Nothing fancy here, just copy the second image's layers
     // to mappable buffers.

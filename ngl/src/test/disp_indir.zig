@@ -142,7 +142,7 @@ test "dispatchIndirect command" {
         }},
     }});
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .buffer = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
@@ -153,13 +153,13 @@ test "dispatchIndirect command" {
             .offset = 0,
             .size = @sizeOf(ngl.Cmd.DispatchIndirectCommand),
         }},
-    }});
+    });
 
     cmd.setShaders(&.{.compute}, &.{&(try shader[0])});
     cmd.setDescriptors(.compute, &shd_layt, 0, &.{&desc_set});
     cmd.dispatchIndirect(&indir_buf, 0);
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .buffer = &.{.{
             .source_stage_mask = .{ .compute_shader = true },
             .source_access_mask = .{ .shader_storage_write = true },
@@ -170,7 +170,7 @@ test "dispatchIndirect command" {
             .offset = 0,
             .size = 4 * invoc,
         }},
-    }});
+    });
 
     cmd.copyBuffer(&.{.{
         .source = &stor_buf,

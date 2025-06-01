@@ -233,7 +233,7 @@ test "Queue.present" {
             .inheritance = null,
         });
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{.{
                 .source_stage_mask = .{},
                 .source_access_mask = .{},
@@ -251,7 +251,7 @@ test "Queue.present" {
                     .layers = 1,
                 },
             }},
-        }});
+        });
         try cmd.end();
 
         try ngl.Fence.wait(gpa, dev, timeout, &.{&fences[i]});
