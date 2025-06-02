@@ -470,11 +470,21 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
     cmd.endRendering();
 
     cmd.barrier(.{
+        .buffer = &.{.{
+            .source_stage_mask = .{ .copy = true },
+            .source_access_mask = .{},
+            .dest_stage_mask = .{ .copy = true },
+            .dest_access_mask = .{},
+            .queue_transfer = null,
+            .buffer = &stg_buf,
+            .offset = 0,
+            .size = rdbk_size,
+        }},
         .image = &.{.{
             .source_stage_mask = .{ .color_attachment_output = true },
             .source_access_mask = .{ .color_attachment_write = true },
             .dest_stage_mask = .{ .copy = true },
-            .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+            .dest_access_mask = .{ .transfer_read = true },
             .queue_transfer = null,
             .old_layout = .color_attachment_optimal,
             .new_layout = .transfer_source_optimal,
