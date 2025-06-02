@@ -160,16 +160,28 @@ test "dispatchIndirect command" {
     cmd.dispatchIndirect(&indir_buf, 0);
 
     cmd.barrier(.{
-        .buffer = &.{.{
-            .source_stage_mask = .{ .compute_shader = true },
-            .source_access_mask = .{ .shader_storage_write = true },
-            .dest_stage_mask = .{ .copy = true },
-            .dest_access_mask = .{ .transfer_read = true },
-            .queue_transfer = null,
-            .buffer = &stor_buf,
-            .offset = 0,
-            .size = 4 * invoc,
-        }},
+        .buffer = &.{
+            .{
+                .source_stage_mask = .{ .compute_shader = true },
+                .source_access_mask = .{ .shader_storage_write = true },
+                .dest_stage_mask = .{ .copy = true },
+                .dest_access_mask = .{ .transfer_read = true },
+                .queue_transfer = null,
+                .buffer = &stor_buf,
+                .offset = 0,
+                .size = 4 * invoc,
+            },
+            .{
+                .source_stage_mask = .{ .copy = true },
+                .source_access_mask = .{},
+                .dest_stage_mask = .{ .copy = true },
+                .dest_access_mask = .{},
+                .queue_transfer = null,
+                .buffer = &stg_buf,
+                .offset = 0,
+                .size = 4 * invoc,
+            },
+        },
     });
 
     cmd.copyBuffer(&.{.{
