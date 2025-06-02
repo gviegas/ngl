@@ -389,7 +389,7 @@ fn do(gpa: std.mem.Allocator) !void {
         },
     });
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
@@ -417,7 +417,7 @@ fn do(gpa: std.mem.Allocator) !void {
             .offset = 0,
             .size = Distribution.size,
         }},
-    }});
+    });
 
     cmd.copyBufferToImage(&.{.{
         .buffer = &stg_buf.buffer,
@@ -438,7 +438,7 @@ fn do(gpa: std.mem.Allocator) !void {
         }},
     }});
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{
             .{
                 .source_stage_mask = .{ .copy = true },
@@ -509,7 +509,7 @@ fn do(gpa: std.mem.Allocator) !void {
                 },
             },
         },
-    }});
+    });
 
     cmd.setDescriptors(.compute, &pre_shd.layout, 0, &.{&pre_desc.sets[0]});
 
@@ -521,7 +521,7 @@ fn do(gpa: std.mem.Allocator) !void {
             cmd.dispatch(Ld.mip_sizes[level], Ld.mip_sizes[level], 1);
         }
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{.{
                 .source_stage_mask = .{ .compute_shader = true },
                 .source_access_mask = .{ .shader_storage_write = true },
@@ -539,7 +539,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     .layers = 6,
                 },
             }},
-        }});
+        });
     }
 
     cmd.setShaders(&.{.compute}, &.{&pre_shd.pre_dfg});
@@ -550,7 +550,7 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.dispatch(Irradiance.extent, Irradiance.extent, 1);
     }
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{
             .{
                 .source_stage_mask = .{ .compute_shader = true },
@@ -587,7 +587,7 @@ fn do(gpa: std.mem.Allocator) !void {
                 },
             },
         },
-    }});
+    });
 
     try cmd.end();
 
@@ -666,7 +666,7 @@ fn do(gpa: std.mem.Allocator) !void {
             }},
         }});
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .buffer = &.{.{
                 .source_stage_mask = .{ .copy = true },
                 .source_access_mask = .{ .transfer_write = true },
@@ -680,7 +680,7 @@ fn do(gpa: std.mem.Allocator) !void {
                 .offset = unif_upd_off,
                 .size = unif_upd_size,
             }},
-        }});
+        });
 
         inline for (.{ .graphics, .compute }) |bp|
             cmd.setDescriptors(bp, &shd.layout, 0, &.{&desc.sets[0][frame]});
@@ -711,7 +711,7 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setDepthCompareOp(.less_equal);
         cmd.setDepthWriteEnable(true);
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{
                 .{
                     .source_stage_mask = .{ .color_attachment_output = true },
@@ -768,7 +768,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     },
                 },
             },
-        }});
+        });
 
         cmd.beginRendering(.{
             .colors = &.{.{
@@ -872,7 +872,7 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setDepthTestEnable(false);
         cmd.setDepthWriteEnable(false);
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{
                 .{
                     .source_stage_mask = .{ .color_attachment_output = true },
@@ -938,7 +938,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     },
                 },
             },
-        }});
+        });
 
         for (Luminance.iterations, 0..) |iter, i| {
             cmd.setShaders(&.{.compute}, &.{
@@ -954,7 +954,7 @@ fn do(gpa: std.mem.Allocator) !void {
             if (i == Luminance.iterations.len - 1)
                 break;
 
-            cmd.barrier(&.{.{
+            cmd.barrier(.{
                 .image = &.{
                     .{
                         .source_stage_mask = .{ .compute_shader = true },
@@ -991,10 +991,10 @@ fn do(gpa: std.mem.Allocator) !void {
                         },
                     },
                 },
-            }});
+            });
         }
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{
                 .{
                     .source_stage_mask = .{ .compute_shader = true },
@@ -1031,7 +1031,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     },
                 },
             },
-        }});
+        });
 
         cmd.beginRendering(.{
             .colors = &.{.{
@@ -1058,7 +1058,7 @@ fn do(gpa: std.mem.Allocator) !void {
 
         cmd.endRendering();
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{.{
                 .source_stage_mask = .{ .color_attachment_output = true },
                 .source_access_mask = .{ .color_attachment_write = true },
@@ -1079,7 +1079,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     .layers = 1,
                 },
             }},
-        }});
+        });
 
         try cmd.end();
 
@@ -1121,7 +1121,7 @@ fn do(gpa: std.mem.Allocator) !void {
                 .inheritance = null,
             });
 
-            cmd.barrier(&.{.{
+            cmd.barrier(.{
                 .image = &.{.{
                     .source_stage_mask = .{},
                     .source_access_mask = .{},
@@ -1142,7 +1142,7 @@ fn do(gpa: std.mem.Allocator) !void {
                         .layers = 1,
                     },
                 }},
-            }});
+            });
 
             try cmd.end();
 

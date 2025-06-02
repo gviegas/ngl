@@ -274,7 +274,7 @@ fn do(gpa: std.mem.Allocator) !void {
         },
     });
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{},
             .source_access_mask = .{},
@@ -292,7 +292,7 @@ fn do(gpa: std.mem.Allocator) !void {
                 .layers = 1,
             },
         }},
-    }});
+    });
 
     cmd.copyBufferToImage(&.{.{
         .buffer = &stg_buf.buffer,
@@ -313,7 +313,7 @@ fn do(gpa: std.mem.Allocator) !void {
         }},
     }});
 
-    cmd.barrier(&.{.{
+    cmd.barrier(.{
         .image = &.{.{
             .source_stage_mask = .{ .copy = true },
             .source_access_mask = .{ .transfer_write = true },
@@ -331,7 +331,7 @@ fn do(gpa: std.mem.Allocator) !void {
                 .layers = 1,
             },
         }},
-    }});
+    });
 
     try cmd.end();
 
@@ -429,7 +429,7 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setDepthCompareOp(.less);
         cmd.setDepthWriteEnable(true);
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{
                 .{
                     .source_stage_mask = .{ .color_attachment_output = true },
@@ -520,7 +520,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     },
                 },
             },
-        }});
+        });
 
         cmd.beginRendering(.{
             .colors = &.{
@@ -606,7 +606,7 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setDepthTestEnable(false);
         cmd.setDepthWriteEnable(false);
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{
                 .{
                     .source_stage_mask = .{ .color_attachment_output = true },
@@ -663,7 +663,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     },
                 },
             },
-        }});
+        });
 
         cmd.beginRendering(.{
             .colors = &.{.{
@@ -686,7 +686,7 @@ fn do(gpa: std.mem.Allocator) !void {
 
         cmd.endRendering();
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{
                 .{
                     .source_stage_mask = .{ .color_attachment_output = true },
@@ -723,12 +723,12 @@ fn do(gpa: std.mem.Allocator) !void {
                     },
                 },
             },
-        }});
+        });
 
         cmd.setShaders(&.{.compute}, &.{&shd.blur});
         cmd.dispatch(rend_width, rend_height, 1);
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{
                 .{
                     .source_stage_mask = .{ .compute_shader = true },
@@ -765,7 +765,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     },
                 },
             },
-        }});
+        });
 
         cmd.setShaders(&.{.compute}, &.{&shd.blur_2});
         cmd.dispatch(rend_width, rend_height, 1);
@@ -785,7 +785,7 @@ fn do(gpa: std.mem.Allocator) !void {
             .height = pres_height,
         }});
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{
                 .{
                     .source_stage_mask = .{ .color_attachment_output = true },
@@ -839,7 +839,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     },
                 },
             },
-        }});
+        });
 
         cmd.beginRendering(.{
             .colors = &.{.{
@@ -862,7 +862,7 @@ fn do(gpa: std.mem.Allocator) !void {
 
         cmd.endRendering();
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{.{
                 .source_stage_mask = .{ .color_attachment_output = true },
                 .source_access_mask = .{ .color_attachment_write = true },
@@ -883,7 +883,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     .layers = 1,
                 },
             }},
-        }});
+        });
 
         try cmd.end();
 
@@ -925,7 +925,7 @@ fn do(gpa: std.mem.Allocator) !void {
                 .inheritance = null,
             });
 
-            cmd.barrier(&.{.{
+            cmd.barrier(.{
                 .image = &.{.{
                     .source_stage_mask = .{},
                     .source_access_mask = .{},
@@ -946,7 +946,7 @@ fn do(gpa: std.mem.Allocator) !void {
                         .layers = 1,
                     },
                 }},
-            }});
+            });
 
             try cmd.end();
 

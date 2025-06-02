@@ -297,7 +297,7 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setColorBlendEnable(0, &.{false});
         cmd.setColorWrite(0, &.{.all});
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{
                 .{
                     .source_stage_mask = .{ .color_attachment_output = true },
@@ -354,7 +354,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     },
                 },
             },
-        }});
+        });
 
         cmd.beginRendering(.{
             .colors = &.{.{
@@ -387,7 +387,7 @@ fn do(gpa: std.mem.Allocator) !void {
 
         cmd.endRendering();
 
-        cmd.barrier(&.{.{
+        cmd.barrier(.{
             .image = &.{.{
                 .source_stage_mask = .{ .color_attachment_output = true },
                 .source_access_mask = .{ .color_attachment_write = true },
@@ -408,7 +408,7 @@ fn do(gpa: std.mem.Allocator) !void {
                     .layers = 1,
                 },
             }},
-        }});
+        });
 
         try cmd.end();
 
@@ -450,7 +450,7 @@ fn do(gpa: std.mem.Allocator) !void {
                 .inheritance = null,
             });
 
-            cmd.barrier(&.{.{
+            cmd.barrier(.{
                 .image = &.{.{
                     .source_stage_mask = .{},
                     .source_access_mask = .{},
@@ -471,7 +471,7 @@ fn do(gpa: std.mem.Allocator) !void {
                         .layers = 1,
                     },
                 }},
-            }});
+            });
 
             try cmd.end();
 
