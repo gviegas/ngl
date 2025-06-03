@@ -303,7 +303,7 @@ test "timestamp query" {
                     .source_stage_mask = .{ .clear = true },
                     .source_access_mask = .{ .transfer_write = true },
                     .dest_stage_mask = .{ .copy = true },
-                    .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+                    .dest_access_mask = .{ .transfer_read = true },
                 }},
             });
             cmd.copyBufferToImage(&.{.{
@@ -327,9 +327,9 @@ test "timestamp query" {
             cmd.barrier(.{
                 .global = &.{.{
                     .source_stage_mask = .{ .copy = true },
-                    .source_access_mask = .{ .transfer_read = true, .transfer_write = true },
-                    .dest_stage_mask = .{ .copy = true },
-                    .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+                    .source_access_mask = .{ .transfer_write = true },
+                    .dest_stage_mask = .{ .clear = true },
+                    .dest_access_mask = .{ .transfer_write = true },
                 }},
             });
         }
