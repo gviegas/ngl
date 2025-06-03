@@ -270,7 +270,10 @@ test "stencil test" {
             .{
                 .source_stage_mask = .{},
                 .source_access_mask = .{},
-                .dest_stage_mask = .{ .early_fragment_tests = true, .late_fragment_tests = true },
+                .dest_stage_mask = .{
+                    .early_fragment_tests = true,
+                    .late_fragment_tests = true,
+                },
                 .dest_access_mask = .{
                     .depth_stencil_attachment_read = true,
                     .depth_stencil_attachment_write = true,
@@ -421,12 +424,22 @@ test "stencil test" {
     cmd.endRendering();
 
     cmd.barrier(.{
+        .buffer = &.{.{
+            .source_stage_mask = .{ .copy = true },
+            .source_access_mask = .{},
+            .dest_stage_mask = .{ .copy = true },
+            .dest_access_mask = .{},
+            .queue_transfer = null,
+            .buffer = &stg_buf,
+            .offset = 0,
+            .size = copy_sten_off + w * h,
+        }},
         .image = &.{
             .{
                 .source_stage_mask = .{ .color_attachment_output = true },
                 .source_access_mask = .{ .color_attachment_write = true },
                 .dest_stage_mask = .{ .copy = true },
-                .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+                .dest_access_mask = .{ .transfer_read = true },
                 .queue_transfer = null,
                 .old_layout = .color_attachment_optimal,
                 .new_layout = .transfer_source_optimal,
@@ -443,7 +456,7 @@ test "stencil test" {
                 .source_stage_mask = .{ .early_fragment_tests = true, .late_fragment_tests = true },
                 .source_access_mask = .{ .depth_stencil_attachment_write = true },
                 .dest_stage_mask = .{ .copy = true },
-                .dest_access_mask = .{ .transfer_read = true, .transfer_write = true },
+                .dest_access_mask = .{ .transfer_read = true },
                 .queue_transfer = null,
                 .old_layout = .depth_stencil_attachment_optimal,
                 .new_layout = .transfer_source_optimal,
