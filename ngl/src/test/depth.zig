@@ -361,16 +361,19 @@ test "depth-only rendering" {
 
     cmd.setShaders(&.{.vertex}, &.{&vert_shd});
 
-    cmd.setVertexInput(&.{.{
-        .binding = 0,
-        .stride = 3 * 4,
-        .step_rate = .vertex,
-    }}, &.{.{
-        .location = 0,
-        .binding = 0,
-        .format = .rgb32_sfloat,
-        .offset = 0,
-    }});
+    cmd.setVertexInput(
+        &.{.{
+            .binding = 0,
+            .stride = 3 * 4,
+            .step_rate = .vertex,
+        }},
+        &.{.{
+            .location = 0,
+            .binding = 0,
+            .format = .rgb32_sfloat,
+            .offset = 0,
+        }},
+    );
     cmd.setPrimitiveTopology(.triangle_list);
 
     cmd.setViewports(&.{.{
@@ -411,17 +414,21 @@ test "depth-only rendering" {
     cmd.endRendering();
 
     cmd.barrier(.{
+        .buffer = &.{.{
+            .source_stage_mask = .{ .copy = true },
+            .source_access_mask = .{},
+            .dest_stage_mask = .{ .copy = true },
+            .dest_access_mask = .{},
+            .queue_transfer = null,
+            .buffer = &stg_buf,
+            .offset = 0,
+            .size = w * h * 2,
+        }},
         .image = &.{.{
-            .source_stage_mask = .{
-                .early_fragment_tests = true,
-                .late_fragment_tests = true,
-            },
+            .source_stage_mask = .{ .early_fragment_tests = true, .late_fragment_tests = true },
             .source_access_mask = .{ .depth_stencil_attachment_write = true },
             .dest_stage_mask = .{ .copy = true },
-            .dest_access_mask = .{
-                .transfer_read = true,
-                .transfer_write = true,
-            },
+            .dest_access_mask = .{ .transfer_read = true },
             .queue_transfer = null,
             .old_layout = .depth_stencil_attachment_optimal,
             .new_layout = .transfer_source_optimal,
