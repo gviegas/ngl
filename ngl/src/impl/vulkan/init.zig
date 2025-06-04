@@ -231,11 +231,13 @@ const Feature = struct {
     @"1.1": c.VkPhysicalDeviceVulkan11Features,
     @"1.2": c.VkPhysicalDeviceVulkan12Features,
     @"1.3": c.VkPhysicalDeviceVulkan13Features,
+    shader_object: c.VkPhysicalDeviceShaderObjectFeaturesEXT,
 
     const Options = packed struct {
         @"1.1": bool,
         @"1.2": bool,
         @"1.3": bool,
+        shader_object: bool,
     };
 
     /// The caller must ensure that `options` is valid for the
@@ -262,6 +264,10 @@ const Feature = struct {
                 .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES,
                 .pNext = null,
             },
+            .shader_object = .{
+                .sType = c.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT,
+                .pNext = null,
+            },
         };
 
         if (options.@"1.1") {
@@ -275,6 +281,10 @@ const Feature = struct {
         if (options.@"1.3") {
             self.@"1.3".pNext = self.features_2.pNext;
             self.features_2.pNext = &self.@"1.3";
+        }
+        if (options.shader_object) {
+            self.shader_object.pNext = self.features_2.pNext;
+            self.features_2.pNext = &self.shader_object;
         }
 
         if (self.features_2.pNext != null) {
@@ -294,6 +304,7 @@ const Feature = struct {
             .@"1.1" = version >= c.VK_API_VERSION_1_2, // See below.
             .@"1.2" = version >= c.VK_API_VERSION_1_2,
             .@"1.3" = version >= c.VK_API_VERSION_1_3,
+            .shader_object = version >= c.VK_API_VERSION_1_3, // XXX
         };
 
         if (!options.@"1.1" and version >= c.VK_API_VERSION_1_1) {
@@ -427,6 +438,8 @@ const Feature = struct {
             @"1.3".shaderZeroInitializeWorkgroupMemory = c.VK_FALSE;
             @"1.3".shaderIntegerDotProduct = c.VK_FALSE;
         }
+
+        if (self.options.shader_object) {}
     }
 
     /// Updates `create_info` such that it references the data in `self`.
@@ -445,6 +458,10 @@ const Feature = struct {
             if (self.options.@"1.3") {
                 self.@"1.3".pNext = self.features_2.pNext;
                 self.features_2.pNext = &self.@"1.3";
+            }
+            if (self.options.shader_object) {
+                self.shader_object.pNext = self.features_2.pNext;
+                self.features_2.pNext = &self.shader_object;
             }
             create_info.pNext = &self.features_2;
             create_info.pEnabledFeatures = null;
@@ -2911,6 +2928,7 @@ fn getFeature(
                     .@"1.1" = false,
                     .@"1.2" = ver >= c.VK_API_VERSION_1_2,
                     .@"1.3" = false,
+                    .shader_object = false,
                 });
                 // TODO: This is unnecessary.
                 ft.set();
