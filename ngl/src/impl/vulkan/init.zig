@@ -296,15 +296,15 @@ const Feature = struct {
         return self;
     }
 
-    /// Gets all core features up to `version`, inclusive.
-    // TODO: Make this aware of available extensions (or maybe add
-    // a separate method for such).
-    fn getVersion(device: c.VkPhysicalDevice, version: u32) Feature {
+    /// Gets all core features up to and including `version`,
+    /// and all extension features present in `extension`
+    /// that would work on `version`.
+    fn getVersionExtension(device: c.VkPhysicalDevice, version: u32, extension: Extension) Feature {
         const options = Options{
             .@"1.1" = version >= c.VK_API_VERSION_1_2, // See below.
             .@"1.2" = version >= c.VK_API_VERSION_1_2,
             .@"1.3" = version >= c.VK_API_VERSION_1_3,
-            .shader_object = version >= c.VK_API_VERSION_1_3, // XXX
+            .shader_object = version >= c.VK_API_VERSION_1_3 and extension.contains("VK_EXT_shader_object"), // XXX
         };
 
         if (!options.@"1.1" and version >= c.VK_API_VERSION_1_1) {
@@ -1264,7 +1264,9 @@ pub const Device = struct {
         if (ext.contains(shader_object_ext))
             try ext_names.append(shader_object_ext);
 
-        var feat = Feature.getVersion(phys_dev, @intCast(ver));
+        // TODO: Leave only the extensions that will be
+        // enabled in `ext` before calling this.
+        var feat = Feature.getVersionExtension(phys_dev, @intCast(ver), ext);
         feat.set();
 
         var create_info = c.VkDeviceCreateInfo{
