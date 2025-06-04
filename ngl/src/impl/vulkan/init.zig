@@ -1250,7 +1250,6 @@ pub const Device = struct {
         try ext.putAllDevice(phys_dev);
         var ext_names = std.ArrayList([*:0]const u8).init(allocator);
         defer ext_names.deinit();
-
         if (gpu.feature_set.presentation) {
             if (inst.destroySurface == null)
                 return Error.InvalidArgument;
@@ -1259,6 +1258,11 @@ pub const Device = struct {
                 try ext_names.append(swapchain_ext);
             } else return Error.NotSupported;
         }
+        // TODO: Replace this with a loop when other
+        // extensions are added.
+        const shader_object_ext = "VK_EXT_shader_object";
+        if (ext.contains(shader_object_ext))
+            try ext_names.append(shader_object_ext);
 
         var feat = Feature.getVersion(phys_dev, @intCast(ver));
         feat.set();
