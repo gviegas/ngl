@@ -138,11 +138,10 @@ fn deinit(_: *anyopaque, _: std.mem.Allocator) void {
         global_instance = null;
     }
     if (libvulkan) |handle| {
-        if (builtin.os.tag != .windows) {
-            _ = std.c.dlclose(handle);
-        } else {
-            _ = std.os.windows.kernel32.FreeLibrary(@ptrCast(handle));
-        }
+        _ = switch (builtin.os.tag) {
+            .windows => std.os.windows.kernel32.FreeLibrary(@ptrCast(handle)),
+            else => std.c.dlclose(handle),
+        };
         libvulkan = null;
         getInstanceProcAddr = null;
         createInstance = null;
