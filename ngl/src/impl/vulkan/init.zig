@@ -1190,6 +1190,11 @@ pub const Device = struct {
     getSwapchainImages: c.PFN_vkGetSwapchainImagesKHR,
     acquireNextImage: c.PFN_vkAcquireNextImageKHR,
     destroySwapchain: c.PFN_vkDestroySwapchainKHR,
+    // VK_EXT_shader_object.
+    // TODO: Fetch `vkGetShaderBinaryDataEXT` to implement
+    // binary shader code caching functionality.
+    createShaders: c.PFN_vkCreateShadersEXT,
+    destroyShader: c.PFN_vkDestroyShaderEXT,
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1261,8 +1266,13 @@ pub const Device = struct {
         // TODO: Replace this with a loop when other
         // extensions are added.
         const shader_object_ext = "VK_EXT_shader_object";
-        if (ext.contains(shader_object_ext))
-            try ext_names.append(shader_object_ext);
+        const has_shader_object = blk: {
+            if (ext.contains(shader_object_ext)) {
+                try ext_names.append(shader_object_ext);
+                break :blk true;
+            }
+            break :blk false;
+        };
 
         // TODO: Leave only the extensions that will be
         // enabled in `ext` before calling this.
@@ -1450,6 +1460,15 @@ pub const Device = struct {
                 null,
             .destroySwapchain = if (gpu.feature_set.presentation)
                 @ptrCast(try Device.getProc(get, dev, "vkDestroySwapchainKHR"))
+            else
+                null,
+
+            .createShaders = if (has_shader_object)
+                @ptrCast(try Device.getProc(get, dev, "vkCreateShadersEXT"))
+            else
+                null,
+            .destroyShader = if (has_shader_object)
+                @ptrCast(try Device.getProc(get, dev, "vkDestroyShaderEXT"))
             else
                 null,
         };
@@ -2629,6 +2648,30 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.destroySwapchain.?(self.handle, swapchain, vk_allocator);
+    }
+
+    pub fn vkCreateShadersEXT(
+        self: *Device,
+        create_info_count: u32,
+        create_infos: [*]const c.VkShaderCreateInfoEXT,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+        shaders: [*]c.VkShaderEXT,
+    ) c.VkResult {
+        return self.createShaders.?(
+            self.handle,
+            create_info_count,
+            create_infos,
+            vk_allocator,
+            shaders,
+        );
+    }
+
+    pub fn vkDestroyShaderEXT(
+        self: *Device,
+        shader: c.VkShaderEXT,
+        vk_allocator: ?*const c.VkAllocationCallbacks,
+    ) void {
+        self.destroyShader.?(self.handle, shader, vk_allocator);
     }
 };
 
