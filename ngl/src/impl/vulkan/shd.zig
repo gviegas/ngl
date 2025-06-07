@@ -261,9 +261,150 @@ pub const Shader = packed union {
         const dev = Device.cast(device);
 
         if (compatible(dev))
-            try Compat.init(allocator, dev, descs, shaders)
+            return Compat.init(allocator, dev, descs, shaders);
+
+        const info_n = 2;
+        var stk_infos: [info_n]c.VkShaderCreateInfoEXT = undefined;
+        const infos = if (descs.len > info_n)
+            // TODO: In case of error, consider issuing multiple calls
+            // if the shaders need not be linked together.
+            try allocator.alloc(c.VkShaderCreateInfoEXT, descs.len)
         else
-            @panic("Not yet implemented");
+            &stk_infos;
+        defer if (infos.len > info_n) allocator.free(infos);
+        for (infos, descs) |*info, desc|
+            info.* = .{
+                .sType = c.VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT,
+                .pNext = null,
+                .flags = if (desc.link) c.VK_SHADER_CREATE_LINK_STAGE_BIT_EXT else 0,
+                .stage = conv.toVkShaderStage(desc.type),
+                .nextStage = conv.toVkShaderStageFlags(desc.next),
+                .codeType = c.VK_SHADER_CODE_TYPE_SPIRV_EXT,
+                .codeSize = desc.code.len,
+                .pCode = desc.code.ptr,
+                .pName = desc.name.ptr,
+                .setLayoutCount = @min(desc.set_layouts.len, std.math.maxInt(u32)),
+                .pSetLayouts = undefined, // Set below.
+                .pushConstantRangeCount = @min(desc.push_constants.len, std.math.maxInt(u32)),
+                .pPushConstantRanges = undefined, // Set below.
+                .pSpecializationInfo = undefined, // Set below.
+            };
+
+        // TODO: Check the slices pointers for reuse opportunities,
+        // as it is likely that shaders will use the same sets.
+        const layt_n = 8;
+        var stk_layts: [layt_n]c.VkDescriptorSetLayout = undefined;
+        const layts = blk: {
+            var n: usize = 0;
+            for (descs) |desc|
+                n += desc.set_layouts.len;
+            if (n > layt_n)
+                break :blk try allocator.alloc(c.VkDescriptorSetLayout, n);
+            break :blk &stk_layts;
+        };
+        defer if (layts.len > layt_n) allocator.free(layts);
+        var layt_i: usize = 0;
+        for (infos, descs) |*info, desc| {
+            info.pSetLayouts = layts.ptr + layt_i;
+            for (desc.set_layouts) |layt| {
+                layts[layt_i] = DescriptorSetLayout.cast(layt.impl).handle;
+                layt_i += 1;
+            }
+        }
+
+        const rng_n = 4;
+        var stk_rngs: [rng_n]c.VkPushConstantRange = undefined;
+        const rngs = blk: {
+            var n: usize = 0;
+            for (descs) |desc|
+                n += desc.push_constants.len;
+            if (n > rng_n)
+                break :blk try allocator.alloc(c.VkPushConstantRange, n);
+            break :blk &stk_rngs;
+        };
+        defer if (rngs.len > rng_n) allocator.free(rngs);
+        var rng_i: usize = 0;
+        for (infos, descs) |*info, desc| {
+            info.pPushConstantRanges = rngs.ptr + rng_i;
+            for (desc.push_constants) |rng| {
+                rngs[rng_i] = .{
+                    .stageFlags = conv.toVkShaderStageFlags(rng.shader_mask),
+                    .offset = rng.offset,
+                    .size = rng.size,
+                };
+                rng_i += 1;
+            }
+        }
+
+        const spec_n = info_n;
+        const sconst_n = 16;
+        var stk_specs: [spec_n]c.VkSpecializationInfo = undefined;
+        var stk_sconsts: [sconst_n]c.VkSpecializationMapEntry = undefined;
+        const specs, const sconsts = blk: {
+            var n: usize = 0;
+            var m: usize = 0;
+            for (descs) |desc| {
+                if (desc.specialization) |spec| {
+                    n += 1;
+                    m += spec.constants.len;
+                }
+            }
+            const specs = if (n > spec_n)
+                try allocator.alloc(c.VkSpecializationInfo, n)
+            else
+                &stk_specs;
+            const sconsts = if (m > sconst_n)
+                try allocator.alloc(c.VkSpecializationMapEntry, m)
+            else
+                &stk_sconsts;
+            break :blk .{ specs, sconsts };
+        };
+        defer {
+            if (specs.len > spec_n) allocator.free(specs);
+            if (sconsts.len > sconst_n) allocator.free(sconsts);
+        }
+        var spec_i: usize = 0;
+        var sconst_i: usize = 0;
+        for (infos, descs) |*info, desc| {
+            if (desc.specialization) |spec| {
+                for (spec.constants, 0..spec.constants.len) |x, i|
+                    sconsts[sconst_i + i] = .{
+                        .constantID = x.id,
+                        .offset = x.offset,
+                        .size = x.size,
+                    };
+                specs[spec_i] = .{
+                    .mapEntryCount = @min(spec.constants.len, std.math.maxInt(u32)),
+                    .pMapEntries = sconsts.ptr + sconst_i,
+                    .dataSize = spec.data.len,
+                    .pData = spec.data.ptr,
+                };
+                info.pSpecializationInfo = specs.ptr + spec_i;
+                spec_i += 1;
+                sconst_i += spec.constants.len;
+            } else {
+                info.pSpecializationInfo = null;
+            }
+        }
+
+        const shd_n = info_n;
+        var stk_shds: [shd_n]c.VkShaderEXT = undefined;
+        const shds = if (shaders.len > shd_n)
+            try allocator.alloc(c.VkShaderEXT, shaders.len)
+        else
+            &stk_shds;
+        defer if (shds.len > shd_n) allocator.free(shds);
+        const err = if (check(dev.vkCreateShadersEXT(
+            @min(infos.len, std.math.maxInt(u32)),
+            infos.ptr,
+            null,
+            shds.ptr,
+        ))) |_|
+            Error.Other
+        else |err|
+            err;
+        for (shaders, shds) |*shd, hdl|
+            shd.* = if (hdl) |h| .{ .impl = .{ .val = @bitCast(Shader{ .handle = h }) } } else err;
     }
 
     pub fn deinit(
@@ -275,10 +416,11 @@ pub const Shader = packed union {
         const dev = Device.cast(device);
         const shd = cast(shader);
 
-        if (compatible(dev))
-            shd.compat.deinit(allocator, dev)
-        else
-            @panic("Not yet implemented");
+        if (compatible(dev)) {
+            shd.compat.deinit(allocator, dev);
+        } else {
+            dev.vkDestroyShaderEXT(shd.handle, null);
+        }
     }
 };
 
