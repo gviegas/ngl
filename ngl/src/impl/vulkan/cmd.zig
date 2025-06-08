@@ -799,8 +799,10 @@ pub const CommandBuffer = struct {
             d.state.polygon_mode.set(polygon_mode);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            Device.cast(device).vkCmdSetPolygonModeEXT(
+                cmd_buf.handle,
+                conv.toVkPolygonMode(polygon_mode),
+            );
         }
     }
 
