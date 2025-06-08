@@ -446,7 +446,17 @@ pub const CommandBuffer = struct {
                         );
                     break;
                 };
-        } else @panic("Not yet implemented");
+        } else {
+            const shd_max = @typeInfo(ngl.Shader.Type).@"enum".fields.len;
+            var stgs: [shd_max]c.VkShaderStageFlagBits = undefined;
+            var shds: [shd_max]c.VkShaderEXT = undefined;
+            const n = @min(types.len, shd_max);
+            for (stgs[0..n], types[0..n], shds[0..n], shaders[0..n]) |*stg, typ, *shdl, shd| {
+                stg.* = conv.toVkShaderStage(typ);
+                shdl.* = if (shd) |x| Shader.cast(x.impl).handle else null_handle;
+            }
+            dev.vkCmdBindShadersEXT(cmd_buf.handle, n, &stgs, &shds);
+        }
     }
 
     pub fn setDescriptors(

@@ -1195,6 +1195,7 @@ pub const Device = struct {
     // binary shader code caching functionality.
     createShaders: c.PFN_vkCreateShadersEXT,
     destroyShader: c.PFN_vkDestroyShaderEXT,
+    cmdBindShaders: c.PFN_vkCmdBindShadersEXT,
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1469,6 +1470,10 @@ pub const Device = struct {
                 null,
             .destroyShader = if (has_shader_object)
                 @ptrCast(try Device.getProc(get, dev, "vkDestroyShaderEXT"))
+            else
+                null,
+            .cmdBindShaders = if (has_shader_object)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdBindShadersEXT"))
             else
                 null,
         };
@@ -2672,6 +2677,16 @@ pub const Device = struct {
         vk_allocator: ?*const c.VkAllocationCallbacks,
     ) void {
         self.destroyShader.?(self.handle, shader, vk_allocator);
+    }
+
+    pub fn vkCmdBindShadersEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        stage_count: u32,
+        stages: [*]const c.VkShaderStageFlagBits,
+        shaders: [*]const c.VkShaderEXT,
+    ) void {
+        self.cmdBindShaders.?(command_buffer, stage_count, stages, shaders);
     }
 };
 
