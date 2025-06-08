@@ -1197,6 +1197,7 @@ pub const Device = struct {
     destroyShader: c.PFN_vkDestroyShaderEXT,
     cmdBindShaders: c.PFN_vkCmdBindShadersEXT,
     cmdSetVertexInput: c.PFN_vkCmdSetVertexInputEXT,
+    cmdSetPrimimitiveTopology: c.PFN_vkCmdSetPrimitiveTopologyEXT, // NOTE: Core in 1.3.
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1479,6 +1480,13 @@ pub const Device = struct {
                 null,
             .cmdSetVertexInput = if (has_shader_object)
                 @ptrCast(try Device.getProc(get, dev, "vkCmdSetVertexInputEXT"))
+            else
+                null,
+            .cmdSetPrimimitiveTopology = if (has_shader_object)
+                @ptrCast(if (Device.getProc(get, dev, "vkCmdSetPrimitiveTopologyEXT")) |x|
+                    x
+                else |_|
+                    try Device.getProc(get, dev, "vkCmdSetPrimitiveTopology"))
             else
                 null,
         };
@@ -2709,6 +2717,14 @@ pub const Device = struct {
             vertex_attribute_description_count,
             vertex_attribute_descriptions,
         );
+    }
+
+    pub fn vkCmdSetPrimitiveTopologyEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        primitive_topology: c.VkPrimitiveTopology,
+    ) void {
+        self.cmdSetPrimimitiveTopology.?(command_buffer, primitive_topology);
     }
 };
 

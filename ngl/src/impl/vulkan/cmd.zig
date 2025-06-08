@@ -600,8 +600,10 @@ pub const CommandBuffer = struct {
             d.state.primitive_topology.set(topology);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            Device.cast(device).vkCmdSetPrimitiveTopologyEXT(
+                cmd_buf.handle,
+                conv.toVkPrimitiveTopology(topology),
+            );
         }
     }
 
