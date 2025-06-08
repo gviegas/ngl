@@ -818,8 +818,10 @@ pub const CommandBuffer = struct {
             d.state.cull_mode.set(cull_mode);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            Device.cast(device).vkCmdSetCullModeEXT(
+                cmd_buf.handle,
+                conv.toVkCullModeFlags(cull_mode),
+            );
         }
     }
 

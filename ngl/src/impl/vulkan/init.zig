@@ -1200,6 +1200,7 @@ pub const Device = struct {
     cmdSetPrimimitiveTopology: c.PFN_vkCmdSetPrimitiveTopologyEXT, // NOTE: Core in 1.3.
     cmdSetRasterizerDiscardEnable: c.PFN_vkCmdSetRasterizerDiscardEnableEXT, // NOTE: Core in 1.3.
     cmdSetPolygonMode: c.PFN_vkCmdSetPolygonModeEXT,
+    cmdSetCullMode: c.PFN_vkCmdSetCullModeEXT, // NOTE: Core in 1.3.
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1500,6 +1501,13 @@ pub const Device = struct {
                 null,
             .cmdSetPolygonMode = if (has_shader_object)
                 @ptrCast(try Device.getProc(get, dev, "vkCmdSetPolygonModeEXT"))
+            else
+                null,
+            .cmdSetCullMode = if (has_shader_object)
+                @ptrCast(if (Device.getProc(get, dev, "vkCmdSetCullModeEXT")) |x|
+                    x
+                else |_|
+                    try Device.getProc(get, dev, "vkCmdSetCullMode"))
             else
                 null,
         };
@@ -2754,6 +2762,14 @@ pub const Device = struct {
         polygon_mode: c.VkPolygonMode,
     ) void {
         self.cmdSetPolygonMode.?(command_buffer, polygon_mode);
+    }
+
+    pub fn vkCmdSetCullModeEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        cull_mode: c.VkCullModeFlags,
+    ) void {
+        self.cmdSetCullMode.?(command_buffer, cull_mode);
     }
 };
 
