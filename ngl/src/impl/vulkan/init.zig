@@ -1196,6 +1196,7 @@ pub const Device = struct {
     createShaders: c.PFN_vkCreateShadersEXT,
     destroyShader: c.PFN_vkDestroyShaderEXT,
     cmdBindShaders: c.PFN_vkCmdBindShadersEXT,
+    cmdSetVertexInput: c.PFN_vkCmdSetVertexInputEXT,
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1474,6 +1475,10 @@ pub const Device = struct {
                 null,
             .cmdBindShaders = if (has_shader_object)
                 @ptrCast(try Device.getProc(get, dev, "vkCmdBindShadersEXT"))
+            else
+                null,
+            .cmdSetVertexInput = if (has_shader_object)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdSetVertexInputEXT"))
             else
                 null,
         };
@@ -2687,6 +2692,23 @@ pub const Device = struct {
         shaders: [*]const c.VkShaderEXT,
     ) void {
         self.cmdBindShaders.?(command_buffer, stage_count, stages, shaders);
+    }
+
+    pub fn vkCmdSetVertexInputEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        vertex_binding_description_count: u32,
+        vertex_binding_descriptions: ?[*]const c.VkVertexInputBindingDescription2EXT,
+        vertex_attribute_description_count: u32,
+        vertex_attribute_descriptions: ?[*]const c.VkVertexInputAttributeDescription2EXT,
+    ) void {
+        self.cmdSetVertexInput.?(
+            command_buffer,
+            vertex_binding_description_count,
+            vertex_binding_descriptions,
+            vertex_attribute_description_count,
+            vertex_attribute_descriptions,
+        );
     }
 };
 

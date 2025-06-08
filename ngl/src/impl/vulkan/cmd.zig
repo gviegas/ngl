@@ -540,8 +540,51 @@ pub const CommandBuffer = struct {
             };
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            const bind_n = 16;
+            const attr_n = 16;
+            var stk_binds: [bind_n]c.VkVertexInputBindingDescription2EXT = undefined;
+            var stk_attrs: [attr_n]c.VkVertexInputAttributeDescription2EXT = undefined;
+            const binds = if (bindings.len > bind_n)
+                allocator.alloc(c.VkVertexInputBindingDescription2EXT, bindings.len) catch {
+                    @panic("TODO");
+                }
+            else
+                &stk_binds;
+            defer if (binds.len > bind_n) allocator.free(binds);
+            const attrs = if (attributes.len > attr_n)
+                allocator.alloc(c.VkVertexInputAttributeDescription2EXT, attributes.len) catch {
+                    @panic("TODO");
+                }
+            else
+                &stk_attrs;
+            defer if (attrs.len > attr_n) allocator.free(attrs);
+
+            for (binds, bindings) |*dest, source|
+                dest.* = .{
+                    .sType = c.VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT,
+                    .pNext = null,
+                    .binding = source.binding,
+                    .stride = source.stride,
+                    .inputRate = conv.toVkVertexInputRate(source.step_rate),
+                    .divisor = 1, // TODO
+                };
+            for (attrs, attributes) |*dest, source|
+                dest.* = .{
+                    .sType = c.VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT,
+                    .pNext = null,
+                    .location = source.location,
+                    .binding = source.binding,
+                    .format = conv.toVkFormat(source.format) catch @panic("Invalid format"),
+                    .offset = source.offset,
+                };
+
+            Device.cast(device).vkCmdSetVertexInputEXT(
+                cmd_buf.handle,
+                @min(bindings.len, std.math.maxInt(u32)),
+                binds.ptr,
+                @min(attributes.len, std.math.maxInt(u32)),
+                attrs.ptr,
+            );
         }
     }
 
