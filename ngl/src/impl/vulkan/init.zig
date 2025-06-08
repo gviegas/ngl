@@ -2592,10 +2592,10 @@ pub const Device = struct {
 
     pub fn vkCmdPipelineBarrier2(
         self: *Device,
-        commandBuffer: c.VkCommandBuffer,
+        command_buffer: c.VkCommandBuffer,
         dependency_info: *const c.VkDependencyInfo,
     ) void {
-        self.cmdPipelineBarrier2.?(commandBuffer, dependency_info);
+        self.cmdPipelineBarrier2.?(command_buffer, dependency_info);
     }
 
     pub fn vkQueuePresentKHR(
