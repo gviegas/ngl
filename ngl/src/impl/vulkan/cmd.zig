@@ -780,8 +780,10 @@ pub const CommandBuffer = struct {
             d.state.rasterization_enable.set(enable);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            Device.cast(device).vkCmdSetRasterizerDiscardEnableEXT(
+                cmd_buf.handle,
+                if (enable) c.VK_FALSE else c.VK_TRUE,
+            );
         }
     }
 

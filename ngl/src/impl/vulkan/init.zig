@@ -1198,6 +1198,7 @@ pub const Device = struct {
     cmdBindShaders: c.PFN_vkCmdBindShadersEXT,
     cmdSetVertexInput: c.PFN_vkCmdSetVertexInputEXT,
     cmdSetPrimimitiveTopology: c.PFN_vkCmdSetPrimitiveTopologyEXT, // NOTE: Core in 1.3.
+    cmdSetRasterizerDiscardEnable: c.PFN_vkCmdSetRasterizerDiscardEnableEXT, // NOTE: Core in 1.3.
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1487,6 +1488,13 @@ pub const Device = struct {
                     x
                 else |_|
                     try Device.getProc(get, dev, "vkCmdSetPrimitiveTopology"))
+            else
+                null,
+            .cmdSetRasterizerDiscardEnable = if (has_shader_object)
+                @ptrCast(if (Device.getProc(get, dev, "vkCmdSetRasterizerDiscardEnableEXT")) |x|
+                    x
+                else |_|
+                    try Device.getProc(get, dev, "vkCmdSetRasterizerDiscardEnable"))
             else
                 null,
         };
@@ -2725,6 +2733,14 @@ pub const Device = struct {
         primitive_topology: c.VkPrimitiveTopology,
     ) void {
         self.cmdSetPrimimitiveTopology.?(command_buffer, primitive_topology);
+    }
+
+    pub fn vkCmdSetRasterizerDiscardEnableEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        rasterizer_discard_enable: c.VkBool32,
+    ) void {
+        self.cmdSetRasterizerDiscardEnable.?(command_buffer, rasterizer_discard_enable);
     }
 };
 
