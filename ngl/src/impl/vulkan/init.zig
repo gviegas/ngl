@@ -1206,6 +1206,7 @@ pub const Device = struct {
     cmdSetSampleMask: c.PFN_vkCmdSetSampleMaskEXT,
     cmdSetAlphaToCoverageEnable: c.PFN_vkCmdSetAlphaToCoverageEnableEXT,
     cmdSetAlphaToOneEnable: c.PFN_vkCmdSetAlphaToOneEnableEXT,
+    cmdSetDepthClampEnable: c.PFN_vkCmdSetDepthClampEnableEXT,
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1536,6 +1537,10 @@ pub const Device = struct {
                 null,
             .cmdSetAlphaToOneEnable = if (has_shader_object)
                 @ptrCast(try Device.getProc(get, dev, "vkCmdSetAlphaToOneEnableEXT"))
+            else
+                null,
+            .cmdSetDepthClampEnable = if (has_shader_object)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdSetDepthClampEnableEXT"))
             else
                 null,
         };
@@ -2839,6 +2844,14 @@ pub const Device = struct {
         alpha_to_one_enable: c.VkBool32,
     ) void {
         self.cmdSetAlphaToOneEnable.?(command_buffer, alpha_to_one_enable);
+    }
+
+    pub fn vkCmdSetDepthClampEnableEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        depth_clamp_enable: c.VkBool32,
+    ) void {
+        self.cmdSetDepthClampEnable.?(command_buffer, depth_clamp_enable);
     }
 };
 
