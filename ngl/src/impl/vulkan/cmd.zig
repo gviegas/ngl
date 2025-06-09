@@ -1040,8 +1040,10 @@ pub const CommandBuffer = struct {
             d.state.stencil_test_enable.set(enable);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            Device.cast(device).vkCmdSetStencilTestEnableEXT(
+                cmd_buf.handle,
+                if (enable) c.VK_TRUE else c.VK_FALSE,
+            );
         }
     }
 
