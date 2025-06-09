@@ -915,8 +915,10 @@ pub const CommandBuffer = struct {
             d.state.alpha_to_one_enable.set(enable);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            Device.cast(device).vkCmdSetAlphaToOneEnableEXT(
+                cmd_buf.handle,
+                if (enable) c.VK_TRUE else c.VK_FALSE,
+            );
         }
     }
 
