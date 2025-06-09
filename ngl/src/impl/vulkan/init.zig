@@ -1210,6 +1210,7 @@ pub const Device = struct {
     cmdSetDepthBiasEnable: c.PFN_vkCmdSetDepthBiasEnableEXT, // NOTE: Core in 1.3.
     cmdSetDepthTestEnable: c.PFN_vkCmdSetDepthTestEnableEXT, // NOTE: Core in 1.3.
     cmdSetDepthCompareOp: c.PFN_vkCmdSetDepthCompareOpEXT, // NOTE: Core in 1.3.
+    cmdSetDepthWriteEnable: c.PFN_vkCmdSetDepthWriteEnableEXT, // NOTE: Core in 1.3.
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1565,6 +1566,13 @@ pub const Device = struct {
                     x
                 else |_|
                     try Device.getProc(get, dev, "vkCmdSetDepthCompareOp"))
+            else
+                null,
+            .cmdSetDepthWriteEnable = if (has_shader_object)
+                @ptrCast(if (Device.getProc(get, dev, "vkCmdSetDepthWriteEnableEXT")) |x|
+                    x
+                else |_|
+                    try Device.getProc(get, dev, "vkCmdSetDepthWriteEnable"))
             else
                 null,
         };
@@ -2900,6 +2908,14 @@ pub const Device = struct {
         depth_compare_op: c.VkCompareOp,
     ) void {
         self.cmdSetDepthCompareOp.?(command_buffer, depth_compare_op);
+    }
+
+    pub fn vkCmdSetDepthWriteEnableEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        depth_write_enable: c.VkBool32,
+    ) void {
+        self.cmdSetDepthWriteEnable.?(command_buffer, depth_write_enable);
     }
 };
 
