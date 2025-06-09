@@ -1213,6 +1213,7 @@ pub const Device = struct {
     cmdSetDepthWriteEnable: c.PFN_vkCmdSetDepthWriteEnableEXT, // NOTE: Core in 1.3.
     cmdSetStencilTestEnable: c.PFN_vkCmdSetStencilTestEnableEXT, // NOTE: Core in 1.3.
     cmdSetStencilOp: c.PFN_vkCmdSetStencilOpEXT, // NOTE: Core in 1.3.
+    cmdSetColorBlendEnable: c.PFN_vkCmdSetColorBlendEnableEXT,
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1589,6 +1590,10 @@ pub const Device = struct {
                     x
                 else |_|
                     try Device.getProc(get, dev, "vkCmdSetStencilOp"))
+            else
+                null,
+            .cmdSetColorBlendEnable = if (has_shader_object)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdSetColorBlendEnableEXT"))
             else
                 null,
         };
@@ -2958,6 +2963,21 @@ pub const Device = struct {
             pass_op,
             depth_fail_op,
             compare_op,
+        );
+    }
+
+    pub fn vkCmdSetColorBlendEnableEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        first_attachment: u32,
+        attachment_count: u32,
+        color_blend_enables: [*]const c.VkBool32,
+    ) void {
+        self.cmdSetColorBlendEnable.?(
+            command_buffer,
+            first_attachment,
+            attachment_count,
+            color_blend_enables,
         );
     }
 };

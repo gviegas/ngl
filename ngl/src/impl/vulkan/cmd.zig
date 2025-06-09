@@ -1130,8 +1130,16 @@ pub const CommandBuffer = struct {
             d.state.color_blend_enable.set(first_attachment, enable);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            var enable32: [ngl.Cmd.max_color_attachment]c.VkBool32 = undefined;
+            const n = @min(enable.len, enable32.len);
+            for (enable32[0..n], enable[0..n]) |*dest, source|
+                dest.* = if (source) c.VK_TRUE else c.VK_FALSE;
+            Device.cast(device).vkCmdSetColorBlendEnableEXT(
+                cmd_buf.handle,
+                first_attachment,
+                n,
+                &enable32,
+            );
         }
     }
 
