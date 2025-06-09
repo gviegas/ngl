@@ -1157,8 +1157,23 @@ pub const CommandBuffer = struct {
             d.state.color_blend.set(first_attachment, blend);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            var eqs: [ngl.Cmd.max_color_attachment]c.VkColorBlendEquationEXT = undefined;
+            const n = @min(blend.len, eqs.len);
+            for (eqs[0..n], blend[0..n]) |*eq, b|
+                eq.* = .{
+                    .srcColorBlendFactor = conv.toVkBlendFactor(b.color_source_factor),
+                    .dstColorBlendFactor = conv.toVkBlendFactor(b.color_dest_factor),
+                    .colorBlendOp = conv.toVkBlendOp(b.color_op),
+                    .srcAlphaBlendFactor = conv.toVkBlendFactor(b.alpha_source_factor),
+                    .dstAlphaBlendFactor = conv.toVkBlendFactor(b.alpha_dest_factor),
+                    .alphaBlendOp = conv.toVkBlendOp(b.alpha_op),
+                };
+            Device.cast(device).vkCmdSetColorBlendEquationEXT(
+                cmd_buf.handle,
+                first_attachment,
+                n,
+                &eqs,
+            );
         }
     }
 
