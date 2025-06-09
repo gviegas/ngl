@@ -1203,6 +1203,7 @@ pub const Device = struct {
     cmdSetCullMode: c.PFN_vkCmdSetCullModeEXT, // NOTE: Core in 1.3.
     cmdSetFrontFace: c.PFN_vkCmdSetFrontFaceEXT, // NOTE: Core in 1.3.
     cmdSetRasterizationSamples: c.PFN_vkCmdSetRasterizationSamplesEXT,
+    cmdSetSampleMask: c.PFN_vkCmdSetSampleMaskEXT,
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1521,6 +1522,10 @@ pub const Device = struct {
                 null,
             .cmdSetRasterizationSamples = if (has_shader_object)
                 @ptrCast(try Device.getProc(get, dev, "vkCmdSetRasterizationSamplesEXT"))
+            else
+                null,
+            .cmdSetSampleMask = if (has_shader_object)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdSetSampleMaskEXT"))
             else
                 null,
         };
@@ -2799,6 +2804,15 @@ pub const Device = struct {
         rasterization_samples: c.VkSampleCountFlagBits,
     ) void {
         self.cmdSetRasterizationSamples.?(command_buffer, rasterization_samples);
+    }
+
+    pub fn vkCmdSetSampleMaskEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        samples: c.VkSampleCountFlagBits,
+        sample_mask: [*]const c.VkSampleMask,
+    ) void {
+        self.cmdSetSampleMask.?(command_buffer, samples, sample_mask);
     }
 };
 

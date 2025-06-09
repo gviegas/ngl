@@ -875,8 +875,12 @@ pub const CommandBuffer = struct {
             d.state.sample_mask.set(sample_mask);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            const mask = [2]c.VkSampleMask{ @truncate(sample_mask), @truncate(sample_mask >> 32) };
+            Device.cast(device).vkCmdSetSampleMaskEXT(
+                cmd_buf.handle,
+                c.VK_SAMPLE_COUNT_64_BIT,
+                &mask,
+            );
         }
     }
 
