@@ -1063,8 +1063,14 @@ pub const CommandBuffer = struct {
             d.state.stencil_op.set(stencil_face, fail_op, pass_op, depth_fail_op, compare_op);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            Device.cast(device).vkCmdSetStencilOpEXT(
+                cmd_buf.handle,
+                conv.toVkStencilFaceFlags(stencil_face),
+                conv.toVkStencilOp(fail_op),
+                conv.toVkStencilOp(pass_op),
+                conv.toVkStencilOp(depth_fail_op),
+                conv.toVkCompareOp(compare_op),
+            );
         }
     }
 

@@ -1212,6 +1212,7 @@ pub const Device = struct {
     cmdSetDepthCompareOp: c.PFN_vkCmdSetDepthCompareOpEXT, // NOTE: Core in 1.3.
     cmdSetDepthWriteEnable: c.PFN_vkCmdSetDepthWriteEnableEXT, // NOTE: Core in 1.3.
     cmdSetStencilTestEnable: c.PFN_vkCmdSetStencilTestEnableEXT, // NOTE: Core in 1.3.
+    cmdSetStencilOp: c.PFN_vkCmdSetStencilOpEXT, // NOTE: Core in 1.3.
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1581,6 +1582,13 @@ pub const Device = struct {
                     x
                 else |_|
                     try Device.getProc(get, dev, "vkCmdSetStencilTestEnable"))
+            else
+                null,
+            .cmdSetStencilOp = if (has_shader_object)
+                @ptrCast(if (Device.getProc(get, dev, "vkCmdSetStencilOpEXT")) |x|
+                    x
+                else |_|
+                    try Device.getProc(get, dev, "vkCmdSetStencilOp"))
             else
                 null,
         };
@@ -2932,6 +2940,25 @@ pub const Device = struct {
         stencil_test_enable: c.VkBool32,
     ) void {
         self.cmdSetStencilTestEnable.?(command_buffer, stencil_test_enable);
+    }
+
+    pub fn vkCmdSetStencilOpEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        face_mask: c.VkStencilFaceFlags,
+        fail_op: c.VkStencilOp,
+        pass_op: c.VkStencilOp,
+        depth_fail_op: c.VkStencilOp,
+        compare_op: c.VkCompareOp,
+    ) void {
+        self.cmdSetStencilOp.?(
+            command_buffer,
+            face_mask,
+            fail_op,
+            pass_op,
+            depth_fail_op,
+            compare_op,
+        );
     }
 };
 
