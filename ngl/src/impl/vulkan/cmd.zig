@@ -837,8 +837,10 @@ pub const CommandBuffer = struct {
             d.state.front_face.set(front_face);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            Device.cast(device).vkCmdSetFrontFaceEXT(
+                cmd_buf.handle,
+                conv.toVkFrontFace(front_face),
+            );
         }
     }
 
