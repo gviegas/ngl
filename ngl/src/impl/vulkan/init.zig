@@ -1215,6 +1215,7 @@ pub const Device = struct {
     cmdSetStencilOp: c.PFN_vkCmdSetStencilOpEXT, // NOTE: Core in 1.3.
     cmdSetColorBlendEnable: c.PFN_vkCmdSetColorBlendEnableEXT,
     cmdSetColorBlendEquation: c.PFN_vkCmdSetColorBlendEquationEXT,
+    cmdSetColorWriteMask: c.PFN_vkCmdSetColorWriteMaskEXT,
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1599,6 +1600,10 @@ pub const Device = struct {
                 null,
             .cmdSetColorBlendEquation = if (has_shader_object)
                 @ptrCast(try Device.getProc(get, dev, "vkCmdSetColorBlendEquationEXT"))
+            else
+                null,
+            .cmdSetColorWriteMask = if (has_shader_object)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdSetColorWriteMaskEXT"))
             else
                 null,
         };
@@ -2998,6 +3003,21 @@ pub const Device = struct {
             first_attachment,
             attachment_count,
             color_blend_equations,
+        );
+    }
+
+    pub fn vkCmdSetColorWriteMaskEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        first_attachment: u32,
+        attachment_count: u32,
+        color_write_masks: [*]const c.VkColorComponentFlags,
+    ) void {
+        self.cmdSetColorWriteMask.?(
+            command_buffer,
+            first_attachment,
+            attachment_count,
+            color_write_masks,
         );
     }
 };

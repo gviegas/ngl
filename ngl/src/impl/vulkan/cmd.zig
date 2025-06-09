@@ -1191,8 +1191,16 @@ pub const CommandBuffer = struct {
             d.state.color_write.set(first_attachment, write_masks);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            var masks: [ngl.Cmd.max_color_attachment]c.VkColorComponentFlags = undefined;
+            const n = @min(write_masks.len, masks.len);
+            for (&masks, write_masks) |*dest, source|
+                dest.* = conv.toVkColorComponentFlags(source);
+            Device.cast(device).vkCmdSetColorWriteMaskEXT(
+                cmd_buf.handle,
+                first_attachment,
+                n,
+                &masks,
+            );
         }
     }
 
