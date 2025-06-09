@@ -856,8 +856,10 @@ pub const CommandBuffer = struct {
             d.state.sample_count.set(sample_count);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            Device.cast(device).vkCmdSetRasterizationSamplesEXT(
+                cmd_buf.handle,
+                conv.toVkSampleCount(sample_count),
+            );
         }
     }
 

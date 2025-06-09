@@ -1202,6 +1202,7 @@ pub const Device = struct {
     cmdSetPolygonMode: c.PFN_vkCmdSetPolygonModeEXT,
     cmdSetCullMode: c.PFN_vkCmdSetCullModeEXT, // NOTE: Core in 1.3.
     cmdSetFrontFace: c.PFN_vkCmdSetFrontFaceEXT, // NOTE: Core in 1.3.
+    cmdSetRasterizationSamples: c.PFN_vkCmdSetRasterizationSamplesEXT,
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1516,6 +1517,10 @@ pub const Device = struct {
                     x
                 else |_|
                     try Device.getProc(get, dev, "vkCmdSetFrontFace"))
+            else
+                null,
+            .cmdSetRasterizationSamples = if (has_shader_object)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdSetRasterizationSamplesEXT"))
             else
                 null,
         };
@@ -2786,6 +2791,14 @@ pub const Device = struct {
         front_face: c.VkFrontFace,
     ) void {
         self.cmdSetFrontFace.?(command_buffer, front_face);
+    }
+
+    pub fn vkCmdSetRasterizationSamplesEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        rasterization_samples: c.VkSampleCountFlagBits,
+    ) void {
+        self.cmdSetRasterizationSamples.?(command_buffer, rasterization_samples);
     }
 };
 
