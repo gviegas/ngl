@@ -1002,8 +1002,10 @@ pub const CommandBuffer = struct {
             d.state.depth_compare_op.set(compare_op);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            Device.cast(device).vkCmdSetDepthCompareOpEXT(
+                cmd_buf.handle,
+                conv.toVkCompareOp(compare_op),
+            );
         }
     }
 
