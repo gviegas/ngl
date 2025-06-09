@@ -1204,6 +1204,7 @@ pub const Device = struct {
     cmdSetFrontFace: c.PFN_vkCmdSetFrontFaceEXT, // NOTE: Core in 1.3.
     cmdSetRasterizationSamples: c.PFN_vkCmdSetRasterizationSamplesEXT,
     cmdSetSampleMask: c.PFN_vkCmdSetSampleMaskEXT,
+    cmdSetAlphaToCoverageEnable: c.PFN_vkCmdSetAlphaToCoverageEnableEXT,
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1526,6 +1527,10 @@ pub const Device = struct {
                 null,
             .cmdSetSampleMask = if (has_shader_object)
                 @ptrCast(try Device.getProc(get, dev, "vkCmdSetSampleMaskEXT"))
+            else
+                null,
+            .cmdSetAlphaToCoverageEnable = if (has_shader_object)
+                @ptrCast(try Device.getProc(get, dev, "vkCmdSetAlphaToCoverageEnableEXT"))
             else
                 null,
         };
@@ -2813,6 +2818,14 @@ pub const Device = struct {
         sample_mask: [*]const c.VkSampleMask,
     ) void {
         self.cmdSetSampleMask.?(command_buffer, samples, sample_mask);
+    }
+
+    pub fn vkCmdSetAlphaToCoverageEnableEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        alpha_to_coverage_enable: c.VkBool32,
+    ) void {
+        self.cmdSetAlphaToCoverageEnable.?(command_buffer, alpha_to_coverage_enable);
     }
 };
 
