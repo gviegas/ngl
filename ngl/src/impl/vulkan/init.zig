@@ -1208,6 +1208,7 @@ pub const Device = struct {
     cmdSetAlphaToOneEnable: c.PFN_vkCmdSetAlphaToOneEnableEXT,
     cmdSetDepthClampEnable: c.PFN_vkCmdSetDepthClampEnableEXT,
     cmdSetDepthBiasEnable: c.PFN_vkCmdSetDepthBiasEnableEXT, // NOTE: Core in 1.3.
+    cmdSetDepthTestEnable: c.PFN_vkCmdSetDepthTestEnableEXT, // NOTE: Core in 1.3.
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1549,6 +1550,13 @@ pub const Device = struct {
                     x
                 else |_|
                     try Device.getProc(get, dev, "vkCmdSetDepthBiasEnable"))
+            else
+                null,
+            .cmdSetDepthTestEnable = if (has_shader_object)
+                @ptrCast(if (Device.getProc(get, dev, "vkCmdSetDepthTestEnableEXT")) |x|
+                    x
+                else |_|
+                    try Device.getProc(get, dev, "vkCmdSetDepthTestEnable"))
             else
                 null,
         };
@@ -2868,6 +2876,14 @@ pub const Device = struct {
         depth_bias_enable: c.VkBool32,
     ) void {
         self.cmdSetDepthBiasEnable.?(command_buffer, depth_bias_enable);
+    }
+
+    pub fn vkCmdSetDepthTestEnableEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        depth_test_enable: c.VkBool32,
+    ) void {
+        self.cmdSetDepthTestEnable.?(command_buffer, depth_test_enable);
     }
 };
 

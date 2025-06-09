@@ -983,8 +983,10 @@ pub const CommandBuffer = struct {
             d.state.depth_test_enable.set(enable);
             d.changed = true;
         } else {
-            _ = device;
-            @panic("Not yet implemented");
+            Device.cast(device).vkCmdSetDepthTestEnableEXT(
+                cmd_buf.handle,
+                if (enable) c.VK_TRUE else c.VK_FALSE,
+            );
         }
     }
 
