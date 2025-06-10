@@ -355,6 +355,9 @@ fn testOcclusionQuery(comptime precise: bool) !void {
     cmd.setFrontFace(triangle.front_face);
     cmd.setSampleCount(.@"1");
     cmd.setSampleMask(~@as(u64, 0));
+    cmd.setAlphaToCoverageEnable(false);
+    cmd.setAlphaToOneEnable(false);
+    cmd.setDepthClampEnable(false);
     cmd.setDepthBiasEnable(false);
     cmd.setDepthTestEnable(true);
     cmd.setDepthCompareOp(.less);
