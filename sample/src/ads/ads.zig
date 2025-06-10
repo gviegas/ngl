@@ -287,6 +287,9 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setFrontFace(cube.front_face);
         cmd.setSampleCount(Color.samples);
         cmd.setSampleMask(~@as(u64, 0));
+        cmd.setAlphaToCoverageEnable(false);
+        cmd.setAlphaToOneEnable(false);
+        cmd.setDepthClampEnable(false);
         cmd.setDepthBiasEnable(false);
 
         cmd.setDepthTestEnable(true);
