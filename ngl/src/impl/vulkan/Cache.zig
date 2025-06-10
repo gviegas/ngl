@@ -186,7 +186,8 @@ pub fn createPrimitivePipeline(
     key: State.Key,
     render_pass: c.VkRenderPass,
 ) Error!c.VkPipeline {
-    assert(builtin.is_test or !device.isFullyDynamic());
+    // Note that we can't even test in such case.
+    assert(!device.isFullyDynamic());
 
     const state = &key.state;
 
@@ -828,6 +829,9 @@ test "Cache" {
 
 test getPrimitivePipeline {
     const dev = Device.cast(context().device.impl);
+    if (dev.isFullyDynamic())
+        return error.SkipZigTest;
+
     const core_feat = ngl.Feature.get(testing.allocator, context().gpu, .core).?;
 
     var cache = @This(){};
@@ -1427,6 +1431,8 @@ fn validatePrimitivePipeline(key: State.Key, create_info: c.VkGraphicsPipelineCr
 
 test createPrimitivePipeline {
     const dev = Device.cast(context().device.impl);
+    if (dev.isFullyDynamic())
+        return error.SkipZigTest;
 
     var key = Dynamic.init();
     defer key.clear(testing.allocator, dev);
