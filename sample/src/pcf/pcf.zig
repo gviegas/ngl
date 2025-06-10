@@ -389,7 +389,7 @@ fn do(gpa: std.mem.Allocator) !void {
             .contents = .@"inline",
         });
 
-        cmd.setShaders(&.{.vertex}, &.{&shd.shadow_map});
+        cmd.setShaders(&.{ .vertex, .fragment }, &.{ &shd.shadow_map, null });
         cmd.setVertexInput(&.{.{
             .binding = 0,
             .stride = 3 * @sizeOf(f32),
