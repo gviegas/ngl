@@ -549,14 +549,14 @@ pub const CommandBuffer = struct {
                     @panic("TODO");
                 }
             else
-                &stk_binds;
+                stk_binds[0..bindings.len];
             defer if (binds.len > bind_n) allocator.free(binds);
             const attrs = if (attributes.len > attr_n)
                 allocator.alloc(c.VkVertexInputAttributeDescription2EXT, attributes.len) catch {
                     @panic("TODO");
                 }
             else
-                &stk_attrs;
+                stk_attrs[0..attributes.len];
             defer if (attrs.len > attr_n) allocator.free(attrs);
 
             for (binds, bindings) |*dest, source|
@@ -1193,7 +1193,7 @@ pub const CommandBuffer = struct {
         } else {
             var masks: [ngl.Cmd.max_color_attachment]c.VkColorComponentFlags = undefined;
             const n = @min(write_masks.len, masks.len);
-            for (&masks, write_masks) |*dest, source|
+            for (masks[0..write_masks.len], write_masks) |*dest, source|
                 dest.* = conv.toVkColorComponentFlags(source);
             Device.cast(device).vkCmdSetColorWriteMaskEXT(
                 cmd_buf.handle,

@@ -270,7 +270,7 @@ pub const Shader = packed union {
             // if the shaders need not be linked together.
             try allocator.alloc(c.VkShaderCreateInfoEXT, descs.len)
         else
-            &stk_infos;
+            stk_infos[0..descs.len];
         defer if (infos.len > info_n) allocator.free(infos);
         for (infos, descs) |*info, desc|
             info.* = .{
@@ -300,7 +300,7 @@ pub const Shader = packed union {
                 n += desc.set_layouts.len;
             if (n > layt_n)
                 break :blk try allocator.alloc(c.VkDescriptorSetLayout, n);
-            break :blk &stk_layts;
+            break :blk stk_layts[0..n];
         };
         defer if (layts.len > layt_n) allocator.free(layts);
         var layt_i: usize = 0;
@@ -320,7 +320,7 @@ pub const Shader = packed union {
                 n += desc.push_constants.len;
             if (n > rng_n)
                 break :blk try allocator.alloc(c.VkPushConstantRange, n);
-            break :blk &stk_rngs;
+            break :blk stk_rngs[0..n];
         };
         defer if (rngs.len > rng_n) allocator.free(rngs);
         var rng_i: usize = 0;
@@ -352,11 +352,11 @@ pub const Shader = packed union {
             const specs = if (n > spec_n)
                 try allocator.alloc(c.VkSpecializationInfo, n)
             else
-                &stk_specs;
+                stk_specs[0..n];
             const sconsts = if (m > sconst_n)
                 try allocator.alloc(c.VkSpecializationMapEntry, m)
             else
-                &stk_sconsts;
+                stk_sconsts[0..m];
             break :blk .{ specs, sconsts };
         };
         defer {
@@ -392,7 +392,7 @@ pub const Shader = packed union {
         const shds = if (shaders.len > shd_n)
             try allocator.alloc(c.VkShaderEXT, shaders.len)
         else
-            &stk_shds;
+            stk_shds[0..shaders.len];
         defer if (shds.len > shd_n) allocator.free(shds);
         const err = if (check(dev.vkCreateShadersEXT(
             @min(infos.len, std.math.maxInt(u32)),
