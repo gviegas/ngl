@@ -359,7 +359,7 @@ test "depth-only rendering" {
         .contents = .@"inline",
     });
 
-    cmd.setShaders(&.{.vertex}, &.{&vert_shd});
+    cmd.setShaders(&.{ .vertex, .fragment }, &.{ &vert_shd, null });
 
     cmd.setVertexInput(
         &.{.{
