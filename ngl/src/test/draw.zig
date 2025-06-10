@@ -429,6 +429,9 @@ fn testDrawCommand(comptime indexed: bool, comptime test_name: []const u8) !void
     cmd.setFrontFace(if (indexed) .counter_clockwise else .clockwise);
     cmd.setSampleCount(.@"1");
     cmd.setSampleMask(0b1);
+    cmd.setAlphaToCoverageEnable(false);
+    cmd.setAlphaToOneEnable(false);
+    cmd.setDepthClampEnable(false);
     cmd.setDepthBiasEnable(false);
     cmd.setDepthTestEnable(false);
     cmd.setDepthWriteEnable(false);

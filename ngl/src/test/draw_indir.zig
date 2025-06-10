@@ -423,6 +423,9 @@ fn testDrawIndirectCommand(comptime indexed: bool, comptime test_name: []const u
     cmd.setFrontFace(triangle.front_face);
     cmd.setSampleCount(.@"1");
     cmd.setSampleMask(0b1);
+    cmd.setAlphaToCoverageEnable(false);
+    cmd.setAlphaToOneEnable(false);
+    cmd.setDepthClampEnable(false);
     cmd.setDepthBiasEnable(false);
     cmd.setDepthTestEnable(false);
     cmd.setDepthWriteEnable(false);
