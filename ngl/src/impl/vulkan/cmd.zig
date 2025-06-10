@@ -419,6 +419,14 @@ pub const CommandBuffer = struct {
             else
                 null,
         }));
+
+        if (dev.hasShaderObject()) {
+            // We don't expose these commands, so set them here.
+            // TODO: Is there a better place to do this?
+            // Compute doesn't really need that.
+            dev.vkCmdSetPrimitiveRestartEnableEXT(cmd_buf.handle, c.VK_FALSE);
+            dev.vkCmdSetLineWidth(cmd_buf.handle, 1);
+        }
     }
 
     pub fn setShaders(

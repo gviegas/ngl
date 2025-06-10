@@ -1107,6 +1107,7 @@ pub const Device = struct {
     cmdBindVertexBuffers: c.PFN_vkCmdBindVertexBuffers,
     cmdSetViewport: c.PFN_vkCmdSetViewport,
     cmdSetScissor: c.PFN_vkCmdSetScissor,
+    cmdSetLineWidth: c.PFN_vkCmdSetLineWidth,
     cmdSetDepthBias: c.PFN_vkCmdSetDepthBias,
     cmdSetStencilCompareMask: c.PFN_vkCmdSetStencilCompareMask,
     cmdSetStencilWriteMask: c.PFN_vkCmdSetStencilWriteMask,
@@ -1216,6 +1217,7 @@ pub const Device = struct {
     cmdSetColorBlendEnable: c.PFN_vkCmdSetColorBlendEnableEXT,
     cmdSetColorBlendEquation: c.PFN_vkCmdSetColorBlendEquationEXT,
     cmdSetColorWriteMask: c.PFN_vkCmdSetColorWriteMaskEXT,
+    cmdSetPrimitiveRestartEnable: c.PFN_vkCmdSetPrimitiveRestartEnableEXT,
 
     pub fn cast(impl: Impl.Device) *Device {
         return impl.ptr(Device);
@@ -1370,6 +1372,7 @@ pub const Device = struct {
             .cmdBindVertexBuffers = @ptrCast(try Device.getProc(get, dev, "vkCmdBindVertexBuffers")),
             .cmdSetViewport = @ptrCast(try Device.getProc(get, dev, "vkCmdSetViewport")),
             .cmdSetScissor = @ptrCast(try Device.getProc(get, dev, "vkCmdSetScissor")),
+            .cmdSetLineWidth = @ptrCast(try Device.getProc(get, dev, "vkCmdSetLineWidth")),
             .cmdSetDepthBias = @ptrCast(try Device.getProc(get, dev, "vkCmdSetDepthBias")),
             .cmdSetStencilCompareMask = @ptrCast(try Device.getProc(get, dev, "vkCmdSetStencilCompareMask")),
             .cmdSetStencilWriteMask = @ptrCast(try Device.getProc(get, dev, "vkCmdSetStencilWriteMask")),
@@ -1604,6 +1607,13 @@ pub const Device = struct {
                 null,
             .cmdSetColorWriteMask = if (has_shader_object)
                 @ptrCast(try Device.getProc(get, dev, "vkCmdSetColorWriteMaskEXT"))
+            else
+                null,
+            .cmdSetPrimitiveRestartEnable = if (has_shader_object)
+                @ptrCast(if (Device.getProc(get, dev, "vkCmdSetPrimitiveRestartEnableEXT")) |x|
+                    x
+                else |_|
+                    try Device.getProc(get, dev, "vkCmdSetPrimitiveRestartEnable"))
             else
                 null,
         };
@@ -1962,6 +1972,14 @@ pub const Device = struct {
         scissors: [*]const c.VkRect2D,
     ) void {
         self.cmdSetScissor.?(command_buffer, first_scissor, scissor_count, scissors);
+    }
+
+    pub fn vkCmdSetLineWidth(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        line_width: f32,
+    ) void {
+        self.cmdSetLineWidth.?(command_buffer, line_width);
     }
 
     pub fn vkCmdSetDepthBias(
@@ -3019,6 +3037,14 @@ pub const Device = struct {
             attachment_count,
             color_write_masks,
         );
+    }
+
+    pub fn vkCmdSetPrimitiveRestartEnableEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        primitive_restart_enable: c.VkBool32,
+    ) void {
+        self.cmdSetPrimitiveRestartEnable.?(command_buffer, primitive_restart_enable);
     }
 };
 
