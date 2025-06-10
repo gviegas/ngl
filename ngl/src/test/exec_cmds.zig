@@ -609,6 +609,9 @@ test "executeCommands command (drawing)" {
             cmd.setFrontFace(triangle.front_face);
             cmd.setSampleCount(.@"1");
             cmd.setSampleMask(0b1);
+            cmd.setAlphaToCoverageEnable(false);
+            cmd.setAlphaToOneEnable(false);
+            cmd.setDepthClampEnable(false);
             cmd.setDepthBiasEnable(false);
             cmd.setDepthTestEnable(false);
             cmd.setDepthWriteEnable(false);
@@ -667,6 +670,9 @@ test "executeCommands command (drawing)" {
             cmd.setDepthWriteEnable(false);
             cmd.setDepthTestEnable(false);
             cmd.setDepthBiasEnable(false);
+            cmd.setDepthClampEnable(false);
+            cmd.setAlphaToOneEnable(false);
+            cmd.setAlphaToCoverageEnable(false);
             cmd.setSampleMask(0xbee1);
             cmd.setSampleCount(.@"1");
             cmd.setFrontFace(triangle.front_face);
