@@ -214,6 +214,9 @@ test "submission of multiple command buffers" {
                 cmd.setFrontFace(.counter_clockwise);
                 cmd.setSampleCount(.@"1");
                 cmd.setSampleMask(0b1);
+                cmd.setAlphaToCoverageEnable(false);
+                cmd.setAlphaToOneEnable(false);
+                cmd.setDepthClampEnable(false);
                 cmd.setDepthBiasEnable(false);
                 cmd.setDepthTestEnable(false);
                 cmd.setDepthWriteEnable(false);
