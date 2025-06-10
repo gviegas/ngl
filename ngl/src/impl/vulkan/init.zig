@@ -1754,10 +1754,8 @@ pub const Device = struct {
         return self.hasShaderObject();
     }
 
-    // TODO: Extension.
     pub fn hasShaderObject(self: Device) bool {
-        _ = self;
-        return false;
+        return self.createShaders != null;
     }
 
     // TODO: Extension.
