@@ -702,7 +702,9 @@ pub const CommandBuffer = struct {
             }
         }.do;
 
-        if (cmd_buf.dyn) |d| {
+        const dyn_ = cmd_buf.dyn;
+
+        if (dyn_) |d| {
             d.state.viewport_count.set(viewports);
             d.changed = true;
         }
@@ -711,13 +713,16 @@ pub const CommandBuffer = struct {
         var stk_vports: [n]c.VkViewport = undefined;
         const vports = if (viewports.len > n)
             allocator.alloc(c.VkViewport, viewports.len) catch {
-                // Vulkan allows setting the viewports
-                // in separate calls.
-                for (viewports, 0..) |vport, i| {
-                    convViewport(&stk_vports[0], vport);
-                    dev.vkCmdSetViewport(cmd_buf.handle, @intCast(i), 1, &stk_vports);
+                if (dyn_ != null) {
+                    // Vulkan allows setting the viewports
+                    // in separate calls.
+                    for (viewports, 0..) |vport, i| {
+                        convViewport(&stk_vports[0], vport);
+                        dev.vkCmdSetViewport(cmd_buf.handle, @intCast(i), 1, &stk_vports);
+                    }
+                    return;
                 }
-                return;
+                @panic("Out of memory");
             }
         else
             stk_vports[0..viewports.len];
@@ -726,7 +731,13 @@ pub const CommandBuffer = struct {
 
         for (vports, viewports) |*dest, source|
             convViewport(dest, source);
-        dev.vkCmdSetViewport(cmd_buf.handle, 0, @intCast(viewports.len), vports.ptr);
+
+        const count = @min(viewports.len, std.math.maxInt(u32));
+        if (dyn_ != null) {
+            dev.vkCmdSetViewport(cmd_buf.handle, 0, count, vports.ptr);
+        } else {
+            dev.vkCmdSetViewportWithCountEXT(cmd_buf.handle, count, vports.ptr);
+        }
     }
 
     pub fn setScissorRects(
@@ -754,17 +765,22 @@ pub const CommandBuffer = struct {
             }
         }.do;
 
+        const dyn_ = cmd_buf.dyn;
+
         const n = 1;
         var stk_rects: [n]c.VkRect2D = undefined;
         const rects = if (scissor_rects.len > n)
             allocator.alloc(c.VkRect2D, scissor_rects.len) catch {
-                // Vulkan allows setting the scissor rects
-                // in separate calls.
-                for (scissor_rects, 0..) |rect, i| {
-                    convScissorRect(&stk_rects[0], rect);
-                    dev.vkCmdSetScissor(cmd_buf.handle, @intCast(i), 1, &stk_rects);
+                if (dyn_ != null) {
+                    // Vulkan allows setting the scissor rects
+                    // in separate calls.
+                    for (scissor_rects, 0..) |rect, i| {
+                        convScissorRect(&stk_rects[0], rect);
+                        dev.vkCmdSetScissor(cmd_buf.handle, @intCast(i), 1, &stk_rects);
+                    }
+                    return;
                 }
-                return;
+                @panic("Out of memory");
             }
         else
             stk_rects[0..scissor_rects.len];
@@ -773,7 +789,13 @@ pub const CommandBuffer = struct {
 
         for (rects, scissor_rects) |*dest, source|
             convScissorRect(dest, source);
-        dev.vkCmdSetScissor(cmd_buf.handle, 0, @intCast(scissor_rects.len), rects.ptr);
+
+        const count = @min(scissor_rects.len, std.math.maxInt(u32));
+        if (dyn_ != null) {
+            dev.vkCmdSetScissor(cmd_buf.handle, 0, count, rects.ptr);
+        } else {
+            dev.vkCmdSetScissorWithCountEXT(cmd_buf.handle, count, rects.ptr);
+        }
     }
 
     pub fn setRasterizationEnable(

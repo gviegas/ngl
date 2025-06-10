@@ -1199,6 +1199,8 @@ pub const Device = struct {
     cmdBindShaders: c.PFN_vkCmdBindShadersEXT,
     cmdSetVertexInput: c.PFN_vkCmdSetVertexInputEXT,
     cmdSetPrimimitiveTopology: c.PFN_vkCmdSetPrimitiveTopologyEXT, // NOTE: Core in 1.3.
+    cmdSetViewportWithCount: c.PFN_vkCmdSetViewportWithCountEXT, // NOTE: Core in 1.3.
+    cmdSetScissorWithCount: c.PFN_vkCmdSetScissorWithCountEXT, // NOTE: Core in 1.3.
     cmdSetRasterizerDiscardEnable: c.PFN_vkCmdSetRasterizerDiscardEnableEXT, // NOTE: Core in 1.3.
     cmdSetPolygonMode: c.PFN_vkCmdSetPolygonModeEXT,
     cmdSetCullMode: c.PFN_vkCmdSetCullModeEXT, // NOTE: Core in 1.3.
@@ -1508,6 +1510,20 @@ pub const Device = struct {
                     x
                 else |_|
                     try Device.getProc(get, dev, "vkCmdSetPrimitiveTopology"))
+            else
+                null,
+            .cmdSetViewportWithCount = if (has_shader_object)
+                @ptrCast(if (Device.getProc(get, dev, "vkCmdSetViewportWithCountEXT")) |x|
+                    x
+                else |_|
+                    try Device.getProc(get, dev, "vkCmdSetViewportWithCount"))
+            else
+                null,
+            .cmdSetScissorWithCount = if (has_shader_object)
+                @ptrCast(if (Device.getProc(get, dev, "vkCmdSetScissorWithCountEXT")) |x|
+                    x
+                else |_|
+                    try Device.getProc(get, dev, "vkCmdSetScissorWithCount"))
             else
                 null,
             .cmdSetRasterizerDiscardEnable = if (has_shader_object)
@@ -2860,6 +2876,24 @@ pub const Device = struct {
         primitive_topology: c.VkPrimitiveTopology,
     ) void {
         self.cmdSetPrimimitiveTopology.?(command_buffer, primitive_topology);
+    }
+
+    pub fn vkCmdSetViewportWithCountEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        viewport_count: u32,
+        viewports: [*]const c.VkViewport,
+    ) void {
+        self.cmdSetViewportWithCount.?(command_buffer, viewport_count, viewports);
+    }
+
+    pub fn vkCmdSetScissorWithCountEXT(
+        self: *Device,
+        command_buffer: c.VkCommandBuffer,
+        scissor_count: u32,
+        scissors: [*]const c.VkRect2D,
+    ) void {
+        self.cmdSetScissorWithCount.?(command_buffer, scissor_count, scissors);
     }
 
     pub fn vkCmdSetRasterizerDiscardEnableEXT(
