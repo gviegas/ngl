@@ -701,6 +701,9 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setRasterizationEnable(true);
         cmd.setPolygonMode(.fill);
         cmd.setSampleMask(~@as(u64, 0));
+        cmd.setAlphaToCoverageEnable(false);
+        cmd.setAlphaToOneEnable(false);
+        cmd.setDepthClampEnable(false);
         cmd.setDepthBiasEnable(false);
         cmd.setStencilTestEnable(false);
         cmd.setColorBlendEnable(0, &.{false});
