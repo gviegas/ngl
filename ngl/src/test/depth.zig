@@ -397,6 +397,9 @@ test "depth-only rendering" {
     cmd.setFrontFace(.clockwise);
     cmd.setSampleCount(.@"1");
     cmd.setSampleMask(0b1);
+    cmd.setAlphaToCoverageEnable(false);
+    cmd.setAlphaToOneEnable(false);
+    cmd.setDepthClampEnable(false);
     cmd.setDepthBiasEnable(false);
     cmd.setDepthTestEnable(true);
     cmd.setDepthCompareOp(.less);

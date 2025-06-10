@@ -357,6 +357,9 @@ test "stencil test" {
     cmd.setFrontFace(.clockwise);
     cmd.setSampleCount(.@"1");
     cmd.setSampleMask(0b1);
+    cmd.setAlphaToCoverageEnable(false);
+    cmd.setAlphaToOneEnable(false);
+    cmd.setDepthClampEnable(false);
     cmd.setDepthBiasEnable(false);
     cmd.setColorBlendEnable(0, &.{false});
     cmd.setColorWrite(0, &.{.all});
