@@ -3103,6 +3103,7 @@ pub const Queue = struct {
             submit10(allocator, device, queue, fence, submits);
     }
 
+    // TODO: Don't allocate on every call.
     fn submit13(
         allocator: std.mem.Allocator,
         device: Impl.Device,
@@ -3127,6 +3128,7 @@ pub const Queue = struct {
                 cmd_n += subm.commands.len;
                 wait_sig_n += subm.wait.len + subm.signal.len;
             }
+            // TODO: May leak.
             break :blk .{
                 if (cmd_n > stk_cb_infos.len)
                     try allocator.alloc(c.VkCommandBufferSubmitInfo, cmd_n)
@@ -3225,107 +3227,104 @@ pub const Queue = struct {
         submits: []const ngl.Queue.Submit,
     ) Error!void {
         var subm_info: [1]c.VkSubmitInfo = undefined;
-        var subm_infos = if (submits.len > 1)
+        const subm_infos = if (submits.len > 1)
             try allocator.alloc(c.VkSubmitInfo, submits.len)
         else
-            &subm_info;
+            subm_info[0..submits.len];
         defer if (subm_infos.len > 1)
             allocator.free(subm_infos);
 
-        var cmd_buf: [1]c.VkCommandBuffer = undefined;
-        var cmd_bufs: []c.VkCommandBuffer = undefined;
-        var sem: [1]c.VkSemaphore = undefined;
-        var sems: []c.VkSemaphore = undefined;
-        var stage: [1]c.VkPipelineStageFlags = undefined;
-        var stages: []c.VkPipelineStageFlags = undefined;
-        {
-            var cmd_buf_n: usize = 0;
-            var sem_n: usize = 0;
-            var stage_n: usize = 0;
+        var stk_cmd_bufs: [1]c.VkCommandBuffer = undefined;
+        var stk_sems: [2]c.VkSemaphore = undefined;
+        var stk_stgs: [1]c.VkPipelineStageFlags = undefined;
+        const cmd_bufs, const sems, const stgs = blk: {
+            var cmd_n: usize = 0;
+            var wait_sig_n: usize = 0;
+            var mask_n: usize = 0;
             for (submits) |subm| {
-                cmd_buf_n += subm.commands.len;
-                sem_n += subm.wait.len + subm.signal.len;
-                stage_n += subm.wait.len;
+                cmd_n += subm.commands.len;
+                wait_sig_n += subm.wait.len + subm.signal.len;
+                mask_n += subm.wait.len;
             }
-
-            cmd_bufs = if (cmd_buf_n > 1)
-                try allocator.alloc(c.VkCommandBuffer, cmd_buf_n)
-            else
-                &cmd_buf;
-            errdefer if (cmd_buf_n > 1)
-                allocator.free(cmd_bufs);
-
-            sems = if (sem_n > 1)
-                try allocator.alloc(c.VkSemaphore, sem_n)
-            else
-                &sem;
-            errdefer if (sem_n > 1)
-                allocator.free(sems);
-
-            stages = if (stage_n > 1)
-                try allocator.alloc(c.VkPipelineStageFlags, stage_n)
-            else
-                &stage;
-        }
+            // TODO: May leak.
+            break :blk .{
+                if (cmd_n > stk_cmd_bufs.len)
+                    try allocator.alloc(c.VkCommandBuffer, cmd_n)
+                else
+                    stk_cmd_bufs[0..cmd_n],
+                if (wait_sig_n > stk_sems.len)
+                    try allocator.alloc(c.VkSemaphore, wait_sig_n)
+                else
+                    stk_sems[0..wait_sig_n],
+                if (mask_n > stk_stgs.len)
+                    try allocator.alloc(c.VkPipelineStageFlags, mask_n)
+                else
+                    stk_stgs[0..mask_n],
+            };
+        };
         defer {
-            if (cmd_bufs.len > 1)
+            if (cmd_bufs.len > stk_cmd_bufs.len)
                 allocator.free(cmd_bufs);
-            if (sems.len > 1)
+            if (sems.len > stk_sems.len)
                 allocator.free(sems);
-            if (stages.len > 1)
-                allocator.free(stages);
+            if (stgs.len > stk_stgs.len)
+                allocator.free(stgs);
         }
 
         var cmd_bufs_ptr = cmd_bufs.ptr;
         var sems_ptr = sems.ptr;
-        var stages_ptr = stages.ptr;
+        var stgs_ptr = stgs.ptr;
 
-        for (subm_infos[0..submits.len], submits) |*info, subm| {
+        for (subm_infos, submits) |*info, subm| {
             info.* = .{
                 .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO,
                 .pNext = null,
-                .waitSemaphoreCount = @intCast(subm.wait.len),
+                .waitSemaphoreCount = @min(subm.wait.len, std.math.maxInt(u32)),
                 .pWaitSemaphores = undefined, // Set below.
                 .pWaitDstStageMask = undefined, // Set below.
-                .commandBufferCount = @intCast(subm.commands.len),
+                .commandBufferCount = @min(subm.commands.len, std.math.maxInt(u32)),
                 .pCommandBuffers = undefined, // Set below.
-                .signalSemaphoreCount = @intCast(subm.signal.len),
+                .signalSemaphoreCount = @min(subm.signal.len, std.math.maxInt(u32)),
                 .pSignalSemaphores = undefined, // Set below.
             };
 
-            if (subm.commands.len > 0) {
+            if (info.commandBufferCount > 0) {
+                for (cmd_bufs_ptr, subm.commands) |*handle, cmd|
+                    handle.* = CommandBuffer.cast(cmd.command_buffer.impl).handle;
                 info.pCommandBuffers = cmd_bufs_ptr;
-                for (cmd_bufs_ptr, subm.commands) |*handle, cmds|
-                    handle.* = CommandBuffer.cast(cmds.command_buffer.impl).handle;
                 cmd_bufs_ptr += subm.commands.len;
-            } else info.pCommandBuffers = null;
+            } else {
+                info.pCommandBuffers = null;
+            }
 
-            if (subm.wait.len > 0) {
-                info.pWaitSemaphores = sems_ptr;
-                info.pWaitDstStageMask = stages_ptr;
-                for (sems_ptr, stages_ptr, subm.wait) |*handle, *mask, wsem| {
+            if (info.waitSemaphoreCount > 0) {
+                for (sems_ptr, stgs_ptr, subm.wait) |*handle, *mask, wsem| {
                     handle.* = Semaphore.cast(wsem.semaphore.impl).handle;
                     mask.* = conv.toVkPipelineStageFlags(.dest, wsem.stage_mask);
                 }
+                info.pWaitSemaphores = sems_ptr;
+                info.pWaitDstStageMask = stgs_ptr;
                 sems_ptr += subm.wait.len;
-                stages_ptr += subm.wait.len;
+                stgs_ptr += subm.wait.len;
             } else {
                 info.pWaitSemaphores = null;
                 info.pWaitDstStageMask = null;
             }
 
-            if (subm.signal.len > 0) {
-                info.pSignalSemaphores = sems_ptr;
+            if (info.signalSemaphoreCount > 0) {
                 for (sems_ptr, subm.signal) |*handle, ssem|
                     // No signal stage mask on vanilla submission.
                     handle.* = Semaphore.cast(ssem.semaphore.impl).handle;
+                info.pSignalSemaphores = sems_ptr;
                 sems_ptr += subm.signal.len;
-            } else info.pSignalSemaphores = null;
+            } else {
+                info.pSignalSemaphores = null;
+            }
         }
 
         try check(Device.cast(device).vkQueueSubmit(
             cast(queue).handle,
-            @intCast(submits.len), // Note `submits`.
+            @min(submits.len, std.math.maxInt(u32)),
             if (submits.len > 0) subm_infos.ptr else null,
             if (fence) |x| Fence.cast(x).handle else null_handle,
         ));
