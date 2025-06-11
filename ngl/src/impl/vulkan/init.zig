@@ -3089,9 +3089,135 @@ pub const Queue = struct {
         return impl.ptr(Queue);
     }
 
-    // TODO: Don't allocate on every call.
     fn submit(
         _: *anyopaque,
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        queue: Impl.Queue,
+        fence: ?Impl.Fence,
+        submits: []const ngl.Queue.Submit,
+    ) Error!void {
+        try if (Device.cast(device).hasDynamicRendering())
+            submit13(allocator, device, queue, fence, submits)
+        else
+            submit10(allocator, device, queue, fence, submits);
+    }
+
+    fn submit13(
+        allocator: std.mem.Allocator,
+        device: Impl.Device,
+        queue: Impl.Queue,
+        fence: ?Impl.Fence,
+        submits: []const ngl.Queue.Submit,
+    ) Error!void {
+        var subm_info: [1]c.VkSubmitInfo2 = undefined;
+        const subm_infos = if (submits.len > 1)
+            try allocator.alloc(c.VkSubmitInfo2, submits.len)
+        else
+            subm_info[0..submits.len];
+        defer if (subm_infos.len > 1)
+            allocator.free(subm_infos);
+
+        var stk_cb_infos: [1]c.VkCommandBufferSubmitInfo = undefined;
+        var stk_sem_infos: [2]c.VkSemaphoreSubmitInfo = undefined;
+        const cb_infos, const sem_infos = blk: {
+            var cmd_n: usize = 0;
+            var wait_sig_n: usize = 0;
+            for (submits) |subm| {
+                cmd_n += subm.commands.len;
+                wait_sig_n += subm.wait.len + subm.signal.len;
+            }
+            break :blk .{
+                if (cmd_n > stk_cb_infos.len)
+                    try allocator.alloc(c.VkCommandBufferSubmitInfo, cmd_n)
+                else
+                    stk_cb_infos[0..cmd_n],
+                if (wait_sig_n > stk_sem_infos.len)
+                    try allocator.alloc(c.VkSemaphoreSubmitInfo, wait_sig_n)
+                else
+                    stk_sem_infos[0..wait_sig_n],
+            };
+        };
+        defer {
+            if (cb_infos.len > stk_cb_infos.len)
+                allocator.free(cb_infos);
+            if (sem_infos.len > stk_sem_infos.len)
+                allocator.free(sem_infos);
+        }
+
+        var cb_infos_ptr = cb_infos.ptr;
+        var sem_infos_ptr = sem_infos.ptr;
+
+        for (subm_infos, submits) |*info, subm| {
+            info.* = .{
+                .sType = c.VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+                .pNext = null,
+                .flags = 0,
+                .waitSemaphoreInfoCount = @min(subm.wait.len, std.math.maxInt(u32)),
+                .pWaitSemaphoreInfos = undefined, // Set below.
+                .commandBufferInfoCount = @min(subm.commands.len, std.math.maxInt(u32)),
+                .pCommandBufferInfos = undefined, // Set below.
+                .signalSemaphoreInfoCount = @min(subm.signal.len, std.math.maxInt(u32)),
+                .pSignalSemaphoreInfos = undefined, // Set below.
+            };
+
+            if (info.commandBufferInfoCount > 0) {
+                for (cb_infos_ptr, subm.commands) |*cb_info, cmd|
+                    cb_info.* = .{
+                        .sType = c.VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+                        .pNext = null,
+                        .commandBuffer = CommandBuffer.cast(cmd.command_buffer.impl).handle,
+                        .deviceMask = 0,
+                    };
+                info.pCommandBufferInfos = cb_infos_ptr;
+                cb_infos_ptr += subm.commands.len;
+            } else {
+                info.pCommandBufferInfos = null;
+            }
+
+            if (info.waitSemaphoreInfoCount > 0) {
+                for (sem_infos_ptr, subm.wait) |*sem_info, wsem|
+                    sem_info.* = .{
+                        .sType = c.VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                        .pNext = null,
+                        .semaphore = Semaphore.cast(wsem.semaphore.impl).handle,
+                        .value = 0,
+                        .stageMask = conv.toVkPipelineStageFlags2(wsem.stage_mask),
+                        .deviceIndex = 0,
+                    };
+                info.pWaitSemaphoreInfos = sem_infos_ptr;
+                sem_infos_ptr += subm.wait.len;
+            } else {
+                info.pWaitSemaphoreInfos = null;
+            }
+
+            if (info.signalSemaphoreInfoCount > 0) {
+                for (sem_infos_ptr, subm.signal) |*sem_info, ssem|
+                    sem_info.* = .{
+                        .sType = c.VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+                        .pNext = null,
+                        .semaphore = Semaphore.cast(ssem.semaphore.impl).handle,
+                        .value = 0,
+                        .stageMask = conv.toVkPipelineStageFlags2(ssem.stage_mask),
+                        .deviceIndex = 0,
+                    };
+                info.pSignalSemaphoreInfos = sem_infos_ptr;
+                sem_infos_ptr += subm.signal.len;
+            } else {
+                info.pSignalSemaphoreInfos = null;
+            }
+        }
+
+        try check(Device.cast(device).vkQueueSubmit2(
+            Queue.cast(queue).handle,
+            @min(submits.len, std.math.maxInt(u32)),
+            if (submits.len > 0) subm_infos.ptr else null,
+            if (fence) |x| Fence.cast(x).handle else null_handle,
+        ));
+    }
+
+    // TODO: Don't allocate on every call.
+    fn submit10(
         allocator: std.mem.Allocator,
         device: Impl.Device,
         queue: Impl.Queue,
@@ -3116,10 +3242,10 @@ pub const Queue = struct {
             var cmd_buf_n: usize = 0;
             var sem_n: usize = 0;
             var stage_n: usize = 0;
-            for (submits) |subms| {
-                cmd_buf_n += subms.commands.len;
-                sem_n += subms.wait.len + subms.signal.len;
-                stage_n += subms.wait.len;
+            for (submits) |subm| {
+                cmd_buf_n += subm.commands.len;
+                sem_n += subm.wait.len + subm.signal.len;
+                stage_n += subm.wait.len;
             }
 
             cmd_bufs = if (cmd_buf_n > 1)
