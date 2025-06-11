@@ -124,7 +124,7 @@ test "Queue.submit" {
             .signal = &.{
                 .{ .semaphore = &sems[0], .stage_mask = .{ .clear = true } },
                 .{ .semaphore = &sems[1], .stage_mask = .{ .copy = true } },
-                .{ .semaphore = &sems[2], .stage_mask = .{ .host = true } },
+                .{ .semaphore = &sems[2], .stage_mask = .{ .none = true } },
             },
         };
 
