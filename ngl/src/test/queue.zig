@@ -235,10 +235,10 @@ test "Queue.present" {
 
         cmd.barrier(.{
             .image = &.{.{
-                .source_stage_mask = .{},
-                .source_access_mask = .{},
-                .dest_stage_mask = .{},
-                .dest_access_mask = .{},
+                .source_stage_mask = .{ .color_attachment_output = true },
+                .source_access_mask = .{ .memory_read = true, .memory_write = true },
+                .dest_stage_mask = .{ .color_attachment_output = true },
+                .dest_access_mask = .{ .memory_write = true },
                 .queue_transfer = null,
                 .old_layout = .unknown,
                 .new_layout = .present_source,
@@ -259,7 +259,7 @@ test "Queue.present" {
         try dev.queues[plat.queue_index].submit(gpa, dev, null, &.{.{
             .commands = &.{.{ .command_buffer = &cmd_bufs[i] }},
             .wait = &.{},
-            .signal = &.{.{ .semaphore = &sems[i], .stage_mask = .{} }},
+            .signal = &.{.{ .semaphore = &sems[i], .stage_mask = .{ .color_attachment_output = true } }},
         }});
 
         try dev.queues[plat.queue_index].present(
