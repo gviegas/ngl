@@ -666,6 +666,26 @@ pub const Instance = struct {
                 f(inst, null);
         } else |_| {};
 
+        log.info(
+            "Vulkan instance version is {}.{}.{}",
+            .{
+                c.VK_API_VERSION_MAJOR(ver),
+                c.VK_API_VERSION_MINOR(ver),
+                c.VK_API_VERSION_PATCH(ver),
+            },
+        );
+        if (presentation and ext.contains("VK_KHR_surface")) {
+            log.info("VK_KHR_surface is enabled", .{});
+            log.info("{s} is enabled", .{switch (builtin.os.tag) {
+                .linux => if (builtin.abi.isAndroid())
+                    "VK_KHR_android_surface"
+                else
+                    "VK_KHR_wayland_surface",
+                .windows => "VK_KHR_win32_surface",
+                else => @compileError("OS not supported"),
+            }});
+        }
+
         return .{
             .handle = inst,
             .version = ver,
