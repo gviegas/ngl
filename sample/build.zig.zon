@@ -6,7 +6,7 @@
     .dependencies = .{
         .ngl = .{
             .url = "..\\ngl\\",
-            .hash = "ngl-0.5.0--FZaLftCeACXTxBXTqu7dFcjh-_tm1BCDzbdzcrzBYOT",
+            .hash = "ngl-0.5.0--FZaLUlGeACe36MgSeFw-EcZKbfVg081erbr-c4a6yoE",
         },
     },
     .paths = .{

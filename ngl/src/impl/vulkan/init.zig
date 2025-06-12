@@ -1666,6 +1666,29 @@ pub const Device = struct {
                 ptr.queue_n += 1;
             };
 
+        log.info(
+            "Vulkan device version is {}.{}.{}",
+            .{
+                c.VK_API_VERSION_MAJOR(ver),
+                c.VK_API_VERSION_MINOR(ver),
+                c.VK_API_VERSION_PATCH(ver),
+            },
+        );
+        log.info("Using device named \"{s}\"", .{dev_props.deviceName});
+        log.info("Device ID is {} (0x{x})", .{
+            dev_props.deviceID,
+            dev_props.deviceID,
+        });
+        log.info("Driver version is {} (0x{x})", .{
+            dev_props.driverVersion,
+            dev_props.driverVersion,
+        });
+        if (has_shader_object) {
+            log.info("{s} is enabled (device is fully dynamic)", .{shader_object_ext});
+        } else {
+            log.info("Note: device is not fully dynamic - using hash & cache as fallback", .{});
+        }
+
         return .{ .val = @intFromPtr(ptr) };
     }
 
