@@ -666,14 +666,11 @@ pub const Instance = struct {
                 f(inst, null);
         } else |_| {};
 
-        log.info(
-            "Vulkan instance version is {}.{}.{}",
-            .{
-                c.VK_API_VERSION_MAJOR(ver),
-                c.VK_API_VERSION_MINOR(ver),
-                c.VK_API_VERSION_PATCH(ver),
-            },
-        );
+        log.info("Vulkan instance version is {}.{}.{}", .{
+            c.VK_API_VERSION_MAJOR(ver),
+            c.VK_API_VERSION_MINOR(ver),
+            c.VK_API_VERSION_PATCH(ver),
+        });
         if (presentation and ext.contains("VK_KHR_surface")) {
             log.info("VK_KHR_surface is enabled", .{});
             log.info("{s} is enabled", .{switch (builtin.os.tag) {
@@ -1666,14 +1663,11 @@ pub const Device = struct {
                 ptr.queue_n += 1;
             };
 
-        log.info(
-            "Vulkan device version is {}.{}.{}",
-            .{
-                c.VK_API_VERSION_MAJOR(ver),
-                c.VK_API_VERSION_MINOR(ver),
-                c.VK_API_VERSION_PATCH(ver),
-            },
-        );
+        log.info("Vulkan device version is {}.{}.{}", .{
+            c.VK_API_VERSION_MAJOR(ver),
+            c.VK_API_VERSION_MINOR(ver),
+            c.VK_API_VERSION_PATCH(ver),
+        });
         log.info("Using device named \"{s}\"", .{dev_props.deviceName});
         log.info("Device ID is {} (0x{x})", .{
             dev_props.deviceID,
