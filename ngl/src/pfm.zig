@@ -162,6 +162,81 @@ pub const Platform = struct {
         };
     }
 
+    /// This will trash the swapchain and its images/views.
+    /// Meant to be called in response to `Error.OutOfDate`.
+    pub fn update(
+        self: *Platform,
+        allocator: std.mem.Allocator,
+        gpu: ngl.Gpu,
+        device: *ngl.Device,
+    ) Error!void {
+        const capab = try self.surface.getCapabilities(gpu, .fifo);
+
+        var sc = try ngl.Swapchain.init(allocator, device, .{
+            .surface = &self.surface,
+            .min_count = capab.min_count,
+            .format = self.format.format,
+            .color_space = self.format.color_space,
+            .width = self.width,
+            .height = self.height,
+            .layers = 1,
+            .usage = .{ .color_attachment = true },
+            .pre_transform = capab.current_transform,
+            .composite_alpha = blk: {
+                const CAlpha = ngl.Surface.CompositeAlpha;
+                const fields = @typeInfo(CAlpha).@"enum".fields;
+                break :blk inline for (fields) |f| {
+                    if (@field(capab.supported_composite_alpha, f.name))
+                        break @field(CAlpha, f.name);
+                } else unreachable;
+            },
+            .present_mode = .fifo, // TODO: Not the best choice for Wayland.
+            .clipped = true,
+            .old_swapchain = &self.swapchain,
+        });
+        errdefer sc.deinit(allocator, device);
+
+        allocator.free(self.images);
+        self.images = try sc.getImages(allocator, device);
+        errdefer {
+            allocator.free(self.images);
+            self.images = &[0]ngl.Image{};
+        }
+
+        for (self.image_views) |*view|
+            view.deinit(allocator, device);
+        if (self.image_views.len != self.images.len)
+            self.image_views = try allocator.alloc(ngl.ImageView, self.images.len);
+        errdefer {
+            allocator.free(self.image_views);
+            self.image_views = &[0]ngl.ImageView{};
+        }
+
+        for (self.image_views, self.images, 0..) |*view, *img, i|
+            view.* = ngl.ImageView.init(allocator, device, .{
+                .image = img,
+                .type = .@"2d",
+                .format = self.format.format,
+                .range = .{
+                    .aspect_mask = .{ .color = true },
+                    .level = 0,
+                    .levels = 1,
+                    .layer = 0,
+                    .layers = 1,
+                },
+            }) catch |err| {
+                for (0..i) |j|
+                    self.image_views[j].deinit(allocator, device);
+
+                return err;
+            };
+
+        // TODO: Can an old swapchain be used in multiple calls to
+        // `Swapchain.init`, as long as it's not deinitialized?
+        self.swapchain.deinit(allocator, device);
+        self.swapchain = sc;
+    }
+
     pub fn poll(self: *Platform) Input {
         return self.impl.poll();
     }
