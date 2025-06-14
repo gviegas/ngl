@@ -238,7 +238,9 @@ pub const Platform = struct {
     }
 
     pub fn poll(self: *Platform) Input {
-        return self.impl.poll();
+        const input = self.impl.poll();
+        self.width, self.height = self.impl.getSize();
+        return input;
     }
 
     pub fn lock(self: *Platform) void {
@@ -266,6 +268,10 @@ const PlatformAndroid = struct {
     const Error = error{};
 
     fn init(_: std.mem.Allocator, _: Platform.Desc) Error!PlatformAndroid {
+        @compileError("TODO");
+    }
+
+    fn getSize(_: *PlatformAndroid) [2]u32 {
         @compileError("TODO");
     }
 
@@ -389,6 +395,10 @@ const PlatformWayland = struct {
             .surface = surface,
             .pinned = pinned,
         };
+    }
+
+    fn getSize(_: *PlatformWayland) [2]u32 {
+        @panic("TODO");
     }
 
     fn poll(self: *PlatformWayland) Platform.Input {
@@ -1917,6 +1927,8 @@ const PlatformWin32 = struct {
     hinstance: c.HINSTANCE,
     hwnd: c.HWND,
 
+    var width: u32 = 0;
+    var height: u32 = 0;
     var input = Platform.Input{};
     const class_name = &[_:0]u16{ 'n', 'g', 'l', '.', 'p', 'f', 'm' };
 
@@ -1970,10 +1982,17 @@ const PlatformWin32 = struct {
             null,
         ) orelse return Error.WindowCreation;
 
+        width = desc.width;
+        height = desc.height;
+
         return .{
             .hinstance = inst,
             .hwnd = wnd,
         };
+    }
+
+    fn getSize(_: *PlatformWin32) [2]u32 {
+        return .{ width, height };
     }
 
     fn poll(_: *PlatformWin32) Platform.Input {
@@ -2000,6 +2019,11 @@ const PlatformWin32 = struct {
     ) callconv(.C) c.LRESULT {
         switch (message) {
             c.WM_CREATE => _ = c.ShowWindow(hwnd, c.SW_NORMAL),
+
+            c.WM_SIZE => {
+                width = @intCast(lparam & 0xffff);
+                height = @intCast(lparam >> 16 & 0xffff);
+            },
 
             c.WM_KEYDOWN, c.WM_KEYUP => {
                 const pressed = lparam & (1 << 31) == 0;
