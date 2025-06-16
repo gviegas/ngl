@@ -21,8 +21,8 @@ pub fn main() !void {
 }
 
 pub const platform_desc = pfm.Platform.Desc{
-    .width = width,
-    .height = height,
+    .width = 1280,
+    .height = 720,
 };
 
 const frame_n = 2;
@@ -33,12 +33,13 @@ const material_n = draw_n;
 comptime {
     assert(material_n == draw_n);
 }
-const width = 1280;
-const height = 720;
 
 var ctx: Ctx = undefined;
 var dev: *ngl.Device = undefined;
 var plat: *pfm.Platform = undefined;
+
+var width = platform_desc.width;
+var height = platform_desc.height;
 
 fn do(gpa: std.mem.Allocator) !void {
     ctx = try Ctx.init(gpa);
@@ -106,7 +107,6 @@ fn do(gpa: std.mem.Allocator) !void {
     defer stg_buf.deinit(gpa);
 
     const v = gmath.m4f.lookAt(.{ 0, -4, -4 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
-    const p = gmath.m4f.perspective(std.math.pi / 4.0, @as(f32, width) / height, 0.01, 100);
 
     const light_world_pos = .{ -12, -10, 3 };
     const light_view_pos = gmath.m4f.mul(v, light_world_pos ++ [1]f32{1})[0..3].*;
@@ -119,7 +119,7 @@ fn do(gpa: std.mem.Allocator) !void {
     const shdw_vp = gmath.m4f.mul(shdw_p, shdw_v);
     const bias = gmath.m4f.mul(gmath.m4f.t(0.5, 0.5, 0), gmath.m4f.s(0.5, 0.5, 1));
     const vps = gmath.m4f.mul(bias, shdw_vp);
-    const draws = blk: {
+    var draws = blk: {
         const xforms = [draw_n][16]f32{
             gmath.m4f.id,
             gmath.m4f.mul(gmath.m4f.t(0, 1, 0), gmath.m4f.s(20, 1, 20)),
@@ -135,9 +135,8 @@ fn do(gpa: std.mem.Allocator) !void {
             const mv = gmath.m4f.mul(v, m);
             const inv = gmath.m3f.invert(gmath.m4f.upperLeft(mv));
             const n = gmath.m3f.to3x4(gmath.m3f.transpose(inv), undefined);
-            const mvp = gmath.m4f.mul(p, mv);
             draw.* = .{
-                .model = Model.init(shdw_mvp, s, mvp, mv, n),
+                .model = Model.init(shdw_mvp, s, mv, n),
                 .material = matl,
             };
         }
@@ -198,7 +197,6 @@ fn do(gpa: std.mem.Allocator) !void {
 
             const off_2 = model_off + i * ((Model.size + 255) & ~@as(u64, 255));
             try desc.writeUb(Model, gpa, frame, i, ub, strd + off_2);
-            draw.model.copy(data[off_2 .. off_2 + Model.size]);
         }
     }
 
@@ -325,13 +323,44 @@ fn do(gpa: std.mem.Allocator) !void {
 
         try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{fnc});
         try ngl.Fence.reset(gpa, dev, &.{fnc});
-        const next = try plat.swapchain.nextImage(dev, std.time.ns_per_s, sems[0], null);
+        const next = plat.swapchain.nextImage(dev, std.time.ns_per_s, sems[0], null) catch |err| {
+            switch (err) {
+                ngl.Error.OutOfDate => {
+                    var models: [draw_n]*Model = undefined;
+                    for (&models, &draws) |*model, *draw|
+                        model.* = &draw.model;
+                    try dev.wait();
+                    try makeUpToDate(gpa, &color, &depth, &models);
+                    continue;
+                },
+                else => return err,
+            }
+        };
+
+        const cpy_strd = frame * unif_strd;
+        const cpy_data = stg_buf.data[unif_cpy_off + cpy_strd .. unif_cpy_off + cpy_strd + unif_strd];
+        var cpy_regs: [draw_n]ngl.Cmd.BufferCopy.Region = undefined;
+        for (draws, &cpy_regs, 0..) |draw, *reg, i| {
+            const off = model_off + i * ((Model.size + 255) & ~@as(u64, 255));
+            draw.model.copy(cpy_data[off .. off + Model.size]);
+            reg.* = .{
+                .source_offset = unif_cpy_off + cpy_strd + off,
+                .dest_offset = cpy_strd + off,
+                .size = Model.size,
+            };
+        }
 
         try cmd_pool.reset(dev, .keep);
         cmd = try cmd_buf.begin(gpa, dev, .{
             .one_time_submit = true,
             .inheritance = null,
         });
+
+        cmd.copyBuffer(&.{.{
+            .source = &stg_buf.buffer,
+            .dest = &unif_buf.buffer,
+            .regions = &cpy_regs,
+        }});
 
         cmd.setDescriptors(.graphics, &shd.layout, 0, &.{&desc.sets[0][frame]});
         cmd.setRasterizationEnable(true);
@@ -581,8 +610,8 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setViewports(&.{.{
             .x = 0,
             .y = 0,
-            .width = width,
-            .height = height,
+            .width = @floatFromInt(width),
+            .height = @floatFromInt(height),
             .znear = 0,
             .zfar = 1,
         }});
@@ -739,10 +768,21 @@ fn do(gpa: std.mem.Allocator) !void {
             };
         };
 
-        try pres.queue.present(gpa, dev, &.{pres.sem}, &.{.{
+        pres.queue.present(gpa, dev, &.{pres.sem}, &.{.{
             .swapchain = &plat.swapchain,
             .image_index = next,
-        }});
+        }}) catch |err| {
+            switch (err) {
+                ngl.Error.OutOfDate => {
+                    var models: [draw_n]*Model = undefined;
+                    for (&models, &draws) |*model, *draw|
+                        model.* = &draw.model;
+                    try dev.wait();
+                    try makeUpToDate(gpa, &color, &depth, &models);
+                },
+                else => return err,
+            }
+        };
 
         frame = (frame + 1) % frame_n;
     }
@@ -1588,9 +1628,9 @@ const Model = struct {
     const set_index = 2;
     const binding = 0;
 
-    fn init(shadow_mvp: [16]f32, s: [16]f32, mvp: [16]f32, mv: [16]f32, n: [12]f32) Model {
+    fn init(shadow_mvp: [16]f32, s: [16]f32, mv: [16]f32, n: [12]f32) Model {
         var self: Model = undefined;
-        self.set(shadow_mvp, s, mvp, mv, n);
+        self.set(shadow_mvp, s, gmath.m4f.mul(computeP(), mv), mv, n);
         return self;
     }
 
@@ -1615,9 +1655,46 @@ const Model = struct {
 
         @memcpy(dest[0..size], std.mem.asBytes(&self.shdw_s_mvp_mv_n));
     }
+
+    fn update(self: *Model) void {
+        const mv: *gmath.m4f.M = self.shdw_s_mvp_mv_n[48..64];
+        const mvp = gmath.m4f.mul(computeP(), mv.*);
+        @memcpy(self.shdw_s_mvp_mv_n[32..48], &mvp);
+    }
+
+    fn computeP() gmath.m4f.M {
+        return gmath.m4f.perspective(
+            std.math.pi / 4.0,
+            @as(f32, @floatFromInt(width)) / @as(f32, @floatFromInt(height)),
+            0.01,
+            100,
+        );
+    }
 };
 
 const Draw = struct {
     model: Model,
     material: Material,
 };
+
+fn makeUpToDate(
+    gpa: std.mem.Allocator,
+    color: *Color,
+    depth: *Depth,
+    models: []*Model,
+) ngl.Error!void {
+    plat.update(gpa, ctx.gpu, dev) catch {
+        @panic("Platform.update failed");
+    };
+    width = plat.width;
+    height = plat.height;
+    var col = try Color.init(gpa);
+    errdefer col.deinit(gpa);
+    const dep = try Depth.init(gpa);
+    color.deinit(gpa);
+    depth.deinit(gpa);
+    color.* = col;
+    depth.* = dep;
+    for (models) |model|
+        model.update();
+}
