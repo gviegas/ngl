@@ -28,17 +28,18 @@ pub const ngl_options = ngl.Options{
 };
 
 pub const platform_desc = pfm.Platform.Desc{
-    .width = width,
-    .height = height,
+    .width = 1280,
+    .height = 720,
 };
 
 const frame_n = 2;
-const width = 1280;
-const height = 720;
 
 var ctx: Ctx = undefined;
 var dev: *ngl.Device = undefined;
 var plat: *pfm.Platform = undefined;
+
+var width = platform_desc.width;
+var height = platform_desc.height;
 
 fn do(gpa: std.mem.Allocator) !void {
     ctx = try Ctx.init(gpa);
@@ -96,12 +97,10 @@ fn do(gpa: std.mem.Allocator) !void {
 
     const m = gmath.m4f.id;
     const v = gmath.m4f.lookAt(.{ -3, -3, -4 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
-    const p = gmath.m4f.perspective(std.math.pi / 3.0, @as(f32, width) / height, 0.01, 100);
     const mv = gmath.m4f.mul(v, m);
-    const mvp = gmath.m4f.mul(p, mv);
     const inv = gmath.m3f.invert(gmath.m4f.upperLeft(mv));
     const n = gmath.m3f.to3x4(gmath.m3f.transpose(inv), undefined);
-    const globl = Global.init(mvp, mv, n);
+    var globl = Global.init(mv, n);
 
     const light_pos = gmath.m4f.mul(v, .{ -2, -3, -4, 1 })[0..3].*;
     const intens = 1;
@@ -131,7 +130,7 @@ fn do(gpa: std.mem.Allocator) !void {
         try desc.write(Light, gpa, frame, ub, strd + light_off);
         try desc.write(Material, gpa, frame, ub, strd + matl_off);
 
-        globl.copy(data[globl_off .. globl_off + Global.size]);
+        // Global uniform is copied during the render loop.
         light.copy(data[light_off .. light_off + Light.size]);
         matl.copy(data[matl_off .. matl_off + Material.size]);
     }
@@ -209,13 +208,36 @@ fn do(gpa: std.mem.Allocator) !void {
 
         try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{fnc});
         try ngl.Fence.reset(gpa, dev, &.{fnc});
-        const next = try plat.swapchain.nextImage(dev, std.time.ns_per_s, sems[0], null);
+        const next = plat.swapchain.nextImage(dev, std.time.ns_per_s, sems[0], null) catch |err| {
+            switch (err) {
+                ngl.Error.OutOfDate => {
+                    try dev.wait();
+                    try makeUpToDate(gpa, &color, &depth, &globl);
+                    continue;
+                },
+                else => return err,
+            }
+        };
+
+        const cpy_strd = frame * unif_strd;
+        const cpy_data = stg_buf.data[unif_cpy_off + cpy_strd .. unif_cpy_off + cpy_strd + unif_strd];
+        globl.copy(cpy_data[globl_off .. globl_off + Global.size]);
 
         try cmd_pool.reset(dev, .keep);
         cmd = try cmd_buf.begin(gpa, dev, .{
             .one_time_submit = true,
             .inheritance = null,
         });
+
+        cmd.copyBuffer(&.{.{
+            .source = &stg_buf.buffer,
+            .dest = &unif_buf.buffer,
+            .regions = &.{.{
+                .source_offset = unif_cpy_off + cpy_strd + globl_off,
+                .dest_offset = cpy_strd + globl_off,
+                .size = Global.size,
+            }},
+        }});
 
         cmd.setShaders(&.{ .vertex, .fragment }, &.{ &shd.vertex, &shd.fragment });
         cmd.setDescriptors(.graphics, &shd.layout, 0, &.{
@@ -269,8 +291,8 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setViewports(&.{.{
             .x = 0,
             .y = 0,
-            .width = width,
-            .height = height,
+            .width = @floatFromInt(width),
+            .height = @floatFromInt(height),
             .znear = 0,
             .zfar = 1,
         }});
@@ -499,10 +521,18 @@ fn do(gpa: std.mem.Allocator) !void {
             };
         };
 
-        try pres.queue.present(gpa, dev, &.{pres.sem}, &.{.{
+        pres.queue.present(gpa, dev, &.{pres.sem}, &.{.{
             .swapchain = &plat.swapchain,
             .image_index = next,
-        }});
+        }}) catch |err| {
+            switch (err) {
+                ngl.Error.OutOfDate => {
+                    try dev.wait();
+                    try makeUpToDate(gpa, &color, &depth, &globl);
+                },
+                else => return err,
+            }
+        };
 
         frame = (frame + 1) % frame_n;
     }
@@ -966,9 +996,9 @@ const Global = struct {
     const set_index = 0;
     const binding = 0;
 
-    fn init(mvp: [16]f32, mv: [16]f32, n: [12]f32) Global {
+    fn init(mv: [16]f32, n: [12]f32) Global {
         var self: Global = undefined;
-        self.set(mvp, mv, n);
+        self.set(gmath.m4f.mul(computeP(), mv), mv, n);
         return self;
     }
 
@@ -983,6 +1013,22 @@ const Global = struct {
         assert(dest.len >= size);
 
         @memcpy(dest[0..size], std.mem.asBytes(&self.mvp_mv_n));
+    }
+
+    fn update(self: *Global) void {
+        const p = computeP();
+        const mv: *gmath.m4f.M = self.mvp_mv_n[16..32];
+        const mvp = gmath.m4f.mul(p, mv.*);
+        @memcpy(self.mvp_mv_n[0..16], &mvp);
+    }
+
+    fn computeP() gmath.m4f.M {
+        return gmath.m4f.perspective(
+            std.math.pi / 3.0,
+            @as(f32, @floatFromInt(width)) / @as(f32, @floatFromInt(height)),
+            0.01,
+            100,
+        );
     }
 };
 
@@ -1061,3 +1107,24 @@ const Material = packed struct {
         @memcpy(dest[0..size], std.mem.asBytes(&self));
     }
 };
+
+fn makeUpToDate(
+    gpa: std.mem.Allocator,
+    color: *Color,
+    depth: *Depth,
+    global: *Global,
+) ngl.Error!void {
+    plat.update(gpa, ctx.gpu, dev) catch {
+        @panic("Platform.update failed");
+    };
+    width = plat.width;
+    height = plat.height;
+    var col = try Color.init(gpa);
+    errdefer col.deinit(gpa);
+    const dep = try Depth.init(gpa);
+    color.deinit(gpa);
+    depth.deinit(gpa);
+    color.* = col;
+    depth.* = dep;
+    global.update();
+}
