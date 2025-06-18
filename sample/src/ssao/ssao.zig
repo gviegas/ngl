@@ -21,8 +21,8 @@ pub fn main() !void {
 }
 
 pub const platform_desc = pfm.Platform.Desc{
-    .width = pres_width,
-    .height = pres_height,
+    .width = 1280,
+    .height = 720,
 };
 
 const frame_n = 2;
@@ -30,14 +30,15 @@ const material_n = 1;
 const teapot_n = 1;
 const plane_n = 1;
 const draw_n = teapot_n + plane_n;
-const pres_width = 1280;
-const pres_height = 720;
-const rend_width = pres_width / 2;
-const rend_height = pres_height / 2;
 
 var ctx: Ctx = undefined;
 var dev: *ngl.Device = undefined;
 var plat: *pfm.Platform = undefined;
+
+var pres_width = platform_desc.width;
+var pres_height = platform_desc.height;
+var rend_width = platform_desc.width / 2;
+var rend_height = platform_desc.height / 2;
 
 fn do(gpa: std.mem.Allocator) !void {
     ctx = try Ctx.init(gpa);
@@ -45,16 +46,16 @@ fn do(gpa: std.mem.Allocator) !void {
     dev = &ctx.device;
     plat = &ctx.platform;
 
-    var col_s4 = try Color(.@"4").init(gpa);
+    var col_s4 = try Color.init(gpa, .@"4");
     defer col_s4.deinit(gpa);
 
-    var col_s1 = try Color(.@"1").init(gpa);
+    var col_s1 = try Color.init(gpa, .@"1");
     defer col_s1.deinit(gpa);
 
-    var norm_s4 = try Normal(.@"4").init(gpa);
+    var norm_s4 = try Normal.init(gpa, .@"4");
     defer norm_s4.deinit(gpa);
 
-    var norm_s1 = try Normal(.@"1").init(gpa);
+    var norm_s1 = try Normal.init(gpa, .@"1");
     defer norm_s1.deinit(gpa);
 
     var depth = try Depth.init(gpa);
@@ -105,7 +106,7 @@ fn do(gpa: std.mem.Allocator) !void {
     var stg_buf = try Buffer(.host).init(gpa, stg_buf_size, .{ .transfer_source = true });
     defer stg_buf.deinit(gpa);
 
-    var desc = try Descriptor.init(gpa, &col_s1, &norm_s1, &depth, &rnd_spl, &blur, &blur_2);
+    var desc = try Descriptor.init(gpa);
     defer desc.deinit(gpa);
 
     const ao_params = AoParameters{
@@ -122,15 +123,8 @@ fn do(gpa: std.mem.Allocator) !void {
     const one_queue = cq.multiqueue == null;
 
     const v = gmath.m4f.lookAt(.{ 0, -4, -4 }, .{ 0, 0, 0 }, .{ 0, -1, 0 });
-    const p = gmath.m4f.perspective(
-        std.math.pi / 4.0,
-        @as(f32, rend_width) / rend_height,
-        0.01,
-        100,
-    );
 
-    const inv_p = gmath.m4f.invert(p);
-    const camera = Camera.init(inv_p);
+    var camera = Camera.init();
 
     const light_ws_pos = .{ 10, -10, -10 };
     const light_es_pos = gmath.m4f.mul(v, light_ws_pos ++ [1]f32{1})[0..3].*;
@@ -138,7 +132,7 @@ fn do(gpa: std.mem.Allocator) !void {
 
     const matls = [material_n]Material{.{}};
 
-    const models: [draw_n]Model = blk: {
+    var models: [draw_n]Model = blk: {
         const xforms = [draw_n][16]f32{
             gmath.m4f.id,
             gmath.m4f.mul(gmath.m4f.t(0, 1, 0), gmath.m4f.s(20, 1, 20)),
@@ -146,10 +140,9 @@ fn do(gpa: std.mem.Allocator) !void {
         var models: [draw_n]Model = undefined;
         for (&models, xforms) |*model, m| {
             const mv = gmath.m4f.mul(v, m);
-            const mvp = gmath.m4f.mul(p, mv);
             const inv = gmath.m3f.invert(gmath.m4f.upperLeft(mv));
             const n = gmath.m3f.to3x4(gmath.m3f.transpose(inv), undefined);
-            model.* = Model.init(mvp, mv, n);
+            model.* = Model.init(mv, n);
         }
         break :blk models;
     };
@@ -186,17 +179,11 @@ fn do(gpa: std.mem.Allocator) !void {
         const strd = frame * unif_strd;
         const data = stg_buf.data[unif_cpy_off + strd .. unif_cpy_off + strd + unif_strd];
 
-        camera.copy(data[cam_off .. cam_off + Camera.size]);
         light.copy(data[light_off .. light_off + Light.size]);
 
         for (matls, 0..) |matl, i| {
             const off = matl_off + i * ((Material.size + 255) & ~@as(u64, 255));
             matl.copy(data[off .. off + Material.size]);
-        }
-
-        for (models, 0..) |model, i| {
-            const off = model_off + i * ((Model.size + 255) & ~@as(u64, 255));
-            model.copy(data[off .. off + Model.size]);
         }
     }
 
@@ -366,13 +353,62 @@ fn do(gpa: std.mem.Allocator) !void {
 
         try ngl.Fence.wait(gpa, dev, std.time.ns_per_s, &.{fnc});
         try ngl.Fence.reset(gpa, dev, &.{fnc});
-        const next = try plat.swapchain.nextImage(dev, std.time.ns_per_s, sems[0], null);
+        const next = plat.swapchain.nextImage(dev, std.time.ns_per_s, sems[0], null) catch |err| {
+            switch (err) {
+                ngl.Error.OutOfDate => {
+                    var model_ptrs: [draw_n]*Model = undefined;
+                    for (&model_ptrs, &models) |*ptr, *model|
+                        ptr.* = model;
+                    try dev.wait();
+                    try makeUpToDate(
+                        gpa,
+                        &desc,
+                        &col_s1,
+                        &col_s4,
+                        &norm_s1,
+                        &norm_s4,
+                        &depth,
+                        &blur,
+                        &blur_2,
+                        &camera,
+                        &model_ptrs,
+                    );
+                    continue;
+                },
+                else => return err,
+            }
+        };
+
+        const cpy_strd = frame * unif_strd;
+        const cpy_data = stg_buf.data[unif_cpy_off + cpy_strd .. unif_cpy_off + cpy_strd + unif_strd];
+        var cpy_regs: [1 + draw_n]ngl.Cmd.BufferCopy.Region = undefined;
+        camera.copy(cpy_data[cam_off .. cam_off + Camera.size]);
+        cpy_regs[0] = .{
+            .source_offset = unif_cpy_off + cpy_strd + cam_off,
+            .dest_offset = cpy_strd + cam_off,
+            .size = Camera.size,
+        };
+        for (models, cpy_regs[1..], 0..) |model, *reg, i| {
+            const off = model_off + i * ((Model.size + 255) & ~@as(u64, 255));
+            model.copy(cpy_data[off .. off + Model.size]);
+            reg.* = .{
+                .source_offset = unif_cpy_off + cpy_strd + off,
+                .dest_offset = cpy_strd + off,
+                .size = Model.size,
+            };
+        }
 
         try cmd_pool.reset(dev, .keep);
         cmd = try cmd_buf.begin(gpa, dev, .{
             .one_time_submit = true,
             .inheritance = null,
         });
+
+        cmd.copyBuffer(&.{.{
+            .source = &stg_buf.buffer,
+            .dest = &unif_buf.buffer,
+            .regions = &cpy_regs,
+        }});
 
         inline for (.{ .graphics, .compute }) |bp|
             cmd.setDescriptors(bp, &shd.layout, 0, &.{&desc.sets[0][frame]});
@@ -416,8 +452,8 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setViewports(&.{.{
             .x = 0,
             .y = 0,
-            .width = rend_width,
-            .height = rend_height,
+            .width = @floatFromInt(rend_width),
+            .height = @floatFromInt(rend_height),
             .znear = 0,
             .zfar = 1,
         }});
@@ -776,8 +812,8 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setViewports(&.{.{
             .x = 0,
             .y = 0,
-            .width = pres_width,
-            .height = pres_height,
+            .width = @floatFromInt(pres_width),
+            .height = @floatFromInt(pres_height),
             .znear = 0,
             .zfar = 1,
         }});
@@ -974,10 +1010,33 @@ fn do(gpa: std.mem.Allocator) !void {
             };
         };
 
-        try pres.queue.present(gpa, dev, &.{pres.sem}, &.{.{
+        pres.queue.present(gpa, dev, &.{pres.sem}, &.{.{
             .swapchain = &plat.swapchain,
             .image_index = next,
-        }});
+        }}) catch |err| {
+            switch (err) {
+                ngl.Error.OutOfDate => {
+                    var model_ptrs: [draw_n]*Model = undefined;
+                    for (&model_ptrs, &models) |*ptr, *model|
+                        ptr.* = model;
+                    try dev.wait();
+                    try makeUpToDate(
+                        gpa,
+                        &desc,
+                        &col_s1,
+                        &col_s4,
+                        &norm_s1,
+                        &norm_s4,
+                        &depth,
+                        &blur,
+                        &blur_2,
+                        &camera,
+                        &model_ptrs,
+                    );
+                },
+                else => return err,
+            }
+        };
 
         frame = (frame + 1) % frame_n;
     }
@@ -985,207 +1044,193 @@ fn do(gpa: std.mem.Allocator) !void {
     try dev.wait();
 }
 
-fn Color(comptime msr: enum { @"4", @"1" }) type {
-    return struct {
-        image: ngl.Image,
-        memory: ngl.Memory,
-        view: ngl.ImageView,
-        sampler: switch (msr) {
-            .@"4" => void,
-            .@"1" => ngl.Sampler,
-        },
+const Color = struct {
+    image: ngl.Image,
+    memory: ngl.Memory,
+    view: ngl.ImageView,
+    sampler: ?ngl.Sampler,
 
-        const format = ngl.Format.rgba16_sfloat;
-        const samples = @field(ngl.SampleCount, @tagName(msr));
-        const set_index = 0;
-        const binding = 0;
+    const format = ngl.Format.rgba16_sfloat;
+    const set_index = 0;
+    const binding = 0;
 
-        fn init(gpa: std.mem.Allocator) ngl.Error!@This() {
-            var img = try ngl.Image.init(gpa, dev, .{
-                .type = .@"2d",
-                .format = format,
-                .width = rend_width,
-                .height = rend_height,
-                .depth_or_layers = 1,
-                .levels = 1,
-                .samples = samples,
-                .tiling = .optimal,
-                .usage = .{
-                    .sampled_image = msr == .@"1",
-                    .color_attachment = true,
-                    .transient_attachment = msr == .@"4",
-                },
-                .misc = .{},
+    fn init(gpa: std.mem.Allocator, samples: ngl.SampleCount) ngl.Error!Color {
+        var img = try ngl.Image.init(gpa, dev, .{
+            .type = .@"2d",
+            .format = format,
+            .width = rend_width,
+            .height = rend_height,
+            .depth_or_layers = 1,
+            .levels = 1,
+            .samples = samples,
+            .tiling = .optimal,
+            .usage = .{
+                .sampled_image = samples == .@"1",
+                .color_attachment = true,
+                .transient_attachment = samples != .@"1",
+            },
+            .misc = .{},
+        });
+        errdefer img.deinit(gpa, dev);
+
+        var mem = blk: {
+            const reqs = img.getMemoryRequirements(dev);
+            var mem = try dev.alloc(gpa, .{
+                .size = reqs.size,
+                .type_index = reqs.findType(dev.*, .{
+                    .device_local = true,
+                    .lazily_allocated = samples != .@"1",
+                }, null) orelse reqs.findType(dev.*, .{ .device_local = true }, null).?,
             });
-            errdefer img.deinit(gpa, dev);
-
-            var mem = blk: {
-                const reqs = img.getMemoryRequirements(dev);
-                var mem = try dev.alloc(gpa, .{
-                    .size = reqs.size,
-                    .type_index = reqs.findType(dev.*, .{
-                        .device_local = true,
-                        .lazily_allocated = msr == .@"4",
-                    }, null) orelse reqs.findType(dev.*, .{ .device_local = true }, null).?,
-                });
-                errdefer dev.free(gpa, &mem);
-                try img.bind(dev, &mem, 0);
-                break :blk mem;
-            };
             errdefer dev.free(gpa, &mem);
+            try img.bind(dev, &mem, 0);
+            break :blk mem;
+        };
+        errdefer dev.free(gpa, &mem);
 
-            var view = try ngl.ImageView.init(gpa, dev, .{
-                .image = &img,
-                .type = .@"2d",
-                .format = format,
-                .range = .{
-                    .aspect_mask = .{ .color = true },
-                    .level = 0,
-                    .levels = 1,
-                    .layer = 0,
-                    .layers = 1,
-                },
-            });
-            errdefer view.deinit(gpa, dev);
-
-            const splr = switch (msr) {
-                .@"4" => {},
-                .@"1" => try ngl.Sampler.init(gpa, dev, .{
-                    .normalized_coordinates = true,
-                    .u_address = .clamp_to_edge,
-                    .v_address = .clamp_to_edge,
-                    .w_address = .clamp_to_edge,
-                    .border_color = null,
-                    .mag = .linear,
-                    .min = .linear,
-                    .mipmap = .nearest,
-                    .min_lod = 0,
-                    .max_lod = null,
-                    .max_anisotropy = null,
-                    .compare = null,
-                }),
-            };
-
-            return .{
-                .image = img,
-                .memory = mem,
-                .view = view,
-                .sampler = splr,
-            };
-        }
-
-        fn deinit(self: *@This(), gpa: std.mem.Allocator) void {
-            self.view.deinit(gpa, dev);
-            self.image.deinit(gpa, dev);
-            dev.free(gpa, &self.memory);
-            switch (msr) {
-                .@"4" => {},
-                .@"1" => self.sampler.deinit(gpa, dev),
-            }
-        }
-    };
-}
-
-fn Normal(comptime msr: enum { @"4", @"1" }) type {
-    return struct {
-        image: ngl.Image,
-        memory: ngl.Memory,
-        view: ngl.ImageView,
-        sampler: switch (msr) {
-            .@"4" => void,
-            .@"1" => ngl.Sampler,
-        },
-
-        const format = ngl.Format.rgba16_sfloat;
-        const samples = @field(ngl.SampleCount, @tagName(msr));
-        const set_index = 0;
-        const binding = 1;
-
-        fn init(gpa: std.mem.Allocator) ngl.Error!@This() {
-            var img = try ngl.Image.init(gpa, dev, .{
-                .type = .@"2d",
-                .format = format,
-                .width = rend_width,
-                .height = rend_height,
-                .depth_or_layers = 1,
+        var view = try ngl.ImageView.init(gpa, dev, .{
+            .image = &img,
+            .type = .@"2d",
+            .format = format,
+            .range = .{
+                .aspect_mask = .{ .color = true },
+                .level = 0,
                 .levels = 1,
-                .samples = samples,
-                .tiling = .optimal,
-                .usage = .{
-                    .sampled_image = msr == .@"1",
-                    .color_attachment = true,
-                    .transient_attachment = msr == .@"4",
-                },
-                .misc = .{},
-            });
-            errdefer img.deinit(gpa, dev);
+                .layer = 0,
+                .layers = 1,
+            },
+        });
+        errdefer view.deinit(gpa, dev);
 
-            var mem = blk: {
-                const reqs = img.getMemoryRequirements(dev);
-                var mem = try dev.alloc(gpa, .{
-                    .size = reqs.size,
-                    .type_index = reqs.findType(dev.*, .{
-                        .device_local = true,
-                        .lazily_allocated = msr == .@"4",
-                    }, null) orelse reqs.findType(dev.*, .{ .device_local = true }, null).?,
-                });
-                errdefer dev.free(gpa, &mem);
-                try img.bind(dev, &mem, 0);
-                break :blk mem;
-            };
+        const splr = switch (samples) {
+            .@"4" => null,
+            .@"1" => try ngl.Sampler.init(gpa, dev, .{
+                .normalized_coordinates = true,
+                .u_address = .clamp_to_edge,
+                .v_address = .clamp_to_edge,
+                .w_address = .clamp_to_edge,
+                .border_color = null,
+                .mag = .linear,
+                .min = .linear,
+                .mipmap = .nearest,
+                .min_lod = 0,
+                .max_lod = null,
+                .max_anisotropy = null,
+                .compare = null,
+            }),
+            else => @panic("Sample count should be either 1 or 4"),
+        };
+
+        return .{
+            .image = img,
+            .memory = mem,
+            .view = view,
+            .sampler = splr,
+        };
+    }
+
+    fn deinit(self: *@This(), gpa: std.mem.Allocator) void {
+        self.view.deinit(gpa, dev);
+        self.image.deinit(gpa, dev);
+        dev.free(gpa, &self.memory);
+        if (self.sampler) |*x|
+            x.deinit(gpa, dev);
+    }
+};
+
+const Normal = struct {
+    image: ngl.Image,
+    memory: ngl.Memory,
+    view: ngl.ImageView,
+    sampler: ?ngl.Sampler,
+
+    const format = ngl.Format.rgba16_sfloat;
+    const set_index = 0;
+    const binding = 1;
+
+    fn init(gpa: std.mem.Allocator, samples: ngl.SampleCount) ngl.Error!Normal {
+        var img = try ngl.Image.init(gpa, dev, .{
+            .type = .@"2d",
+            .format = format,
+            .width = rend_width,
+            .height = rend_height,
+            .depth_or_layers = 1,
+            .levels = 1,
+            .samples = samples,
+            .tiling = .optimal,
+            .usage = .{
+                .sampled_image = samples == .@"1",
+                .color_attachment = true,
+                .transient_attachment = samples != .@"1",
+            },
+            .misc = .{},
+        });
+        errdefer img.deinit(gpa, dev);
+
+        var mem = blk: {
+            const reqs = img.getMemoryRequirements(dev);
+            var mem = try dev.alloc(gpa, .{
+                .size = reqs.size,
+                .type_index = reqs.findType(dev.*, .{
+                    .device_local = true,
+                    .lazily_allocated = samples != .@"1",
+                }, null) orelse reqs.findType(dev.*, .{ .device_local = true }, null).?,
+            });
             errdefer dev.free(gpa, &mem);
+            try img.bind(dev, &mem, 0);
+            break :blk mem;
+        };
+        errdefer dev.free(gpa, &mem);
 
-            var view = try ngl.ImageView.init(gpa, dev, .{
-                .image = &img,
-                .type = .@"2d",
-                .format = format,
-                .range = .{
-                    .aspect_mask = .{ .color = true },
-                    .level = 0,
-                    .levels = 1,
-                    .layer = 0,
-                    .layers = 1,
-                },
-            });
-            errdefer view.deinit(gpa, dev);
+        var view = try ngl.ImageView.init(gpa, dev, .{
+            .image = &img,
+            .type = .@"2d",
+            .format = format,
+            .range = .{
+                .aspect_mask = .{ .color = true },
+                .level = 0,
+                .levels = 1,
+                .layer = 0,
+                .layers = 1,
+            },
+        });
+        errdefer view.deinit(gpa, dev);
 
-            const splr = switch (msr) {
-                .@"4" => {},
-                .@"1" => try ngl.Sampler.init(gpa, dev, .{
-                    .normalized_coordinates = true,
-                    .u_address = .clamp_to_edge,
-                    .v_address = .clamp_to_edge,
-                    .w_address = .clamp_to_edge,
-                    .border_color = null,
-                    .mag = .linear,
-                    .min = .linear,
-                    .mipmap = .nearest,
-                    .min_lod = 0,
-                    .max_lod = null,
-                    .max_anisotropy = null,
-                    .compare = null,
-                }),
-            };
+        const splr = switch (samples) {
+            .@"4" => null,
+            .@"1" => try ngl.Sampler.init(gpa, dev, .{
+                .normalized_coordinates = true,
+                .u_address = .clamp_to_edge,
+                .v_address = .clamp_to_edge,
+                .w_address = .clamp_to_edge,
+                .border_color = null,
+                .mag = .linear,
+                .min = .linear,
+                .mipmap = .nearest,
+                .min_lod = 0,
+                .max_lod = null,
+                .max_anisotropy = null,
+                .compare = null,
+            }),
+            else => @panic("Sample count should be either 1 or 4"),
+        };
 
-            return .{
-                .image = img,
-                .memory = mem,
-                .view = view,
-                .sampler = splr,
-            };
-        }
+        return .{
+            .image = img,
+            .memory = mem,
+            .view = view,
+            .sampler = splr,
+        };
+    }
 
-        fn deinit(self: *@This(), gpa: std.mem.Allocator) void {
-            self.view.deinit(gpa, dev);
-            self.image.deinit(gpa, dev);
-            dev.free(gpa, &self.memory);
-            switch (msr) {
-                .@"4" => {},
-                .@"1" => self.sampler.deinit(gpa, dev),
-            }
-        }
-    };
-}
+    fn deinit(self: *@This(), gpa: std.mem.Allocator) void {
+        self.view.deinit(gpa, dev);
+        self.image.deinit(gpa, dev);
+        dev.free(gpa, &self.memory);
+        if (self.sampler) |*x|
+            x.deinit(gpa, dev);
+    }
+};
 
 const Depth = struct {
     format: ngl.Format,
@@ -1537,58 +1582,50 @@ const Descriptor = struct {
         [frame_n][draw_n]ngl.DescriptorSet,
     },
 
-    fn init(
-        gpa: std.mem.Allocator,
-        color: *Color(.@"1"),
-        normal: *Normal(.@"1"),
-        depth: *Depth,
-        random_sampling: *RandomSampling,
-        blur: *Blur(0),
-        blur_2: *Blur(1),
-    ) ngl.Error!Descriptor {
+    fn init(gpa: std.mem.Allocator) ngl.Error!Descriptor {
         var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
                 .{
-                    .binding = Color(.@"1").binding,
+                    .binding = Color.binding,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .fragment = true },
-                    .immutable_samplers = &.{&color.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
-                    .binding = Normal(.@"1").binding,
+                    .binding = Normal.binding,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .fragment = true },
-                    .immutable_samplers = &.{&normal.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = Depth.binding,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .fragment = true },
-                    .immutable_samplers = &.{&depth.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = RandomSampling.binding,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .fragment = true },
-                    .immutable_samplers = &.{&random_sampling.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = Blur(0).combined.binding,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .compute = true, .fragment = true },
-                    .immutable_samplers = &.{&blur.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = Blur(1).combined.binding,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .compute = true },
-                    .immutable_samplers = &.{&blur_2.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = Blur(0).storage.binding,
@@ -1691,8 +1728,8 @@ const Descriptor = struct {
     fn writeSet0(
         self: *Descriptor,
         gpa: std.mem.Allocator,
-        color: *Color(.@"1"),
-        normal: *Normal(.@"1"),
+        color: *Color,
+        normal: *Normal,
         depth: *Depth,
         random_sampling: *RandomSampling,
         blur: *Blur(0),
@@ -1727,8 +1764,8 @@ const Descriptor = struct {
 
         inline for (
             .{
-                Color(.@"1"),
-                Normal(.@"1"),
+                Color,
+                Normal,
                 Depth,
                 RandomSampling,
                 Blur(0).combined,
@@ -1743,6 +1780,14 @@ const Descriptor = struct {
                 &blur_2.view,
             },
             .{
+                &color.sampler.?,
+                &normal.sampler.?,
+                &depth.sampler,
+                &random_sampling.sampler,
+                &blur.sampler,
+                &blur_2.sampler,
+            },
+            .{
                 comb_col,
                 comb_norm,
                 comb_dep,
@@ -1750,12 +1795,12 @@ const Descriptor = struct {
                 comb_blur,
                 comb_blur_2,
             },
-        ) |T, view, combs|
+        ) |T, view, splr, combs|
             for (combs, &self.sets[0]) |*comb, *set| {
                 isw[0] = .{
                     .view = view,
                     .layout = .shader_read_only_optimal,
-                    .sampler = null,
+                    .sampler = splr,
                 };
                 comb.* = .{
                     .descriptor_set = set,
@@ -1803,6 +1848,99 @@ const Descriptor = struct {
                     .contents = .{ .uniform_buffer = bw[0..1] },
                 };
                 bw = bw[1..];
+            };
+
+        try ngl.DescriptorSet.write(gpa, dev, &writes);
+    }
+
+    fn writeSet0ColorNormalDepthBlur(
+        self: *Descriptor,
+        gpa: std.mem.Allocator,
+        color: *Color,
+        normal: *Normal,
+        depth: *Depth,
+        blur: *Blur(0),
+        blur_2: *Blur(1),
+    ) ngl.Error!void {
+        var writes: [7 * frame_n]ngl.DescriptorSet.Write = undefined;
+        const comb_col = writes[0..frame_n];
+        const comb_norm = writes[frame_n .. 2 * frame_n];
+        const comb_dep = writes[2 * frame_n .. 3 * frame_n];
+        const comb_blur = writes[3 * frame_n .. 4 * frame_n];
+        const comb_blur_2 = writes[4 * frame_n .. 5 * frame_n];
+        const stor_blur = writes[5 * frame_n .. 6 * frame_n];
+        const stor_blur_2 = writes[6 * frame_n .. 7 * frame_n];
+
+        const Isw = ngl.DescriptorSet.Write.ImageSamplerWrite;
+        var isw_arr: [5 * frame_n]Isw = undefined;
+        var isw: []Isw = &isw_arr;
+
+        const Iw = ngl.DescriptorSet.Write.ImageWrite;
+        var iw_arr: [2 * frame_n]Iw = undefined;
+        var iw: []Iw = &iw_arr;
+
+        inline for (
+            .{
+                Color,
+                Normal,
+                Depth,
+                Blur(0).combined,
+                Blur(1).combined,
+            },
+            .{
+                &color.view,
+                &normal.view,
+                &depth.view,
+                &blur.view,
+                &blur_2.view,
+            },
+            .{
+                &color.sampler.?,
+                &normal.sampler.?,
+                &depth.sampler,
+                &blur.sampler,
+                &blur_2.sampler,
+            },
+            .{
+                comb_col,
+                comb_norm,
+                comb_dep,
+                comb_blur,
+                comb_blur_2,
+            },
+        ) |T, view, splr, combs|
+            for (combs, &self.sets[0]) |*comb, *set| {
+                isw[0] = .{
+                    .view = view,
+                    .layout = .shader_read_only_optimal,
+                    .sampler = splr,
+                };
+                comb.* = .{
+                    .descriptor_set = set,
+                    .binding = T.binding,
+                    .element = 0,
+                    .contents = .{ .combined_image_sampler = isw[0..1] },
+                };
+                isw = isw[1..];
+            };
+
+        inline for (
+            .{ Blur(0).storage, Blur(1).storage },
+            .{ &blur.view, &blur_2.view },
+            .{ stor_blur, stor_blur_2 },
+        ) |T, view, stors|
+            for (stors, &self.sets[0]) |*stor, *set| {
+                iw[0] = .{
+                    .view = view,
+                    .layout = .general,
+                };
+                stor.* = .{
+                    .descriptor_set = set,
+                    .binding = T.binding,
+                    .element = 0,
+                    .contents = .{ .storage_image = iw[0..1] },
+                };
+                iw = iw[1..];
             };
 
         try ngl.DescriptorSet.write(gpa, dev, &writes);
@@ -2215,9 +2353,9 @@ const Camera = struct {
     const set_index = 0;
     const binding = 8;
 
-    fn init(inverse_p: [16]f32) Camera {
+    fn init() Camera {
         var self: Camera = undefined;
-        @memcpy(self.inv_p[0..16], &inverse_p);
+        @memcpy(self.inv_p[0..16], &computeInvP());
         return self;
     }
 
@@ -2226,6 +2364,23 @@ const Camera = struct {
         assert(dest.len >= size);
 
         @memcpy(dest[0..size], std.mem.asBytes(&self.inv_p));
+    }
+
+    fn update(self: *Camera) void {
+        @memcpy(self.inv_p[0..16], &computeInvP());
+    }
+
+    fn computeP() gmath.m4f.M {
+        return gmath.m4f.perspective(
+            std.math.pi / 4.0,
+            @as(f32, @floatFromInt(rend_width)) / @as(f32, @floatFromInt(rend_height)),
+            0.01,
+            100,
+        );
+    }
+
+    fn computeInvP() gmath.m4f.M {
+        return gmath.m4f.invert(computeP());
     }
 };
 
@@ -2287,9 +2442,9 @@ const Model = struct {
     const set_index = 2;
     const binding = 0;
 
-    fn init(mvp: [16]f32, mv: [16]f32, n: [12]f32) Model {
+    fn init(mv: [16]f32, n: [12]f32) Model {
         var self: Model = undefined;
-        @memcpy(self.mvp_mv_n[0..16], &mvp);
+        @memcpy(self.mvp_mv_n[0..16], &gmath.m4f.mul(Camera.computeP(), mv));
         @memcpy(self.mvp_mv_n[16..32], &mv);
         @memcpy(self.mvp_mv_n[32..44], &n);
         return self;
@@ -2301,4 +2456,68 @@ const Model = struct {
 
         @memcpy(dest[0..size], std.mem.asBytes(&self.mvp_mv_n));
     }
+
+    fn update(self: *Model) void {
+        const mv: *gmath.m4f.M = self.mvp_mv_n[16..32];
+        const mvp = gmath.m4f.mul(Camera.computeP(), mv.*);
+        @memcpy(self.mvp_mv_n[0..16], &mvp);
+    }
 };
+
+fn makeUpToDate(
+    gpa: std.mem.Allocator,
+    descriptor: *Descriptor,
+    color_s1: *Color,
+    color_s4: *Color,
+    normal_s1: *Normal,
+    normal_s4: *Normal,
+    depth: *Depth,
+    blur: *Blur(0),
+    blur_2: *Blur(1),
+    camera: *Camera,
+    models: []*Model,
+) ngl.Error!void {
+    plat.update(gpa, ctx.gpu, dev) catch {
+        @panic("Platform.update failed");
+    };
+    pres_width = plat.width;
+    pres_height = plat.height;
+    rend_width = pres_width / 2;
+    rend_height = pres_height / 2;
+
+    var col_s1 = try Color.init(gpa, .@"1");
+    errdefer col_s1.deinit(gpa);
+    var col_s4 = try Color.init(gpa, .@"4");
+    errdefer col_s4.deinit(gpa);
+    var norm_s1 = try Normal.init(gpa, .@"1");
+    errdefer norm_s1.deinit(gpa);
+    var norm_s4 = try Normal.init(gpa, .@"4");
+    errdefer norm_s4.deinit(gpa);
+    var dep = try Depth.init(gpa);
+    errdefer dep.deinit(gpa);
+    var bl = try Blur(0).init(gpa);
+    errdefer bl.deinit(gpa);
+    var bl_2 = try Blur(1).init(gpa);
+    errdefer bl_2.deinit(gpa);
+
+    color_s1.deinit(gpa);
+    color_s4.deinit(gpa);
+    normal_s1.deinit(gpa);
+    normal_s4.deinit(gpa);
+    depth.deinit(gpa);
+    blur.deinit(gpa);
+    blur_2.deinit(gpa);
+    color_s1.* = col_s1;
+    color_s4.* = col_s4;
+    normal_s1.* = norm_s1;
+    normal_s4.* = norm_s4;
+    depth.* = dep;
+    blur.* = bl;
+    blur_2.* = bl_2;
+
+    try descriptor.writeSet0ColorNormalDepthBlur(gpa, color_s1, normal_s1, depth, blur, blur_2);
+
+    camera.update();
+    for (models) |model|
+        model.update();
+}
