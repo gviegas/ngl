@@ -23,8 +23,8 @@ pub fn main() !void {
 }
 
 pub const platform_desc = pfm.Platform.Desc{
-    .width = width,
-    .height = height,
+    .width = 1280,
+    .height = 720,
 };
 
 const frame_n = 2;
@@ -34,12 +34,13 @@ const render_dielectric = true;
 const msaa_count: ?ngl.SampleCount = .@"4";
 const sphere_n = material_n;
 const draw_n = sphere_n;
-const width = 1280;
-const height = 720;
 
 var ctx: Ctx = undefined;
 var dev: *ngl.Device = undefined;
 var plat: *pfm.Platform = undefined;
+
+var width = platform_desc.width;
+var height = platform_desc.height;
 
 fn do(gpa: std.mem.Allocator) !void {
     ctx = try Ctx.init(gpa);
@@ -171,7 +172,9 @@ fn do(gpa: std.mem.Allocator) !void {
             cmap_lum += lum;
         }
     }
-    cmap_lum /= width * height * 6;
+    // TODO: This should be recomputed, and the cube map recreated
+    // (at least partially), when dimensions change.
+    cmap_lum /= @floatFromInt(width * height * 6);
     const ev_100 = @log2(cmap_lum * 100 / 12.5);
     var cube_map = try CubeMap.init(gpa, cmap_fmt.?, cmap_xtnt, ev_100);
     defer cube_map.deinit(gpa);
@@ -197,7 +200,7 @@ fn do(gpa: std.mem.Allocator) !void {
     var pre_desc = try PreDescriptor.init(gpa, &cube_map, &ld);
     defer pre_desc.deinit(gpa);
 
-    var desc = try Descriptor.init(gpa, &col_s1, &cube_map, &ld, &dfg, &irrad, &lum);
+    var desc = try Descriptor.init(gpa);
     defer desc.deinit(gpa);
 
     var pre_shd = try PreShader.init(gpa, &pre_desc);
@@ -291,7 +294,6 @@ fn do(gpa: std.mem.Allocator) !void {
         const strd = frame * unif_strd;
         const data = stg_buf.data[unif_cpy_off + strd ..][0..unif_strd];
 
-        cam.copy(data[cam_off .. cam_off + Camera.size]);
         light.copy(data[light_off .. light_off + Light.size]);
 
         for (matls, 0..) |matl, i| {
@@ -640,6 +642,9 @@ fn do(gpa: std.mem.Allocator) !void {
         const unif_upd_size = Camera.size;
         cam.copy(stg_buf.data[unif_cpy_off + unif_upd_off ..][0..unif_upd_size]);
 
+        const lum_iters = try Luminance.computeIterations(gpa);
+        defer gpa.free(lum_iters);
+
         const cmd_pool = &cq.pools[frame];
         const cmd_buf = &cq.buffers[frame];
         const sems = .{ &cq.semaphores[frame * 2], &cq.semaphores[frame * 2 + 1] };
@@ -648,7 +653,16 @@ fn do(gpa: std.mem.Allocator) !void {
         // TODO: Only pre-integrations should take long.
         try ngl.Fence.wait(gpa, dev, std.time.ns_per_s * 10, &.{fnc});
         try ngl.Fence.reset(gpa, dev, &.{fnc});
-        const next = try plat.swapchain.nextImage(dev, std.time.ns_per_s, sems[0], null);
+        const next = plat.swapchain.nextImage(dev, std.time.ns_per_s, sems[0], null) catch |err| {
+            switch (err) {
+                ngl.Error.OutOfDate => {
+                    try dev.wait();
+                    try makeUpToDate(gpa, &desc, &col_s1, &col_ms, &depth, &cam);
+                    continue;
+                },
+                else => return err,
+            }
+        };
 
         try cmd_pool.reset(dev, .keep);
         cmd = try cmd_buf.begin(gpa, dev, .{
@@ -687,8 +701,8 @@ fn do(gpa: std.mem.Allocator) !void {
         cmd.setViewports(&.{.{
             .x = 0,
             .y = 0,
-            .width = width,
-            .height = height,
+            .width = @floatFromInt(width),
+            .height = @floatFromInt(height),
             .znear = 0,
             .zfar = 1,
         }});
@@ -943,7 +957,7 @@ fn do(gpa: std.mem.Allocator) !void {
             },
         });
 
-        for (Luminance.iterations, 0..) |iter, i| {
+        for (lum_iters, 0..) |iter, i| {
             cmd.setShaders(&.{.compute}, &.{
                 &if (i == 0)
                     shd.luminance_1st
@@ -954,7 +968,7 @@ fn do(gpa: std.mem.Allocator) !void {
             });
             cmd.dispatch(iter[0], iter[1], 1);
 
-            if (i == Luminance.iterations.len - 1)
+            if (i == lum_iters.len - 1)
                 break;
 
             cmd.barrier(.{
@@ -1012,7 +1026,7 @@ fn do(gpa: std.mem.Allocator) !void {
                         .aspect_mask = .{ .color = true },
                         .level = 0,
                         .levels = 1,
-                        .layer = Luminance.final_view,
+                        .layer = try Luminance.computeFinalView(gpa),
                         .layers = 1,
                     },
                 },
@@ -1170,10 +1184,18 @@ fn do(gpa: std.mem.Allocator) !void {
             };
         };
 
-        try pres.queue.present(gpa, dev, &.{pres.sem}, &.{.{
+        pres.queue.present(gpa, dev, &.{pres.sem}, &.{.{
             .swapchain = &plat.swapchain,
             .image_index = next,
-        }});
+        }}) catch |err| {
+            switch (err) {
+                ngl.Error.OutOfDate => {
+                    try dev.wait();
+                    try makeUpToDate(gpa, &desc, &col_s1, &col_ms, &depth, &cam);
+                },
+                else => return err,
+            }
+        };
 
         frame = (frame + 1) % frame_n;
     }
@@ -1819,30 +1841,39 @@ const Luminance = struct {
 
     const format = Color(.@"1").format;
     const divisor = 2;
-    const group_count_x: u32 = @max(1, (width + 1) / divisor);
-    const group_count_y: u32 = @max(1, (height + 1) / divisor);
 
-    const iterations = blk: {
-        const max: f64 = @max(group_count_x, group_count_y);
-        const n: i32 = if (divisor == 2) 1 + @ceil(@log2(max)) else unreachable;
-        var iters: [n][2]u32 = undefined;
-        var cnts: @Vector(2, u32) = .{ group_count_x, group_count_y };
-        for (&iters) |*iter| {
+    fn computeGroupCountX() u32 {
+        return @max(1, (width + 1) / divisor);
+    }
+    fn computeGroupCountY() u32 {
+        return @max(1, (height + 1) / divisor);
+    }
+
+    fn computeIterations(gpa: std.mem.Allocator) std.mem.Allocator.Error![][2]u32 {
+        const max: f64 = @floatFromInt(@max(computeGroupCountX(), computeGroupCountY()));
+        const n: usize = @intFromFloat(if (divisor == 2) 1 + @ceil(@log2(max)) else unreachable);
+        const iters = try gpa.alloc([2]u32, n);
+        var cnts: @Vector(2, u32) = .{ computeGroupCountX(), computeGroupCountY() };
+        for (iters) |*iter| {
             iter.* = .{ @max(1, cnts[0]), @max(1, cnts[1]) };
             cnts += @splat(1 - (divisor & 1));
             cnts /= @splat(divisor);
         }
-        break :blk iters;
-    };
+        return iters;
+    }
 
-    const final_view = iterations.len + 1 & 1;
+    fn computeFinalView(gpa: std.mem.Allocator) std.mem.Allocator.Error!u32 {
+        const iters = try computeIterations(gpa);
+        defer gpa.free(iters);
+        return @intCast(iters.len + 1 & 1);
+    }
 
     fn init(gpa: std.mem.Allocator) ngl.Error!Luminance {
         var img = try ngl.Image.init(gpa, dev, .{
             .type = .@"2d",
             .format = format,
-            .width = group_count_x,
-            .height = group_count_y,
+            .width = computeGroupCountX(),
+            .height = computeGroupCountY(),
             .depth_or_layers = 2,
             .levels = 1,
             .samples = .@"1",
@@ -2255,15 +2286,7 @@ const Descriptor = struct {
         const model = 0;
     };
 
-    fn init(
-        gpa: std.mem.Allocator,
-        color: *Color(.@"1"),
-        cube_map: *CubeMap,
-        ld: *Ld,
-        dfg: *Dfg,
-        irradiance: *Irradiance,
-        luminance: *Luminance,
-    ) ngl.Error!Descriptor {
+    fn init(gpa: std.mem.Allocator) ngl.Error!Descriptor {
         var set_layt = try ngl.DescriptorSetLayout.init(gpa, dev, .{
             .bindings = &.{
                 .{
@@ -2271,49 +2294,49 @@ const Descriptor = struct {
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .compute = true, .fragment = true },
-                    .immutable_samplers = &.{&color.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = bindings.cube_map,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .fragment = true },
-                    .immutable_samplers = &.{&cube_map.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = bindings.ld,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .fragment = true },
-                    .immutable_samplers = &.{&ld.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = bindings.dfg,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .fragment = true },
-                    .immutable_samplers = &.{&dfg.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = bindings.irradiance,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .fragment = true },
-                    .immutable_samplers = &.{&irradiance.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = bindings.luminance_comb,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .compute = true, .fragment = true },
-                    .immutable_samplers = &.{&luminance.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = bindings.luminance_comb_2,
                     .type = .combined_image_sampler,
                     .count = 1,
                     .shader_mask = .{ .compute = true, .fragment = true },
-                    .immutable_samplers = &.{&luminance.sampler},
+                    .immutable_samplers = &.{},
                 },
                 .{
                     .binding = bindings.luminance_stor,
@@ -2471,6 +2494,15 @@ const Descriptor = struct {
                 &luminance.views[0],
             },
             .{
+                &color.sampler,
+                &cube_map.sampler,
+                &ld.sampler,
+                &dfg.sampler,
+                &irradiance.sampler,
+                &luminance.sampler,
+                &luminance.sampler,
+            },
+            .{
                 comb_col,
                 comb_cube,
                 comb_ld,
@@ -2479,12 +2511,12 @@ const Descriptor = struct {
                 comb_lum,
                 comb_lum_2,
             },
-        ) |bind, view, combs|
+        ) |bind, view, splr, combs|
             for (combs, &self.sets[0]) |*comb, *set| {
                 isw[0] = .{
                     .view = view,
                     .layout = .shader_read_only_optimal,
-                    .sampler = null,
+                    .sampler = splr,
                 };
                 comb.* = .{
                     .descriptor_set = set,
@@ -2554,6 +2586,42 @@ const Descriptor = struct {
                     .contents = .{ .uniform_buffer = bw[0..1] },
                 };
                 bw = bw[1..];
+            };
+
+        try ngl.DescriptorSet.write(gpa, dev, &writes);
+    }
+
+    fn writeSet0Color(
+        self: *Descriptor,
+        gpa: std.mem.Allocator,
+        color: *Color(.@"1"),
+    ) ngl.Error!void {
+        var writes: [frame_n * 1]ngl.DescriptorSet.Write = undefined;
+        const comb_col = writes[0..frame_n];
+
+        const Isw = ngl.DescriptorSet.Write.ImageSamplerWrite;
+        var isw_arr: [frame_n * 1]Isw = undefined;
+        var isw: []Isw = &isw_arr;
+
+        inline for (
+            .{bindings.color},
+            .{&color.view},
+            .{&color.sampler},
+            .{comb_col},
+        ) |bind, view, splr, combs|
+            for (combs, &self.sets[0]) |*comb, *set| {
+                isw[0] = .{
+                    .view = view,
+                    .layout = .shader_read_only_optimal,
+                    .sampler = splr,
+                };
+                comb.* = .{
+                    .descriptor_set = set,
+                    .binding = bind,
+                    .element = 0,
+                    .contents = .{ .combined_image_sampler = isw[0..1] },
+                };
+                isw = isw[1..];
             };
 
         try ngl.DescriptorSet.write(gpa, dev, &writes);
@@ -2979,6 +3047,12 @@ const Shader = struct {
         errdefer for (sbox_shds) |*shd|
             (shd.* catch continue).deinit(gpa, dev);
 
+        // TODO: Since this depends on dimensions, luminance shaders
+        // should be recreated when dimensions change (which is not
+        // feasible, of course).
+        const lum_iters = try Luminance.computeIterations(gpa);
+        defer gpa.free(lum_iters);
+
         const lum_shds = blk: {
             const spec_consts_1st = [2]ngl.Shader.Specialization.Constant{
                 .{
@@ -3005,10 +3079,10 @@ const Shader = struct {
                 },
             };
             const spec_data = [4]f32{
-                1 / @as(f32, @floatFromInt(Luminance.iterations[0][0])),
-                1 / @as(f32, @floatFromInt(Luminance.iterations[0][1])),
-                1 / @as(f32, @floatFromInt(Luminance.iterations[1][0])),
-                1 / @as(f32, @floatFromInt(Luminance.iterations[1][1])),
+                1 / @as(f32, @floatFromInt(lum_iters[0][0])),
+                1 / @as(f32, @floatFromInt(lum_iters[0][1])),
+                1 / @as(f32, @floatFromInt(lum_iters[1][0])),
+                1 / @as(f32, @floatFromInt(lum_iters[1][1])),
             };
 
             var shd_descs: [3]ngl.Shader.Desc = undefined;
@@ -3058,7 +3132,7 @@ const Shader = struct {
                 white_scale: f32,
                 exposure_bias: f32,
             } = .{
-                .use_luminance_1 = @intFromBool(Luminance.final_view == 1),
+                .use_luminance_1 = @intFromBool(try Luminance.computeFinalView(gpa) == 1),
                 .gamma = if (plat.format.format.isSrgb()) 1 else 2.2,
                 .white_scale = 11.2,
                 // TODO: Find a better value for this parameter.
@@ -3243,7 +3317,7 @@ const Camera = struct {
 
     fn init(position: [3]f32, target: [3]f32) Camera {
         var self: Camera = undefined;
-        const p = gmath.m4f.perspective(std.math.pi / 3.0, @as(f32, width) / height, 0.01, 100);
+        const p = computeP();
         @memcpy(self.vp_v_p_pos_s[32..48], &p);
         const s = 50;
         self.vp_v_p_pos_s[51] = s;
@@ -3330,6 +3404,22 @@ const Camera = struct {
         }
 
         @memcpy(dest[0..size], std.mem.asBytes(&self.vp_v_p_pos_s));
+    }
+
+    fn update(self: *Camera) void {
+        const v: *gmath.m4f.M = self.vp_v_p_pos_s[16..32];
+        const p = computeP();
+        @memcpy(self.vp_v_p_pos_s[0..16], &gmath.m4f.mul(p, v.*));
+        @memcpy(self.vp_v_p_pos_s[32..48], &p);
+    }
+
+    fn computeP() gmath.m4f.M {
+        return gmath.m4f.perspective(
+            std.math.pi / 3.0,
+            @as(f32, @floatFromInt(width)) / @as(f32, @floatFromInt(height)),
+            0.01,
+            100,
+        );
     }
 };
 
@@ -3442,3 +3532,36 @@ const Model = struct {
         @memcpy(dest[0..size], std.mem.asBytes(&self));
     }
 };
+
+fn makeUpToDate(
+    gpa: std.mem.Allocator,
+    descriptor: *Descriptor,
+    color_s1: *Color(.@"1"),
+    color_ms: *Color(.ms),
+    depth: *Depth,
+    camera: *Camera,
+) ngl.Error!void {
+    plat.update(gpa, ctx.gpu, dev) catch {
+        @panic("Platform.update failed");
+    };
+    width = plat.width;
+    height = plat.height;
+
+    var col_s1 = try Color(.@"1").init(gpa);
+    errdefer col_s1.deinit(gpa);
+    var col_ms = try Color(.ms).init(gpa);
+    errdefer col_ms.deinit(gpa);
+    var dep = try Depth.init(gpa, &col_ms);
+    errdefer dep.deinit(gpa);
+
+    color_s1.deinit(gpa);
+    color_ms.deinit(gpa);
+    depth.deinit(gpa);
+    color_s1.* = col_s1;
+    color_ms.* = col_ms;
+    depth.* = dep;
+
+    try descriptor.writeSet0Color(gpa, color_s1);
+
+    camera.update();
+}
